@@ -1,0 +1,53 @@
+# Logan's 3D Creations Environment Variables
+# Copy this file to .envrc and update with your actual values
+# Run 'direnv allow' after creating .envrc
+
+# Go environment (adjust paths if needed)
+export GOROOT=~/go-install/go
+export PATH=$GOROOT/bin:$PATH
+export GOPATH=~/go
+
+# Application settings
+export ENVIRONMENT="development"
+export PORT="8000"
+export BASE_URL="http://localhost:8000"
+
+# Database
+export DB_PATH="./db/logans3d.db"
+
+# OAuth Configuration (for customer accounts)
+# Get these from Google Cloud Console
+export GOOGLE_CLIENT_ID=""
+export GOOGLE_CLIENT_SECRET=""
+export GOOGLE_REDIRECT_URL="http://localhost:8000/auth/google/callback"
+
+# JWT Security
+# Generate a secure random string for production
+export JWT_SECRET="development-jwt-secret-key-change-in-production"
+
+# Stripe Payment Processing
+# Get these from Stripe Dashboard
+export STRIPE_PUBLISHABLE_KEY=""
+export STRIPE_SECRET_KEY=""
+export STRIPE_WEBHOOK_SECRET=""
+
+# Email (Transactional)
+export EMAIL_FROM="noreply@logans3dcreations.com"
+export EMAIL_PROVIDER="sendgrid"  # or mailgun, ses, etc.
+export EMAIL_API_KEY=""
+
+# File Uploads
+export UPLOAD_MAX_SIZE="104857600"  # 100MB
+export UPLOAD_DIR="./public/uploads"
+
+# Admin Access (development only)
+export ADMIN_USERNAME="admin"
+export ADMIN_PASSWORD="dev-admin-password"
+
+# Development tools
+export AIR_LOG_LEVEL="info"
+
+# Backup (production only - leave empty for dev)
+export LITESTREAM_ACCESS_KEY_ID=""
+export LITESTREAM_SECRET_ACCESS_KEY=""
+export LITESTREAM_BUCKET=""
