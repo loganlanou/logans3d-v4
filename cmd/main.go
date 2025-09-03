@@ -4,22 +4,16 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/lmittmann/tint"
 	"github.com/loganlanou/logans3d-v4/service"
 	"github.com/loganlanou/logans3d-v4/storage"
 )
 
 func main() {
-	// Setup structured logging with color
-	logger := slog.New(tint.NewHandler(os.Stdout, &tint.Options{
-		Level:      slog.LevelInfo,
-		TimeFormat: "15:04:05",
-		AddSource:  true,
-	}))
-	slog.SetDefault(logger)
+	// slog is configured in slog.go via init()
 
 	// Load configuration
 	config, err := service.LoadConfig()
@@ -45,6 +39,25 @@ func main() {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
+	
+	// Custom slog request middleware
+	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			start := time.Now()
+			
+			err := next(c)
+			
+			slog.Info("request handled",
+				"method", c.Request().Method,
+				"path", c.Request().URL.Path,
+				"status", c.Response().Status,
+				"duration", time.Since(start),
+				"ip", c.RealIP(),
+			)
+			
+			return err
+		}
+	})
 
 	// Custom middleware for security headers
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -67,8 +80,11 @@ func main() {
 
 	// Start server
 	addr := fmt.Sprintf(":%s", config.Port)
+	url := fmt.Sprintf("http://localhost:%s", config.Port)
+	
 	slog.Info("🚀 Logan's 3D Creations v4 starting", 
-		"address", addr, 
+		"url", url,
+		"port", config.Port,
 		"environment", config.Environment,
 		"database", config.DBPath,
 	)
