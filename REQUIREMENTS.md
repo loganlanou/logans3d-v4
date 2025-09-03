@@ -18,17 +18,38 @@ This document captures the scope and requirements for rebuilding the Logan’s 3
 - Multi‑currency, marketplace, or multi‑vendor flows.
 
 ## 4) Tech Stack (updated)
-- **Backend**: Go
-- **Router**: [Echo](https://github.com/labstack/echo)
-- **Templating**: [a-h/templ](https://github.com/a-h/templ)
-- **Markup**: HTML/HTMX
-- **Frontend Library (if needed)**: Alpine.js (preferred)
-- **Database**: SQLite
-- **Database Backup/Replication**: [Litestream](https://litestream.io)
-- **Styling**: Tailwind CSS
+**Core Architecture**: Server-Side Rendered (SSR) with Progressive Enhancement
+
+### Backend & Framework
+- **Backend**: Go 1.25
+- **Web Framework**: [Echo v4.13+](https://github.com/labstack/echo) - High performance HTTP router
+- **Templating**: [a-h/templ](https://github.com/a-h/templ) - Type-safe Go HTML templates
+- **Authentication**: JWT + OAuth2 (Google/social login for customer accounts)
+
+### Frontend & Styling  
+- **Markup**: Server-rendered HTML (no HTMX - following SSR + Alpine.js pattern)
+- **JavaScript**: [Alpine.js 3.x](https://alpinejs.dev/) - Lightweight reactive components
+- **Styling**: [Tailwind CSS v4+](https://tailwindcss.com/) with PostCSS processing
+- **Progressive Enhancement**: JavaScript enhances server-rendered content
+
+### Database & Code Generation
+- **Database**: SQLite with [SQLC](https://sqlc.dev/) for type-safe queries
+- **Migrations**: [Goose](https://pressly.github.io/goose/) for database schema management  
+- **Database Backup/Replication**: [Litestream](https://litestream.io) for production backup
+- **Code Generation**: `go generate` pipeline (SQLC + Templ compilation)
+
+### Development & Build Tools
+- **Build System**: Make + [Air](https://github.com/cosmtrek/air) for hot reloading
+- **CSS Processing**: PostCSS + Tailwind CLI
+- **Testing**: [Playwright](https://playwright.dev/) for E2E + Go testing framework
+- **Linting**: [golangci-lint](https://golangci-lint.run/) for Go code quality
+
+### Production & Deployment
+- **Deployment**: Single binary deployment with systemd service management
 - **Payments**: Stripe Checkout (embedded), Apple Pay/Google Pay enabled
-- **Hosting**: To be determined (e.g., Fly.io, Render, or similar Go-friendly host)
-- **Email**: To be determined (transactional email provider)
+- **Hosting**: Go-friendly host (Fly.io, Render, or similar)
+- **Email**: Transactional email provider (SendGrid, Mailgun, etc.)
+- **Monitoring**: Structured logging with colored output
 
 ## 5) Information Architecture (top-level)
 - Home, Shop, Custom Printing, Portfolio, Events, About, FAQ, Contact, Cart/Checkout
