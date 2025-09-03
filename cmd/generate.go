@@ -8,9 +8,7 @@ package main
 //go:generate bash -c "export PATH=$$PATH:~/go/bin && templ generate -path ../views"
 //go:generate echo "templ files generated"
 
-//go:generate echo "Tailwind CSS generation skipped (requires Node.js setup)"
-// //go:generate bash -c "export PATH=$$PATH:~/go/bin && postcss ../public/css/input.css -o ../public/css/styles.css"
-// //go:generate echo "Tailwind CSS generated"
+//go:generate echo "CSS generation handled by Air pre-command (npm run build:css)"
 
 // This file contains go:generate directives that will process all templ files
 // and generate SQLC code in this project. To generate the Go code from the

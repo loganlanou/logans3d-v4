@@ -21,7 +21,7 @@ tmp_dir = "tmp"
   poll = false
   poll_interval = 0
   post_cmd = []
-  pre_cmd = ["export PATH=$PATH:~/go/bin && go generate ./..."]
+  pre_cmd = ["export PATH=$PATH:~/go/bin && go generate ./... && npm run build:css"]
   rerun = false
   rerun_delay = 500
   send_interrupt = false

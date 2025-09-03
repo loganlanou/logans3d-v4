@@ -1,0 +1,25 @@
+{
+  "name": "logans3d-v4",
+  "version": "1.0.0",
+  "description": "Logan's 3D Creations - Modern e-commerce platform for 3D printing business",
+  "main": "tailwind.config.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report",
+    "build:css": "postcss public/css/input.css -o public/css/styles.css",
+    "watch:css": "postcss public/css/input.css -o public/css/styles.css --watch"
+  },
+  "keywords": ["3d-printing", "ecommerce", "go", "templ", "tailwind"],
+  "author": "Logan Lanou",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "@tailwindcss/cli": "^4.0.0",
+    "@tailwindcss/postcss": "^4.1.12",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "tailwindcss": "^4.1.12"
+  }
+}
