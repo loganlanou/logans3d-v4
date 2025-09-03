@@ -45,11 +45,13 @@ This document captures the scope and requirements for rebuilding the Logan’s 3
 - **Linting**: [golangci-lint](https://golangci-lint.run/) for Go code quality
 
 ### Production & Deployment
-- **Deployment**: Single binary deployment with systemd service management
+- **Hosting**: [Vercel](https://vercel.com) free plan with automatic Git deployments
+- **Runtime**: Vercel's Go serverless functions
+- **Domain**: logans3dcreations.com (transfer from Square to DNSimple required)
+- **SSL**: Automatic HTTPS with Vercel's Edge Network  
 - **Payments**: Stripe Checkout (embedded), Apple Pay/Google Pay enabled
-- **Hosting**: Go-friendly host (Fly.io, Render, or similar)
 - **Email**: Transactional email provider (SendGrid, Mailgun, etc.)
-- **Monitoring**: Structured logging with colored output
+- **Monitoring**: Vercel Analytics + structured logging
 
 ## 5) Information Architecture (top-level)
 - Home, Shop, Custom Printing, Portfolio, Events, About, FAQ, Contact, Cart/Checkout
@@ -116,8 +118,11 @@ Below is the canonical feature list. Columns: **Feature**, **Category**, **Prior
 | Performance budgets                                  | Core Infrastructure  | Must-have    | Phase 1  | Lighthouse ≥90; image optimization                               |
 | Accessibility (WCAG)                                 | Core Infrastructure  | Must-have    | Phase 1  | Alt text, focus rings, keyboard nav, contrast                    |
 | Legal pages (Privacy, Terms, Returns, Custom Policy) | Core Infrastructure  | Must-have    | Phase 1  | Compliant policy pages                                           |
+| Domain transfer from Square to DNSimple              | Core Infrastructure  | Must-have    | Pre-Phase 1 | Transfer logans3dcreations.com domain registration             |
+| DNS configuration for Vercel deployment              | Core Infrastructure  | Must-have    | Pre-Phase 1 | Setup DNS records for Vercel hosting                           |
 
 ## 7) Launch Phases (high level)
+**Pre-Phase 1 — Domain & Infrastructure Setup**: Transfer logans3dcreations.com from Square to DNSimple, configure DNS for Vercel deployment, setup development and staging environments.  
 **Phase 1 — Foundation & Content**: Global layout, Home, About, Events, Contact, Legal, CMS setup.  
 **Phase 2 — Storefront & Catalog**: PLP grid, filters/sorting, PDP, cart (drawer + page).  
 **Phase 3 — Checkout & Custom Orders**: Stripe checkout, shipping/tax estimate, custom order form + uploads/notifications.  
