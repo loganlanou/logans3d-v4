@@ -216,8 +216,9 @@ export ADMIN_PASSWORD="dev-admin-password"
 # External services (optional for basic development)
 export GOOGLE_CLIENT_ID=""              # Google OAuth (customer accounts)
 export GOOGLE_CLIENT_SECRET=""
-export STRIPE_PUBLISHABLE_KEY=""        # Stripe payments
-export STRIPE_SECRET_KEY=""
+export STRIPE_PUBLISHABLE_KEY=""        # Stripe payments (test: pk_test_...)
+export STRIPE_SECRET_KEY=""             # Stripe payments (test: sk_test_...)
+export STRIPE_WEBHOOK_SECRET=""         # Stripe webhook verification
 export EMAIL_API_KEY=""                 # Email notifications
 ```
 
@@ -230,6 +231,11 @@ export EMAIL_API_KEY=""                 # Email notifications
 **Optional for Basic Development:**
 
 - OAuth, Stripe, Email - Can be added later for full functionality
+
+**Stripe API Keys:**
+- Use test keys during development (prefixed with `pk_test_` and `sk_test_`)
+- Obtain from Stripe Dashboard > Developers > API keys
+- Webhook secret required for payment processing (get from Stripe CLI or Dashboard)
 
 ## 📚 Documentation
 

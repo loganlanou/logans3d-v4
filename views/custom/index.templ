@@ -16,86 +16,122 @@ templ Index() {
 		Description: "Design your custom 3D printed item with our easy-to-use configurator. Upload models, choose materials, and get instant quotes.",
 		Keywords: "custom 3D printing, personalized products, custom models, 3D print configurator",
 	}) {
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
-			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-				<!-- Header -->
-				<div class="text-center mb-8">
-					<h1 class="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-4">
-						Create Your
-						<span class="text-blue-600">Custom 3D Print</span>
-					</h1>
-					<p class="text-lg text-slate-600">
-						Turn your ideas into reality with our custom printing service
-					</p>
-				</div>
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+			<!-- Animated Background Elements -->
+			<div class="absolute inset-0 opacity-10">
+				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+			</div>
+
+			<div class="relative z-10 py-16">
+				<div class="max-w-4xl mx-auto px-8 sm:px-12 lg:px-16">
+					<!-- Header -->
+					<div class="text-center mb-16">
+						<div class="group inline-flex items-center px-6 py-4 bg-gradient-to-r from-blue-600/20 to-emerald-600/20 rounded-full border border-blue-500/30 mb-12 hover:border-emerald-500/50 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-emerald-600/30 transition-all duration-300 cursor-pointer">
+							<span class="text-blue-300 text-sm font-medium group-hover:text-emerald-300 transition-colors duration-200">🎨 Custom Service</span>
+						</div>
+						<h1 class="text-5xl sm:text-6xl lg:text-7xl font-black leading-[0.9] mb-12 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
+							<div class="inline-block">
+								<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent hover:from-blue-400 hover:via-teal-300 hover:to-emerald-400 transition-all duration-300">
+									Create Your
+								</span>
+							</div>
+							<br/>
+							<div class="inline-block relative">
+								<span class="bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent hover:from-emerald-400 hover:via-teal-400 hover:to-blue-400 transition-all duration-300">
+									Custom Print
+								</span>
+								<div class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+							</div>
+						</h1>
+						<p class="text-xl text-slate-300 mb-16 max-w-3xl mx-auto leading-relaxed">
+							Turn your ideas into reality with our
+							<span class="text-blue-400 font-semibold hover:text-emerald-400 transition-colors duration-200 cursor-pointer">custom printing service</span>
+						</p>
+					</div>
 
 				<!-- Progress Bar -->
 				<div class="mb-8">
 					@ProgressIndicator(1, 5)
 				</div>
 
-				<!-- Form Container -->
-				<div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
-					<form id="customOrderForm" class="space-y-6">
-						<!-- Step 1: Project Type -->
-						<div id="step-1" class="step-content">
-							@StepProjectType()
+					<!-- Form Container -->
+					<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl shadow-2xl p-12 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+						<!-- Subtle floating animation elements -->
+						<div class="absolute inset-0 opacity-20 pointer-events-none">
+							<div class="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full blur-xl animate-pulse"></div>
+							<div class="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full blur-lg animate-pulse animation-delay-2000"></div>
 						</div>
+						<div class="relative z-10">
+							<form id="customOrderForm" class="space-y-8">
+								<!-- Step 1: Project Type -->
+								<div id="step-1" class="step-content">
+									@StepProjectType()
+								</div>
 
-						<!-- Step 2: Model Selection -->
-						<div id="step-2" class="step-content hidden">
-							@StepModelSelection()
+								<!-- Step 2: Model Selection -->
+								<div id="step-2" class="step-content hidden">
+									@StepModelSelection()
+								</div>
+
+								<!-- Step 3: Customization -->
+								<div id="step-3" class="step-content hidden">
+									@StepCustomization()
+								</div>
+
+								<!-- Step 4: Contact Info -->
+								<div id="step-4" class="step-content hidden">
+									@StepContactInfo()
+								</div>
+
+								<!-- Step 5: Review & Submit -->
+								<div id="step-5" class="step-content hidden">
+									@StepReviewSubmit()
+								</div>
+
+								<!-- Navigation Buttons -->
+								<div class="flex justify-between mt-12">
+									<button type="button" id="prevBtn" onclick="changeStep(-1)" 
+											class="hidden px-8 py-4 bg-slate-700/50 border border-slate-600/50 text-slate-300 hover:text-white rounded-xl font-semibold hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm">
+										← Previous
+									</button>
+									<button type="button" id="nextBtn" onclick="changeStep(1)" 
+											class="ml-auto px-10 py-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-white rounded-xl font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
+										Next Step →
+									</button>
+									<button type="submit" id="submitBtn" 
+											class="hidden ml-auto px-10 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
+										Submit Request
+									</button>
+								</div>
+							</form>
 						</div>
-
-						<!-- Step 3: Customization -->
-						<div id="step-3" class="step-content hidden">
-							@StepCustomization()
-						</div>
-
-						<!-- Step 4: Contact Info -->
-						<div id="step-4" class="step-content hidden">
-							@StepContactInfo()
-						</div>
-
-						<!-- Step 5: Review & Submit -->
-						<div id="step-5" class="step-content hidden">
-							@StepReviewSubmit()
-						</div>
-
-						<!-- Navigation Buttons -->
-						<div class="flex justify-between mt-8">
-							<button type="button" id="prevBtn" onclick="changeStep(-1)" 
-									class="hidden px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition duration-200">
-								← Previous
-							</button>
-							<button type="button" id="nextBtn" onclick="changeStep(1)" 
-									class="ml-auto px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
-								Next Step →
-							</button>
-							<button type="submit" id="submitBtn" 
-									class="hidden ml-auto px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition duration-200">
-								Submit Request
-							</button>
-						</div>
-					</form>
-				</div>
-
-				<!-- Trust Indicators -->
-				<div class="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-					<div class="flex flex-col items-center">
-						<div class="text-3xl mb-2">⚡</div>
-						<h3 class="font-semibold text-slate-900">Fast Turnaround</h3>
-						<p class="text-sm text-slate-600 mt-1">Most orders ready in 3-5 days</p>
 					</div>
-					<div class="flex flex-col items-center">
-						<div class="text-3xl mb-2">🎨</div>
-						<h3 class="font-semibold text-slate-900">Expert Design Help</h3>
-						<p class="text-sm text-slate-600 mt-1">Free consultation available</p>
-					</div>
-					<div class="flex flex-col items-center">
-						<div class="text-3xl mb-2">✅</div>
-						<h3 class="font-semibold text-slate-900">Quality Guaranteed</h3>
-						<p class="text-sm text-slate-600 mt-1">100% satisfaction promise</p>
+
+					<!-- Trust Indicators -->
+					<div class="mt-20 grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+						<div class="group/card flex flex-col items-center hover:-translate-y-2 transition-transform duration-300">
+							<div class="bg-gradient-to-br from-blue-500/20 to-blue-600/20 w-20 h-20 rounded-full flex items-center justify-center mb-8 border border-blue-500/30 group-hover/card:scale-110 transition-transform duration-300">
+								<div class="text-4xl">⚡</div>
+							</div>
+							<h3 class="text-xl font-bold text-white mb-4 group-hover/card:text-blue-300 transition-colors duration-300">Fast Turnaround</h3>
+							<p class="text-slate-300 leading-relaxed group-hover/card:text-slate-200 transition-colors duration-300">Most orders ready in 3-5 days</p>
+						</div>
+						<div class="group/card flex flex-col items-center hover:-translate-y-2 transition-transform duration-300">
+							<div class="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 w-20 h-20 rounded-full flex items-center justify-center mb-8 border border-emerald-500/30 group-hover/card:scale-110 transition-transform duration-300">
+								<div class="text-4xl">🎨</div>
+							</div>
+							<h3 class="text-xl font-bold text-white mb-4 group-hover/card:text-emerald-300 transition-colors duration-300">Expert Design Help</h3>
+							<p class="text-slate-300 leading-relaxed group-hover/card:text-slate-200 transition-colors duration-300">Free consultation available</p>
+						</div>
+						<div class="group/card flex flex-col items-center hover:-translate-y-2 transition-transform duration-300">
+							<div class="bg-gradient-to-br from-violet-500/20 to-violet-600/20 w-20 h-20 rounded-full flex items-center justify-center mb-8 border border-violet-500/30 group-hover/card:scale-110 transition-transform duration-300">
+								<div class="text-4xl">✅</div>
+							</div>
+							<h3 class="text-xl font-bold text-white mb-4 group-hover/card:text-violet-300 transition-colors duration-300">Quality Guaranteed</h3>
+							<p class="text-slate-300 leading-relaxed group-hover/card:text-slate-200 transition-colors duration-300">100% satisfaction promise</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -174,9 +210,11 @@ templ Index() {
 				formData.projectType = type;
 				// Update UI to show selection
 				document.querySelectorAll('.project-type-card').forEach(card => {
-					card.classList.remove('ring-2', 'ring-blue-600', 'bg-blue-50');
+					card.classList.remove('ring-2', 'ring-emerald-500', 'bg-emerald-500/10', 'border-emerald-500/50');
+					card.classList.add('border-slate-600/50', 'bg-slate-700/30');
 				});
-				event.currentTarget.classList.add('ring-2', 'ring-blue-600', 'bg-blue-50');
+				event.currentTarget.classList.remove('border-slate-600/50', 'bg-slate-700/30');
+				event.currentTarget.classList.add('ring-2', 'ring-emerald-500', 'bg-emerald-500/10', 'border-emerald-500/50');
 			}
 
 			function handleFileUpload(event) {
@@ -273,22 +311,22 @@ templ Index() {
 templ ProgressIndicator(currentStep int, totalSteps int) {
 	<div class="relative">
 		<!-- Progress Bar Background -->
-		<div class="absolute top-5 left-0 right-0 h-1 bg-gray-200 rounded-full"></div>
+		<div class="absolute top-6 left-0 right-0 h-1 bg-slate-700/50 rounded-full"></div>
 		<!-- Progress Bar Fill -->
-		<div class="progress-bar-fill absolute top-5 left-0 h-1 bg-blue-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+		<div class="progress-bar-fill absolute top-6 left-0 h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
 		
 		<!-- Step Indicators -->
 		<div class="relative flex justify-between">
 			for i := 1; i <= totalSteps; i++ {
 				<div class={ "progress-step flex flex-col items-center", templ.KV("active", i == currentStep) }>
 					<div class={ 
-						"w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300",
-						templ.KV("bg-blue-600 text-white", i == currentStep),
-						templ.KV("bg-gray-200 text-gray-600", i != currentStep) 
+						"w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 border-2",
+						templ.KV("bg-gradient-to-r from-blue-600 to-emerald-600 text-white border-emerald-500/50", i == currentStep),
+						templ.KV("bg-slate-700/50 text-slate-300 border-slate-600/50", i != currentStep) 
 					}>
 						{ fmt.Sprintf("%d", i) }
 					</div>
-					<span class="text-xs mt-2 text-gray-600">
+					<span class="text-xs mt-3 text-slate-400 font-medium">
 						if i == 1 {
 							Project
 						} else if i == 2 {
@@ -308,45 +346,49 @@ templ ProgressIndicator(currentStep int, totalSteps int) {
 	
 	<style>
 		.progress-step.completed > div:first-child {
-			background-color: rgb(34 197 94);
+			background: linear-gradient(135deg, rgb(16 185 129), rgb(6 182 212));
 			color: white;
+			border-color: rgb(16 185 129);
 		}
 		.progress-step.active > div:first-child {
-			transform: scale(1.1);
+			transform: scale(1.15);
+			box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
 		}
 	</style>
 }
 
 templ StepProjectType() {
 	<div>
-		<h2 class="text-2xl font-bold text-slate-900 mb-6">What would you like to create?</h2>
-		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">What would you like to create?</span>
+		</h2>
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
 			<button type="button" onclick="selectProjectType('figurine')" 
-					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
-				<div class="text-3xl mb-3">🎭</div>
-				<h3 class="font-semibold text-lg mb-2">Figurines & Miniatures</h3>
-				<p class="text-sm text-gray-600">Character models, gaming miniatures, collectibles</p>
+					class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1">
+				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">🎭</div>
+				<h3 class="font-bold text-xl mb-4 text-white group-hover:text-emerald-300 transition-colors duration-300">Figurines & Miniatures</h3>
+				<p class="text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors duration-300">Character models, gaming miniatures, collectibles</p>
 			</button>
 			
 			<button type="button" onclick="selectProjectType('prototype')" 
-					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
-				<div class="text-3xl mb-3">⚙️</div>
-				<h3 class="font-semibold text-lg mb-2">Prototypes & Parts</h3>
-				<p class="text-sm text-gray-600">Functional parts, prototypes, mechanical components</p>
+					class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1">
+				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">⚙️</div>
+				<h3 class="font-bold text-xl mb-4 text-white group-hover:text-emerald-300 transition-colors duration-300">Prototypes & Parts</h3>
+				<p class="text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors duration-300">Functional parts, prototypes, mechanical components</p>
 			</button>
 			
 			<button type="button" onclick="selectProjectType('decorative')" 
-					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
-				<div class="text-3xl mb-3">🏺</div>
-				<h3 class="font-semibold text-lg mb-2">Decorative Items</h3>
-				<p class="text-sm text-gray-600">Home decor, art pieces, ornaments</p>
+					class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1">
+				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">🏺</div>
+				<h3 class="font-bold text-xl mb-4 text-white group-hover:text-emerald-300 transition-colors duration-300">Decorative Items</h3>
+				<p class="text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors duration-300">Home decor, art pieces, ornaments</p>
 			</button>
 			
 			<button type="button" onclick="selectProjectType('custom')" 
-					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
-				<div class="text-3xl mb-3">✨</div>
-				<h3 class="font-semibold text-lg mb-2">Something Else</h3>
-				<p class="text-sm text-gray-600">Unique projects, custom designs, special requests</p>
+					class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1">
+				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">✨</div>
+				<h3 class="font-bold text-xl mb-4 text-white group-hover:text-emerald-300 transition-colors duration-300">Something Else</h3>
+				<p class="text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors duration-300">Unique projects, custom designs, special requests</p>
 			</button>
 		</div>
 	</div>
@@ -354,7 +396,8 @@ templ StepProjectType() {
 
 templ StepModelSelection() {
 	<div>
-		<h2 class="text-2xl font-bold text-slate-900 mb-6">Upload Your 3D Model</h2>
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Upload Your 3D Model</span></h2>
 		
 		<!-- File Upload -->
 		<div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
@@ -395,7 +438,8 @@ templ StepModelSelection() {
 
 templ StepCustomization() {
 	<div>
-		<h2 class="text-2xl font-bold text-slate-900 mb-6">Customize Your Print</h2>
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Customize Your Print</span></h2>
 		
 		<!-- Material Selection -->
 		<div class="mb-8">
@@ -511,14 +555,15 @@ templ StepCustomization() {
 
 templ StepContactInfo() {
 	<div>
-		<h2 class="text-2xl font-bold text-slate-900 mb-6">Your Contact Information</h2>
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Your Contact Information</span></h2>
 		
 		<div class="space-y-6">
 			<!-- Name -->
 			<div>
 				<label for="name" class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
 				<input type="text" id="name" name="name" required 
-					   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					   class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
 					   placeholder="John Doe" />
 			</div>
 			
@@ -526,7 +571,7 @@ templ StepContactInfo() {
 			<div>
 				<label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
 				<input type="email" id="email" name="email" required 
-					   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					   class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
 					   placeholder="john@example.com" />
 			</div>
 			
@@ -534,7 +579,7 @@ templ StepContactInfo() {
 			<div>
 				<label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number (optional)</label>
 				<input type="tel" id="phone" name="phone" 
-					   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					   class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
 					   placeholder="(555) 123-4567" />
 			</div>
 			
@@ -572,7 +617,8 @@ templ StepContactInfo() {
 
 templ StepReviewSubmit() {
 	<div>
-		<h2 class="text-2xl font-bold text-slate-900 mb-6">Review Your Order</h2>
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Review Your Order</span></h2>
 		
 		<!-- Order Summary -->
 		<div class="bg-gray-50 rounded-lg p-6 mb-6">

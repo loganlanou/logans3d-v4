@@ -12,7 +12,7 @@ import (
 
 func main() {
 	// Open database (using relative path since we'll run from project root)
-	db, err := sql.Open("sqlite", "db/logans3d.db?_pragma=busy_timeout(5000)")
+	db, err := sql.Open("sqlite", "./data/database.db?_pragma=busy_timeout(5000)")
 	if err != nil {
 		log.Fatal(err)
 	}

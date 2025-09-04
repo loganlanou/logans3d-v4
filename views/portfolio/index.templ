@@ -5,59 +5,284 @@ import "github.com/loganlanou/logans3d-v4/views/layout"
 templ Index() {
 	@layout.Base(layout.Meta{
 		Title: "Portfolio - Logan's 3D Creations",
-		Description: "Explore our portfolio of custom 3D printed projects.",
-		Keywords: "3D printing portfolio, custom projects, gallery",
+		Description: "Explore our cutting-edge portfolio of custom 3D printed projects, prototypes, and innovative solutions.",
+		Keywords: "3D printing portfolio, custom projects, gallery, prototypes, innovation",
 	}) {
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
-			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				<div class="text-center">
-					<h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
-						Our
-						<span class="text-blue-600">Portfolio</span>
-					</h1>
-					<p class="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
-						Explore our gallery of custom projects, from functional prototypes and replacement parts 
-						to artistic creations and educational tools.
-					</p>
-				</div>
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+			<!-- Animated Background Elements -->
+			<div class="absolute inset-0 opacity-10">
+				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+			</div>
 
-				<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
-					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-						<div class="h-64 bg-slate-200 flex items-center justify-center">
-							<span class="text-slate-500">Project Image</span>
-						</div>
-						<div class="p-6">
-							<h3 class="text-xl font-bold text-slate-900 mb-2">Custom Project</h3>
-							<p class="text-slate-600">Sample project description coming soon.</p>
+			<div class="relative z-10">
+				<!-- Hero Section -->
+				<section class="pt-32 pb-32 px-8 sm:px-12 lg:px-16">
+					<div class="max-w-6xl mx-auto">
+						<div class="text-center">
+							<div class="group inline-flex items-center px-6 py-4 bg-gradient-to-r from-blue-600/20 to-emerald-600/20 rounded-full border border-blue-500/30 mb-12 hover:border-emerald-500/50 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-emerald-600/30 transition-all duration-300 cursor-pointer">
+								<span class="text-blue-300 text-sm font-medium group-hover:text-emerald-300 transition-colors duration-200">✨ Cutting-Edge Innovation</span>
+							</div>
+							<h1 class="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] mb-16 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
+								<div class="inline-block">
+									<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent hover:from-blue-400 hover:via-teal-300 hover:to-emerald-400 transition-all duration-300">
+										Creative
+									</span>
+								</div>
+								<br/>
+								<div class="inline-block relative">
+									<span class="bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent hover:from-emerald-400 hover:via-teal-400 hover:to-blue-400 transition-all duration-300">
+										Portfolio
+									</span>
+									<div class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+								</div>
+							</h1>
+							<p class="text-xl sm:text-2xl text-slate-300 mb-20 max-w-3xl mx-auto leading-relaxed group hover:text-slate-200 transition-colors duration-300">
+								Discover our comprehensive gallery of 
+								<span class="text-blue-400 font-semibold hover:text-emerald-400 transition-colors duration-200 cursor-pointer">custom 3D printed solutions</span>, 
+								from precision prototypes to innovative artistic creations
+							</p>
+							
+							<!-- Stats -->
+							<div class="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12 max-w-5xl mx-auto mb-32">
+								<div class="group text-center p-8 rounded-2xl bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700/30 backdrop-blur-sm hover:border-blue-500/50 hover:bg-gradient-to-br hover:from-blue-600/10 hover:to-emerald-600/10 transition-all duration-300">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 bg-clip-text mb-4 group-hover:scale-110 transition-transform duration-200">500+</div>
+									<div class="text-slate-400 text-sm font-medium group-hover:text-slate-300 transition-colors duration-200">Projects Completed</div>
+								</div>
+								<div class="group text-center p-8 rounded-2xl bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700/30 backdrop-blur-sm hover:border-teal-500/50 hover:bg-gradient-to-br hover:from-teal-600/10 hover:to-blue-600/10 transition-all duration-300">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-teal-400 to-blue-400 bg-clip-text mb-4 group-hover:scale-110 transition-transform duration-200">50+</div>
+									<div class="text-slate-400 text-sm font-medium group-hover:text-slate-300 transition-colors duration-200">Happy Clients</div>
+								</div>
+								<div class="group text-center p-8 rounded-2xl bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700/30 backdrop-blur-sm hover:border-emerald-500/50 hover:bg-gradient-to-br hover:from-emerald-600/10 hover:to-teal-600/10 transition-all duration-300">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-emerald-400 to-teal-400 bg-clip-text mb-4 group-hover:scale-110 transition-transform duration-200">15+</div>
+									<div class="text-slate-400 text-sm font-medium group-hover:text-slate-300 transition-colors duration-200">Material Types</div>
+								</div>
+								<div class="group text-center p-8 rounded-2xl bg-gradient-to-br from-slate-800/30 to-slate-900/30 border border-slate-700/30 backdrop-blur-sm hover:border-cyan-500/50 hover:bg-gradient-to-br hover:from-cyan-600/10 hover:to-blue-600/10 transition-all duration-300">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-cyan-400 to-blue-400 bg-clip-text mb-4 group-hover:scale-110 transition-transform duration-200">99%</div>
+									<div class="text-slate-400 text-sm font-medium group-hover:text-slate-300 transition-colors duration-200">Success Rate</div>
+								</div>
+							</div>
 						</div>
 					</div>
+				</section>
 
-					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-						<div class="h-64 bg-slate-200 flex items-center justify-center">
-							<span class="text-slate-500">Project Image</span>
+				<!-- Filter Navigation -->
+				<section class="px-8 sm:px-12 lg:px-16 py-20">
+					<div class="max-w-6xl mx-auto">
+						<div class="text-center mb-16">
+							<h2 class="text-2xl font-bold text-white mb-6">Explore Our Work</h2>
+							<p class="text-slate-400 max-w-xl mx-auto">Filter through our diverse portfolio of 3D printing projects across multiple industries and applications</p>
 						</div>
-						<div class="p-6">
-							<h3 class="text-xl font-bold text-slate-900 mb-2">Prototype Work</h3>
-							<p class="text-slate-600">Sample project description coming soon.</p>
+						<div x-data="{ activeFilter: 'all' }" class="flex flex-wrap justify-center gap-4 lg:gap-6">
+							<button @click="activeFilter = 'all'" :class="activeFilter === 'all' ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50'" class="group px-8 py-4 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 hover:-translate-y-1">
+								<span class="group-hover:scale-105 transition-transform duration-200">All Projects</span>
+							</button>
+							<button @click="activeFilter = 'prototypes'" :class="activeFilter === 'prototypes' ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50'" class="group px-8 py-4 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-500/10 hover:-translate-y-1">
+								<span class="group-hover:scale-105 transition-transform duration-200">Prototypes</span>
+							</button>
+							<button @click="activeFilter = 'artistic'" :class="activeFilter === 'artistic' ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50'" class="group px-8 py-4 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 hover:-translate-y-1">
+								<span class="group-hover:scale-105 transition-transform duration-200">Artistic</span>
+							</button>
+							<button @click="activeFilter = 'functional'" :class="activeFilter === 'functional' ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50'" class="group px-8 py-4 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-cyan-500/50 hover:shadow-lg hover:shadow-cyan-500/10 hover:-translate-y-1">
+								<span class="group-hover:scale-105 transition-transform duration-200">Functional</span>
+							</button>
+							<button @click="activeFilter = 'educational'" :class="activeFilter === 'educational' ? 'bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25' : 'bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50'" class="group px-8 py-4 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 hover:-translate-y-1">
+								<span class="group-hover:scale-105 transition-transform duration-200">Educational</span>
+							</button>
 						</div>
 					</div>
+				</section>
 
-					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-						<div class="h-64 bg-slate-200 flex items-center justify-center">
-							<span class="text-slate-500">Project Image</span>
-						</div>
-						<div class="p-6">
-							<h3 class="text-xl font-bold text-slate-900 mb-2">Educational Tools</h3>
-							<p class="text-slate-600">Sample project description coming soon.</p>
+				<!-- Portfolio Grid -->
+				<section class="px-8 sm:px-12 lg:px-16 py-24">
+					<div class="max-w-6xl mx-auto">
+						<div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12 xl:gap-16">
+							
+							<!-- Featured Project 1 - Spans 2 columns -->
+							<div class="group relative lg:col-span-2 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2 cursor-pointer">
+								<div class="aspect-[16/10] bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+									<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10"></div>
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="w-32 h-32 bg-gradient-to-br from-blue-500 to-emerald-600 rounded-2xl shadow-2xl transform group-hover:scale-110 transition-transform duration-500"></div>
+									</div>
+									<div class="absolute top-4 right-4 z-20">
+										<span class="px-3 py-1 bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-xs font-semibold rounded-full">Featured</span>
+									</div>
+								</div>
+								<div class="p-12">
+									<div class="flex items-center gap-4 mb-6">
+										<div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+										<span class="text-blue-400 text-sm font-medium uppercase tracking-wide">Prototype</span>
+									</div>
+									<h3 class="text-2xl font-bold text-white mb-6 group-hover:text-blue-400 transition-colors duration-300">Advanced Mechanical Assembly</h3>
+									<p class="text-slate-300 mb-8 leading-relaxed">Complex multi-part mechanical prototype with precision tolerances, featuring interlocking components and custom bearings.</p>
+									<div class="flex items-center justify-between">
+										<div class="flex -space-x-2">
+											<div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full border-2 border-slate-800"></div>
+											<div class="w-8 h-8 bg-gradient-to-br from-teal-500 to-teal-600 rounded-full border-2 border-slate-800"></div>
+											<div class="w-8 h-8 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-full border-2 border-slate-800"></div>
+										</div>
+										<button class="text-blue-400 hover:text-blue-300 transition-colors duration-200 font-medium">View Details →</button>
+									</div>
+								</div>
+							</div>
+
+							<!-- Regular Project Cards -->
+							<div class="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-teal-500/50 hover:shadow-xl hover:shadow-teal-500/20 transition-all duration-500 hover:-translate-y-1 cursor-pointer">
+								<div class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+									<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-teal-600 rounded-xl transform group-hover:scale-110 transition-transform duration-500"></div>
+									</div>
+								</div>
+								<div class="p-6">
+									<div class="flex items-center gap-2 mb-3">
+										<div class="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+										<span class="text-purple-400 text-xs font-medium uppercase tracking-wide">Artistic</span>
+									</div>
+									<h3 class="text-lg font-bold text-white mb-2 group-hover:text-purple-400 transition-colors duration-300">Sculptural Dragon</h3>
+									<p class="text-slate-400 text-sm mb-4">Intricate mythical creature with detailed scales and articulated joints.</p>
+									<button class="text-purple-400 hover:text-purple-300 text-sm font-medium">Explore →</button>
+								</div>
+							</div>
+
+							<div class="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-cyan-500/50 hover:shadow-xl hover:shadow-cyan-500/20 transition-all duration-500 hover:-translate-y-1 cursor-pointer">
+								<div class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+									<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="w-20 h-20 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl transform group-hover:scale-110 transition-transform duration-500"></div>
+									</div>
+								</div>
+								<div class="p-6">
+									<div class="flex items-center gap-2 mb-3">
+										<div class="w-1.5 h-1.5 bg-cyan-400 rounded-full"></div>
+										<span class="text-cyan-400 text-xs font-medium uppercase tracking-wide">Functional</span>
+									</div>
+									<h3 class="text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition-colors duration-300">Custom Tool Holder</h3>
+									<p class="text-slate-400 text-sm mb-4">Precision-engineered organizational solution for workshop efficiency.</p>
+									<button class="text-cyan-400 hover:text-cyan-300 text-sm font-medium">Explore →</button>
+								</div>
+							</div>
+
+							<div class="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/20 transition-all duration-500 hover:-translate-y-1 cursor-pointer">
+								<div class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+									<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl transform group-hover:scale-110 transition-transform duration-500"></div>
+									</div>
+								</div>
+								<div class="p-6">
+									<div class="flex items-center gap-2 mb-3">
+										<div class="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+										<span class="text-green-400 text-xs font-medium uppercase tracking-wide">Educational</span>
+									</div>
+									<h3 class="text-lg font-bold text-white mb-2 group-hover:text-green-400 transition-colors duration-300">Molecular Model</h3>
+									<p class="text-slate-400 text-sm mb-4">Interactive chemistry teaching aid with removable components.</p>
+									<button class="text-green-400 hover:text-green-300 text-sm font-medium">Explore →</button>
+								</div>
+							</div>
+
+							<div class="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-blue-500/50 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-500 hover:-translate-y-1 cursor-pointer">
+								<div class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+									<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl transform group-hover:scale-110 transition-transform duration-500"></div>
+									</div>
+								</div>
+								<div class="p-6">
+									<div class="flex items-center gap-2 mb-3">
+										<div class="w-1.5 h-1.5 bg-orange-400 rounded-full"></div>
+										<span class="text-orange-400 text-xs font-medium uppercase tracking-wide">Prototype</span>
+									</div>
+									<h3 class="text-lg font-bold text-white mb-2 group-hover:text-orange-400 transition-colors duration-300">Medical Device Part</h3>
+									<p class="text-slate-400 text-sm mb-4">Biocompatible component with strict regulatory compliance.</p>
+									<button class="text-orange-400 hover:text-orange-300 text-sm font-medium">Explore →</button>
+								</div>
+							</div>
+
+							<div class="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-teal-500/50 hover:shadow-xl hover:shadow-teal-500/20 transition-all duration-500 hover:-translate-y-1 cursor-pointer">
+								<div class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 relative overflow-hidden">
+									<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
+									<div class="absolute inset-0 flex items-center justify-center">
+										<div class="w-20 h-20 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-xl transform group-hover:scale-110 transition-transform duration-500"></div>
+									</div>
+								</div>
+								<div class="p-6">
+									<div class="flex items-center gap-2 mb-3">
+										<div class="w-1.5 h-1.5 bg-pink-400 rounded-full"></div>
+										<span class="text-pink-400 text-xs font-medium uppercase tracking-wide">Artistic</span>
+									</div>
+									<h3 class="text-lg font-bold text-white mb-2 group-hover:text-pink-400 transition-colors duration-300">Jewelry Collection</h3>
+									<p class="text-slate-400 text-sm mb-4">Delicate wearable art pieces with intricate geometric patterns.</p>
+									<button class="text-pink-400 hover:text-pink-300 text-sm font-medium">Explore →</button>
+								</div>
+							</div>
+
 						</div>
 					</div>
-				</div>
+				</section>
 
-				<div class="text-center mt-12">
-					<a href="/contact" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
-						Contact for Custom Work
-					</a>
-				</div>
+				<!-- Process Section -->
+				<section class="px-6 sm:px-8 lg:px-12 py-24 border-t border-slate-700/50">
+					<div class="max-w-6xl mx-auto">
+						<div class="text-center mb-20">
+							<h2 class="text-4xl sm:text-5xl font-bold text-white mb-6">Our Creative Process</h2>
+							<p class="text-xl text-slate-300 max-w-3xl mx-auto">From concept to creation, we follow a proven methodology to deliver exceptional results</p>
+						</div>
+						
+						<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+							<div class="text-center group">
+								<div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-white font-bold text-2xl group-hover:scale-110 transition-transform duration-300">1</div>
+								<h3 class="text-xl font-bold text-white mb-4">Consultation</h3>
+								<p class="text-slate-400">Understanding your vision, requirements, and technical constraints</p>
+							</div>
+							<div class="text-center group">
+								<div class="w-20 h-20 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-white font-bold text-2xl group-hover:scale-110 transition-transform duration-300">2</div>
+								<h3 class="text-xl font-bold text-white mb-4">Design</h3>
+								<p class="text-slate-400">Creating detailed 3D models with precision engineering</p>
+							</div>
+							<div class="text-center group">
+								<div class="w-20 h-20 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-white font-bold text-2xl group-hover:scale-110 transition-transform duration-300">3</div>
+								<h3 class="text-xl font-bold text-white mb-4">Production</h3>
+								<p class="text-slate-400">High-quality printing with optimal material selection</p>
+							</div>
+							<div class="text-center group">
+								<div class="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-white font-bold text-2xl group-hover:scale-110 transition-transform duration-300">4</div>
+								<h3 class="text-xl font-bold text-white mb-4">Delivery</h3>
+								<p class="text-slate-400">Final inspection, finishing, and secure delivery</p>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- CTA Section -->
+				<section class="px-8 sm:px-12 lg:px-16 py-32">
+					<div class="max-w-4xl mx-auto text-center">
+						<div class="relative bg-gradient-to-r from-slate-800/50 to-slate-900/50 rounded-3xl p-20 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+							<!-- Subtle floating animation elements -->
+							<div class="absolute inset-0 opacity-20 pointer-events-none">
+								<div class="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full blur-xl animate-pulse"></div>
+								<div class="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full blur-lg animate-pulse animation-delay-2000"></div>
+							</div>
+							<div class="relative z-10">
+								<h2 class="text-3xl sm:text-4xl font-bold text-white mb-8 group-hover:scale-105 transition-transform duration-300">Ready to Bring Your Vision to Life?</h2>
+								<p class="text-xl text-slate-300 mb-12">Let's collaborate on your next innovative 3D printing project</p>
+								<div class="flex flex-col sm:flex-row gap-6 lg:gap-8 justify-center">
+									<a href="/custom" class="group/btn inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 hover:scale-105">
+										<span class="group-hover/btn:scale-110 transition-transform duration-200">Start Your Project</span>
+										<svg class="ml-2 w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+										</svg>
+									</a>
+									<a href="/contact" class="group/btn2 inline-flex items-center px-8 py-4 border border-slate-600 text-slate-300 font-semibold rounded-xl hover:bg-slate-700/50 hover:text-white hover:border-teal-500/50 transition-all duration-300 hover:-translate-y-1">
+										<span class="group-hover/btn2:scale-105 transition-transform duration-200">Get in Touch</span>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
 			</div>
 		</div>
 	}

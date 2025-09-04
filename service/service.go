@@ -15,7 +15,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/events"
 	"github.com/loganlanou/logans3d-v4/views/home"
 	"github.com/loganlanou/logans3d-v4/views/legal"
-	// "github.com/loganlanou/logans3d-v4/views/portfolio"
+	"github.com/loganlanou/logans3d-v4/views/portfolio"
 	"github.com/loganlanou/logans3d-v4/views/shop"
 )
 
@@ -253,8 +253,7 @@ func (s *Service) handleContact(c echo.Context) error {
 }
 
 func (s *Service) handlePortfolio(c echo.Context) error {
-	return c.HTML(200, "<h1>Portfolio</h1><p>Coming soon...</p>")
-	// return Render(c, portfolio.Index())
+	return Render(c, portfolio.Index())
 }
 
 func (s *Service) handlePrivacy(c echo.Context) error {

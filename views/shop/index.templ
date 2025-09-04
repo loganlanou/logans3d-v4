@@ -12,60 +12,105 @@ templ Index(products []ProductWithImage, categories []db.Category) {
 		Description: "Browse our collection of 3D printed collectibles, dinosaurs, dragons, animals and custom items.",
 		Keywords: "3D printed products, collectibles, dinosaurs, dragons, custom printing",
 	}) {
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
-			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+			<!-- Animated Background Elements -->
+			<div class="absolute inset-0 opacity-10">
+				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+			</div>
+
+			<div class="relative z-10">
 				<!-- Header -->
-				<div class="text-center mb-12">
-					<h1 class="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight mb-6">
-						Our
-						<span class="text-blue-600">Collection</span>
-					</h1>
-					<p class="text-xl text-slate-600 max-w-3xl mx-auto">
-						Discover our unique 3D printed creations, from detailed dinosaur models to mystical dragons 
-						and everything in between.
-					</p>
-				</div>
+				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
+					<div class="max-w-6xl mx-auto">
+						<div class="text-center">
+							<div class="group inline-flex items-center px-6 py-4 bg-gradient-to-r from-blue-600/20 to-emerald-600/20 rounded-full border border-blue-500/30 mb-12 hover:border-emerald-500/50 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-emerald-600/30 transition-all duration-300 cursor-pointer">
+								<span class="text-blue-300 text-sm font-medium group-hover:text-emerald-300 transition-colors duration-200">🛍️ Premium Collection</span>
+							</div>
+							<h1 class="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] mb-16 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
+								<div class="inline-block">
+									<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent hover:from-blue-400 hover:via-teal-300 hover:to-emerald-400 transition-all duration-300">
+										Our
+									</span>
+								</div>
+								<br/>
+								<div class="inline-block relative">
+									<span class="bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent hover:from-emerald-400 hover:via-teal-400 hover:to-blue-400 transition-all duration-300">
+										Collection
+									</span>
+									<div class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+								</div>
+							</h1>
+							<p class="text-xl sm:text-2xl text-slate-300 mb-20 max-w-4xl mx-auto leading-relaxed group hover:text-slate-200 transition-colors duration-300">
+								Discover our unique 3D printed creations, from
+								<span class="text-blue-400 font-semibold hover:text-emerald-400 transition-colors duration-200 cursor-pointer">detailed dinosaur models</span>
+								to mystical dragons and everything in between
+							</p>
+						</div>
+					</div>
+				</section>
 
 				<!-- Categories Filter -->
-				<div class="flex flex-wrap justify-center gap-4 mb-12">
-					<a href="/shop" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
-						All Products
-					</a>
-					for _, category := range categories {
-						<a href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) } 
-						   class="bg-white text-slate-700 px-6 py-3 rounded-lg font-semibold border border-slate-300 hover:bg-slate-50 transition duration-200">
-							{ category.Name }
-						</a>
-					}
-				</div>
+				<section class="px-8 sm:px-12 lg:px-16 py-16">
+					<div class="max-w-6xl mx-auto">
+						<div class="flex flex-wrap justify-center gap-4 lg:gap-6">
+							<a href="/shop" class="group px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25 rounded-2xl border border-blue-500/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1">
+								<span class="group-hover:scale-105 transition-transform duration-200">All Products</span>
+							</a>
+							for _, category := range categories {
+								<a href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) } 
+								   class="group px-8 py-4 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-500/10 hover:-translate-y-1">
+									<span class="group-hover:scale-105 transition-transform duration-200">{ category.Name }</span>
+								</a>
+							}
+						</div>
+					</div>
+				</section>
 
 				<!-- Products Grid -->
-				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-					for _, product := range products {
-						@ProductCard(product)
-					}
-				</div>
+				<section class="px-8 sm:px-12 lg:px-16 py-20">
+					<div class="max-w-7xl mx-auto">
+						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12">
+							for _, product := range products {
+								@ProductCard(product)
+							}
+						</div>
 
-				if len(products) == 0 {
-					<div class="text-center py-16">
-						<div class="text-6xl mb-4">🔍</div>
-						<h3 class="text-2xl font-semibold text-slate-900 mb-2">No products found</h3>
-						<p class="text-slate-600">Check back soon for new additions to our collection!</p>
+						if len(products) == 0 {
+							<div class="text-center py-24">
+								<div class="w-32 h-32 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-700/50 backdrop-blur-sm">
+									<div class="text-6xl">🔍</div>
+								</div>
+								<h3 class="text-3xl font-bold text-white mb-4">No products found</h3>
+								<p class="text-slate-400 text-lg">Check back soon for new additions to our collection!</p>
+							</div>
+						}
 					</div>
-				}
+				</section>
 
 				<!-- CTA Section -->
-				<div class="mt-16 text-center">
-					<div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-12 text-white">
-						<h2 class="text-3xl font-bold mb-4">Need Something Custom?</h2>
-						<p class="text-xl mb-8 opacity-90">
-							Can't find what you're looking for? We offer custom 3D printing services for your unique projects.
-						</p>
-						<a href="/custom" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-200">
-							Request Custom Quote
-						</a>
+				<section class="px-8 sm:px-12 lg:px-16 py-32">
+					<div class="max-w-4xl mx-auto text-center">
+						<div class="relative bg-gradient-to-r from-slate-800/50 to-slate-900/50 rounded-3xl p-20 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+							<!-- Subtle floating animation elements -->
+							<div class="absolute inset-0 opacity-20 pointer-events-none">
+								<div class="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full blur-xl animate-pulse"></div>
+								<div class="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full blur-lg animate-pulse animation-delay-2000"></div>
+							</div>
+							<div class="relative z-10">
+								<h2 class="text-3xl sm:text-4xl font-bold text-white mb-8 group-hover:scale-105 transition-transform duration-300">Need Something Custom?</h2>
+								<p class="text-xl text-slate-300 mb-12">Can't find what you're looking for? We offer custom 3D printing services for your unique projects.</p>
+								<a href="/custom" class="group/btn inline-flex items-center px-10 py-5 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 hover:scale-105">
+									<span class="group-hover/btn:scale-110 transition-transform duration-200">Request Custom Quote</span>
+									<svg class="ml-3 w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+									</svg>
+								</a>
+							</div>
+						</div>
 					</div>
-				</div>
+				</section>
 			</div>
 		</div>
 	}
@@ -77,44 +122,47 @@ type ProductWithImage struct {
 }
 
 templ ProductCard(product ProductWithImage) {
-	<div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition duration-300 h-full flex flex-col">
-		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-slate-100 overflow-hidden block cursor-pointer">
+	<div class="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2 cursor-pointer h-full flex flex-col">
+		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 overflow-hidden block cursor-pointer relative">
+			<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
 			if product.ImageURL != "" {
-				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover hover:scale-105 transition duration-300" />
+				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
 			} else {
-				<div class="w-full h-full flex items-center justify-center text-slate-400">
-					<svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-					</svg>
+				<div class="w-full h-full flex items-center justify-center">
+					<div class="w-24 h-24 bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+						<svg class="w-12 h-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+						</svg>
+					</div>
 				</div>
 			}
 		</a>
-		<div class="p-6 flex flex-col flex-grow">
-			<h3 class="text-lg font-bold text-slate-900 mb-3 line-clamp-2 min-h-[3.5rem]">{ product.Product.Name }</h3>
-			<div class="mb-4 min-h-[4.5rem]">
+		<div class="p-8 flex flex-col flex-grow">
+			<h3 class="text-xl font-bold text-white mb-4 line-clamp-2 min-h-[3.5rem] group-hover:text-emerald-400 transition-colors duration-300">{ product.Product.Name }</h3>
+			<div class="mb-6 min-h-[4.5rem]">
 				if product.Product.Description.Valid {
-					<p class="text-slate-600 text-sm line-clamp-3">{ product.Product.Description.String }</p>
+					<p class="text-slate-400 text-sm line-clamp-3 group-hover:text-slate-300 transition-colors duration-300">{ product.Product.Description.String }</p>
 				} else {
-					<p class="text-slate-400 text-sm italic">No description available</p>
+					<p class="text-slate-500 text-sm italic">No description available</p>
 				}
 			</div>
-			<div class="flex items-center justify-between mb-4 min-h-[2rem]">
-				<div class="text-xl font-bold text-blue-600">
+			<div class="flex items-center justify-between mb-6 min-h-[2rem]">
+				<div class="text-2xl font-bold text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 bg-clip-text">
 					${ fmt.Sprintf("%.2f", float64(product.Product.PriceCents)/100) }
 				</div>
 				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
-					<span class="text-green-600 text-sm font-medium">In Stock</span>
+					<span class="text-green-400 text-sm font-medium px-3 py-1 bg-green-400/10 rounded-full border border-green-400/20">In Stock</span>
 				} else {
-					<span class="text-red-600 text-sm font-medium">Out of Stock</span>
+					<span class="text-red-400 text-sm font-medium px-3 py-1 bg-red-400/10 rounded-full border border-red-400/20">Out of Stock</span>
 				}
 			</div>
-			<div class="mt-auto">
+			<div class="mt-auto space-y-3">
 				<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } 
-				   class="block w-full bg-blue-600 text-white text-center px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 mb-2">
+				   class="block w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-center px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
 					View Details
 				</a>
 				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
-					<button class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-200 transition duration-200"
+					<button class="w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm"
 					        onclick="addToCart('{ product.Product.ID }')">
 						Add to Cart
 					</button>

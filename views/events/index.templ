@@ -8,251 +8,316 @@ templ Index() {
 		Description: "Join Logan at upcoming maker fairs, craft shows, and educational workshops. Experience 3D printing demonstrations and see our latest creations in person.",
 		Keywords: "3D printing events, maker fairs, workshops, demonstrations, craft shows",
 	}) {
-		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-			<!-- Hero Section -->
-			<section class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-				<div class="text-center">
-					<h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
-						Upcoming
-						<span class="text-blue-600">Events & Shows</span>
-					</h1>
-					<p class="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
-						Meet us in person at local maker fairs, craft shows, and educational workshops. 
-						Experience live 3D printing demonstrations and see our latest creations up close.
-					</p>
-				</div>
-			</section>
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+			<!-- Animated Background Elements -->
+			<div class="absolute inset-0 opacity-10">
+				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+			</div>
 
-			<!-- Upcoming Events -->
-			<section class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-				<h2 class="text-3xl font-bold text-slate-900 mb-12 text-center">Next Appearances</h2>
-				<div class="space-y-8">
-					<!-- Event 1 -->
-					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-						<div class="lg:grid lg:grid-cols-12">
-							<div class="lg:col-span-4">
-								<img src="/public/images/event-maker-fair.jpg" alt="Springfield Maker Fair" class="w-full h-64 lg:h-full object-cover" />
-							</div>
-							<div class="lg:col-span-8 p-8">
-								<div class="flex flex-wrap items-center gap-4 mb-4">
-									<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">Maker Fair</span>
-									<span class="text-slate-500 text-sm">March 15-16, 2025</span>
-								</div>
-								<h3 class="text-2xl font-bold text-slate-900 mb-4">Springfield Maker Fair</h3>
-								<p class="text-slate-600 mb-6">
-									Join us at the largest maker event in the region! We'll be demonstrating live 3D printing, 
-									showcasing our latest educational tools, and offering hands-on workshops for all skill levels. 
-									Perfect for families and aspiring makers.
-								</p>
-								<div class="flex flex-wrap gap-4 mb-6">
-									<div class="flex items-center text-slate-600">
-										<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-										</svg>
-										Springfield Convention Center
-									</div>
-									<div class="flex items-center text-slate-600">
-										<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-										</svg>
-										10:00 AM - 6:00 PM
-									</div>
-								</div>
-								<div class="flex gap-4">
-									<a href="#" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
-										Get Directions
-									</a>
-									<a href="#" class="border border-slate-300 text-slate-700 px-6 py-2 rounded-lg font-semibold hover:bg-slate-50 transition duration-200">
-										Event Details
-									</a>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Event 2 -->
-					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-						<div class="lg:grid lg:grid-cols-12">
-							<div class="lg:col-span-4">
-								<img src="/public/images/event-library-workshop.jpg" alt="Library 3D Printing Workshop" class="w-full h-64 lg:h-full object-cover" />
-							</div>
-							<div class="lg:col-span-8 p-8">
-								<div class="flex flex-wrap items-center gap-4 mb-4">
-									<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">Workshop</span>
-									<span class="text-slate-500 text-sm">April 2, 2025</span>
-								</div>
-								<h3 class="text-2xl font-bold text-slate-900 mb-4">Central Library: 3D Printing Basics</h3>
-								<p class="text-slate-600 mb-6">
-									Free educational workshop at the Central Library! Learn the fundamentals of 3D printing, 
-									design software basics, and see live demonstrations. All ages welcome, with hands-on 
-									activities for kids and adults.
-								</p>
-								<div class="flex flex-wrap gap-4 mb-6">
-									<div class="flex items-center text-slate-600">
-										<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-										</svg>
-										Central Library - Meeting Room A
-									</div>
-									<div class="flex items-center text-slate-600">
-										<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-										</svg>
-										2:00 PM - 4:00 PM
-									</div>
-								</div>
-								<div class="flex gap-4">
-									<a href="#" class="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-200">
-										Register Free
-									</a>
-									<a href="#" class="border border-slate-300 text-slate-700 px-6 py-2 rounded-lg font-semibold hover:bg-slate-50 transition duration-200">
-										Learn More
-									</a>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Event 3 -->
-					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
-						<div class="lg:grid lg:grid-cols-12">
-							<div class="lg:col-span-4">
-								<img src="/public/images/event-craft-show.jpg" alt="Annual Craft Show" class="w-full h-64 lg:h-full object-cover" />
-							</div>
-							<div class="lg:col-span-8 p-8">
-								<div class="flex flex-wrap items-center gap-4 mb-4">
-									<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">Craft Show</span>
-									<span class="text-slate-500 text-sm">May 10-11, 2025</span>
-								</div>
-								<h3 class="text-2xl font-bold text-slate-900 mb-4">Annual Spring Craft Show</h3>
-								<p class="text-slate-600 mb-6">
-									Our biggest showcase of the year! Browse our complete product line, see custom pieces, 
-									and place orders for Mother's Day and graduation gifts. Special show pricing on 
-									popular items and exclusive previews of new designs.
-								</p>
-								<div class="flex flex-wrap gap-4 mb-6">
-									<div class="flex items-center text-slate-600">
-										<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-										</svg>
-										Riverside Park Pavilion
-									</div>
-									<div class="flex items-center text-slate-600">
-										<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-										</svg>
-										9:00 AM - 5:00 PM
-									</div>
-								</div>
-								<div class="flex gap-4">
-									<a href="#" class="bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition duration-200">
-										Vendor Info
-									</a>
-									<a href="#" class="border border-slate-300 text-slate-700 px-6 py-2 rounded-lg font-semibold hover:bg-slate-50 transition duration-200">
-										Show Schedule
-									</a>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			<!-- What to Expect -->
-			<section class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-				<div class="bg-white rounded-3xl shadow-lg p-12">
-					<h2 class="text-3xl font-bold text-slate-900 mb-8 text-center">What to Expect at Our Events</h2>
-					<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+			<div class="relative z-10">
+				<!-- Hero Section -->
+				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
+					<div class="max-w-6xl mx-auto">
 						<div class="text-center">
-							<div class="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-								<svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-								</svg>
+							<div class="group inline-flex items-center px-6 py-4 bg-gradient-to-r from-blue-600/20 to-emerald-600/20 rounded-full border border-blue-500/30 mb-12 hover:border-emerald-500/50 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-emerald-600/30 transition-all duration-300 cursor-pointer">
+								<span class="text-blue-300 text-sm font-medium group-hover:text-emerald-300 transition-colors duration-200">📅 Live Events</span>
 							</div>
-							<h3 class="text-lg font-semibold text-slate-900 mb-2">Live Demonstrations</h3>
-							<p class="text-slate-600">Watch 3D printers in action and see projects come to life layer by layer.</p>
-						</div>
-						<div class="text-center">
-							<div class="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-								<svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-								</svg>
-							</div>
-							<h3 class="text-lg font-semibold text-slate-900 mb-2">Educational Content</h3>
-							<p class="text-slate-600">Learn about 3D printing technology, materials, and design principles.</p>
-						</div>
-						<div class="text-center">
-							<div class="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-								<svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-								</svg>
-							</div>
-							<h3 class="text-lg font-semibold text-slate-900 mb-2">Product Showcase</h3>
-							<p class="text-slate-600">Browse our latest creations and see the quality of our finished products.</p>
-						</div>
-						<div class="text-center">
-							<div class="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-								<svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-								</svg>
-							</div>
-							<h3 class="text-lg font-semibold text-slate-900 mb-2">Expert Consultation</h3>
-							<p class="text-slate-600">Get personalized advice for your projects and custom printing needs.</p>
-						</div>
-					</div>
-				</div>
-			</section>
-
-			<!-- Local Pickup Info -->
-			<section class="py-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-				<div class="bg-gradient-to-r from-green-600 to-green-700 rounded-3xl p-12 text-white">
-					<div class="grid lg:grid-cols-2 gap-8 items-center">
-						<div>
-							<h2 class="text-3xl font-bold mb-4">Save on Shipping</h2>
-							<p class="text-xl mb-6 opacity-90">
-								Order online and pick up your items at our next event! Skip the shipping costs and 
-								meet us in person to discuss your next project.
+							<h1 class="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] mb-16 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
+								<div class="inline-block">
+									<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent hover:from-blue-400 hover:via-teal-300 hover:to-emerald-400 transition-all duration-300">
+										Upcoming
+									</span>
+								</div>
+								<br/>
+								<div class="inline-block relative">
+									<span class="bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent hover:from-emerald-400 hover:via-teal-400 hover:to-blue-400 transition-all duration-300">
+										Events
+									</span>
+									<div class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+								</div>
+							</h1>
+							<p class="text-xl sm:text-2xl text-slate-300 mb-20 max-w-4xl mx-auto leading-relaxed group hover:text-slate-200 transition-colors duration-300">
+								Meet us in person at local 
+								<span class="text-blue-400 font-semibold hover:text-emerald-400 transition-colors duration-200 cursor-pointer">maker fairs</span>,
+								craft shows, and educational workshops
 							</p>
-							<a href="/contact" class="bg-white text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-200 inline-block">
-								Contact for Pickup
-							</a>
 						</div>
-						<div class="text-center lg:text-right">
-							<div class="inline-flex items-center justify-center bg-white bg-opacity-20 rounded-full p-8">
-								<svg class="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-								</svg>
+					</div>
+				</section>
+
+				<!-- Upcoming Events -->
+				<section class="px-8 sm:px-12 lg:px-16 py-20">
+					<div class="max-w-7xl mx-auto">
+						<h2 class="text-5xl font-bold text-white mb-20 text-center">
+							<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Next Appearances</span>
+						</h2>
+						<div class="space-y-12">
+							<!-- Event 1 -->
+							<div class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2">
+								<div class="lg:grid lg:grid-cols-12">
+									<div class="lg:col-span-4">
+										<img src="/public/images/event-maker-fair.jpg" alt="Springfield Maker Fair" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+									</div>
+									<div class="lg:col-span-8 p-12">
+										<div class="flex flex-wrap items-center gap-6 mb-8">
+											<span class="bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-300 px-4 py-2 rounded-full text-sm font-medium border border-blue-500/30">Maker Fair</span>
+											<span class="text-slate-400 text-sm font-medium">March 15-16, 2025</span>
+										</div>
+										<h3 class="text-3xl font-bold text-white mb-8 group-hover:text-emerald-400 transition-colors duration-300">Springfield Maker Fair</h3>
+										<p class="text-slate-300 mb-12 text-lg leading-relaxed group-hover:text-slate-200 transition-colors duration-300">
+											Join us at the largest maker event in the region! We'll be demonstrating live 3D printing, 
+											showcasing our latest educational tools, and offering hands-on workshops for all skill levels. 
+											Perfect for families and aspiring makers.
+										</p>
+										<div class="flex flex-wrap gap-8 mb-12">
+											<div class="flex items-center text-slate-300 group-hover:text-emerald-400 transition-colors duration-300">
+												<svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+												</svg>
+												<span class="font-medium">Springfield Convention Center</span>
+											</div>
+											<div class="flex items-center text-slate-300 group-hover:text-emerald-400 transition-colors duration-300">
+												<svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+												</svg>
+												<span class="font-medium">10:00 AM - 6:00 PM</span>
+											</div>
+										</div>
+										<div class="flex gap-6">
+											<a href="#" class="bg-gradient-to-r from-blue-600 to-emerald-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
+												Get Directions
+											</a>
+											<a href="#" class="border border-slate-600/50 text-slate-300 hover:text-white px-8 py-4 rounded-xl font-semibold hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm">
+												Event Details
+											</a>
+										</div>
+									</div>
+								</div>
+					</div>
+
+							<!-- Event 2 -->
+							<div class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2">
+								<div class="lg:grid lg:grid-cols-12">
+									<div class="lg:col-span-4">
+										<img src="/public/images/event-library-workshop.jpg" alt="Library 3D Printing Workshop" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+									</div>
+									<div class="lg:col-span-8 p-12">
+										<div class="flex flex-wrap items-center gap-6 mb-8">
+											<span class="bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 text-emerald-300 px-4 py-2 rounded-full text-sm font-medium border border-emerald-500/30">Workshop</span>
+											<span class="text-slate-400 text-sm font-medium">April 2, 2025</span>
+										</div>
+										<h3 class="text-3xl font-bold text-white mb-8 group-hover:text-emerald-400 transition-colors duration-300">Central Library: 3D Printing Basics</h3>
+										<p class="text-slate-300 mb-12 text-lg leading-relaxed group-hover:text-slate-200 transition-colors duration-300">
+											Free educational workshop at the Central Library! Learn the fundamentals of 3D printing, 
+											design software basics, and see live demonstrations. All ages welcome, with hands-on 
+											activities for kids and adults.
+										</p>
+										<div class="flex flex-wrap gap-8 mb-12">
+											<div class="flex items-center text-slate-300 group-hover:text-emerald-400 transition-colors duration-300">
+												<svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+												</svg>
+												<span class="font-medium">Central Library - Meeting Room A</span>
+											</div>
+											<div class="flex items-center text-slate-300 group-hover:text-emerald-400 transition-colors duration-300">
+												<svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+												</svg>
+												<span class="font-medium">2:00 PM - 4:00 PM</span>
+											</div>
+										</div>
+										<div class="flex gap-6">
+											<a href="#" class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
+												Register Free
+											</a>
+											<a href="#" class="border border-slate-600/50 text-slate-300 hover:text-white px-8 py-4 rounded-xl font-semibold hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm">
+												Learn More
+											</a>
+										</div>
+									</div>
+								</div>
+							</div>
+
+							<!-- Event 3 -->
+							<div class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2">
+								<div class="lg:grid lg:grid-cols-12">
+									<div class="lg:col-span-4">
+										<img src="/public/images/event-craft-show.jpg" alt="Annual Craft Show" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+									</div>
+									<div class="lg:col-span-8 p-12">
+										<div class="flex flex-wrap items-center gap-6 mb-8">
+											<span class="bg-gradient-to-r from-violet-500/20 to-violet-600/20 text-violet-300 px-4 py-2 rounded-full text-sm font-medium border border-violet-500/30">Craft Show</span>
+											<span class="text-slate-400 text-sm font-medium">May 10-11, 2025</span>
+										</div>
+										<h3 class="text-3xl font-bold text-white mb-8 group-hover:text-emerald-400 transition-colors duration-300">Annual Spring Craft Show</h3>
+										<p class="text-slate-300 mb-12 text-lg leading-relaxed group-hover:text-slate-200 transition-colors duration-300">
+											Our biggest showcase of the year! Browse our complete product line, see custom pieces, 
+											and place orders for Mother's Day and graduation gifts. Special show pricing on 
+											popular items and exclusive previews of new designs.
+										</p>
+										<div class="flex flex-wrap gap-8 mb-12">
+											<div class="flex items-center text-slate-300 group-hover:text-emerald-400 transition-colors duration-300">
+												<svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+												</svg>
+												<span class="font-medium">Riverside Park Pavilion</span>
+											</div>
+											<div class="flex items-center text-slate-300 group-hover:text-emerald-400 transition-colors duration-300">
+												<svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+												</svg>
+												<span class="font-medium">9:00 AM - 5:00 PM</span>
+											</div>
+										</div>
+										<div class="flex gap-6">
+											<a href="#" class="bg-gradient-to-r from-violet-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-violet-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-500/25 transform hover:-translate-y-1">
+												Vendor Info
+											</a>
+											<a href="#" class="border border-slate-600/50 text-slate-300 hover:text-white px-8 py-4 rounded-xl font-semibold hover:bg-slate-700/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm">
+												Show Schedule
+											</a>
+										</div>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
-				</div>
-			</section>
+				</section>
 
-			<!-- Newsletter Signup -->
-			<section class="py-16 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
-				<h2 class="text-3xl font-bold text-slate-900 mb-4">Stay Updated</h2>
-				<p class="text-xl text-slate-600 mb-8">
-					Get notified about upcoming events, new workshops, and special offers.
-				</p>
-				<form class="max-w-md mx-auto flex gap-4">
-					<input 
-						type="email" 
-						placeholder="Enter your email" 
-						class="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					>
-					<button 
-						type="submit" 
-						class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200"
-					>
-						Subscribe
-					</button>
-				</form>
-			</section>
+				<!-- What to Expect -->
+				<section class="px-8 sm:px-12 lg:px-16 py-32">
+					<div class="max-w-7xl mx-auto">
+						<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-20 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+							<!-- Subtle floating animation elements -->
+							<div class="absolute inset-0 opacity-20 pointer-events-none">
+								<div class="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full blur-xl animate-pulse"></div>
+								<div class="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full blur-lg animate-pulse animation-delay-2000"></div>
+							</div>
+							<div class="relative z-10">
+								<h2 class="text-5xl font-bold text-white mb-20 text-center group-hover:scale-105 transition-transform duration-300">
+									<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">What to Expect at Our Events</span>
+								</h2>
+								<div class="grid md:grid-cols-2 lg:grid-cols-4 gap-12">
+									<div class="group/card text-center hover:-translate-y-2 transition-transform duration-300">
+										<div class="bg-gradient-to-br from-blue-500/20 to-blue-600/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 border border-blue-500/30 group-hover/card:scale-110 transition-transform duration-300">
+											<svg class="w-10 h-10 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+											</svg>
+										</div>
+										<h3 class="text-xl font-bold text-white mb-6 group-hover/card:text-blue-300 transition-colors duration-300">Live Demonstrations</h3>
+										<p class="text-slate-300 leading-relaxed group-hover/card:text-slate-200 transition-colors duration-300">Watch 3D printers in action and see projects come to life layer by layer.</p>
+									</div>
+									<div class="group/card text-center hover:-translate-y-2 transition-transform duration-300">
+										<div class="bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 border border-emerald-500/30 group-hover/card:scale-110 transition-transform duration-300">
+											<svg class="w-10 h-10 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+											</svg>
+										</div>
+										<h3 class="text-xl font-bold text-white mb-6 group-hover/card:text-emerald-300 transition-colors duration-300">Educational Content</h3>
+										<p class="text-slate-300 leading-relaxed group-hover/card:text-slate-200 transition-colors duration-300">Learn about 3D printing technology, materials, and design principles.</p>
+									</div>
+									<div class="group/card text-center hover:-translate-y-2 transition-transform duration-300">
+										<div class="bg-gradient-to-br from-violet-500/20 to-violet-600/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 border border-violet-500/30 group-hover/card:scale-110 transition-transform duration-300">
+											<svg class="w-10 h-10 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+											</svg>
+										</div>
+										<h3 class="text-xl font-bold text-white mb-6 group-hover/card:text-violet-300 transition-colors duration-300">Product Showcase</h3>
+										<p class="text-slate-300 leading-relaxed group-hover/card:text-slate-200 transition-colors duration-300">Browse our latest creations and see the quality of our finished products.</p>
+									</div>
+									<div class="group/card text-center hover:-translate-y-2 transition-transform duration-300">
+										<div class="bg-gradient-to-br from-orange-500/20 to-orange-600/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8 border border-orange-500/30 group-hover/card:scale-110 transition-transform duration-300">
+											<svg class="w-10 h-10 text-orange-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+											</svg>
+										</div>
+										<h3 class="text-xl font-bold text-white mb-6 group-hover/card:text-orange-300 transition-colors duration-300">Expert Consultation</h3>
+										<p class="text-slate-300 leading-relaxed group-hover/card:text-slate-200 transition-colors duration-300">Get personalized advice for your projects and custom printing needs.</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Local Pickup Info -->
+				<section class="px-8 sm:px-12 lg:px-16 py-32">
+					<div class="max-w-6xl mx-auto">
+						<div class="relative bg-gradient-to-r from-emerald-600/50 to-teal-600/50 rounded-3xl p-20 text-white backdrop-blur-sm border border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/20 transition-all duration-500 group">
+							<!-- Subtle floating animation elements -->
+							<div class="absolute inset-0 opacity-20 pointer-events-none">
+								<div class="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-white to-emerald-200 rounded-full blur-xl animate-pulse"></div>
+								<div class="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-emerald-300 to-white rounded-full blur-lg animate-pulse animation-delay-2000"></div>
+							</div>
+							<div class="relative z-10">
+								<div class="grid lg:grid-cols-2 gap-16 items-center">
+									<div>
+										<h2 class="text-5xl font-bold mb-8 group-hover:scale-105 transition-transform duration-300">Save on Shipping</h2>
+										<p class="text-xl mb-12 opacity-90 leading-relaxed">
+											Order online and pick up your items at our next event! Skip the shipping costs and 
+											meet us in person to discuss your next project.
+										</p>
+										<a href="/contact" class="inline-flex items-center bg-white text-emerald-600 px-10 py-5 rounded-xl font-semibold hover:bg-slate-50 hover:text-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-1 transform">
+											<span class="mr-3">Contact for Pickup</span>
+											<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+											</svg>
+										</a>
+									</div>
+									<div class="text-center lg:text-right">
+										<div class="inline-flex items-center justify-center bg-white/20 rounded-full p-16 group-hover:scale-110 transition-transform duration-300">
+											<svg class="w-20 h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+											</svg>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Newsletter Signup -->
+				<section class="px-8 sm:px-12 lg:px-16 py-32">
+					<div class="max-w-4xl mx-auto text-center">
+						<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-20 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+							<!-- Subtle floating animation elements -->
+							<div class="absolute inset-0 opacity-20 pointer-events-none">
+								<div class="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full blur-xl animate-pulse"></div>
+								<div class="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full blur-lg animate-pulse animation-delay-2000"></div>
+							</div>
+							<div class="relative z-10">
+								<h2 class="text-5xl font-bold text-white mb-12 group-hover:scale-105 transition-transform duration-300">
+									<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Stay Updated</span>
+								</h2>
+								<p class="text-xl text-slate-300 mb-16 leading-relaxed">
+									Get notified about upcoming events, new workshops, and special offers.
+								</p>
+								<form class="max-w-lg mx-auto flex flex-col sm:flex-row gap-6">
+									<input 
+										type="email" 
+										placeholder="Enter your email" 
+										class="flex-1 px-6 py-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
+									/>
+									<button 
+										type="submit" 
+										class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-10 py-4 rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
+									>
+										Subscribe
+									</button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</section>
+			</div>
 		</div>
 	}
 }

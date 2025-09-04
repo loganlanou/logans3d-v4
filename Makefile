@@ -45,7 +45,7 @@ install-linter:
 
 .PHONY: migrate
 migrate:
-	mkdir -p db && goose -dir storage/migrations sqlite3 ./db/logans3d.db up
+	mkdir -p data && goose -dir storage/migrations sqlite3 ./data/database.db up
 
 .PHONY: migrate-down
 migrate-down:

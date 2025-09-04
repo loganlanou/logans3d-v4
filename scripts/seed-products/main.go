@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// Open database connection
-	db, err := sql.Open("sqlite", "./storage/database.db")
+	db, err := sql.Open("sqlite", "./data/database.db")
 	if err != nil {
 		log.Fatal(err)
 	}

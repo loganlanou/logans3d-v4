@@ -13,151 +13,211 @@ templ Index() {
 }
 
 templ AboutContent() {
-	<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12">
-		<div class="container-responsive">
+	<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+		<!-- Animated Background Elements -->
+		<div class="absolute inset-0 opacity-10">
+			<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+			<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+			<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+		</div>
+
+		<div class="relative z-10">
 			<!-- Hero Section -->
-			<div class="text-center mb-16">
-				<h1 class="text-4xl md:text-5xl font-display font-bold text-gray-900 mb-6">About Logan's 3D Creations</h1>
-				<p class="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-					Passionate about bringing ideas to life through precision 3D printing technology, innovative design, and hands-on education.
-				</p>
-			</div>
+			<section class="pt-32 pb-32 px-8 sm:px-12 lg:px-16">
+				<div class="max-w-6xl mx-auto">
+					<div class="text-center">
+						<div class="group inline-flex items-center px-6 py-4 bg-gradient-to-r from-blue-600/20 to-emerald-600/20 rounded-full border border-blue-500/30 mb-12 hover:border-emerald-500/50 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-emerald-600/30 transition-all duration-300 cursor-pointer">
+							<span class="text-blue-300 text-sm font-medium group-hover:text-emerald-300 transition-colors duration-200">👋 Meet the Team</span>
+						</div>
+						<h1 class="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] mb-16 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
+							<div class="inline-block">
+								<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent hover:from-blue-400 hover:via-teal-300 hover:to-emerald-400 transition-all duration-300">
+									About
+								</span>
+							</div>
+							<br/>
+							<div class="inline-block relative">
+								<span class="bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent hover:from-emerald-400 hover:via-teal-400 hover:to-blue-400 transition-all duration-300">
+									Logan's 3D
+								</span>
+								<div class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+							</div>
+						</h1>
+						<p class="text-xl sm:text-2xl text-slate-300 mb-20 max-w-4xl mx-auto leading-relaxed group hover:text-slate-200 transition-colors duration-300">
+							Passionate about bringing ideas to life through 
+							<span class="text-blue-400 font-semibold hover:text-emerald-400 transition-colors duration-200 cursor-pointer">precision 3D printing technology</span>, 
+							innovative design, and hands-on education
+						</p>
+					</div>
+				</div>
+			</section>
 
 			<!-- Story Section -->
-			<div class="grid md:grid-cols-2 gap-12 items-center mb-16">
-				<div>
-					<h2 class="text-3xl font-display font-bold text-gray-900 mb-6">Our Story</h2>
-					<div class="space-y-4 text-gray-600 leading-relaxed">
-						<p>
-							Logan's 3D Creations began with a simple fascination: the ability to transform digital ideas into tangible reality. What started as a hobby quickly evolved into a passion for pushing the boundaries of what's possible with 3D printing technology.
-						</p>
-						<p>
-							Today, we specialize in creating high-quality, detailed 3D printed products ranging from educational dinosaur models and mythical dragons to functional fidget toys and custom prototypes. Every piece is crafted with attention to detail and a commitment to excellence.
-						</p>
-						<p>
-							Beyond creating products, we're dedicated to education and community engagement. Through workshops, demonstrations, and hands-on learning experiences, we share the excitement and potential of 3D printing with the next generation of makers and innovators.
-						</p>
+			<section class="px-8 sm:px-12 lg:px-16 py-32 border-t border-slate-700/50">
+				<div class="max-w-6xl mx-auto">
+					<div class="grid md:grid-cols-2 gap-16 lg:gap-20 items-center">
+						<div>
+							<h2 class="text-4xl sm:text-5xl font-bold text-white mb-8">Our Story</h2>
+							<div class="space-y-6 text-slate-300 leading-relaxed text-lg">
+								<p class="hover:text-slate-200 transition-colors duration-300">
+									Logan's 3D Creations began with a simple fascination: the ability to transform digital ideas into tangible reality. What started as a hobby quickly evolved into a passion for pushing the boundaries of what's possible with 3D printing technology.
+								</p>
+								<p class="hover:text-slate-200 transition-colors duration-300">
+									Today, we specialize in creating high-quality, detailed 3D printed products ranging from educational dinosaur models and mythical dragons to functional fidget toys and custom prototypes. Every piece is crafted with attention to detail and a commitment to excellence.
+								</p>
+								<p class="hover:text-slate-200 transition-colors duration-300">
+									Beyond creating products, we're dedicated to education and community engagement. Through workshops, demonstrations, and hands-on learning experiences, we share the excitement and potential of 3D printing with the next generation of makers and innovators.
+								</p>
+							</div>
+						</div>
+						
+						<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+							<div class="grid grid-cols-2 gap-8 text-center">
+								<div class="group/stat">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 bg-clip-text mb-4 group-hover/stat:scale-110 transition-transform duration-200">500+</div>
+									<div class="text-slate-400 text-sm font-medium group-hover/stat:text-slate-300 transition-colors duration-200">Products Created</div>
+								</div>
+								<div class="group/stat">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-emerald-400 to-teal-400 bg-clip-text mb-4 group-hover/stat:scale-110 transition-transform duration-200">50+</div>
+									<div class="text-slate-400 text-sm font-medium group-hover/stat:text-slate-300 transition-colors duration-200">Custom Designs</div>
+								</div>
+								<div class="group/stat">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-teal-400 to-cyan-400 bg-clip-text mb-4 group-hover/stat:scale-110 transition-transform duration-200">100+</div>
+									<div class="text-slate-400 text-sm font-medium group-hover/stat:text-slate-300 transition-colors duration-200">Happy Customers</div>
+								</div>
+								<div class="group/stat">
+									<div class="text-4xl font-black text-transparent bg-gradient-to-br from-cyan-400 to-blue-400 bg-clip-text mb-4 group-hover/stat:scale-110 transition-transform duration-200">25+</div>
+									<div class="text-slate-400 text-sm font-medium group-hover/stat:text-slate-300 transition-colors duration-200">Workshops Taught</div>
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
-				<div class="bg-white rounded-2xl shadow-lg p-8">
-					<div class="grid grid-cols-2 gap-6 text-center">
-						<div>
-							<div class="text-3xl font-bold text-3d-blue mb-2">500+</div>
-							<div class="text-gray-600">Products Created</div>
-						</div>
-						<div>
-							<div class="text-3xl font-bold text-3d-orange mb-2">50+</div>
-							<div class="text-gray-600">Custom Designs</div>
-						</div>
-						<div>
-							<div class="text-3xl font-bold text-3d-green mb-2">100+</div>
-							<div class="text-gray-600">Happy Customers</div>
-						</div>
-						<div>
-							<div class="text-3xl font-bold text-3d-purple mb-2">25+</div>
-							<div class="text-gray-600">Workshops Taught</div>
-						</div>
-					</div>
-				</div>
-			</div>
+			</section>
 
 			<!-- Mission & Values -->
-			<div class="bg-white rounded-2xl shadow-lg p-8 md:p-12 mb-16">
-				<div class="text-center mb-10">
-					<h2 class="text-3xl font-display font-bold text-gray-900 mb-4">Our Mission & Values</h2>
-					<p class="text-lg text-gray-600 max-w-2xl mx-auto">
-						We believe in the power of creativity, innovation, and hands-on learning to shape a better future.
-					</p>
+			<section class="px-8 sm:px-12 lg:px-16 py-32">
+				<div class="max-w-6xl mx-auto">
+					<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-16 lg:p-20 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+						<div class="text-center mb-16">
+							<h2 class="text-4xl sm:text-5xl font-bold text-white mb-8">Our Mission & Values</h2>
+							<p class="text-xl text-slate-300 max-w-3xl mx-auto">
+								We believe in the power of creativity, innovation, and hands-on learning to shape a better future
+							</p>
+						</div>
+						
+						<div class="grid md:grid-cols-3 gap-12 lg:gap-16">
+							<div class="group text-center">
+								<div class="w-24 h-24 bg-gradient-to-br from-blue-500 to-blue-600 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-blue-500/25">
+									<svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+									</svg>
+								</div>
+								<h3 class="text-2xl font-bold text-white mb-6 group-hover:text-blue-400 transition-colors duration-300">Quality First</h3>
+								<p class="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors duration-300">Every product is crafted with precision and attention to detail, using only the finest materials and techniques.</p>
+							</div>
+							
+							<div class="group text-center">
+								<div class="w-24 h-24 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-emerald-500/25">
+									<svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+									</svg>
+								</div>
+								<h3 class="text-2xl font-bold text-white mb-6 group-hover:text-emerald-400 transition-colors duration-300">Innovation</h3>
+								<p class="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors duration-300">We constantly explore new technologies, materials, and techniques to push the boundaries of what's possible.</p>
+							</div>
+							
+							<div class="group text-center">
+								<div class="w-24 h-24 bg-gradient-to-br from-teal-500 to-teal-600 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-teal-500/25">
+									<svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+										<path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+									</svg>
+								</div>
+								<h3 class="text-2xl font-bold text-white mb-6 group-hover:text-teal-400 transition-colors duration-300">Education</h3>
+								<p class="text-slate-400 leading-relaxed group-hover:text-slate-300 transition-colors duration-300">Sharing knowledge and inspiring the next generation of makers through workshops and hands-on experiences.</p>
+							</div>
+						</div>
+					</div>
 				</div>
-				
-				<div class="grid md:grid-cols-3 gap-8">
-					<div class="text-center">
-						<div class="w-16 h-16 bg-3d-blue rounded-full flex items-center justify-center mx-auto mb-4">
-							<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-							</svg>
-						</div>
-						<h3 class="text-xl font-bold text-gray-900 mb-3">Quality First</h3>
-						<p class="text-gray-600">Every product is crafted with precision and attention to detail, using only the finest materials and techniques.</p>
-					</div>
-					
-					<div class="text-center">
-						<div class="w-16 h-16 bg-3d-orange rounded-full flex items-center justify-center mx-auto mb-4">
-							<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-							</svg>
-						</div>
-						<h3 class="text-xl font-bold text-gray-900 mb-3">Innovation</h3>
-						<p class="text-gray-600">We constantly explore new technologies, materials, and techniques to push the boundaries of what's possible.</p>
-					</div>
-					
-					<div class="text-center">
-						<div class="w-16 h-16 bg-3d-green rounded-full flex items-center justify-center mx-auto mb-4">
-							<svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
-							</svg>
-						</div>
-						<h3 class="text-xl font-bold text-gray-900 mb-3">Education</h3>
-						<p class="text-gray-600">Sharing knowledge and inspiring the next generation of makers through workshops and hands-on experiences.</p>
-					</div>
-				</div>
-			</div>
+			</section>
 
 			<!-- Technology & Equipment -->
-			<div class="grid md:grid-cols-2 gap-12 items-center mb-16">
-				<div class="bg-white rounded-2xl shadow-lg p-8">
-					<h3 class="text-2xl font-bold text-gray-900 mb-4">State-of-the-Art Equipment</h3>
-					<ul class="space-y-3 text-gray-600">
-						<li class="flex items-center">
-							<div class="w-2 h-2 bg-3d-blue rounded-full mr-3"></div>
-							High-precision FDM and resin printers
-						</li>
-						<li class="flex items-center">
-							<div class="w-2 h-2 bg-3d-blue rounded-full mr-3"></div>
-							Advanced slicing and modeling software
-						</li>
-						<li class="flex items-center">
-							<div class="w-2 h-2 bg-3d-blue rounded-full mr-3"></div>
-							Premium filaments and materials
-						</li>
-						<li class="flex items-center">
-							<div class="w-2 h-2 bg-3d-blue rounded-full mr-3"></div>
-							Professional post-processing tools
-						</li>
-						<li class="flex items-center">
-							<div class="w-2 h-2 bg-3d-blue rounded-full mr-3"></div>
-							Quality control and testing equipment
-						</li>
-					</ul>
-				</div>
-				
-				<div>
-					<h2 class="text-3xl font-display font-bold text-gray-900 mb-6">Precision & Innovation</h2>
-					<div class="space-y-4 text-gray-600 leading-relaxed">
-						<p>
-							Our workshop is equipped with the latest 3D printing technology, from high-resolution resin printers for intricate details to large-format FDM printers for bigger projects.
-						</p>
-						<p>
-							We work with a wide range of materials including PLA, PETG, ABS, TPU, and specialty filaments to ensure each project uses the best material for its intended purpose.
-						</p>
-						<p>
-							Every print goes through rigorous quality control to ensure it meets our high standards before reaching our customers.
-						</p>
+			<section class="px-8 sm:px-12 lg:px-16 py-32 border-t border-slate-700/50">
+				<div class="max-w-6xl mx-auto">
+					<div class="grid md:grid-cols-2 gap-16 lg:gap-20 items-center">
+						<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm hover:border-teal-500/30 transition-all duration-500 group">
+							<h3 class="text-3xl font-bold text-white mb-8 group-hover:text-teal-400 transition-colors duration-300">State-of-the-Art Equipment</h3>
+							<ul class="space-y-4 text-slate-300">
+								<li class="flex items-center group/item hover:text-slate-200 transition-colors duration-300">
+									<div class="w-3 h-3 bg-gradient-to-br from-blue-400 to-emerald-400 rounded-full mr-4 group-hover/item:scale-110 transition-transform duration-200"></div>
+									High-precision FDM and resin printers
+								</li>
+								<li class="flex items-center group/item hover:text-slate-200 transition-colors duration-300">
+									<div class="w-3 h-3 bg-gradient-to-br from-blue-400 to-emerald-400 rounded-full mr-4 group-hover/item:scale-110 transition-transform duration-200"></div>
+									Advanced slicing and modeling software
+								</li>
+								<li class="flex items-center group/item hover:text-slate-200 transition-colors duration-300">
+									<div class="w-3 h-3 bg-gradient-to-br from-blue-400 to-emerald-400 rounded-full mr-4 group-hover/item:scale-110 transition-transform duration-200"></div>
+									Premium filaments and materials
+								</li>
+								<li class="flex items-center group/item hover:text-slate-200 transition-colors duration-300">
+									<div class="w-3 h-3 bg-gradient-to-br from-blue-400 to-emerald-400 rounded-full mr-4 group-hover/item:scale-110 transition-transform duration-200"></div>
+									Professional post-processing tools
+								</li>
+								<li class="flex items-center group/item hover:text-slate-200 transition-colors duration-300">
+									<div class="w-3 h-3 bg-gradient-to-br from-blue-400 to-emerald-400 rounded-full mr-4 group-hover/item:scale-110 transition-transform duration-200"></div>
+									Quality control and testing equipment
+								</li>
+							</ul>
+						</div>
+						
+						<div>
+							<h2 class="text-4xl sm:text-5xl font-bold text-white mb-8">Precision & Innovation</h2>
+							<div class="space-y-6 text-slate-300 leading-relaxed text-lg">
+								<p class="hover:text-slate-200 transition-colors duration-300">
+									Our workshop is equipped with the latest 3D printing technology, from high-resolution resin printers for intricate details to large-format FDM printers for bigger projects.
+								</p>
+								<p class="hover:text-slate-200 transition-colors duration-300">
+									We work with a wide range of materials including PLA, PETG, ABS, TPU, and specialty filaments to ensure each project uses the best material for its intended purpose.
+								</p>
+								<p class="hover:text-slate-200 transition-colors duration-300">
+									Every print goes through rigorous quality control to ensure it meets our high standards before reaching our customers.
+								</p>
+							</div>
+						</div>
 					</div>
 				</div>
-			</div>
+			</section>
 
 			<!-- Contact CTA -->
-			<div class="bg-gradient-to-r from-3d-blue to-3d-purple rounded-2xl p-8 md:p-12 text-center text-white">
-				<h2 class="text-3xl font-display font-bold mb-4">Ready to Bring Your Ideas to Life?</h2>
-				<p class="text-xl mb-8 opacity-90">
-					Whether you're looking for a unique gift, educational tool, or custom prototype, we're here to help make it happen.
-				</p>
-				<div class="flex flex-col sm:flex-row gap-4 justify-center">
-					<a href="/shop" class="btn-white">Browse Our Products</a>
-					<a href="/custom" class="btn-outline-white">Request Custom Quote</a>
+			<section class="px-8 sm:px-12 lg:px-16 py-32">
+				<div class="max-w-4xl mx-auto text-center">
+					<div class="relative bg-gradient-to-r from-slate-800/50 to-slate-900/50 rounded-3xl p-20 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+						<!-- Subtle floating animation elements -->
+						<div class="absolute inset-0 opacity-20 pointer-events-none">
+							<div class="absolute top-4 right-4 w-16 h-16 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-full blur-xl animate-pulse"></div>
+							<div class="absolute bottom-4 left-4 w-12 h-12 bg-gradient-to-br from-teal-400 to-emerald-500 rounded-full blur-lg animate-pulse animation-delay-2000"></div>
+						</div>
+						<div class="relative z-10">
+							<h2 class="text-3xl sm:text-4xl font-bold text-white mb-8 group-hover:scale-105 transition-transform duration-300">Ready to Bring Your Ideas to Life?</h2>
+							<p class="text-xl text-slate-300 mb-12">
+								Whether you're looking for a unique gift, educational tool, or custom prototype, we're here to help make it happen.
+							</p>
+							<div class="flex flex-col sm:flex-row gap-6 lg:gap-8 justify-center">
+								<a href="/shop" class="group/btn inline-flex items-center px-10 py-5 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-2xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 hover:scale-105">
+									<span class="group-hover/btn:scale-110 transition-transform duration-200">Browse Our Products</span>
+									<svg class="ml-3 w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+									</svg>
+								</a>
+								<a href="/custom" class="group/btn2 inline-flex items-center px-10 py-5 border-2 border-slate-600 text-slate-300 font-semibold rounded-2xl hover:bg-slate-800/50 hover:text-white hover:border-teal-500/50 transition-all duration-300 backdrop-blur-sm hover:-translate-y-1">
+									<span class="group-hover/btn2:scale-105 transition-transform duration-200">Request Custom Quote</span>
+								</a>
+							</div>
+						</div>
+					</div>
 				</div>
-			</div>
+			</section>
 		</div>
 	</div>
 }
