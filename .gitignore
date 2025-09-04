@@ -13,11 +13,9 @@
 .cache/
 
 # Generated files
-storage/db/
 *_templ.go
 
 # Database files
-/db/
 *.db
 *.sqlite
 *.sqlite3
@@ -41,8 +39,6 @@ storage/db/
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
-Thumbs.db
 
 # Logs
 *.log

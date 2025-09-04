@@ -11,6 +11,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/about"
 	"github.com/loganlanou/logans3d-v4/views/contact"
+	"github.com/loganlanou/logans3d-v4/views/custom"
 	"github.com/loganlanou/logans3d-v4/views/events"
 	"github.com/loganlanou/logans3d-v4/views/home"
 	"github.com/loganlanou/logans3d-v4/views/legal"
@@ -224,7 +225,7 @@ func (s *Service) handleRemoveFromCart(c echo.Context) error {
 }
 
 func (s *Service) handleCustom(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Custom 3D Printing</h1><p>Quote form coming soon...</p>")
+	return Render(c, custom.Index())
 }
 
 func (s *Service) handleCustomQuote(c echo.Context) error {

@@ -1,0 +1,638 @@
+package custom
+
+import (
+	"fmt"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+type CustomOrderData struct {
+	CurrentStep int
+	TotalSteps  int
+}
+
+templ Index() {
+	@layout.Base(layout.Meta{
+		Title: "Custom 3D Printing - Logan's 3D Creations",
+		Description: "Design your custom 3D printed item with our easy-to-use configurator. Upload models, choose materials, and get instant quotes.",
+		Keywords: "custom 3D printing, personalized products, custom models, 3D print configurator",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
+			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+				<!-- Header -->
+				<div class="text-center mb-8">
+					<h1 class="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-4">
+						Create Your
+						<span class="text-blue-600">Custom 3D Print</span>
+					</h1>
+					<p class="text-lg text-slate-600">
+						Turn your ideas into reality with our custom printing service
+					</p>
+				</div>
+
+				<!-- Progress Bar -->
+				<div class="mb-8">
+					@ProgressIndicator(1, 5)
+				</div>
+
+				<!-- Form Container -->
+				<div class="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
+					<form id="customOrderForm" class="space-y-6">
+						<!-- Step 1: Project Type -->
+						<div id="step-1" class="step-content">
+							@StepProjectType()
+						</div>
+
+						<!-- Step 2: Model Selection -->
+						<div id="step-2" class="step-content hidden">
+							@StepModelSelection()
+						</div>
+
+						<!-- Step 3: Customization -->
+						<div id="step-3" class="step-content hidden">
+							@StepCustomization()
+						</div>
+
+						<!-- Step 4: Contact Info -->
+						<div id="step-4" class="step-content hidden">
+							@StepContactInfo()
+						</div>
+
+						<!-- Step 5: Review & Submit -->
+						<div id="step-5" class="step-content hidden">
+							@StepReviewSubmit()
+						</div>
+
+						<!-- Navigation Buttons -->
+						<div class="flex justify-between mt-8">
+							<button type="button" id="prevBtn" onclick="changeStep(-1)" 
+									class="hidden px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition duration-200">
+								← Previous
+							</button>
+							<button type="button" id="nextBtn" onclick="changeStep(1)" 
+									class="ml-auto px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+								Next Step →
+							</button>
+							<button type="submit" id="submitBtn" 
+									class="hidden ml-auto px-8 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition duration-200">
+								Submit Request
+							</button>
+						</div>
+					</form>
+				</div>
+
+				<!-- Trust Indicators -->
+				<div class="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
+					<div class="flex flex-col items-center">
+						<div class="text-3xl mb-2">⚡</div>
+						<h3 class="font-semibold text-slate-900">Fast Turnaround</h3>
+						<p class="text-sm text-slate-600 mt-1">Most orders ready in 3-5 days</p>
+					</div>
+					<div class="flex flex-col items-center">
+						<div class="text-3xl mb-2">🎨</div>
+						<h3 class="font-semibold text-slate-900">Expert Design Help</h3>
+						<p class="text-sm text-slate-600 mt-1">Free consultation available</p>
+					</div>
+					<div class="flex flex-col items-center">
+						<div class="text-3xl mb-2">✅</div>
+						<h3 class="font-semibold text-slate-900">Quality Guaranteed</h3>
+						<p class="text-sm text-slate-600 mt-1">100% satisfaction promise</p>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Custom Order Form Script -->
+		<script>
+			let currentStep = 1;
+			const totalSteps = 5;
+			const formData = {};
+
+			function changeStep(n) {
+				const steps = document.querySelectorAll('.step-content');
+				const prevBtn = document.getElementById('prevBtn');
+				const nextBtn = document.getElementById('nextBtn');
+				const submitBtn = document.getElementById('submitBtn');
+				
+				// Hide current step
+				steps[currentStep - 1].classList.add('hidden');
+				
+				// Update step
+				currentStep += n;
+				
+				// Ensure step is within bounds
+				if (currentStep < 1) currentStep = 1;
+				if (currentStep > totalSteps) currentStep = totalSteps;
+				
+				// Show new step
+				steps[currentStep - 1].classList.remove('hidden');
+				
+				// Update progress bar
+				updateProgressBar(currentStep);
+				
+				// Update buttons
+				if (currentStep === 1) {
+					prevBtn.classList.add('hidden');
+				} else {
+					prevBtn.classList.remove('hidden');
+				}
+				
+				if (currentStep === totalSteps) {
+					nextBtn.classList.add('hidden');
+					submitBtn.classList.remove('hidden');
+					populateReviewStep();
+				} else {
+					nextBtn.classList.remove('hidden');
+					submitBtn.classList.add('hidden');
+				}
+				
+				// Scroll to top of form
+				document.querySelector('.bg-white').scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+
+			function updateProgressBar(step) {
+				const progressSteps = document.querySelectorAll('.progress-step');
+				const progressBar = document.querySelector('.progress-bar-fill');
+				
+				progressSteps.forEach((el, index) => {
+					if (index < step) {
+						el.classList.add('completed');
+						el.classList.remove('active');
+					} else if (index === step - 1) {
+						el.classList.add('active');
+						el.classList.remove('completed');
+					} else {
+						el.classList.remove('active', 'completed');
+					}
+				});
+				
+				// Update progress bar width
+				const progressPercentage = ((step - 1) / (totalSteps - 1)) * 100;
+				progressBar.style.width = progressPercentage + '%';
+			}
+
+			function selectProjectType(type) {
+				formData.projectType = type;
+				// Update UI to show selection
+				document.querySelectorAll('.project-type-card').forEach(card => {
+					card.classList.remove('ring-2', 'ring-blue-600', 'bg-blue-50');
+				});
+				event.currentTarget.classList.add('ring-2', 'ring-blue-600', 'bg-blue-50');
+			}
+
+			function handleFileUpload(event) {
+				const file = event.target.files[0];
+				if (file) {
+					formData.modelFile = file;
+					document.getElementById('file-name').textContent = file.name;
+					document.getElementById('file-info').classList.remove('hidden');
+				}
+			}
+
+			function updateMaterial(material) {
+				formData.material = material;
+				updatePriceEstimate();
+			}
+
+			function updateSize(size) {
+				formData.size = size;
+				updatePriceEstimate();
+			}
+
+			function updatePriceEstimate() {
+				// Simplified price calculation
+				const basePrices = {
+					'pla': 10,
+					'abs': 15,
+					'petg': 20,
+					'tpu': 25
+				};
+				const sizeMultipliers = {
+					'small': 1,
+					'medium': 2,
+					'large': 3,
+					'xlarge': 5
+				};
+				
+				if (formData.material && formData.size) {
+					const basePrice = basePrices[formData.material] || 10;
+					const multiplier = sizeMultipliers[formData.size] || 1;
+					const estimatedPrice = basePrice * multiplier;
+					
+					document.getElementById('price-estimate').textContent = '$' + estimatedPrice + ' - $' + (estimatedPrice * 1.5);
+				}
+			}
+
+			function populateReviewStep() {
+				// Populate review section with form data
+				document.getElementById('review-project-type').textContent = formData.projectType || 'Not selected';
+				document.getElementById('review-material').textContent = formData.material || 'Not selected';
+				document.getElementById('review-size').textContent = formData.size || 'Not selected';
+				document.getElementById('review-name').textContent = formData.name || 'Not provided';
+				document.getElementById('review-email').textContent = formData.email || 'Not provided';
+			}
+
+			// Form submission
+			document.getElementById('customOrderForm').addEventListener('submit', async (e) => {
+				e.preventDefault();
+				
+				// Collect remaining form data
+				formData.name = document.getElementById('name')?.value;
+				formData.email = document.getElementById('email')?.value;
+				formData.phone = document.getElementById('phone')?.value;
+				formData.description = document.getElementById('description')?.value;
+				
+				// Submit form
+				try {
+					const response = await fetch('/custom/quote', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+						},
+						body: JSON.stringify(formData)
+					});
+					
+					if (response.ok) {
+						// Show success message
+						alert('Your custom order request has been submitted! We\'ll contact you within 24 hours with a detailed quote.');
+						// Reset form
+						document.getElementById('customOrderForm').reset();
+						currentStep = 1;
+						changeStep(0);
+					} else {
+						alert('There was an error submitting your request. Please try again.');
+					}
+				} catch (error) {
+					console.error('Error:', error);
+					alert('There was an error submitting your request. Please try again.');
+				}
+			});
+		</script>
+	}
+}
+
+templ ProgressIndicator(currentStep int, totalSteps int) {
+	<div class="relative">
+		<!-- Progress Bar Background -->
+		<div class="absolute top-5 left-0 right-0 h-1 bg-gray-200 rounded-full"></div>
+		<!-- Progress Bar Fill -->
+		<div class="progress-bar-fill absolute top-5 left-0 h-1 bg-blue-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+		
+		<!-- Step Indicators -->
+		<div class="relative flex justify-between">
+			for i := 1; i <= totalSteps; i++ {
+				<div class={ "progress-step flex flex-col items-center", templ.KV("active", i == currentStep) }>
+					<div class={ 
+						"w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300",
+						templ.KV("bg-blue-600 text-white", i == currentStep),
+						templ.KV("bg-gray-200 text-gray-600", i != currentStep) 
+					}>
+						{ fmt.Sprintf("%d", i) }
+					</div>
+					<span class="text-xs mt-2 text-gray-600">
+						if i == 1 {
+							Project
+						} else if i == 2 {
+							Model
+						} else if i == 3 {
+							Customize
+						} else if i == 4 {
+							Contact
+						} else if i == 5 {
+							Review
+						}
+					</span>
+				</div>
+			}
+		</div>
+	</div>
+	
+	<style>
+		.progress-step.completed > div:first-child {
+			background-color: rgb(34 197 94);
+			color: white;
+		}
+		.progress-step.active > div:first-child {
+			transform: scale(1.1);
+		}
+	</style>
+}
+
+templ StepProjectType() {
+	<div>
+		<h2 class="text-2xl font-bold text-slate-900 mb-6">What would you like to create?</h2>
+		<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+			<button type="button" onclick="selectProjectType('figurine')" 
+					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
+				<div class="text-3xl mb-3">🎭</div>
+				<h3 class="font-semibold text-lg mb-2">Figurines & Miniatures</h3>
+				<p class="text-sm text-gray-600">Character models, gaming miniatures, collectibles</p>
+			</button>
+			
+			<button type="button" onclick="selectProjectType('prototype')" 
+					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
+				<div class="text-3xl mb-3">⚙️</div>
+				<h3 class="font-semibold text-lg mb-2">Prototypes & Parts</h3>
+				<p class="text-sm text-gray-600">Functional parts, prototypes, mechanical components</p>
+			</button>
+			
+			<button type="button" onclick="selectProjectType('decorative')" 
+					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
+				<div class="text-3xl mb-3">🏺</div>
+				<h3 class="font-semibold text-lg mb-2">Decorative Items</h3>
+				<p class="text-sm text-gray-600">Home decor, art pieces, ornaments</p>
+			</button>
+			
+			<button type="button" onclick="selectProjectType('custom')" 
+					class="project-type-card p-6 border-2 border-gray-200 rounded-xl hover:border-blue-600 transition-all cursor-pointer text-left">
+				<div class="text-3xl mb-3">✨</div>
+				<h3 class="font-semibold text-lg mb-2">Something Else</h3>
+				<p class="text-sm text-gray-600">Unique projects, custom designs, special requests</p>
+			</button>
+		</div>
+	</div>
+}
+
+templ StepModelSelection() {
+	<div>
+		<h2 class="text-2xl font-bold text-slate-900 mb-6">Upload Your 3D Model</h2>
+		
+		<!-- File Upload -->
+		<div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
+			<input type="file" id="model-file" accept=".stl,.obj,.3mf,.step,.stp" onchange="handleFileUpload(event)" class="hidden" />
+			<label for="model-file" class="cursor-pointer">
+				<div class="text-5xl mb-4">📁</div>
+				<p class="text-lg font-semibold text-gray-700 mb-2">Drop your 3D file here or click to browse</p>
+				<p class="text-sm text-gray-500">Supports STL, OBJ, 3MF, STEP files (max 50MB)</p>
+			</label>
+		</div>
+		
+		<!-- File Info (hidden initially) -->
+		<div id="file-info" class="hidden mt-4 p-4 bg-green-50 rounded-lg">
+			<p class="text-green-800">
+				<span class="font-semibold">File uploaded:</span> 
+				<span id="file-name"></span>
+			</p>
+		</div>
+		
+		<!-- No Model Option -->
+		<div class="mt-6 p-4 bg-blue-50 rounded-lg">
+			<h3 class="font-semibold text-blue-900 mb-2">Don't have a 3D model?</h3>
+			<p class="text-sm text-blue-800 mb-3">No problem! We can help create one for you.</p>
+			<label class="flex items-center">
+				<input type="checkbox" name="need-design" class="mr-2" />
+				<span class="text-sm">I need help designing my model (+$25-100 design fee)</span>
+			</label>
+		</div>
+		
+		<!-- Reference Images -->
+		<div class="mt-6">
+			<label class="block text-sm font-medium text-gray-700 mb-2">Reference Images (optional)</label>
+			<input type="file" multiple accept="image/*" class="w-full p-2 border border-gray-300 rounded-lg" />
+			<p class="text-xs text-gray-500 mt-1">Upload images to help us understand your vision</p>
+		</div>
+	</div>
+}
+
+templ StepCustomization() {
+	<div>
+		<h2 class="text-2xl font-bold text-slate-900 mb-6">Customize Your Print</h2>
+		
+		<!-- Material Selection -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4">Select Material</h3>
+			<div class="grid grid-cols-2 gap-4">
+				<button type="button" onclick="updateMaterial('pla')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left">
+					<h4 class="font-semibold mb-1">PLA</h4>
+					<p class="text-sm text-gray-600">Eco-friendly, great for display</p>
+					<p class="text-sm font-semibold text-blue-600 mt-2">From $10</p>
+				</button>
+				
+				<button type="button" onclick="updateMaterial('abs')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left">
+					<h4 class="font-semibold mb-1">ABS</h4>
+					<p class="text-sm text-gray-600">Durable, heat resistant</p>
+					<p class="text-sm font-semibold text-blue-600 mt-2">From $15</p>
+				</button>
+				
+				<button type="button" onclick="updateMaterial('petg')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left">
+					<h4 class="font-semibold mb-1">PETG</h4>
+					<p class="text-sm text-gray-600">Strong, chemical resistant</p>
+					<p class="text-sm font-semibold text-blue-600 mt-2">From $20</p>
+				</button>
+				
+				<button type="button" onclick="updateMaterial('tpu')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left">
+					<h4 class="font-semibold mb-1">TPU</h4>
+					<p class="text-sm text-gray-600">Flexible, rubber-like</p>
+					<p class="text-sm font-semibold text-blue-600 mt-2">From $25</p>
+				</button>
+			</div>
+		</div>
+		
+		<!-- Size Selection -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4">Select Size</h3>
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+				<button type="button" onclick="updateSize('small')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all">
+					<div class="text-2xl mb-2">📏</div>
+					<p class="font-semibold">Small</p>
+					<p class="text-xs text-gray-600">&lt; 5cm</p>
+				</button>
+				
+				<button type="button" onclick="updateSize('medium')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all">
+					<div class="text-2xl mb-2">📐</div>
+					<p class="font-semibold">Medium</p>
+					<p class="text-xs text-gray-600">5-10cm</p>
+				</button>
+				
+				<button type="button" onclick="updateSize('large')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all">
+					<div class="text-2xl mb-2">📦</div>
+					<p class="font-semibold">Large</p>
+					<p class="text-xs text-gray-600">10-20cm</p>
+				</button>
+				
+				<button type="button" onclick="updateSize('xlarge')" 
+						class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all">
+					<div class="text-2xl mb-2">🏗️</div>
+					<p class="font-semibold">X-Large</p>
+					<p class="text-xs text-gray-600">&gt; 20cm</p>
+				</button>
+			</div>
+		</div>
+		
+		<!-- Color Selection -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4">Choose Colors</h3>
+			<div class="flex flex-wrap gap-3">
+				<button type="button" class="w-12 h-12 rounded-full bg-red-500 border-2 border-gray-300 hover:border-blue-600"></button>
+				<button type="button" class="w-12 h-12 rounded-full bg-blue-500 border-2 border-gray-300 hover:border-blue-600"></button>
+				<button type="button" class="w-12 h-12 rounded-full bg-green-500 border-2 border-gray-300 hover:border-blue-600"></button>
+				<button type="button" class="w-12 h-12 rounded-full bg-yellow-500 border-2 border-gray-300 hover:border-blue-600"></button>
+				<button type="button" class="w-12 h-12 rounded-full bg-purple-500 border-2 border-gray-300 hover:border-blue-600"></button>
+				<button type="button" class="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-300 hover:border-blue-600"></button>
+				<button type="button" class="w-12 h-12 rounded-full bg-white border-2 border-gray-300 hover:border-blue-600"></button>
+				<button type="button" class="w-12 h-12 rounded-full bg-orange-500 border-2 border-gray-300 hover:border-blue-600"></button>
+			</div>
+		</div>
+		
+		<!-- Additional Options -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4">Additional Options</h3>
+			<div class="space-y-3">
+				<label class="flex items-center">
+					<input type="checkbox" name="finishing" class="mr-3" />
+					<span>Professional finishing & smoothing (+$15)</span>
+				</label>
+				<label class="flex items-center">
+					<input type="checkbox" name="painting" class="mr-3" />
+					<span>Hand painting service (+$25-50)</span>
+				</label>
+				<label class="flex items-center">
+					<input type="checkbox" name="rush" class="mr-3" />
+					<span>Rush order - 24hr turnaround (+50%)</span>
+				</label>
+			</div>
+		</div>
+		
+		<!-- Price Estimate -->
+		<div class="p-4 bg-blue-50 rounded-lg">
+			<p class="text-lg font-semibold text-blue-900">
+				Estimated Price: <span id="price-estimate" class="text-2xl">$10 - $50</span>
+			</p>
+			<p class="text-sm text-blue-700 mt-1">Final price confirmed after review</p>
+		</div>
+	</div>
+}
+
+templ StepContactInfo() {
+	<div>
+		<h2 class="text-2xl font-bold text-slate-900 mb-6">Your Contact Information</h2>
+		
+		<div class="space-y-6">
+			<!-- Name -->
+			<div>
+				<label for="name" class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+				<input type="text" id="name" name="name" required 
+					   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					   placeholder="John Doe" />
+			</div>
+			
+			<!-- Email -->
+			<div>
+				<label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+				<input type="email" id="email" name="email" required 
+					   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					   placeholder="john@example.com" />
+			</div>
+			
+			<!-- Phone -->
+			<div>
+				<label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number (optional)</label>
+				<input type="tel" id="phone" name="phone" 
+					   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					   placeholder="(555) 123-4567" />
+			</div>
+			
+			<!-- Project Description -->
+			<div>
+				<label for="description" class="block text-sm font-medium text-gray-700 mb-2">Project Description</label>
+				<textarea id="description" name="description" rows="4" 
+						  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						  placeholder="Tell us more about your project, any special requirements, deadlines, etc."></textarea>
+			</div>
+			
+			<!-- Timeline -->
+			<div>
+				<label class="block text-sm font-medium text-gray-700 mb-2">When do you need this?</label>
+				<div class="grid grid-cols-2 gap-4">
+					<label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+						<input type="radio" name="timeline" value="standard" class="mr-3" checked />
+						<div>
+							<p class="font-semibold">Standard (3-5 days)</p>
+							<p class="text-xs text-gray-600">Regular pricing</p>
+						</div>
+					</label>
+					<label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+						<input type="radio" name="timeline" value="rush" class="mr-3" />
+						<div>
+							<p class="font-semibold">Rush (24-48 hours)</p>
+							<p class="text-xs text-gray-600">+50% rush fee</p>
+						</div>
+					</label>
+				</div>
+			</div>
+		</div>
+	</div>
+}
+
+templ StepReviewSubmit() {
+	<div>
+		<h2 class="text-2xl font-bold text-slate-900 mb-6">Review Your Order</h2>
+		
+		<!-- Order Summary -->
+		<div class="bg-gray-50 rounded-lg p-6 mb-6">
+			<h3 class="font-semibold text-lg mb-4">Order Summary</h3>
+			
+			<div class="space-y-3 text-sm">
+				<div class="flex justify-between">
+					<span class="text-gray-600">Project Type:</span>
+					<span id="review-project-type" class="font-semibold"></span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Material:</span>
+					<span id="review-material" class="font-semibold"></span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Size:</span>
+					<span id="review-size" class="font-semibold"></span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Contact Name:</span>
+					<span id="review-name" class="font-semibold"></span>
+				</div>
+				<div class="flex justify-between">
+					<span class="text-gray-600">Email:</span>
+					<span id="review-email" class="font-semibold"></span>
+				</div>
+			</div>
+			
+			<div class="mt-6 pt-4 border-t border-gray-200">
+				<div class="flex justify-between text-lg font-semibold">
+					<span>Estimated Total:</span>
+					<span class="text-blue-600">Quote Pending</span>
+				</div>
+				<p class="text-xs text-gray-600 mt-2">
+					We'll send you a detailed quote within 24 hours
+				</p>
+			</div>
+		</div>
+		
+		<!-- Terms Agreement -->
+		<div class="mb-6">
+			<label class="flex items-start">
+				<input type="checkbox" name="terms" required class="mt-1 mr-3" />
+				<span class="text-sm text-gray-700">
+					I agree to the <a href="/terms" class="text-blue-600 hover:underline">Terms of Service</a> 
+					and <a href="/custom-policy" class="text-blue-600 hover:underline">Custom Order Policy</a>
+				</span>
+			</label>
+		</div>
+		
+		<!-- What Happens Next -->
+		<div class="bg-blue-50 rounded-lg p-6">
+			<h3 class="font-semibold text-blue-900 mb-3">What Happens Next?</h3>
+			<ol class="space-y-2 text-sm text-blue-800">
+				<li>1. We'll review your request and 3D model</li>
+				<li>2. You'll receive a detailed quote within 24 hours</li>
+				<li>3. Once approved, we'll begin production</li>
+				<li>4. You'll receive updates throughout the process</li>
+				<li>5. Your custom print will be shipped to you!</li>
+			</ol>
+		</div>
+	</div>
+}
