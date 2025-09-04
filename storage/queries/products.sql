@@ -49,3 +49,8 @@ DELETE FROM products WHERE id = ?;
 UPDATE products 
 SET stock_quantity = ?, updated_at = CURRENT_TIMESTAMP 
 WHERE id = ?;
+
+-- name: GetProductImages :many
+SELECT * FROM product_images 
+WHERE product_id = ? 
+ORDER BY display_order ASC, is_primary DESC;

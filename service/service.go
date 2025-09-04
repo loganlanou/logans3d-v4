@@ -1,14 +1,23 @@
 package service
 
 import (
+	"database/sql"
 	"log/slog"
 	"net/http"
 
 	"github.com/a-h/templ"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/about"
+	"github.com/loganlanou/logans3d-v4/views/contact"
+	"github.com/loganlanou/logans3d-v4/views/events"
 	"github.com/loganlanou/logans3d-v4/views/home"
+	"github.com/loganlanou/logans3d-v4/views/legal"
+	// "github.com/loganlanou/logans3d-v4/views/portfolio"
+	"github.com/loganlanou/logans3d-v4/views/shop"
 )
+
 
 type Service struct {
 	storage *storage.Storage
@@ -73,21 +82,129 @@ func (s *Service) handleHome(c echo.Context) error {
 }
 
 func (s *Service) handleAbout(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>About Logan's 3D Creations</h1><p>Coming soon...</p>")
+	return Render(c, about.Index())
 }
 
 func (s *Service) handleShop(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Shop</h1><p>Product catalog coming soon...</p>")
+	ctx := c.Request().Context()
+	
+	// Get all categories for filter
+	categories, err := s.storage.Queries.ListCategories(ctx)
+	if err != nil {
+		slog.Error("failed to fetch categories", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load categories")
+	}
+	
+	// Get all products
+	products, err := s.storage.Queries.ListProducts(ctx)
+	if err != nil {
+		slog.Error("failed to fetch products", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load products")
+	}
+	
+	// Combine with images
+	productsWithImages := make([]shop.ProductWithImage, 0, len(products))
+	for _, product := range products {
+		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
+		if err != nil {
+			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
+			continue
+		}
+		
+		imageURL := ""
+		if len(images) > 0 {
+			imageURL = images[0].ImageUrl
+		}
+		
+		productsWithImages = append(productsWithImages, shop.ProductWithImage{
+			Product:  product,
+			ImageURL: imageURL,
+		})
+	}
+	
+	return Render(c, shop.Index(productsWithImages, categories))
 }
 
 func (s *Service) handleProduct(c echo.Context) error {
 	slug := c.Param("slug")
-	return c.HTML(http.StatusOK, "<h1>Product: "+slug+"</h1><p>Product details coming soon...</p>")
+	ctx := c.Request().Context()
+	
+	// Get product by slug
+	product, err := s.storage.Queries.GetProductBySlug(ctx, slug)
+	if err != nil {
+		slog.Error("failed to fetch product", "slug", slug, "error", err)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+	
+	// Get product images
+	images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
+	if err != nil {
+		slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load product images")
+	}
+	
+	// Get category
+	var category db.Category
+	if product.CategoryID.Valid {
+		category, err = s.storage.Queries.GetCategory(ctx, product.CategoryID.String)
+		if err != nil {
+			slog.Error("failed to fetch category", "category_id", product.CategoryID.String, "error", err)
+			// Continue with empty category rather than failing
+			category = db.Category{Name: "Uncategorized", Slug: "uncategorized"}
+		}
+	} else {
+		category = db.Category{Name: "Uncategorized", Slug: "uncategorized"}
+	}
+	
+	return Render(c, shop.ProductDetail(product, images, category))
 }
 
 func (s *Service) handleCategory(c echo.Context) error {
 	slug := c.Param("slug")
-	return c.HTML(http.StatusOK, "<h1>Category: "+slug+"</h1><p>Category products coming soon...</p>")
+	ctx := c.Request().Context()
+	
+	// Get category by slug
+	category, err := s.storage.Queries.GetCategoryBySlug(ctx, slug)
+	if err != nil {
+		slog.Error("failed to fetch category", "slug", slug, "error", err)
+		return echo.NewHTTPError(http.StatusNotFound, "Category not found")
+	}
+	
+	// Get all categories for filter
+	categories, err := s.storage.Queries.ListCategories(ctx)
+	if err != nil {
+		slog.Error("failed to fetch categories", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load categories")
+	}
+	
+	// Get products in this category
+	products, err := s.storage.Queries.ListProductsByCategory(ctx, sql.NullString{String: category.ID, Valid: true})
+	if err != nil {
+		slog.Error("failed to fetch products", "category_id", category.ID, "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load products")
+	}
+	
+	// Combine with images
+	productsWithImages := make([]shop.ProductWithImage, 0, len(products))
+	for _, product := range products {
+		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
+		if err != nil {
+			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
+			continue
+		}
+		
+		imageURL := ""
+		if len(images) > 0 {
+			imageURL = images[0].ImageUrl
+		}
+		
+		productsWithImages = append(productsWithImages, shop.ProductWithImage{
+			Product:  product,
+			ImageURL: imageURL,
+		})
+	}
+	
+	return Render(c, shop.Index(productsWithImages, categories))
 }
 
 func (s *Service) handleCart(c echo.Context) error {
@@ -127,31 +244,32 @@ func (s *Service) handleCheckoutSuccess(c echo.Context) error {
 }
 
 func (s *Service) handleEvents(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Upcoming Events</h1><p>Event listings coming soon...</p>")
+	return Render(c, events.Index())
 }
 
 func (s *Service) handleContact(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Contact Us</h1><p>Contact form coming soon...</p>")
+	return Render(c, contact.Index())
 }
 
 func (s *Service) handlePortfolio(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Portfolio</h1><p>Gallery coming soon...</p>")
+	return c.HTML(200, "<h1>Portfolio</h1><p>Coming soon...</p>")
+	// return Render(c, portfolio.Index())
 }
 
 func (s *Service) handlePrivacy(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Privacy Policy</h1><p>Legal content coming soon...</p>")
+	return Render(c, legal.Privacy())
 }
 
 func (s *Service) handleTerms(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Terms of Service</h1><p>Legal content coming soon...</p>")
+	return Render(c, legal.Terms())
 }
 
 func (s *Service) handleShipping(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Shipping & Returns</h1><p>Policy content coming soon...</p>")
+	return Render(c, legal.Shipping())
 }
 
 func (s *Service) handleCustomPolicy(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Custom Work Policy</h1><p>Policy content coming soon...</p>")
+	return Render(c, legal.CustomPolicy())
 }
 
 func (s *Service) handleHealth(c echo.Context) error {

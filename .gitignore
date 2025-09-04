@@ -63,6 +63,7 @@ yarn-error.log*
 /test-results/
 /playwright-report/
 /playwright/.cache/
+/.playwright-mcp/
 
 # Upload directories
 /public/uploads/

@@ -1,0 +1,191 @@
+package legal
+
+import "github.com/loganlanou/logans3d-v4/views/layout"
+
+templ Shipping() {
+	@layout.Base(layout.Meta{
+		Title: "Shipping & Returns - Logan's 3D Creations",
+		Description: "Learn about our shipping methods, delivery times, return policy, and refund procedures for 3D printed products and custom orders.",
+		Keywords: "shipping, returns, refunds, delivery, policy, 3D printing",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
+			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="bg-white rounded-2xl shadow-lg p-8 lg:p-12">
+					<h1 class="text-4xl font-bold text-slate-900 mb-6">Shipping & Returns</h1>
+					<p class="text-slate-600 mb-8">
+						<strong>Last updated:</strong> January 1, 2025
+					</p>
+
+					<div class="prose max-w-none text-slate-700">
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Shipping Information</h2>
+						
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Shipping Methods</h3>
+						<div class="bg-slate-50 p-6 rounded-lg mb-6">
+							<div class="grid md:grid-cols-2 gap-6">
+								<div>
+									<h4 class="font-semibold text-slate-900 mb-2">Standard Shipping</h4>
+									<p class="text-slate-600 mb-2">USPS Ground</p>
+									<p class="text-slate-600 mb-2">5-7 business days</p>
+									<p class="text-slate-600">$5.95 - $12.95</p>
+								</div>
+								<div>
+									<h4 class="font-semibold text-slate-900 mb-2">Priority Shipping</h4>
+									<p class="text-slate-600 mb-2">USPS Priority</p>
+									<p class="text-slate-600 mb-2">2-3 business days</p>
+									<p class="text-slate-600">$8.95 - $18.95</p>
+								</div>
+								<div>
+									<h4 class="font-semibold text-slate-900 mb-2">Express Shipping</h4>
+									<p class="text-slate-600 mb-2">UPS Next Day</p>
+									<p class="text-slate-600 mb-2">1 business day</p>
+									<p class="text-slate-600">$24.95 - $39.95</p>
+								</div>
+								<div>
+									<h4 class="font-semibold text-slate-900 mb-2">Local Pickup</h4>
+									<p class="text-slate-600 mb-2">At events or by appointment</p>
+									<p class="text-slate-600 mb-2">Flexible scheduling</p>
+									<p class="text-slate-600">Free</p>
+								</div>
+							</div>
+						</div>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Shipping Costs</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Shipping costs are calculated based on size, weight, and destination</li>
+							<li>Free standard shipping on orders over $75 (continental US only)</li>
+							<li>Oversized items may require special shipping arrangements</li>
+							<li>International shipping available on request (additional fees apply)</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Processing Time</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li><strong>In-stock items:</strong> 1-2 business days</li>
+							<li><strong>Custom prints:</strong> 3-10 business days (depending on complexity)</li>
+							<li><strong>Rush orders:</strong> Available for additional fee (contact us for details)</li>
+							<li><strong>Holiday periods:</strong> May experience extended processing times</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Delivery</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Signature may be required for valuable orders</li>
+							<li>We are not responsible for packages left unattended</li>
+							<li>Address accuracy is crucial - we cannot reship for incorrect addresses</li>
+							<li>Tracking information will be provided via email</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Returns & Refunds</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Return Policy Overview</h3>
+						<div class="bg-blue-50 p-6 rounded-lg mb-6">
+							<p class="text-blue-700">
+								<strong>Important:</strong> Due to the custom nature of 3D printing, most items 
+								are made-to-order and cannot be returned unless there is a manufacturing defect 
+								or error on our part.
+							</p>
+						</div>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Returnable Items</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>In-stock products within 14 days of delivery</li>
+							<li>Items with manufacturing defects</li>
+							<li>Incorrect items shipped due to our error</li>
+							<li>Items damaged during shipping</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Non-Returnable Items</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Custom printed items made to your specifications</li>
+							<li>Personalized or engraved products</li>
+							<li>Items modified or damaged by the customer</li>
+							<li>Digital files or design services</li>
+							<li>Items returned without original packaging</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Quality Guarantee</h3>
+						<p class="mb-4">We stand behind the quality of our work. If you receive a custom item that:</p>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Has significant printing defects or layer adhesion issues</li>
+							<li>Doesn't match the agreed-upon specifications</li>
+							<li>Is functionally unusable due to our error</li>
+						</ul>
+						<p class="mb-6">
+							We will work with you to resolve the issue through repair, reprint, or refund.
+						</p>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Return Process</h3>
+						<ol class="list-decimal pl-6 mb-6">
+							<li><strong>Contact Us:</strong> Email us within 14 days of delivery with photos and description</li>
+							<li><strong>Authorization:</strong> Wait for return authorization before sending items back</li>
+							<li><strong>Packaging:</strong> Pack items carefully in original packaging if available</li>
+							<li><strong>Shipping:</strong> Ship to our return address using a trackable method</li>
+							<li><strong>Processing:</strong> Allow 5-10 business days for inspection and refund processing</li>
+						</ol>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Refund Policy</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Refunds processed to original payment method</li>
+							<li>Original shipping costs are non-refundable (unless our error)</li>
+							<li>Customer pays return shipping costs (unless our error)</li>
+							<li>Partial refunds may apply for used or damaged items</li>
+							<li>Processing time: 5-10 business days after we receive the return</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Damaged or Lost Packages</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Shipping Damage</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Inspect packages immediately upon delivery</li>
+							<li>Report damage within 48 hours of delivery</li>
+							<li>Take photos of damaged packaging and items</li>
+							<li>We will work with the shipping carrier to resolve claims</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Lost Packages</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>We are responsible until delivery confirmation</li>
+							<li>If tracking shows delivered but you didn't receive it, contact us immediately</li>
+							<li>We will investigate with the carrier and replace if necessary</li>
+							<li>Claims must be reported within 7 days of delivery date</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">International Shipping</h2>
+						<p class="mb-4">Limited international shipping available:</p>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Contact us for quote and availability</li>
+							<li>Customer responsible for customs duties and taxes</li>
+							<li>Longer delivery times (10-30 business days)</li>
+							<li>No returns on international orders unless manufacturing defect</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Special Circumstances</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Force Majeure</h3>
+						<p class="mb-6">
+							Shipping delays due to weather, natural disasters, or other circumstances beyond 
+							our control are not eligible for refunds, but we will work to resolve issues promptly.
+						</p>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Address Changes</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Address changes must be requested before order ships</li>
+							<li>Additional shipping fees may apply for address corrections</li>
+							<li>Cannot intercept packages already in transit</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Contact Us</h2>
+						<p class="mb-4">
+							For shipping questions, return authorization, or to report issues:
+						</p>
+						<div class="bg-slate-50 p-6 rounded-lg">
+							<p><strong>Logan's 3D Creations - Customer Service</strong></p>
+							<p>Email: orders@logans3dcreations.com</p>
+							<p>Phone: (555) 3D-PRINT</p>
+							<p>Business Hours: Monday-Friday, 9:00 AM - 6:00 PM EST</p>
+							<p>Address: 123 Maker Street, Springfield, IL 62701</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

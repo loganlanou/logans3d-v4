@@ -1,0 +1,55 @@
+id,name,description,price_min,price_max,category,image_path,stock_quantity,featured,created_at,updated_at,source
+1,Pachycephalosaurus,Printed with modular multicolor filament,9.99,9.99,Dinosaurs,/images/products/pachycephalosaurus.jpg,10,true,2025-09-03,2025-09-03,github_pages
+2,Tiny Toothless,Great addition to your desk and comes in a variety of different colors,4.99,4.99,Fantasy,/images/products/toothless.jpg,15,false,2025-09-03,2025-09-03,github_pages
+3,Sugar Glider,Great model that will keep you company throughout the day,4.99,4.99,Animals,/images/products/sugar_glider.jpg,12,false,2025-09-03,2025-09-03,github_pages
+4,Monitor Lizard,Cool little product that sits on top of your monitor to improve your office aesthetic,4.99,4.99,Animals,/images/products/monitor_lizard.jpg,8,false,2025-09-03,2025-09-03,github_pages
+5,Owl,Posable wings and head with a variety of printed color variations,4.99,4.99,Animals,/images/products/owl.jpg,20,true,2025-09-03,2025-09-03,github_pages
+6,Yeti,Great model that includes a lot of detail and coloration befitting of the winter theme,4.99,4.99,Fantasy,/images/products/yeti.png,6,false,2025-09-03,2025-09-03,github_pages
+7,Crystal Dragon with Wings,Premium crystal dragon with detailed wings and shimmering finish,20.00,20.00,Dragons,/images/products/crystal_dragon_with_wings.jpeg,5,true,2025-09-03,2025-09-03,square_site
+8,Armadillo Lizard,Articulated armadillo lizard with realistic detail and multiple sizes,5.00,15.00,Animals,/images/products/armadillo_lizard.jpeg,12,false,2025-09-03,2025-09-03,square_site
+9,Crocodile Skeleton,Detailed crocodile skeleton model perfect for educational purposes,10.00,10.00,Animals,/images/products/crocodile_skeleton.jpeg,8,false,2025-09-03,2025-09-03,square_site
+10,Butterfly Dragon,Beautiful butterfly-themed dragon with delicate wing details,10.00,20.00,Dragons,/images/products/butterfly_dragon.jpeg,10,true,2025-09-03,2025-09-03,square_site
+11,Bone Dragons (no wings),Skeletal dragon design without wings available in multiple sizes,10.00,25.00,Dragons,/images/products/bone_dragons.jpeg,7,false,2025-09-03,2025-09-03,square_site
+12,Collapsible Sword (full),Interactive fidget toy sword that collapses and extends,5.00,10.00,Fidgets,/images/products/collapsible_sword.jpeg,15,false,2025-09-03,2025-09-03,square_site
+13,Flower Fidget,Spinning flower fidget toy for stress relief and focus,5.00,5.00,Fidgets,/images/products/flower_fidget.jpeg,20,false,2025-09-03,2025-09-03,square_site
+14,Imperial Dragon,Large detailed imperial dragon with intricate design,25.00,25.00,Dragons,/images/products/imperial_dragon.png,3,true,2025-09-03,2025-09-03,square_site
+15,Scorpio Dragon,Dragon with scorpion-inspired tail and armored appearance,5.00,20.00,Dragons,/images/products/scorpio_dragon.jpeg,8,false,2025-09-03,2025-09-03,square_site
+16,Crystal Dragon with Rock,Premium dragon perched on crystal formation in multiple sizes,30.00,125.00,Dragons,/images/products/crystal_dragon_with_rock.jpeg,2,true,2025-09-03,2025-09-03,square_site
+17,T-Rex Skull,Detailed Tyrannosaurus Rex skull in various scales,5.00,40.00,Dinosaurs,/images/products/t-rex_skull.jpeg,15,true,2025-09-03,2025-09-03,square_site
+18,Rhinoceros,Realistic rhinoceros model with textured skin detail,5.00,20.00,Animals,/images/products/rhinoceros.jpeg,10,false,2025-09-03,2025-09-03,square_site
+19,Snail,Simple spiral shell snail perfect for desk decoration,5.00,5.00,Animals,/images/products/snail.jpeg,25,false,2025-09-03,2025-09-03,square_site
+20,Yellow Axolotl,Cute yellow axolotl with characteristic gills and tail,5.00,5.00,Animals,/images/products/yellow_axolotl.jpeg,18,false,2025-09-03,2025-09-03,square_site
+21,Adult Dark Heart Dragon,Large dark-themed dragon with heart motifs,30.00,30.00,Dragons,/images/products/adult_dark_heart_dragon.jpeg,4,true,2025-09-03,2025-09-03,square_site
+22,Small Crocodile,Compact crocodile model with realistic scaling,5.00,5.00,Animals,/images/products/small_crocodile.jpeg,20,false,2025-09-03,2025-09-03,square_site
+23,Small Dilophosaurus,Dilophosaurus with characteristic head crests,10.00,10.00,Dinosaurs,/images/products/small_dilophosaurus.jpeg,12,false,2025-09-03,2025-09-03,square_site
+24,Small Mammoth,Woolly mammoth with textured fur details,5.00,5.00,Animals,/images/products/small_mammoth.jpeg,15,false,2025-09-03,2025-09-03,square_site
+25,Octopus,Flexible octopus with poseable tentacles,5.00,5.00,Animals,/images/products/octopus.jpeg,22,false,2025-09-03,2025-09-03,square_site
+26,T-Rex - Articulated,Fully articulated T-Rex with moveable joints,10.00,40.00,Dinosaurs,/images/products/t-rex_-_articulated.jpeg,6,true,2025-09-03,2025-09-03,square_site
+27,Snake,Flexible snake model available in multiple lengths,15.00,30.00,Animals,/images/products/snake.jpeg,10,false,2025-09-03,2025-09-03,square_site
+28,Desert Mama Dragon,Large mother dragon with desert theme and baby dragons,10.00,70.00,Dragons,/images/products/desert_mama_dragon.jpeg,3,true,2025-09-03,2025-09-03,square_site
+29,Octopus (Large),Larger octopus variant with enhanced detail,5.00,15.00,Animals,/images/products/octopus.jpeg,12,false,2025-09-03,2025-09-03,square_site
+30,Pegasus,Winged horse with flowing mane and detailed wings,10.00,10.00,Animals,/images/products/pegasus.jpeg,8,false,2025-09-03,2025-09-03,square_site
+31,Penguin,Antarctic penguin with realistic coloring,5.00,25.00,Animals,/images/products/penguin.jpeg,20,false,2025-09-03,2025-09-03,square_site
+32,Impossible Cone,Optical illusion fidget toy in cone shape,5.00,5.00,Fidgets,/images/products/impossible_cone.jpeg,25,false,2025-09-03,2025-09-03,square_site
+33,Adult Light Hearted Dragon,Large light-themed dragon with heart details,35.00,35.00,Dragons,/images/products/adult_light_hearted_dragon.jpeg,3,true,2025-09-03,2025-09-03,square_site
+34,Sea Turtle,Ocean turtle with detailed shell pattern,5.00,5.00,Animals,/images/products/sea_turtle.jpeg,18,false,2025-09-03,2025-09-03,square_site
+35,Small Spinosaurus,Spinosaurus with characteristic sail back,5.00,5.00,Dinosaurs,/images/products/small_spinosaurus.jpeg,14,false,2025-09-03,2025-09-03,square_site
+36,Blue Axolotl,Blue variant of the popular axolotl design,5.00,5.00,Animals,/images/products/blue_axolotl.jpeg,16,false,2025-09-03,2025-09-03,square_site
+37,Serpent Dragon,Long serpentine dragon with scales and details,10.00,10.00,Dragons,/images/products/serpent_dragon.jpeg,9,false,2025-09-03,2025-09-03,square_site
+38,Phoenix,Mythical firebird with spread wings and flame details,35.00,35.00,Dragons,/images/products/phoenix.jpeg,2,true,2025-09-03,2025-09-03,square_site
+39,Deinosuchus (Prehistoric Crocodile),Ancient crocodile species with massive size,5.00,20.00,Dinosaurs,/images/products/deinosuchus.jpeg,10,false,2025-09-03,2025-09-03,square_site
+40,Asia Dragon,Traditional Asian-style dragon with flowing design,15.00,30.00,Dragons,/images/products/asia_dragon.jpeg,6,true,2025-09-03,2025-09-03,square_site
+41,Anklyosaurus,Armored herbivorous dinosaur with club tail,5.00,5.00,Dinosaurs,/images/products/anklyosaurus.jpeg,12,false,2025-09-03,2025-09-03,square_site
+42,Small Orca,Killer whale with distinctive black and white pattern,5.00,5.00,Animals,/images/products/small_orca.jpeg,15,false,2025-09-03,2025-09-03,square_site
+43,Small Saber-tooth Tiger,Prehistoric cat with characteristic fangs,5.00,5.00,Animals,/images/products/small_saber-tooth_tiger.jpeg,10,false,2025-09-03,2025-09-03,square_site
+44,Aquatic Serpent Dragon,Water-themed serpent dragon with aquatic details,25.00,25.00,Dragons,/images/products/aquatic_serpent_dragon.jpeg,4,true,2025-09-03,2025-09-03,square_site
+45,Diplosuchus,Ancient reptile with unique features,10.00,10.00,Dinosaurs,/images/products/diplosuchus.jpeg,8,false,2025-09-03,2025-09-03,square_site
+46,Sky Kitty Dragon,Cute cat-dragon hybrid with wings,5.00,10.00,Dragons,/images/products/sky_kitty_dragon.jpeg,15,false,2025-09-03,2025-09-03,square_site
+47,Dinosaur Baby's in Egg,Baby dinosaurs hatching from eggs,5.00,10.00,Dinosaurs,/images/products/dinasaur_babys_in_egg.jpeg,20,false,2025-09-03,2025-09-03,square_site
+48,Sinoceratops,Three-horned dinosaur with frill details,10.00,10.00,Dinosaurs,/images/products/sinoceratops.jpeg,10,false,2025-09-03,2025-09-03,square_site
+49,Triceratops,Classic three-horned dinosaur with protective frill,10.00,10.00,Dinosaurs,/images/products/triceratops.jpeg,12,false,2025-09-03,2025-09-03,square_site
+50,Baby Bambu Dragon,Small bamboo-themed dragon with natural details,5.00,5.00,Dragons,/images/products/baby_bambu_dragon.jpeg,18,false,2025-09-03,2025-09-03,square_site
+51,Baby Heart Dragon,Small dragon with heart-themed decorations,10.00,10.00,Dragons,/images/products/baby_heart_dragon.jpeg,14,false,2025-09-03,2025-09-03,square_site
+52,Small Narwal,Arctic whale with characteristic tusk,5.00,5.00,Animals,/images/products/small_narwal.jpeg,16,false,2025-09-03,2025-09-03,square_site
+53,Skeleton Shark,Skeletal shark model showing bone structure,5.00,5.00,Animals,/images/products/skeleton_shark.jpeg,12,false,2025-09-03,2025-09-03,square_site
+54,Shark,Realistic shark model with fin details,5.00,5.00,Animals,/images/products/shark.jpeg,18,false,2025-09-03,2025-09-03,square_site

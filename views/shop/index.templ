@@ -1,0 +1,125 @@
+package shop
+
+import (
+	"fmt"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ Index(products []ProductWithImage, categories []db.Category) {
+	@layout.Base(layout.Meta{
+		Title: "Shop - Logan's 3D Creations",
+		Description: "Browse our collection of 3D printed collectibles, dinosaurs, dragons, animals and custom items.",
+		Keywords: "3D printed products, collectibles, dinosaurs, dragons, custom printing",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-8">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<!-- Header -->
+				<div class="text-center mb-12">
+					<h1 class="text-4xl sm:text-5xl font-bold text-slate-900 leading-tight mb-6">
+						Our
+						<span class="text-blue-600">Collection</span>
+					</h1>
+					<p class="text-xl text-slate-600 max-w-3xl mx-auto">
+						Discover our unique 3D printed creations, from detailed dinosaur models to mystical dragons 
+						and everything in between.
+					</p>
+				</div>
+
+				<!-- Categories Filter -->
+				<div class="flex flex-wrap justify-center gap-4 mb-12">
+					<a href="/shop" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+						All Products
+					</a>
+					for _, category := range categories {
+						<a href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) } 
+						   class="bg-white text-slate-700 px-6 py-3 rounded-lg font-semibold border border-slate-300 hover:bg-slate-50 transition duration-200">
+							{ category.Name }
+						</a>
+					}
+				</div>
+
+				<!-- Products Grid -->
+				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+					for _, product := range products {
+						@ProductCard(product)
+					}
+				</div>
+
+				if len(products) == 0 {
+					<div class="text-center py-16">
+						<div class="text-6xl mb-4">🔍</div>
+						<h3 class="text-2xl font-semibold text-slate-900 mb-2">No products found</h3>
+						<p class="text-slate-600">Check back soon for new additions to our collection!</p>
+					</div>
+				}
+
+				<!-- CTA Section -->
+				<div class="mt-16 text-center">
+					<div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-3xl p-12 text-white">
+						<h2 class="text-3xl font-bold mb-4">Need Something Custom?</h2>
+						<p class="text-xl mb-8 opacity-90">
+							Can't find what you're looking for? We offer custom 3D printing services for your unique projects.
+						</p>
+						<a href="/custom" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition duration-200">
+							Request Custom Quote
+						</a>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+type ProductWithImage struct {
+	Product db.Product
+	ImageURL string
+}
+
+templ ProductCard(product ProductWithImage) {
+	<div class="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition duration-300 h-full flex flex-col">
+		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-slate-100 overflow-hidden block cursor-pointer">
+			if product.ImageURL != "" {
+				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover hover:scale-105 transition duration-300" />
+			} else {
+				<div class="w-full h-full flex items-center justify-center text-slate-400">
+					<svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+					</svg>
+				</div>
+			}
+		</a>
+		<div class="p-6 flex flex-col flex-grow">
+			<h3 class="text-lg font-bold text-slate-900 mb-3 line-clamp-2 min-h-[3.5rem]">{ product.Product.Name }</h3>
+			<div class="mb-4 min-h-[4.5rem]">
+				if product.Product.Description.Valid {
+					<p class="text-slate-600 text-sm line-clamp-3">{ product.Product.Description.String }</p>
+				} else {
+					<p class="text-slate-400 text-sm italic">No description available</p>
+				}
+			</div>
+			<div class="flex items-center justify-between mb-4 min-h-[2rem]">
+				<div class="text-xl font-bold text-blue-600">
+					${ fmt.Sprintf("%.2f", float64(product.Product.PriceCents)/100) }
+				</div>
+				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
+					<span class="text-green-600 text-sm font-medium">In Stock</span>
+				} else {
+					<span class="text-red-600 text-sm font-medium">Out of Stock</span>
+				}
+			</div>
+			<div class="mt-auto">
+				<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } 
+				   class="block w-full bg-blue-600 text-white text-center px-4 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200 mb-2">
+					View Details
+				</a>
+				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
+					<button class="w-full bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-medium hover:bg-slate-200 transition duration-200"
+					        onclick="addToCart('{ product.Product.ID }')">
+						Add to Cart
+					</button>
+				}
+			</div>
+		</div>
+	</div>
+}

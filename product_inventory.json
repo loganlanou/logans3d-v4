@@ -1,0 +1,348 @@
+{
+  "products": [
+    {
+      "name": "Crystal Dragon with Wings",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/DWJ5EKE2QFTJDVH3GDFBNMMS.jpeg?width=640&optimize=medium",
+      "price": "$20.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/crystal_dragon_with_wings"
+    },
+    {
+      "name": "Armadillo Lizard",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/UMRN2UHLTQ3ISLISRVYOZJAT.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $15.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/armadillo_lizard"
+    },
+    {
+      "name": "Crocodile Skeleton",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/FEBHVBIOP2U5AOVSDW4J5VBP.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/crocodile_skeleton"
+    },
+    {
+      "name": "Butterfly Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/WGB5BWVYGIXRGQNUGM2ZUPW3.jpeg?width=640&optimize=medium",
+      "price": "$10.00 - $20.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/butterfly_dragon"
+    },
+    {
+      "name": "Bone Dragons (no wings)",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/7IPVRLGWLFO6FOSF7HVHDAKB.jpeg?width=640&optimize=medium",
+      "price": "$10.00 - $25.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/bone_dragons"
+    },
+    {
+      "name": "Collapsible Sword (full)",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/VJ7FUF4A4YTSRH2LKPBGEKIC.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $10.00",
+      "category": "Fidgets",
+      "localImagePath": "/images/products/collapsible_sword"
+    },
+    {
+      "name": "Flower Fidget",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/PALKAHXXW5EUFBAMPX5ORCVE.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Fidgets",
+      "localImagePath": "/images/products/flower_fidget"
+    },
+    {
+      "name": "Imperial Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/BQ4RVEMWF2XMXI3DBEFNOSHR.png?width=640&optimize=medium",
+      "price": "$25.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/imperial_dragon"
+    },
+    {
+      "name": "Scorpio Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/WHOUDAWAOT4WKJ654XVVQILV.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $20.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/scorpio_dragon"
+    },
+    {
+      "name": "Crystal Dragon with Rock",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/PUOTF423VPCNXR5T4YBL5EF4.jpeg?width=640&optimize=medium",
+      "price": "$30.00 - $125.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/crystal_dragon_with_rock"
+    },
+    {
+      "name": "T-Rex Skull",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/BBPIGBYRMJHK32PSRALR6OLQ.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $40.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/t-rex_skull"
+    },
+    {
+      "name": "Rhinoceros",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/HLPSCGKAM3PHHMQ3T55K756N.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $20.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/rhinoceros"
+    },
+    {
+      "name": "Snail",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/OPIJFPLC5G5MPBG3ZNBKJ4XC.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/snail"
+    },
+    {
+      "name": "Yellow Axolotl",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/APL2WUGYIR3VPNMYUZCSPSZE.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/yellow_axolotl"
+    },
+    {
+      "name": "Adult Dark Heart Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/T6UY4F3TUDGTBKJDASDOLHQX.jpeg?width=640&optimize=medium",
+      "price": "$30.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/adult_dark_heart_dragon"
+    },
+    {
+      "name": "Small Crocodile",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/AO3YT4VVNLD4IGCNPFVL656J.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/small_crocodile"
+    },
+    {
+      "name": "Small Dilophosaurus",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/DSLK4Y5XYBAYTJJ32DC4IAGF.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/small_dilophosaurus"
+    },
+    {
+      "name": "Small Mammoth",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/XMYK6Y5RHJKCDYTMQU6ZCRZC.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/small_mammoth"
+    },
+    {
+      "name": "Octopus",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/TSGC7TIA3HGZJZNHNHUEDWVL.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/octopus"
+    },
+    {
+      "name": "T-Rex - Articulated",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/BXNYPXNHZ3SO4BUYEM72ZWTJ.jpeg?width=640&optimize=medium",
+      "price": "$10.00 - $40.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/t-rex_-_articulated"
+    },
+    {
+      "name": "Snake",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/MT2ROHRHCNA7EDDUZCVR4ZFJ.jpeg?width=640&optimize=medium",
+      "price": "$15.00 - $30.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/snake"
+    },
+    {
+      "name": "Desert Mama Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/Q3NWH47ZYL3QNKKCXILS3W5W.jpeg?width=640&optimize=medium",
+      "price": "$10.00 - $70.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/desert_mama_dragon"
+    },
+    {
+      "name": "Octopus",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/PMSB6277RFA5T5RAVYJKCMZX.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $15.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/octopus"
+    },
+    {
+      "name": "Pegasus",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/UBZ6MCMI74ZO2CFVVFPEJJFT.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/pegasus"
+    },
+    {
+      "name": "Penguin",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/QIA7ZORR67XRDGUERBONNPJG.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $25.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/penguin"
+    },
+    {
+      "name": "Impossible Cone",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/4FLZXD5SB4HMAGKYGOCHE2SP.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Fidgets",
+      "localImagePath": "/images/products/impossible_cone"
+    },
+    {
+      "name": "Adult Light Hearted Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/2WDNAMMCPUUMK5MVVW5RGCE5.jpeg?width=640&optimize=medium",
+      "price": "$35.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/adult_light_hearted_dragon"
+    },
+    {
+      "name": "Sea Turtle",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/RQIJZHXBF4WQKSAKPARU3T72.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/sea_turtle"
+    },
+    {
+      "name": "Small Spinosaurus",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/GJ5MXFOUXYDVIALUG42LF5VK.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/small_spinosaurus"
+    },
+    {
+      "name": "Blue Axolotl",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/5QIFGZHA5GH3ZFUW2WUT2WLD.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/blue_axolotl"
+    },
+    {
+      "name": "Serpent Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/UXMUJDK3HKDBTYZZD4DVAJQ2.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/serpent_dragon"
+    },
+    {
+      "name": "Phoenix",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/BNMLXFHHWMTXBTQYEIGAWUUT.jpeg?width=640&optimize=medium",
+      "price": "$35.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/phoenix"
+    },
+    {
+      "name": "Deinosuchus (Prehistoric Crocodile)",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/2OGZGPERX7MEX6ZOMI6GUHHY.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $20.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/deinosuchus"
+    },
+    {
+      "name": "Asia Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/W7454IJXCNB6GBE7YFFGCDWA.jpeg?width=640&optimize=medium",
+      "price": "$15.00 - $30.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/asia_dragon"
+    },
+    {
+      "name": "Anklyosaurus",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/IZLBBPASCANYZBDRHNDXMSB4.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/anklyosaurus"
+    },
+    {
+      "name": "Small Orca",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/G7J37TL5FP3HBV3AAI3TYXCX.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/small_orca"
+    },
+    {
+      "name": "Small Saber-tooth Tiger",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/RZICX63UDWVNKM2RREF32JWO.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/small_saber-tooth_tiger"
+    },
+    {
+      "name": "Aquatic Serpent Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/LH3MXMDOJPQVBK4MJGKDSRKK.jpeg?width=640&optimize=medium",
+      "price": "$25.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/aquatic_serpent_dragon"
+    },
+    {
+      "name": "Diplosuchus",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/VX7DAPANTUQBEER4PA3ZJXZI.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/diplosuchus"
+    },
+    {
+      "name": "Sky Kitty Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/UF3LVG67TTPIBPQ67SJSF5GB.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $10.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/sky_kitty_dragon"
+    },
+    {
+      "name": "Dinasaur Baby's in Egg",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/ROJXIHFRT7POMGJ4X4YFH2M5.jpeg?width=640&optimize=medium",
+      "price": "$5.00 - $10.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/dinasaur_babys_in_egg"
+    },
+    {
+      "name": "Sinoceratops",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/DZETTPOTM5OPKLHJIQ4BQZDY.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/sinoceratops"
+    },
+    {
+      "name": "Triceratops",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/QFC7ZPNSANR45F3RPSE7HTH7.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Dinosaurs",
+      "localImagePath": "/images/products/triceratops"
+    },
+    {
+      "name": "Baby Bambu Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/7CLFM5ORUXOLSUVOQ3US3H5Y.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/baby_bambu_dragon"
+    },
+    {
+      "name": "Baby Heart Dragon",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/GCWCCZGWGCGJWGRMJVKEBSZL.jpeg?width=640&optimize=medium",
+      "price": "$10.00",
+      "category": "Dragons",
+      "localImagePath": "/images/products/baby_heart_dragon"
+    },
+    {
+      "name": "Small Narwal",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/5MPCAZVFFGVBDA5OYNJMFKIX.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/small_narwal"
+    },
+    {
+      "name": "Skeleton Shark",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/4C76PEN2KTOMFBPDSZYWMZ2C.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/skeleton_shark"
+    },
+    {
+      "name": "Shark",
+      "imageUrl": "https://130813561.cdn6.editmysite.com/uploads/1/3/0/8/130813561/D43VLFJMVBRHLVI3QH6IEH5S.jpeg?width=640&optimize=medium",
+      "price": "$5.00",
+      "category": "Animals",
+      "localImagePath": "/images/products/shark"
+    }
+  ],
+  "total_products": 48,
+  "categories": [
+    "Fidgets",
+    "Dragons",
+    "Dinosaurs",
+    "Animals"
+  ],
+  "failed_downloads": 1
+}

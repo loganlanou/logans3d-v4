@@ -1,0 +1,64 @@
+package portfolio
+
+import "github.com/loganlanou/logans3d-v4/views/layout"
+
+templ Index() {
+	@layout.Base(layout.Meta{
+		Title: "Portfolio - Logan's 3D Creations",
+		Description: "Explore our portfolio of custom 3D printed projects.",
+		Keywords: "3D printing portfolio, custom projects, gallery",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
+			<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="text-center">
+					<h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
+						Our
+						<span class="text-blue-600">Portfolio</span>
+					</h1>
+					<p class="text-xl text-slate-600 mb-8 max-w-3xl mx-auto">
+						Explore our gallery of custom projects, from functional prototypes and replacement parts 
+						to artistic creations and educational tools.
+					</p>
+				</div>
+
+				<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
+					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+						<div class="h-64 bg-slate-200 flex items-center justify-center">
+							<span class="text-slate-500">Project Image</span>
+						</div>
+						<div class="p-6">
+							<h3 class="text-xl font-bold text-slate-900 mb-2">Custom Project</h3>
+							<p class="text-slate-600">Sample project description coming soon.</p>
+						</div>
+					</div>
+
+					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+						<div class="h-64 bg-slate-200 flex items-center justify-center">
+							<span class="text-slate-500">Project Image</span>
+						</div>
+						<div class="p-6">
+							<h3 class="text-xl font-bold text-slate-900 mb-2">Prototype Work</h3>
+							<p class="text-slate-600">Sample project description coming soon.</p>
+						</div>
+					</div>
+
+					<div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+						<div class="h-64 bg-slate-200 flex items-center justify-center">
+							<span class="text-slate-500">Project Image</span>
+						</div>
+						<div class="p-6">
+							<h3 class="text-xl font-bold text-slate-900 mb-2">Educational Tools</h3>
+							<p class="text-slate-600">Sample project description coming soon.</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="text-center mt-12">
+					<a href="/contact" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-200">
+						Contact for Custom Work
+					</a>
+				</div>
+			</div>
+		</div>
+	}
+}

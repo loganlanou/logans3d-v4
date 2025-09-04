@@ -1,0 +1,257 @@
+package legal
+
+import "github.com/loganlanou/logans3d-v4/views/layout"
+
+templ CustomPolicy() {
+	@layout.Base(layout.Meta{
+		Title: "Custom Work Policy - Logan's 3D Creations",
+		Description: "Learn about our custom 3D printing services, design requirements, pricing, timelines, and policies for bespoke projects and prototyping.",
+		Keywords: "custom 3D printing, bespoke design, prototype policy, custom work terms",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
+			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="bg-white rounded-2xl shadow-lg p-8 lg:p-12">
+					<h1 class="text-4xl font-bold text-slate-900 mb-6">Custom Work Policy</h1>
+					<p class="text-slate-600 mb-8">
+						<strong>Last updated:</strong> January 1, 2025
+					</p>
+
+					<div class="prose max-w-none text-slate-700">
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Overview</h2>
+						<p class="mb-6">
+							Logan's 3D Creations specializes in custom 3D printing services, transforming your 
+							ideas into reality through precision manufacturing. This policy outlines our process, 
+							requirements, and terms for custom work projects.
+						</p>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Custom Services Offered</h2>
+						<div class="grid md:grid-cols-2 gap-6 mb-6">
+							<div class="bg-slate-50 p-6 rounded-lg">
+								<h3 class="text-lg font-semibold text-slate-900 mb-3">Print-Only Services</h3>
+								<ul class="list-disc pl-6 text-slate-600">
+									<li>You provide the 3D file</li>
+									<li>We print using your specifications</li>
+									<li>Material and finish selection</li>
+									<li>Quality assurance and packaging</li>
+								</ul>
+							</div>
+							<div class="bg-slate-50 p-6 rounded-lg">
+								<h3 class="text-lg font-semibold text-slate-900 mb-3">Design + Print Services</h3>
+								<ul class="list-disc pl-6 text-slate-600">
+									<li>Concept development consultation</li>
+									<li>3D modeling and file creation</li>
+									<li>Design optimization for printing</li>
+									<li>Prototyping and production</li>
+								</ul>
+							</div>
+						</div>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">File Requirements & Standards</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Acceptable File Formats</h3>
+						<ul class="list-disc pl-6 mb-4">
+							<li><strong>STL</strong> - Most common, preferred for basic prints</li>
+							<li><strong>OBJ</strong> - Good for textured or colored models</li>
+							<li><strong>3MF</strong> - Microsoft 3D format with material info</li>
+							<li><strong>STEP/STP</strong> - CAD format for engineering applications</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">File Quality Standards</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Manifold geometry (watertight, no holes or gaps)</li>
+							<li>Appropriate resolution (0.1-0.5mm triangle size)</li>
+							<li>Proper scale and units (millimeters preferred)</li>
+							<li>Wall thickness minimum 0.8mm for structural integrity</li>
+							<li>Support-conscious design when possible</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Design Limitations</h3>
+						<div class="bg-amber-50 p-6 rounded-lg mb-6">
+							<p class="text-amber-700 mb-4"><strong>Please note these technical limitations:</strong></p>
+							<ul class="list-disc pl-6 text-amber-700">
+								<li>Maximum build volume: 250×210×210mm</li>
+								<li>Minimum feature size: 0.2mm</li>
+								<li>Maximum overhang: 45° without support</li>
+								<li>Minimum wall thickness: 0.8mm</li>
+								<li>Moving parts require 0.3mm+ clearance</li>
+							</ul>
+						</div>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Quote Process</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Initial Consultation</h3>
+						<ol class="list-decimal pl-6 mb-6">
+							<li><strong>Project Brief:</strong> Tell us about your project goals and requirements</li>
+							<li><strong>File Review:</strong> Submit files for technical feasibility assessment</li>
+							<li><strong>Material Selection:</strong> Choose appropriate materials for your application</li>
+							<li><strong>Timeline Discussion:</strong> Establish realistic delivery expectations</li>
+							<li><strong>Quote Preparation:</strong> Detailed pricing breakdown provided within 2 business days</li>
+						</ol>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Pricing Factors</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li><strong>Material volume:</strong> Amount of filament used</li>
+							<li><strong>Print time:</strong> Machine hours required</li>
+							<li><strong>Complexity:</strong> Support requirements and post-processing</li>
+							<li><strong>Material type:</strong> Standard vs. specialty filaments</li>
+							<li><strong>Quantity:</strong> Volume discounts available</li>
+							<li><strong>Rush orders:</strong> Expedite fees may apply</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibent text-slate-900 mb-4">Design Services</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">What We Provide</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Concept sketching and ideation</li>
+							<li>3D modeling from sketches or specifications</li>
+							<li>Reverse engineering from physical samples</li>
+							<li>File optimization for 3D printing</li>
+							<li>Technical drawings and documentation</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Design Process</h3>
+						<ol class="list-decimal pl-6 mb-6">
+							<li><strong>Requirements Gathering:</strong> Detailed project specifications</li>
+							<li><strong>Initial Design:</strong> First draft for review and feedback</li>
+							<li><strong>Revision Rounds:</strong> Up to 3 revisions included</li>
+							<li><strong>File Preparation:</strong> Print-ready files delivered</li>
+							<li><strong>Test Print:</strong> Optional prototype for approval</li>
+						</ol>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Production Timeline</h2>
+
+						<div class="bg-slate-50 p-6 rounded-lg mb-6">
+							<h3 class="text-lg font-semibold text-slate-900 mb-4">Typical Turnaround Times</h3>
+							<div class="grid md:grid-cols-2 gap-6">
+								<div>
+									<h4 class="font-semibold text-slate-900 mb-2">Print-Only Orders</h4>
+									<ul class="list-disc pl-6 text-slate-600">
+										<li>Simple parts: 1-3 days</li>
+										<li>Complex parts: 3-7 days</li>
+										<li>Large parts: 5-10 days</li>
+										<li>Multiple parts: 5-14 days</li>
+									</ul>
+								</div>
+								<div>
+									<h4 class="font-semibold text-slate-900 mb-2">Design + Print Orders</h4>
+									<ul class="list-disc pl-6 text-slate-600">
+										<li>Simple design: 1-2 weeks</li>
+										<li>Complex design: 2-4 weeks</li>
+										<li>Prototype iterations: +1-2 weeks</li>
+										<li>Production run: 2-6 weeks</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Payment Terms</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Payment Schedule</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li><strong>Print-only orders:</strong> Full payment before production</li>
+							<li><strong>Design services:</strong> 50% deposit, balance on completion</li>
+							<li><strong>Large orders (>$500):</strong> 50% deposit, 50% before shipping</li>
+							<li><strong>Rush orders:</strong> Full payment upfront</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Quote Validity</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Standard quotes valid for 30 days</li>
+							<li>Material price fluctuations may affect pricing</li>
+							<li>Project scope changes require new quote</li>
+							<li>Rush order surcharges apply for expedited service</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Quality Standards & Revisions</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Quality Assurance</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Visual inspection of every print</li>
+							<li>Dimensional accuracy verification</li>
+							<li>Surface finish quality control</li>
+							<li>Packaging protection during shipping</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Revision Policy</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li><strong>Design errors (our fault):</strong> Free revision and reprint</li>
+							<li><strong>Print defects:</strong> Free reprint with expedited processing</li>
+							<li><strong>Customer changes:</strong> New quote required</li>
+							<li><strong>File issues:</strong> May require additional design work</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Intellectual Property</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Your Rights</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>You retain all rights to your original designs</li>
+							<li>We maintain strict confidentiality of your projects</li>
+							<li>Files are securely stored and not shared</li>
+							<li>Non-disclosure agreements available upon request</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Our Responsibilities</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Verify you have rights to submitted designs</li>
+							<li>Refuse work that infringes on others' IP</li>
+							<li>Maintain secure file storage systems</li>
+							<li>Delete files upon request after project completion</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Prohibited Items</h2>
+
+						<div class="bg-red-50 p-6 rounded-lg mb-6">
+							<p class="text-red-700 mb-4"><strong>We cannot and will not print:</strong></p>
+							<ul class="list-disc pl-6 text-red-700">
+								<li>Weapons or weapon components</li>
+								<li>Items that infringe on copyrights or patents</li>
+								<li>Adult content or inappropriate materials</li>
+								<li>Items intended for illegal activities</li>
+								<li>Medical implants or devices requiring certification</li>
+								<li>Food contact items (unless food-safe material specified)</li>
+							</ul>
+						</div>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Communication & Updates</h2>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Project Updates</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Email confirmations at key milestones</li>
+							<li>Photo updates for complex projects</li>
+							<li>Proactive communication about delays</li>
+							<li>Final quality photos before shipping</li>
+						</ul>
+
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Response Times</h3>
+						<ul class="list-disc pl-6 mb-6">
+							<li><strong>Quote requests:</strong> Within 2 business days</li>
+							<li><strong>General inquiries:</strong> Within 24 hours</li>
+							<li><strong>Technical questions:</strong> Within 4 hours during business hours</li>
+							<li><strong>Urgent issues:</strong> Within 2 hours during business hours</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Contact Information</h2>
+						<p class="mb-4">
+							Ready to start your custom project? Get in touch with us:
+						</p>
+						<div class="bg-slate-50 p-6 rounded-lg">
+							<p><strong>Logan's 3D Creations - Custom Services</strong></p>
+							<p>Email: custom@logans3dcreations.com</p>
+							<p>Phone: (555) 3D-PRINT ext. 2</p>
+							<p>Business Hours: Monday-Friday, 9:00 AM - 6:00 PM EST</p>
+							<p>Address: 123 Maker Street, Springfield, IL 62701</p>
+						</div>
+
+						<div class="bg-blue-50 p-6 rounded-lg mt-8">
+							<p class="text-blue-700">
+								<strong>Ready to get started?</strong> Contact us with your project details 
+								and we'll provide a detailed quote within 2 business days. We're excited 
+								to help bring your ideas to life!
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

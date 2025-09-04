@@ -1,0 +1,7 @@
+id,name,description,price,category,image_path,stock_quantity,featured,created_at,updated_at
+1,Pachycephalosaurus,Printed with modular multicolor filament,9.99,Dinosaurs,/images/products/pachycephalosaurus.jpg,10,true,2025-09-03,2025-09-03
+2,Tiny Toothless,Great addition to your desk and comes in a variety of different colors,4.99,Fantasy,/images/products/toothless.jpg,15,false,2025-09-03,2025-09-03
+3,Sugar Glider,Great model that will keep you company throughout the day,4.99,Animals,/images/products/sugar_glider.jpg,12,false,2025-09-03,2025-09-03
+4,Monitor Lizard,Cool little product that sits on top of your monitor to improve your office aesthetic,4.99,Animals,/images/products/monitor_lizard.jpg,8,false,2025-09-03,2025-09-03
+5,Owl,Posable wings and head with a variety of printed color variations,4.99,Animals,/images/products/owl.jpg,20,true,2025-09-03,2025-09-03
+6,Yeti,Great model that includes a lot of detail and coloration befitting of the winter theme,4.99,Fantasy,/images/products/yeti.png,6,false,2025-09-03,2025-09-03
