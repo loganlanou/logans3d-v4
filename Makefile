@@ -114,14 +114,14 @@ ssh:
 .PHONY: deploy-staging
 deploy-staging:
 	@echo "🚀 Deploying to staging (logans3dcreations.digitaldrywood.com)..."
-	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d-staging && git pull && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d-staging"
+	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d-staging && git pull && /usr/local/go/bin/go generate ./... && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d-staging"
 	@echo "✅ Staging deployment complete!"
 
 .PHONY: deploy-production
 deploy-production:
 	@echo "🚀 Deploying to production (www.logans3dcreations.com)..."
 	@read -p "⚠️  Are you sure you want to deploy to PRODUCTION? (y/N): " confirm && [ "$$confirm" = "y" ] || (echo "Deployment cancelled." && exit 1)
-	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d && git pull && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d"
+	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d && git pull && /usr/local/go/bin/go generate ./... && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d"
 	@echo "✅ Production deployment complete!"
 
 .PHONY: deploy
