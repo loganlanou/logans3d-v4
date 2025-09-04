@@ -1,0 +1,6 @@
+# Environment variables for Logan's 3D Production
+# Port 8007 - production environment
+PORT=8007
+DB_PATH=/home/apprunner/sites/logans3d/data/database.db
+ENV=production
+LOG_LEVEL=info

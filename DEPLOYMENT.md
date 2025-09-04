@@ -4,8 +4,8 @@ This project supports deployment to both staging and production environments on 
 
 ## Environments
 
-- **Staging**: <https://logans3dcreations.digitaldrywood.com> (port 8005)
-- **Production**: <https://www.logans3dcreations.com> (port 8006)
+- **Staging**: <https://logans3dcreations.digitaldrywood.com> (port 8006)
+- **Production**: <https://www.logans3dcreations.com> (port 8007)
 
 ## Initial Server Setup
 
@@ -145,6 +145,6 @@ sudo certbot renew
 ## Troubleshooting
 
 1. **Service won't start**: Check logs with `journalctl -u logans3d-staging -n 50`
-2. **Port already in use**: Ensure no other service is using ports 8005 (staging) or 8006 (production)
+2. **Port already in use**: Ensure no other service is using ports 8006 (staging) or 8007 (production)
 3. **Database errors**: Check database file permissions and ensure the data directory exists
 4. **Nginx errors**: Test configuration with `sudo nginx -t` before reloading

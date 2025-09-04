@@ -1,10 +1,5 @@
 SHELL := /bin/bash
 
-# Go environment
-export GOROOT=~/go-install/go
-export PATH=$(GOROOT)/bin:$(PATH)
-export GOPATH=~/go
-
 .PHONY: install-tools
 install-tools:
 	go install github.com/a-h/templ/cmd/templ@latest
@@ -111,6 +106,44 @@ setup: install-tools tidy
 	make css
 	@echo "Setup complete! Run 'air' to start development server (with auto-regeneration)"
 
+# Deployment targets
+.PHONY: ssh
+ssh:
+	ssh -A apprunner@jarvis.digitaldrywood.com
+
+.PHONY: deploy-staging
+deploy-staging:
+	@echo "🚀 Deploying to staging (logans3dcreations.digitaldrywood.com)..."
+	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d-staging && git pull && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d-staging"
+	@echo "✅ Staging deployment complete!"
+
+.PHONY: deploy-production
+deploy-production:
+	@echo "🚀 Deploying to production (www.logans3dcreations.com)..."
+	@read -p "⚠️  Are you sure you want to deploy to PRODUCTION? (y/N): " confirm && [ "$$confirm" = "y" ] || (echo "Deployment cancelled." && exit 1)
+	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d && git pull && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d"
+	@echo "✅ Production deployment complete!"
+
+.PHONY: deploy
+deploy: deploy-staging
+	@echo "ℹ️  Deployed to staging. To deploy to production, run 'make deploy-production'"
+
+.PHONY: log-staging
+log-staging:
+	ssh -A apprunner@jarvis.digitaldrywood.com "sudo journalctl -u logans3d-staging -f"
+
+.PHONY: log-production
+log-production:
+	ssh -A apprunner@jarvis.digitaldrywood.com "sudo journalctl -u logans3d -f"
+
+.PHONY: log-web-staging
+log-web-staging:
+	ssh -A apprunner@jarvis.digitaldrywood.com "sudo tail -f /var/log/logans3d-staging/logans3d-staging.log"
+
+.PHONY: log-web-production
+log-web-production:
+	ssh -A apprunner@jarvis.digitaldrywood.com "sudo tail -f /var/log/logans3d/logans3d.log"
+
 .PHONY: help
 help:
 	@echo "Available targets:"
@@ -134,3 +167,13 @@ help:
 	@echo "  e2e-ui       - Run E2E tests in UI mode"
 	@echo "  tidy         - Clean up Go dependencies"
 	@echo "  clean        - Clean build artifacts and generated files"
+	@echo ""
+	@echo "Deployment:"
+	@echo "  ssh          - SSH to the deployment server"
+	@echo "  deploy       - Deploy to staging environment"
+	@echo "  deploy-staging - Deploy to staging (logans3dcreations.digitaldrywood.com)"
+	@echo "  deploy-production - Deploy to production (www.logans3dcreations.com)"
+	@echo "  log-staging  - View staging logs (journalctl)"
+	@echo "  log-production - View production logs (journalctl)"
+	@echo "  log-web-staging - View staging web logs"
+	@echo "  log-web-production - View production web logs"

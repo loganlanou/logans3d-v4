@@ -1,0 +1,18 @@
+[Unit]
+Description=Logan's 3D Creations Go Application
+After=network.target
+
+[Service]
+Type=simple
+User=apprunner
+Group=apprunner
+EnvironmentFile=/etc/logans3d/environment
+WorkingDirectory=/home/apprunner/sites/logans3d
+ExecStart=/home/apprunner/sites/logans3d/logans3d
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/logans3d/logans3d.log
+StandardError=append:/var/log/logans3d/logans3d.log
+
+[Install]
+WantedBy=multi-user.target
