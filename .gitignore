@@ -52,7 +52,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Frontend build artifacts
-/public/css/styles.css
+# Note: styles.css is committed to avoid needing postcss on production
 /public/css/styles.css.map
 
 # Test artifacts

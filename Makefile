@@ -65,11 +65,11 @@ seed:
 
 .PHONY: css
 css:
-	postcss public/css/input.css -o public/css/styles.css
+	npx postcss public/css/input.css -o public/css/styles.css
 
 .PHONY: css-watch
 css-watch:
-	postcss public/css/input.css -o public/css/styles.css --watch
+	npx postcss public/css/input.css -o public/css/styles.css --watch
 
 .PHONY: images
 images:
