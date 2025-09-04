@@ -1,10 +1,14 @@
 # Logan's 3D Creations - Project Implementation Plan
 
-_Last updated: 2025-09-03_
+**Last updated: 2025-09-03**
 
 ## 🎯 Project Overview
 
-This document outlines the comprehensive implementation plan for Logan's 3D Creations v4 - a modern e-commerce website for a 3D printing business. The project will be built using Go + Echo + Templ + Alpine.js + Tailwind CSS + SQLite, following the proven architecture from the CreswoodCorners reference project.
+This document outlines the comprehensive implementation plan for Logan's 3D
+Creations v4 - a modern e-commerce website for a 3D printing business. The
+project will be built using Go + Echo + Templ + Alpine.js + Tailwind CSS +
+SQLite, following the proven architecture from the CreswoodCorners reference
+project.
 
 **Expected Timeline**: 6-8 weeks across multiple development sessions
 **Architecture**: Server-Side Rendered (SSR) with Progressive Enhancement
@@ -14,11 +18,13 @@ This document outlines the comprehensive implementation plan for Logan's 3D Crea
 ## 🚀 Implementation Phases
 
 ### **Pre-Phase 1 — Foundation & Infrastructure Setup**
+
 _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 
 **Goal**: Establish complete development environment and basic application structure
 
 #### Infrastructure Setup ✅
+
 - [x] Examine reference project structure and patterns
 - [x] Create comprehensive project plan (PLAN.md)
 - [x] Initialize Go module with proper dependencies
@@ -28,6 +34,7 @@ _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 - [x] Setup environment management with direnv (.envrc)
 
 #### Database Foundation ✅
+
 - [x] Initialize SQLite database structure
 - [x] Setup SQLC for type-safe queries (storage/sqlc.yaml)
 - [x] Configure Goose for database migrations
@@ -35,6 +42,7 @@ _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 - [x] Setup database connection and storage layer
 
 #### Web Server Foundation ✅
+
 - [x] Create basic Echo server with middleware
 - [x] Setup routing structure (main, admin, API routes)
 - [x] Implement configuration management
@@ -44,6 +52,7 @@ _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 - [x] Implement request logging middleware for debugging
 
 #### Frontend Tooling ✅
+
 - [x] Configure Tailwind CSS v4 with PostCSS
 - [x] Setup package.json with build scripts
 - [x] Create CSS input/output pipeline
@@ -51,6 +60,7 @@ _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 - [x] Setup automated CSS compilation in Air workflow
 
 #### Template System ✅
+
 - [x] Setup Templ template engine integration
 - [x] Create basic layout templates
 - [x] Setup component structure (ui/components/, views/)
@@ -58,6 +68,7 @@ _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 - [x] Implement automated Templ generation in Air workflow
 
 #### Advanced Logging & Development Workflow ✅
+
 - [x] Implement advanced slog configuration with environment-based levels
 - [x] Add colored debug logging with tint library
 - [x] Setup dynamic module detection using runtime/debug
@@ -66,11 +77,13 @@ _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 - [x] Add clickable server URL logging for development
 
 #### Testing Framework
+
 - [ ] Configure Playwright for E2E testing
 - [ ] Setup basic test structure and configuration
 - [ ] Create initial test examples
 
 #### Welcome Page & Stack Verification ✅
+
 - [x] Create initial welcome/landing page with full responsive design
 - [x] Verify complete development workflow (build, dev, test)
 - [x] Test hot reloading and asset compilation
@@ -79,11 +92,13 @@ _**Duration**: 1-2 weeks | **Status**: ✅ Complete_
 - [x] Document development workflow in README
 
 ### **Phase 1 — Core Content & Foundation**
+
 _**Duration**: 1-2 weeks | **Status**: ⏳ Pending_
 
 **Goal**: Establish core website structure with essential content pages
 
 #### Core Pages & Navigation
+
 - [ ] Home page with hero section and featured content
 - [ ] About page (Logan's story, shop tour, 3D printing process)
 - [ ] Events page with upcoming shows/markets
@@ -91,6 +106,7 @@ _**Duration**: 1-2 weeks | **Status**: ⏳ Pending_
 - [ ] Legal pages (Privacy, Terms, Shipping & Returns, Custom Policy)
 
 #### Global Layout & Design System
+
 - [ ] Create responsive header with navigation
 - [ ] Design footer with links and contact info
 - [ ] Implement mobile-first responsive design
@@ -98,12 +114,14 @@ _**Duration**: 1-2 weeks | **Status**: ⏳ Pending_
 - [ ] Create loading states and error pages
 
 #### Admin/CMS Foundation
+
 - [ ] Basic admin authentication system
 - [ ] Mobile-friendly admin interface
 - [ ] Content editing capabilities for core pages
 - [ ] Event management (add/edit upcoming events)
 
 #### SEO & Performance
+
 - [ ] Meta tags, Open Graph, schema markup
 - [ ] XML sitemap generation
 - [ ] robots.txt configuration
@@ -111,17 +129,20 @@ _**Duration**: 1-2 weeks | **Status**: ⏳ Pending_
 - [ ] Performance monitoring setup
 
 #### Analytics & Monitoring
+
 - [ ] Google Analytics 4 integration
 - [ ] Basic conversion tracking setup
 - [ ] Error logging and monitoring
 - [ ] Health check endpoints
 
 ### **Phase 2 — Product Catalog & Shopping**
+
 _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 
 **Goal**: Complete e-commerce product browsing and shopping cart functionality
 
 #### Product Management System
+
 - [ ] Product database schema and models
 - [ ] Category management system
 - [ ] Product variants (size, material, color)
@@ -129,6 +150,7 @@ _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 - [ ] Lead time estimation per product
 
 #### Product Catalog Interface
+
 - [ ] Product listing page (PLP) with responsive grid
 - [ ] Product detail pages (PDP) with image galleries
 - [ ] Category navigation and filtering
@@ -136,6 +158,7 @@ _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 - [ ] Sorting options (price, size, lead time)
 
 #### Shopping Cart System
+
 - [ ] Add to cart functionality
 - [ ] Cart drawer/mini-cart component
 - [ ] Cart page with line item management
@@ -143,12 +166,14 @@ _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 - [ ] Cart persistence across sessions
 
 #### Product Media & Assets
+
 - [ ] Product image upload and management
 - [ ] Image optimization and responsive delivery
 - [ ] Multiple product images per item
 - [ ] Image lazy loading implementation
 
 #### Admin Product Management
+
 - [ ] Product creation and editing interface
 - [ ] Bulk product management tools
 - [ ] Category management interface
@@ -156,11 +181,13 @@ _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 - [ ] Product image management
 
 ### **Phase 3 — Checkout & Custom Orders**
+
 _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 
 **Goal**: Complete purchase flow and custom quote system
 
 #### Stripe Checkout Integration
+
 - [ ] Stripe account setup and API integration
 - [ ] Checkout flow with payment processing
 - [ ] Apple Pay and Google Pay support
@@ -168,18 +195,21 @@ _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 - [ ] Failed payment handling and retry
 
 #### Shipping & Tax Calculation
+
 - [ ] Shipping cost estimation by ZIP/address
 - [ ] Local tax calculation
 - [ ] Local pickup option for events
 - [ ] Shipping options and delivery estimates
 
 #### Order Management
+
 - [ ] Order status tracking system
 - [ ] Order fulfillment workflow
 - [ ] Customer order history
 - [ ] Admin order management interface
 
 #### Custom Quote System
+
 - [ ] Custom order request form
 - [ ] File upload system (STL, OBJ, STEP, 3MF)
 - [ ] Project specifications capture
@@ -187,6 +217,7 @@ _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 - [ ] Quote request workflow
 
 #### Quote Management & Communication
+
 - [ ] Admin quote review interface
 - [ ] Customer communication system
 - [ ] Quote approval and pricing workflow
@@ -194,41 +225,48 @@ _**Duration**: 2-3 weeks | **Status**: ⏳ Pending_
 - [ ] File management and storage
 
 #### Email System
+
 - [ ] Transactional email setup (SendGrid/Mailgun)
 - [ ] Order confirmation emails
 - [ ] Quote request notifications
 - [ ] Admin notification system
 
 ### **Phase 4+ — Advanced Features & Enhancements**
+
 _**Duration**: Ongoing | **Status**: ⏳ Future_
 
 **Goal**: Advanced features and business growth tools
 
 #### Customer Account System
+
 - [ ] Google OAuth integration
 - [ ] Customer account creation and management
 - [ ] Order history and reorder functionality
 - [ ] Account preferences and settings
 
 #### Advanced Catalog Features
+
 - [ ] Product reviews and ratings
 - [ ] Related products and recommendations
 - [ ] Wishlist/favorites functionality
 - [ ] Advanced search with filters
 
 #### Marketing & Engagement
+
 - [ ] Newsletter signup and email marketing
 - [ ] Discount codes and promotions
 - [ ] Customer testimonials display
 - [ ] Live social media feed integration
 
 #### Business Intelligence
+
 - [ ] Advanced analytics and reporting
 - [ ] Sales performance dashboards
 - [ ] Customer behavior insights
 - [ ] Inventory performance tracking
 
 #### Portfolio & Content
+
 - [ ] Portfolio/gallery with case studies
 - [ ] Blog system for SEO content
 - [ ] Educational content about 3D printing
@@ -239,6 +277,7 @@ _**Duration**: Ongoing | **Status**: ⏳ Future_
 ## 🛠️ Technical Implementation Details
 
 ### Development Workflow Commands
+
 ```bash
 # Development (ALWAYS use air for development)
 air              # Start development server with hot reload + auto-regeneration
@@ -265,6 +304,7 @@ make deploy       # Deploy to Vercel
 ```
 
 ### Key Technology Decisions
+
 - **Backend**: Go 1.25 + Echo v4.13+ for high performance
 - **Database**: SQLite with modernc.org/sqlite (pure Go, no CGO)
 - **Templates**: Templ for type-safe server-side rendering
@@ -273,7 +313,8 @@ make deploy       # Deploy to Vercel
 - **Testing**: Playwright for E2E, Go testing for unit tests
 
 ### Project Structure
-```
+
+```text
 logans3d-v4/
 ├── cmd/main.go                    # Application entrypoint
 ├── service/                       # Business logic & HTTP handlers
@@ -300,6 +341,7 @@ logans3d-v4/
 ## 📋 Session Planning & Progress Tracking
 
 ### Current Session (2025-09-03) - COMPLETED ✅
+
 - [x] Project analysis and planning
 - [x] Reference project examination  
 - [x] PLAN.md creation
@@ -312,6 +354,7 @@ logans3d-v4/
 - [x] **MAJOR MILESTONE**: Pre-Phase 1 Complete - Full development environment ready!
 
 **✅ Development Environment Status:**
+
 - **Air hot reloading**: Fully functional with proper exclusions
 - **Structured logging**: Advanced slog with colored debug output and request middleware
 - **Template system**: Templ with automatic compilation and hot reload
@@ -320,11 +363,13 @@ logans3d-v4/
 - **Component library**: Complete UI components with responsive design
 
 **⚠️ Important Development Note:**
+
 - **ALWAYS use `air` for development** (never `go run` or `make run`)
 - Air automatically handles code regeneration via pre_cmd in .air.toml
 - This prevents forgetting to regenerate templates, SQLC code, etc.
 
 ### Upcoming Sessions  
+
 1. ✅ **Complete Pre-Phase 1**: Foundation setup, database, basic server - **COMPLETED!**
 2. **Setup E2E Testing**: Configure Playwright testing framework
 3. **Phase 1 Start**: Core pages and content management
@@ -335,6 +380,7 @@ logans3d-v4/
 8. **Phase 3 Complete**: Full e-commerce functionality
 
 ### Success Metrics
+
 - ✅ **Pre-Phase 1**: Air development server running with auto-regeneration, basic welcome page - **ACHIEVED!**
 - **Phase 1**: All core pages responsive and editable via admin
 - **Phase 2**: Complete product browsing and cart functionality
@@ -346,11 +392,13 @@ logans3d-v4/
 ## 🚀 Domain Transfer & Deployment
 
 ### Pre-Production Setup
+
 - [ ] Transfer logans3dcreations.com from Square to DNSimple
 - [ ] Configure DNS for Vercel deployment
 - [ ] Setup staging environment for testing
 
 ### Production Deployment
+
 - [ ] Vercel project configuration
 - [ ] Environment variables setup
 - [ ] Database backup strategy with Litestream
@@ -361,12 +409,14 @@ logans3d-v4/
 ## 📚 Documentation & Resources
 
 ### Development Resources
+
 - [Requirements Document](./REQUIREMENTS.md)
 - [Stack & Architecture Guide](./STACK_AND_STRUCTURE.md)
 - [Domain Transfer Process](./docs/DOMAIN_TRANSFER.md)
 - CreswoodCorners Reference: `~/projects/digitaldrywood/creswoodcorners`
 
 ### Key Dependencies
+
 - Go 1.25 + Echo v4.13+
 - Templ v0.3.943+ for templates
 - modernc.org/sqlite (pure Go SQLite)

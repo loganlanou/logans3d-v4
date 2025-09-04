@@ -1,13 +1,16 @@
 # Logan's 3D Creations Technology Stack & Architecture Deep Dive
 
-_Last updated: 2025-09-03_
+**Last updated: 2025-09-03**
 
 ## 🏗️ Architecture Overview
 
-Logan's 3D Creations will be built with a **Go backend** serving **server-side rendered HTML** using **Templ templates**, enhanced with **Alpine.js** for interactivity, styled with **Tailwind CSS**, and backed by **SQLite** with **SQLC** for type-safe database access.
+Logan's 3D Creations will be built with a **Go backend** serving **server-side
+rendered HTML** using **Templ templates**, enhanced with **Alpine.js** for
+interactivity, styled with **Tailwind CSS**, and backed by **SQLite** with
+**SQLC** for type-safe database access.
 
-**Architecture Pattern**: Server-Side Rendered (SSR) with Progressive Enhancement
-**Deployment**: Single binary deployment (pure Go, no CGO required)
+**Architecture Pattern**: Server-Side Rendered (SSR) with Progressive Enhancement  
+**Deployment**: Single binary deployment (pure Go, no CGO required)  
 **Inspiration**: Based on the proven CreswoodCorners technology stack
 
 ---
@@ -17,15 +20,17 @@ Logan's 3D Creations will be built with a **Go backend** serving **server-side r
 ### Backend Technologies
 
 #### **Go 1.25** - Primary Language
+
 - **Web Framework**: [Echo v4.13+](https://echo.labstack.com/) - High performance HTTP router and middleware framework
 - **Template Engine**: [Templ](https://templ.guide/) - Type-safe Go HTML templates with component architecture
-- **Authentication**: 
+- **Authentication**:
   - **OAuth2**: Google OAuth integration with [golang.org/x/oauth2](https://pkg.go.dev/golang.org/x/oauth2)
   - **JWT**: [golang-jwt/jwt/v5](https://github.com/golang-jwt/jwt) for session management
 - **Logging**: [lmittmann/tint](https://github.com/lmittmann/tint) - Structured logging with colored output
 - **UUID Generation**: [google/uuid](https://github.com/google/uuid)
 
-#### **Key Go Dependencies** (Planned):
+#### **Key Go Dependencies** (Planned)
+
 ```go
 // Core web framework and routing
 github.com/labstack/echo/v4 v4.13+
@@ -52,15 +57,17 @@ github.com/stripe/stripe-go/v75
 ### Frontend Technologies
 
 #### **Templ Templates** - Server-Side Rendering
+
 - Type-safe Go HTML templates with component architecture
 - Server-side rendering with SEO-friendly markup
 - Component-based template organization in `views/` directory:
   - `layout/` - Base templates and page layouts
-  - `components/` - Reusable UI components 
+  - `components/` - Reusable UI components
   - `ui/components/` - UI library components (buttons, inputs, cards, etc.)
   - Feature-specific directories (`shop/`, `custom/`, `portfolio/`, etc.)
 
 #### **Alpine.js 3.x** - Frontend Interactivity
+
 - Lightweight JavaScript framework for reactive UI components
 - Progressive enhancement approach - JavaScript enhances server-rendered HTML
 - Used for:
@@ -70,7 +77,8 @@ github.com/stripe/stripe-go/v75
   - Mobile navigation and dropdowns
   - Custom quote form interactions
 
-#### **Tailwind CSS v4+** - Styling Framework  
+#### **Tailwind CSS v4+** - Styling Framework
+
 - **PostCSS** for CSS processing with `@tailwindcss/postcss`
 - Utility-first CSS framework for rapid UI development
 - **Configuration**: `postcss.config.js` processes `public/css/input.css` → `public/css/styles.css`
@@ -78,22 +86,25 @@ github.com/stripe/stripe-go/v75
 - **Mobile-first responsive design** for phone and desktop optimization
 
 #### **Google Identity Services** - OAuth Integration
+
 - Client-side Google OAuth flow for customer accounts
 - Loaded via CDN: `https://accounts.google.com/gsi/client`
 
 ### Database & Data Layer
 
 #### **SQLite 3** - Primary Database
+
 - **Driver**: `modernc.org/sqlite` - Pure Go SQLite3 driver (no CGO required)
 - **Location**: `./db/logans3d.db` (configurable via `DB_PATH` env var)
-- **Benefits**: 
+- **Benefits**:
   - Zero-configuration database
   - ACID compliance
   - Perfect for single-server deployments
   - File-based backup and replication with Litestream
   - No CGO dependency - easier cross-compilation and deployment
 
-#### **SQLC** - Type-Safe SQL Code Generation  
+#### **SQLC** - Type-Safe SQL Code Generation
+
 - **Configuration**: `storage/sqlc.yaml`
 - **Features**:
   - Generates type-safe Go code from SQL queries
@@ -105,6 +116,7 @@ github.com/stripe/stripe-go/v75
   - `storage/db/` - Generated Go code (models, queries, interfaces)
 
 #### **Goose** - Database Migrations
+
 - **Migration Directory**: `storage/migrations/`
 - **Planned Schema**:
   - Products (name, description, price, variants, images, categories)
@@ -116,6 +128,7 @@ github.com/stripe/stripe-go/v75
 - **Usage**: `make migrate` / `make migrate-down`
 
 #### **Litestream** - Database Backup & Replication
+
 - **Purpose**: Continuous backup of SQLite database to cloud storage
 - **Destinations**: S3, GCS, Azure, or similar
 - **Benefits**: Point-in-time recovery, disaster recovery, zero-downtime backups
@@ -125,6 +138,7 @@ github.com/stripe/stripe-go/v75
 ## 🛠️ Development Workflow & Build Tools
 
 ### **Make** - Build Automation
+
 The `Makefile` will provide comprehensive development commands:
 
 ```makefile
@@ -157,6 +171,7 @@ make help         # Show available commands
 ```
 
 ### **Air** - Hot Reloading for Development
+
 - **Configuration**: `.air.toml`
 - **Features**:
   - Watches `.go`, `.templ`, `.html`, `.css` files
@@ -166,18 +181,23 @@ make help         # Show available commands
 - **Usage**: `air` (auto-detects `.air.toml`)
 
 ### **Code Generation Pipeline**
+
 ```bash
 go generate ./...
 ```
+
 Runs:
+
 1. **SQLC**: Generates type-safe database code from SQL files
 2. **Templ**: Compiles `.templ` templates to Go functions
 
-### **CSS Build Process** 
+### **CSS Build Process**
+
 ```bash
 # PostCSS processes Tailwind CSS
 postcss public/css/input.css -o public/css/styles.css
 ```
+
 - **Input**: `public/css/input.css` (Tailwind directives + custom CSS)
 - **Output**: `public/css/styles.css` (compiled utility classes)
 - **Configuration**: `postcss.config.js` with `@tailwindcss/postcss` plugin
@@ -187,7 +207,8 @@ postcss public/css/input.css -o public/css/styles.css
 ## 🧪 Testing & Quality Assurance
 
 ### **Playwright** - End-to-End Testing
-- **Configuration**: `playwright.config.ts` 
+
+- **Configuration**: `playwright.config.ts`
 - **Test Directory**: `tests/`
 - **Critical User Journeys**:
   - Product browsing and search
@@ -198,6 +219,7 @@ postcss public/css/input.css -o public/css/styles.css
   - Mobile responsive behavior
 
 **Test Commands:**
+
 ```bash
 npm test           # Run all tests
 npm run test:ui    # Run tests in UI mode  
@@ -206,11 +228,13 @@ npm run test:report # Show test results
 ```
 
 ### **Go Testing** - Unit Tests
-- **Command**: `make test` 
+
+- **Command**: `make test`
 - **Coverage**: Go's built-in testing framework
 - **Focus Areas**: Database queries, business logic, API endpoints
 
 ### **Linting & Code Quality**
+
 - **Tool**: [golangci-lint](https://golangci-lint.run/)
 - **Usage**: `make lint`
 - **Configuration**: `.golangci.yml` for custom rules
@@ -220,32 +244,38 @@ npm run test:report # Show test results
 ## 🚀 Deployment & Infrastructure
 
 ### **Production Environment**
+
 - **Hosting**: [Vercel](https://vercel.com) - Free plan with automatic deployments
 - **Runtime**: Vercel's Go runtime for serverless functions
 - **Domain**: logans3dcreations.com (to be transferred from Square to DNSimple)
 - **SSL**: Automatic HTTPS with Vercel's Edge Network
 
 ### **Deployment Process**
+
 **Vercel Deployment**:
+
 - **Git Integration**: Automatic deployments on push to main branch
-- **Build Command**: `go build ./cmd/main.go` 
+- **Build Command**: `go build ./cmd/main.go`
 - **Environment Variables**: Configured in Vercel dashboard
 - **Database**: SQLite file stored in Vercel's serverless file system
 - **Static Assets**: Served from Vercel's CDN
 
 **Manual Deploy**:
+
 ```bash
 vercel --prod  # Deploy to production
 vercel         # Deploy preview branch
 ```
 
 ### **Vercel Configuration**
+
 - **vercel.json**: Project configuration file
 - **Go Runtime**: Serverless functions for API endpoints
 - **Static Files**: Automatic optimization and CDN delivery
 - **Environment**: Separate staging and production environments
 
 ### **Backup & Monitoring**
+
 - **Database**: Continuous backup with Litestream
 - **Application Logs**: Structured logging with log aggregation
 - **Health Monitoring**: Basic health check endpoints
@@ -255,7 +285,7 @@ vercel         # Deploy preview branch
 
 ## 📁 Project Structure Deep Dive
 
-```
+```text
 logans3d-v4/
 ├── 📄 Configuration Files
 │   ├── go.mod, go.sum           # Go module dependencies
@@ -344,11 +374,13 @@ logans3d-v4/
 ## 🔐 Environment & Configuration Management
 
 ### **direnv** - Environment Variable Management
+
 - **File**: `.envrc` (not committed to version control)
 - **Installation**: `brew install direnv` or `sudo apt install direnv`
 - **Setup**: `direnv allow` in project directory
 
-#### **Required Environment Variables**:
+#### **Required Environment Variables**
+
 ```bash
 # Application
 export ENVIRONMENT="development"
@@ -394,7 +426,8 @@ export LITESTREAM_BUCKET="logans3d-backups"
 
 ## 🔄 Data Flow & Request Lifecycle
 
-### **Typical Request Flow**:
+### **Typical Request Flow**
+
 1. **HTTP Request** → Echo router (`service/service.go`)
 2. **Middleware** → Authentication, logging, CORS, rate limiting
 3. **Handler** → Business logic in `service/handlers/` package  
@@ -403,14 +436,16 @@ export LITESTREAM_BUCKET="logans3d-backups"
 6. **Response** → HTML + CSS + minimal JavaScript sent to browser
 7. **Enhancement** → Alpine.js adds client-side interactivity
 
-### **E-commerce Flow**:
+### **E-commerce Flow**
+
 1. **Product Browsing** → Server renders product grid with filters
 2. **Add to Cart** → Alpine.js updates cart state + AJAX to server
 3. **Checkout** → Server renders checkout form with Stripe Elements
 4. **Payment** → Stripe processes payment, webhooks update order status
 5. **Confirmation** → Server renders success page + sends confirmation email
 
-### **Custom Quote Flow**:
+### **Custom Quote Flow**
+
 1. **Quote Form** → Server renders form with file upload capabilities
 2. **File Upload** → Multi-part form submission with validation
 3. **Quote Processing** → Server stores files, sends admin notification
@@ -431,9 +466,10 @@ export LITESTREAM_BUCKET="logans3d-backups"
 6. **Pure Go (no CGO)**: Simplified cross-compilation, deployment, and maintenance
 7. **modernc.org/sqlite**: Pure Go SQLite driver eliminates CGO complexity
 
-### **Trade-offs Made**:
+### **Trade-offs Made**
 
 **✅ Benefits**:
+
 - Fast development velocity with type safety across the stack
 - Simple deployment and maintenance (single binary + database file)
 - Excellent performance and low hosting costs
@@ -444,6 +480,7 @@ export LITESTREAM_BUCKET="logans3d-backups"
 - No CGO dependencies simplify builds and deployments
 
 **⚠️ Considerations**:
+
 - SQLite limits to single-server deployment (fine for small e-commerce)
 - Smaller Go ecosystem for some e-commerce features vs Node.js/PHP
 - Manual payment webhook handling vs all-in-one solutions
@@ -454,6 +491,7 @@ export LITESTREAM_BUCKET="logans3d-backups"
 ## 🚀 Business-Specific Features
 
 ### **Product Management**
+
 - **Product Variants**: Size, material, color options
 - **Inventory Tracking**: Stock levels, low stock alerts
 - **Category Management**: Hierarchical product categorization
@@ -461,12 +499,14 @@ export LITESTREAM_BUCKET="logans3d-backups"
 - **Lead Time Tracking**: Production time estimates per product
 
 ### **Custom Quote System**
+
 - **File Upload**: STL, OBJ, STEP, 3MF file support up to 100MB
 - **Quote Request Form**: Project details, materials, finish requirements
 - **Admin Workflow**: Quote review, pricing, approval process
 - **Customer Communication**: Email notifications and updates
 
 ### **E-commerce Features**
+
 - **Shopping Cart**: Persistent cart, quantity updates
 - **Checkout Flow**: Guest and logged-in user checkout
 - **Payment Processing**: Stripe integration with Apple Pay/Google Pay
@@ -474,6 +514,7 @@ export LITESTREAM_BUCKET="logans3d-backups"
 - **Local Pickup**: Option for event/local pickup
 
 ### **Content Management**
+
 - **Event Listings**: Upcoming shows, maker faires, markets
 - **Portfolio Gallery**: Showcase custom work with categories
 - **Educational Content**: 3D printing process explanation
@@ -483,25 +524,29 @@ export LITESTREAM_BUCKET="logans3d-backups"
 
 ## 📈 Future Considerations & Scaling Path
 
-### **Phase 1 Priorities** (MVP):
+### **Phase 1 Priorities** (MVP)
+
 - Basic product catalog with cart/checkout
 - Custom quote form with file upload
 - Content pages (about, events, contact)
 - Mobile-responsive admin panel
 
-### **Phase 2 Enhancements**:
+### **Phase 2 Enhancements**
+
 - Customer accounts with order history
 - Advanced product filtering and search
 - Inventory management and alerts
 - Email marketing integration
 
-### **Phase 3+ Advanced Features**:
+### **Phase 3+ Advanced Features**
+
 - Customer reviews and testimonials
 - Advanced analytics and reporting
 - Loyalty program or repeat customer discounts
 - API for potential mobile app
 
-### **Scaling Options When Needed**:
+### **Scaling Options When Needed**
+
 1. **CDN**: Static asset delivery for images
 2. **Database**: Migrate to PostgreSQL if needed (SQLC supports both)
 3. **Caching**: Redis for session storage, product cache
@@ -512,15 +557,15 @@ export LITESTREAM_BUCKET="logans3d-backups"
 
 ## 📚 Key Resources & Documentation
 
-- **Go Echo Framework**: https://echo.labstack.com/
-- **Templ Templates**: https://templ.guide/  
-- **SQLC Documentation**: https://docs.sqlc.dev/
-- **modernc.org/sqlite**: https://pkg.go.dev/modernc.org/sqlite
-- **Alpine.js Guide**: https://alpinejs.dev/
-- **Tailwind CSS**: https://tailwindcss.com/
-- **Playwright Testing**: https://playwright.dev/
-- **Stripe Integration**: https://stripe.com/docs/payments/checkout
-- **Litestream Backup**: https://litestream.io/
+- **Go Echo Framework**: <https://echo.labstack.com/>
+- **Templ Templates**: <https://templ.guide/>  
+- **SQLC Documentation**: <https://docs.sqlc.dev/>
+- **modernc.org/sqlite**: <https://pkg.go.dev/modernc.org/sqlite>
+- **Alpine.js Guide**: <https://alpinejs.dev/>
+- **Tailwind CSS**: <https://tailwindcss.com/>
+- **Playwright Testing**: <https://playwright.dev/>
+- **Stripe Integration**: <https://stripe.com/docs/payments/checkout>
+- **Litestream Backup**: <https://litestream.io/>
 
 ---
 

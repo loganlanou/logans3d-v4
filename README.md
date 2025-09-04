@@ -1,10 +1,12 @@
 # Logan's 3D Creations v4
 
-Modern e-commerce website for 3D printing business, built with Go + Echo + Templ + Alpine.js + Tailwind CSS.
+Modern e-commerce website for 3D printing business, built with Go + Echo +
+Templ + Alpine.js + Tailwind CSS.
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+
 - Go 1.25+
 - Node.js 18+ (for CSS compilation and E2E tests)
 - Air (hot reload tool)
@@ -13,6 +15,7 @@ Modern e-commerce website for 3D printing business, built with Go + Echo + Templ
 ### Installation
 
 #### Prerequisites Setup
+
 ```bash
 # 1. Install Go 1.25+ (if not already installed)
 curl -fsSL https://go.dev/dl/go1.25.0.linux-amd64.tar.gz -o go1.25.0.linux-amd64.tar.gz
@@ -32,6 +35,7 @@ go install github.com/a-h/templ/cmd/templ@latest
 ```
 
 #### Project Setup
+
 ```bash
 # Clone repository
 git clone <repo-url>
@@ -63,7 +67,8 @@ make dev
 ```
 
 **Why Air?**
-- Automatically regenerates SQLC and Templ code via `pre_cmd` 
+
+- Automatically regenerates SQLC and Templ code via `pre_cmd`
 - Hot reloads on file changes
 - Prevents forgetting regeneration steps
 - Configured in `.air.toml` with proper excludes and includes
@@ -101,7 +106,8 @@ make help        # Show all commands
 **Pattern**: Server-Side Rendered (SSR) with Progressive Enhancement
 
 **Core Stack**:
-- **Backend**: Go 1.25 + Echo v4.13 
+
+- **Backend**: Go 1.25 + Echo v4.13
 - **Database**: SQLite + SQLC + Goose (pure Go, no CGO)
 - **Templates**: Templ (type-safe Go templates)
 - **Frontend**: Alpine.js + Tailwind CSS v4
@@ -111,7 +117,7 @@ make help        # Show all commands
 
 ## 📁 Project Structure
 
-```
+```text
 logans3d-v4/
 ├── cmd/main.go              # Application entrypoint
 ├── service/                 # Business logic & HTTP handlers
@@ -144,6 +150,7 @@ logans3d-v4/
 **Queries**: SQLC for type-safe Go code generation (`storage/queries/`)
 
 ### Schema Overview
+
 - **users**: Customer accounts (Google OAuth)
 - **products & categories**: Product catalog with variants
 - **orders & cart_items**: E-commerce functionality
@@ -215,11 +222,13 @@ export EMAIL_API_KEY=""                 # Email notifications
 ```
 
 **Required for Development:**
+
 - `GOROOT`, `PATH`, `GOPATH` - Go environment setup
 - `ENVIRONMENT`, `PORT`, `BASE_URL` - Basic application config
 - `DB_PATH` - Database location
 
 **Optional for Basic Development:**
+
 - OAuth, Stripe, Email - Can be added later for full functionality
 
 ## 📚 Documentation
@@ -248,4 +257,4 @@ export EMAIL_API_KEY=""                 # Email notifications
 
 ---
 
-**Built with ❤️ for Logan's 3D Creations**
+## Built with ❤️ for Logan's 3D Creations

@@ -1,50 +1,57 @@
-
-
-# Logan’s 3D Creations — Project Requirements (v0.1)
+# Logan's 3D Creations — Project Requirements (v0.1)
 
 _Last updated: Sept 3, 2025_
 
 ## 1) Overview
+
 This document captures the scope and requirements for rebuilding the Logan’s 3D Creations website. It is intended to be a living spec that evolves as features are refined and prioritized.
 
 ## 2) Goals
+
 - Unified, modern site with integrated catalog and custom order flow.
 - Stripe-based checkout (no rush; Square currently handles sales).
 - Excellent performance, SEO, and accessibility.
 - Easy editing from mobile (CMS/admin), with room to grow post‑launch.
 
 ## 3) Non‑Goals (V1)
+
 - Complex B2B quoting automation (only a simple rough estimator in the future).
 - Multi‑currency, marketplace, or multi‑vendor flows.
 
 ## 4) Tech Stack (updated)
+
 **Core Architecture**: Server-Side Rendered (SSR) with Progressive Enhancement
 
 ### Backend & Framework
+
 - **Backend**: Go 1.25
 - **Web Framework**: [Echo v4.13+](https://github.com/labstack/echo) - High performance HTTP router
 - **Templating**: [a-h/templ](https://github.com/a-h/templ) - Type-safe Go HTML templates
 - **Authentication**: JWT + OAuth2 (Google/social login for customer accounts)
 
 ### Frontend & Styling  
+
 - **Markup**: Server-rendered HTML (no HTMX - following SSR + Alpine.js pattern)
 - **JavaScript**: [Alpine.js 3.x](https://alpinejs.dev/) - Lightweight reactive components
 - **Styling**: [Tailwind CSS v4+](https://tailwindcss.com/) with PostCSS processing
 - **Progressive Enhancement**: JavaScript enhances server-rendered content
 
 ### Database & Code Generation
+
 - **Database**: SQLite with [SQLC](https://sqlc.dev/) for type-safe queries
 - **Migrations**: [Goose](https://pressly.github.io/goose/) for database schema management  
 - **Database Backup/Replication**: [Litestream](https://litestream.io) for production backup
 - **Code Generation**: `go generate` pipeline (SQLC + Templ compilation)
 
 ### Development & Build Tools
+
 - **Build System**: Make + [Air](https://github.com/cosmtrek/air) for hot reloading
 - **CSS Processing**: PostCSS + Tailwind CLI
 - **Testing**: [Playwright](https://playwright.dev/) for E2E + Go testing framework
 - **Linting**: [golangci-lint](https://golangci-lint.run/) for Go code quality
 
 ### Production & Deployment
+
 - **Hosting**: [Vercel](https://vercel.com) free plan with automatic Git deployments
 - **Runtime**: Vercel's Go serverless functions
 - **Domain**: logans3dcreations.com (transfer from Square to DNSimple required)
@@ -54,10 +61,12 @@ This document captures the scope and requirements for rebuilding the Logan’s 3
 - **Monitoring**: Vercel Analytics + structured logging
 
 ## 5) Information Architecture (top-level)
+
 - Home, Shop, Custom Printing, Portfolio, Events, About, FAQ, Contact, Cart/Checkout
 - Legal: Privacy, Terms, Shipping & Returns, Custom Work Policy
 
 ## 6) Feature Master Table
+
 Below is the canonical feature list. Columns: **Feature**, **Category**, **Priority**, **Phase**, **Notes**.
 
 | Feature                                              | Category             | Priority     | Phase    | Notes                                                            |
@@ -122,6 +131,7 @@ Below is the canonical feature list. Columns: **Feature**, **Category**, **Prior
 | DNS configuration for Vercel deployment              | Core Infrastructure  | Must-have    | Pre-Phase 1 | Setup DNS records for Vercel hosting                           |
 
 ## 7) Launch Phases (high level)
+
 **Pre-Phase 1 — Domain & Infrastructure Setup**: Transfer logans3dcreations.com from Square to DNSimple, configure DNS for Vercel deployment, setup development and staging environments.  
 **Phase 1 — Foundation & Content**: Global layout, Home, About, Events, Contact, Legal, CMS setup.  
 **Phase 2 — Storefront & Catalog**: PLP grid, filters/sorting, PDP, cart (drawer + page).  
@@ -129,18 +139,22 @@ Below is the canonical feature list. Columns: **Feature**, **Category**, **Prior
 **Phase 4+ — Enhancements**: Wishlist, Google login, reviews/testimonials, portfolio deep dives, live social feed, order status tracker, advanced search.
 
 ## 8) Performance & Accessibility
+
 - Performance budgets: LCP < 3s on 4G; JS ≤ 200KB gz on landing; images AVIF/WebP + lazy‑load.
 - Accessibility: keyboard navigable menus, visible focus, ARIA labels, contrast ≥ 4.5:1, alt text.
 
 ## 9) Analytics & SEO
+
 - GA4 + ecommerce events (view_item_list → purchase) and quote funnel events.
 - SEO: clean URLs, metadata, sitemap.xml, robots.txt, Product/Organization/LocalBusiness schema.
 
 ## 10) Content Inputs (from Logan)
+
 - Brand assets (logo SVG, colors), 12–24 product photos, 6–12 portfolio items.
 - Policy copy (privacy, terms, returns, custom policy), testimonials, event list (3–6 months).
 
 ---
 
 **Change Log**
+
 - v0.1 (2025‑09‑03): Initial requirements + embedded features table.
