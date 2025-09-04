@@ -274,7 +274,7 @@ func (s *Service) handleCustomPolicy(c echo.Context) error {
 }
 
 func (s *Service) handleHealth(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]interface{}{
+	return c.JSON(http.StatusOK, map[string]any{
 		"status":      "healthy",
 		"environment": s.config.Environment,
 		"database":    "connected",

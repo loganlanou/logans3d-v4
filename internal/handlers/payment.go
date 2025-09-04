@@ -8,7 +8,7 @@ import (
 
 	stripego "github.com/stripe/stripe-go/v80"
 	"github.com/stripe/stripe-go/v80/webhook"
-	"logans3d-v4/internal/stripe"
+	"github.com/loganlanou/logans3d-v4/internal/stripe"
 )
 
 type PaymentHandler struct {
