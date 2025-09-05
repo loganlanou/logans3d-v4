@@ -1,0 +1,299 @@
+package shop
+
+import (
+	"fmt"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+type CollectionTier struct {
+	Name         string
+	Slug         string
+	Description  string
+	Price        int64
+	OriginalPrice int64
+	Discount     int
+	Items        int
+	Color        string
+	GradientFrom string
+	GradientTo   string
+	IconEmoji    string
+	Features     []string
+	Products     []ProductWithImage
+}
+
+templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage) {
+	@layout.Base(layout.Meta{
+		Title: "Premium Collections - Logan's 3D Creations",
+		Description: "Discover our premium collection tiers with the most detailed models, bundled discounts, and exclusive variations.",
+		Keywords: "premium 3D prints, collector items, detailed models, bundle discounts, exclusive collections",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+			<!-- Enhanced Animated Background Elements -->
+			<div class="absolute inset-0 opacity-15">
+				<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-amber-400 via-red-500 to-amber-600 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-80 h-80 bg-gradient-to-r from-gray-400 via-slate-500 to-gray-600 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+				<div class="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-r from-red-400 via-rose-500 to-red-600 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-6000"></div>
+			</div>
+
+			<div class="relative z-10">
+				<!-- Premium Header -->
+				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
+					<div class="max-w-6xl mx-auto">
+						<div class="text-center">
+							<div class="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-amber-600/20 via-red-600/20 to-amber-600/20 rounded-full border-2 border-amber-500/40 mb-12 hover:border-red-500/60 hover:bg-gradient-to-r hover:from-amber-600/30 hover:via-red-600/30 hover:to-amber-600/30 transition-all duration-300 cursor-pointer shadow-lg shadow-amber-500/25">
+								<span class="text-amber-300 text-sm font-bold group-hover:text-red-300 transition-colors duration-200 tracking-wider uppercase">👑 Premium Collections</span>
+							</div>
+							<h1 class="text-6xl sm:text-7xl lg:text-9xl font-black leading-[0.85] mb-16 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
+								<div class="inline-block">
+									<span class="bg-gradient-to-r from-amber-300 via-red-400 to-amber-400 bg-clip-text text-transparent hover:from-red-400 hover:via-amber-400 hover:to-red-400 transition-all duration-300">
+										Elite
+									</span>
+								</div>
+								<br/>
+								<div class="inline-block relative">
+									<span class="bg-gradient-to-r from-red-400 via-amber-400 to-red-400 bg-clip-text text-transparent hover:from-amber-400 hover:via-red-400 hover:to-amber-400 transition-all duration-300">
+										Collection
+									</span>
+									<div class="absolute -bottom-3 left-0 w-full h-2 bg-gradient-to-r from-red-500 via-amber-500 to-red-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
+								</div>
+							</h1>
+							<p class="text-xl sm:text-2xl text-slate-300 mb-20 max-w-5xl mx-auto leading-relaxed group hover:text-slate-200 transition-colors duration-300">
+								Experience our most
+								<span class="text-amber-400 font-bold hover:text-red-400 transition-colors duration-200 cursor-pointer">detailed masterpieces</span>,
+								<span class="text-red-400 font-bold hover:text-amber-400 transition-colors duration-200 cursor-pointer">exclusive collections</span>,
+								and
+								<span class="text-gray-300 font-bold hover:text-slate-200 transition-colors duration-200 cursor-pointer">premium bundles</span>
+								at unbeatable prices
+							</p>
+						</div>
+					</div>
+				</section>
+
+				<!-- Collection Tiers -->
+				<section class="px-8 sm:px-12 lg:px-16 py-24">
+					<div class="max-w-7xl mx-auto">
+						<div class="text-center mb-20">
+							<h2 class="text-5xl font-black text-transparent bg-gradient-to-r from-amber-400 via-red-400 to-amber-400 bg-clip-text mb-8">Premium Tiers</h2>
+							<p class="text-xl text-slate-400 max-w-3xl mx-auto">Choose from our carefully curated collection tiers, each offering exceptional value and exclusive items</p>
+						</div>
+						
+						<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
+							for i, collection := range collections {
+								@CollectionTierCard(collection, i)
+							}
+						</div>
+					</div>
+				</section>
+
+				<!-- Featured Premium Products -->
+				<section class="px-8 sm:px-12 lg:px-16 py-24 bg-gradient-to-r from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
+					<div class="max-w-7xl mx-auto">
+						<div class="text-center mb-20">
+							<h2 class="text-5xl font-black text-transparent bg-gradient-to-r from-red-400 via-amber-400 to-red-400 bg-clip-text mb-8">Featured Premium Items</h2>
+							<p class="text-xl text-slate-400 max-w-3xl mx-auto">Our most detailed and sought-after pieces, crafted with precision and care</p>
+						</div>
+						
+						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12">
+							for _, product := range featuredProducts {
+								@PremiumProductCard(product)
+							}
+						</div>
+					</div>
+				</section>
+
+				<!-- Premium Benefits -->
+				<section class="px-8 sm:px-12 lg:px-16 py-32">
+					<div class="max-w-6xl mx-auto">
+						<div class="text-center mb-20">
+							<h2 class="text-5xl font-black text-transparent bg-gradient-to-r from-amber-400 via-red-400 to-amber-400 bg-clip-text mb-8">Premium Benefits</h2>
+						</div>
+						
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+							@PremiumBenefitCard("🎯", "Ultra-High Detail", "Microscopic precision with layer heights as low as 0.1mm for unparalleled detail quality", "from-amber-500", "to-red-500")
+							@PremiumBenefitCard("🛡️", "Premium Materials", "Aircraft-grade resins and specialty filaments for superior durability and finish", "from-gray-500", "to-slate-600")
+							@PremiumBenefitCard("⚡", "Priority Processing", "Jump the queue with expedited production and handling for faster delivery", "from-red-500", "to-amber-500")
+							@PremiumBenefitCard("📦", "Luxury Packaging", "Elegant presentation boxes with protective foam inserts and certificates", "from-amber-600", "to-yellow-500")
+							@PremiumBenefitCard("🔧", "Post-Processing", "Professional finishing including sanding, painting, and weathering effects", "from-slate-500", "to-gray-500")
+							@PremiumBenefitCard("🎁", "Exclusive Access", "First access to limited editions and collector-only releases", "from-red-600", "to-rose-500")
+						</div>
+					</div>
+				</section>
+
+				<!-- Call to Action -->
+				<section class="px-8 sm:px-12 lg:px-16 py-32">
+					<div class="max-w-4xl mx-auto text-center">
+						<div class="relative bg-gradient-to-r from-slate-800/60 via-slate-900/60 to-slate-800/60 rounded-3xl p-20 border-2 border-amber-500/30 backdrop-blur-sm hover:border-red-500/50 transition-all duration-500 group shadow-2xl shadow-amber-500/10">
+							<!-- Enhanced floating animation elements -->
+							<div class="absolute inset-0 opacity-30 pointer-events-none">
+								<div class="absolute top-4 right-4 w-20 h-20 bg-gradient-to-br from-amber-400 to-red-500 rounded-full blur-xl animate-pulse"></div>
+								<div class="absolute bottom-4 left-4 w-16 h-16 bg-gradient-to-br from-red-400 to-amber-500 rounded-full blur-lg animate-pulse animation-delay-2000"></div>
+								<div class="absolute top-1/2 left-4 w-12 h-12 bg-gradient-to-br from-gray-400 to-slate-500 rounded-full blur-md animate-pulse animation-delay-4000"></div>
+							</div>
+							<div class="relative z-10">
+								<h2 class="text-4xl sm:text-5xl font-black text-transparent bg-gradient-to-r from-amber-400 via-red-400 to-amber-400 bg-clip-text mb-8 group-hover:scale-105 transition-transform duration-300">Ready to Elevate Your Collection?</h2>
+								<p class="text-xl text-slate-300 mb-12 leading-relaxed">Join the ranks of elite collectors and experience the pinnacle of 3D printing craftsmanship</p>
+								<div class="flex flex-col sm:flex-row gap-6 justify-center">
+									<a href="/shop" class="group/btn inline-flex items-center px-12 py-6 bg-gradient-to-r from-amber-600 to-red-600 text-white font-bold rounded-2xl hover:from-amber-700 hover:to-red-700 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-red-500/30 transform hover:-translate-y-1 hover:scale-105 text-lg">
+										<span class="group-hover/btn:scale-110 transition-transform duration-200">Browse All Collections</span>
+										<svg class="ml-3 w-6 h-6 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+										</svg>
+									</a>
+									<a href="/custom" class="group/btn inline-flex items-center px-12 py-6 bg-gradient-to-r from-gray-600 to-slate-600 text-white font-bold rounded-2xl hover:from-gray-700 hover:to-slate-700 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-slate-500/30 transform hover:-translate-y-1 hover:scale-105 text-lg">
+										<span class="group-hover/btn:scale-110 transition-transform duration-200">Custom Premium Quote</span>
+										<svg class="ml-3 w-6 h-6 group-hover/btn:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100 4m0-4v2m0-6V4"></path>
+										</svg>
+									</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+			</div>
+		</div>
+	}
+}
+
+templ CollectionTierCard(collection CollectionTier, index int) {
+	<div class="group relative bg-gradient-to-br from-slate-800/60 to-slate-900/60 rounded-3xl overflow-hidden border-2 border-slate-700/50 backdrop-blur-sm hover:border-{ collection.Color }/60 hover:shadow-2xl hover:shadow-{ collection.Color }/20 transition-all duration-700 hover:-translate-y-3 cursor-pointer h-full flex flex-col">
+		<!-- Tier Badge -->
+		<div class="absolute top-6 right-6 z-20">
+			<div class={ fmt.Sprintf("px-4 py-2 bg-gradient-to-r %s %s text-white text-sm font-bold rounded-full shadow-lg", collection.GradientFrom, collection.GradientTo) }>
+				{ collection.IconEmoji } { collection.Name }
+			</div>
+		</div>
+		
+		<!-- Discount Badge -->
+		if collection.Discount > 0 {
+			<div class="absolute top-6 left-6 z-20">
+				<div class="px-3 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold rounded-full shadow-lg animate-pulse">
+					{ fmt.Sprintf("-%d%%", collection.Discount) } OFF
+				</div>
+			</div>
+		}
+		
+		<!-- Header Section -->
+		<div class="relative p-8 pb-6">
+			<div class="text-center">
+				<div class="text-6xl mb-4 group-hover:scale-110 transition-transform duration-500">{ collection.IconEmoji }</div>
+				<h3 class="text-3xl font-black text-white mb-4 group-hover:text-{ collection.Color }-400 transition-colors duration-300">{ collection.Name }</h3>
+				<p class="text-slate-400 text-base leading-relaxed mb-6 group-hover:text-slate-300 transition-colors duration-300">{ collection.Description }</p>
+			</div>
+		</div>
+		
+		<!-- Pricing Section -->
+		<div class="px-8 mb-6">
+			<div class="text-center">
+				if collection.Discount > 0 {
+					<div class="flex items-center justify-center gap-3 mb-4">
+						<span class="text-4xl font-black text-transparent bg-gradient-to-r { collection.GradientFrom } { collection.GradientTo } bg-clip-text">
+							${ fmt.Sprintf("%.2f", float64(collection.Price)/100) }
+						</span>
+						<span class="text-xl text-slate-500 line-through">
+							${ fmt.Sprintf("%.2f", float64(collection.OriginalPrice)/100) }
+						</span>
+					</div>
+				} else {
+					<div class="text-4xl font-black text-transparent bg-gradient-to-r { collection.GradientFrom } { collection.GradientTo } bg-clip-text mb-4">
+						${ fmt.Sprintf("%.2f", float64(collection.Price)/100) }
+					</div>
+				}
+				<div class="text-slate-400 text-sm">{ fmt.Sprintf("%d items included", collection.Items) }</div>
+			</div>
+		</div>
+		
+		<!-- Features List -->
+		<div class="px-8 mb-8 flex-grow">
+			<ul class="space-y-3">
+				for _, feature := range collection.Features {
+					<li class="flex items-center text-slate-300 group-hover:text-slate-200 transition-colors duration-300">
+						<svg class="w-5 h-5 text-{ collection.Color }-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+						</svg>
+						<span class="text-sm">{ feature }</span>
+					</li>
+				}
+			</ul>
+		</div>
+		
+		<!-- Action Button -->
+		<div class="p-8 pt-0 mt-auto">
+			<a href={ templ.URL(fmt.Sprintf("/shop/collection/%s", collection.Slug)) } 
+			   class={ fmt.Sprintf("block w-full bg-gradient-to-r %s %s text-white text-center px-8 py-4 rounded-xl font-bold hover:shadow-xl hover:shadow-%s-500/30 transition-all duration-300 transform hover:-translate-y-1 text-lg", collection.GradientFrom, collection.GradientTo, collection.Color) }>
+				View Collection
+			</a>
+		</div>
+	</div>
+}
+
+templ PremiumProductCard(product ProductWithImage) {
+	<div class="group relative bg-gradient-to-br from-slate-800/60 to-slate-900/60 rounded-3xl overflow-hidden border-2 border-slate-700/50 backdrop-blur-sm hover:border-amber-500/60 hover:shadow-2xl hover:shadow-amber-500/15 transition-all duration-700 hover:-translate-y-2 cursor-pointer h-full flex flex-col">
+		<!-- Premium Badge -->
+		<div class="absolute top-4 left-4 z-20">
+			<div class="px-3 py-1 bg-gradient-to-r from-amber-500 to-red-500 text-white text-xs font-bold rounded-full shadow-lg">
+				👑 PREMIUM
+			</div>
+		</div>
+		
+		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 overflow-hidden block cursor-pointer relative">
+			<div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10"></div>
+			if product.ImageURL != "" {
+				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+			} else {
+				<div class="w-full h-full flex items-center justify-center">
+					<div class="w-24 h-24 bg-gradient-to-br from-amber-600 to-red-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+						<svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+						</svg>
+					</div>
+				</div>
+			}
+		</a>
+		<div class="p-8 flex flex-col flex-grow">
+			<h3 class="text-xl font-bold text-white mb-4 line-clamp-2 min-h-[3.5rem] group-hover:text-amber-400 transition-colors duration-300">{ product.Product.Name }</h3>
+			<div class="mb-6 min-h-[4.5rem]">
+				if product.Product.Description.Valid {
+					<p class="text-slate-400 text-sm line-clamp-3 group-hover:text-slate-300 transition-colors duration-300">{ product.Product.Description.String }</p>
+				} else {
+					<p class="text-slate-500 text-sm italic">No description available</p>
+				}
+			</div>
+			<div class="flex items-center justify-between mb-6 min-h-[2rem]">
+				<div class="text-2xl font-bold text-transparent bg-gradient-to-br from-amber-400 to-red-400 bg-clip-text">
+					${ fmt.Sprintf("%.2f", float64(product.Product.PriceCents)/100) }
+				</div>
+				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
+					<span class="text-green-400 text-sm font-medium px-3 py-1 bg-green-400/10 rounded-full border border-green-400/20">In Stock</span>
+				} else {
+					<span class="text-red-400 text-sm font-medium px-3 py-1 bg-red-400/10 rounded-full border border-red-400/20">Out of Stock</span>
+				}
+			</div>
+			<div class="mt-auto space-y-3">
+				<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } 
+				   class="block w-full bg-gradient-to-r from-amber-600 to-red-600 text-white text-center px-6 py-4 rounded-xl font-semibold hover:from-amber-700 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/25 transform hover:-translate-y-1">
+					View Details
+				</a>
+				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
+					<button class="w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm add-to-cart-btn"
+					        data-product-id={ product.Product.ID }>
+						Add to Cart
+					</button>
+				}
+			</div>
+		</div>
+	</div>
+}
+
+templ PremiumBenefitCard(icon, title, description, gradientFrom, gradientTo string) {
+	<div class="group relative bg-gradient-to-br from-slate-800/60 to-slate-900/60 rounded-2xl p-8 border border-slate-700/50 backdrop-blur-sm hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-500 hover:-translate-y-1">
+		<div class="text-center">
+			<div class={ fmt.Sprintf("inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r %s %s rounded-2xl mb-6 group-hover:scale-110 transition-transform duration-300 text-2xl", gradientFrom, gradientTo) }>
+				{ icon }
+			</div>
+			<h3 class="text-xl font-bold text-white mb-4 group-hover:text-amber-400 transition-colors duration-300">{ title }</h3>
+			<p class="text-slate-400 text-sm leading-relaxed group-hover:text-slate-300 transition-colors duration-300">{ description }</p>
+		</div>
+	</div>
+}

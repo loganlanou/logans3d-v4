@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/labstack/echo/v4"
 	stripego "github.com/stripe/stripe-go/v80"
 	"github.com/stripe/stripe-go/v80/webhook"
 	"github.com/loganlanou/logans3d-v4/internal/stripe"
@@ -32,11 +33,10 @@ type CreatePaymentIntentResponse struct {
 	PaymentIntentID string `json:"payment_intent_id"`
 }
 
-func (h *PaymentHandler) CreatePaymentIntent(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) CreatePaymentIntent(c echo.Context) error {
 	var req CreatePaymentIntentRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
 	if req.Currency == "" {
@@ -45,8 +45,7 @@ func (h *PaymentHandler) CreatePaymentIntent(w http.ResponseWriter, r *http.Requ
 
 	paymentIntent, err := h.stripeService.CreatePaymentIntent(req.Amount, req.Currency, req.CustomerID)
 	if err != nil {
-		http.Error(w, "Failed to create payment intent", http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create payment intent")
 	}
 
 	response := CreatePaymentIntentResponse{
@@ -54,8 +53,7 @@ func (h *PaymentHandler) CreatePaymentIntent(w http.ResponseWriter, r *http.Requ
 		PaymentIntentID: paymentIntent.ID,
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	return c.JSON(http.StatusOK, response)
 }
 
 type CreateCustomerRequest struct {
@@ -63,60 +61,52 @@ type CreateCustomerRequest struct {
 	Name  string `json:"name"`
 }
 
-func (h *PaymentHandler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) CreateCustomer(c echo.Context) error {
 	var req CreateCustomerRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
 	}
 
 	customer, err := h.stripeService.CreateCustomer(req.Email, req.Name)
 	if err != nil {
-		http.Error(w, "Failed to create customer", http.StatusInternalServerError)
-		return
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create customer")
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{
+	return c.JSON(http.StatusOK, map[string]string{
 		"customer_id": customer.ID,
 		"email":       customer.Email,
 		"name":        customer.Name,
 	})
 }
 
-func (h *PaymentHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
+func (h *PaymentHandler) HandleWebhook(c echo.Context) error {
 	const MaxBodyBytes = int64(65536)
-	r.Body = http.MaxBytesReader(w, r.Body, MaxBodyBytes)
 	
-	payload, err := io.ReadAll(r.Body)
+	payload, err := io.ReadAll(c.Request().Body)
 	if err != nil {
-		http.Error(w, "Request body too large", http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, "Request body too large")
 	}
 
 	endpointSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
-	signatureHeader := r.Header.Get("Stripe-Signature")
+	signatureHeader := c.Request().Header.Get("Stripe-Signature")
 
 	event, err := webhook.ConstructEvent(payload, signatureHeader, endpointSecret)
 	if err != nil {
-		http.Error(w, "Invalid signature", http.StatusBadRequest)
-		return
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid signature")
 	}
 
 	switch event.Type {
 	case "payment_intent.succeeded":
 		var paymentIntent stripego.PaymentIntent
 		if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
-			http.Error(w, "Error parsing webhook JSON", http.StatusBadRequest)
-			return
+			return echo.NewHTTPError(http.StatusBadRequest, "Error parsing webhook JSON")
 		}
 		// Handle successful payment
 		
 	case "payment_intent.payment_failed":
 		var paymentIntent stripego.PaymentIntent
 		if err := json.Unmarshal(event.Data.Raw, &paymentIntent); err != nil {
-			http.Error(w, "Error parsing webhook JSON", http.StatusBadRequest)
-			return
+			return echo.NewHTTPError(http.StatusBadRequest, "Error parsing webhook JSON")
 		}
 		// Handle failed payment
 		
@@ -124,5 +114,5 @@ func (h *PaymentHandler) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 		// Unexpected event type
 	}
 
-	w.WriteHeader(http.StatusOK)
+	return c.NoContent(http.StatusOK)
 }
