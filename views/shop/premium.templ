@@ -6,26 +6,26 @@ import (
 )
 
 type CollectionTier struct {
-	Name         string
-	Slug         string
-	Description  string
-	Price        int64
+	Name          string
+	Slug          string
+	Description   string
+	Price         int64
 	OriginalPrice int64
-	Discount     int
-	Items        int
-	Color        string
-	GradientFrom string
-	GradientTo   string
-	IconEmoji    string
-	Features     []string
-	Products     []ProductWithImage
+	Discount      int
+	Items         int
+	Color         string
+	GradientFrom  string
+	GradientTo    string
+	IconEmoji     string
+	Features      []string
+	Products      []ProductWithImage
 }
 
 templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage) {
 	@layout.Base(layout.Meta{
-		Title: "Premium Collections - Logan's 3D Creations",
+		Title:       "Premium Collections - Logan's 3D Creations",
 		Description: "Discover our premium collection tiers with the most detailed models, bundled discounts, and exclusive variations.",
-		Keywords: "premium 3D prints, collector items, detailed models, bundle discounts, exclusive collections",
+		Keywords:    "premium 3D prints, collector items, detailed models, bundle discounts, exclusive collections",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Enhanced Animated Background Elements -->
@@ -35,7 +35,6 @@ templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage)
 				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
 				<div class="absolute top-1/2 right-1/3 w-64 h-64 bg-gradient-to-r from-red-400 via-rose-500 to-red-600 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-6000"></div>
 			</div>
-
 			<div class="relative z-10">
 				<!-- Premium Header -->
 				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
@@ -69,7 +68,6 @@ templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage)
 						</div>
 					</div>
 				</section>
-
 				<!-- Collection Tiers -->
 				<section class="px-8 sm:px-12 lg:px-16 py-24">
 					<div class="max-w-7xl mx-auto">
@@ -77,7 +75,6 @@ templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage)
 							<h2 class="text-5xl font-black text-transparent bg-gradient-to-r from-amber-400 via-red-400 to-amber-400 bg-clip-text mb-8">Premium Tiers</h2>
 							<p class="text-xl text-slate-400 max-w-3xl mx-auto">Choose from our carefully curated collection tiers, each offering exceptional value and exclusive items</p>
 						</div>
-						
 						<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 lg:gap-12">
 							for i, collection := range collections {
 								@CollectionTierCard(collection, i)
@@ -85,7 +82,6 @@ templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage)
 						</div>
 					</div>
 				</section>
-
 				<!-- Featured Premium Products -->
 				<section class="px-8 sm:px-12 lg:px-16 py-24 bg-gradient-to-r from-slate-900/50 to-slate-800/50 backdrop-blur-sm">
 					<div class="max-w-7xl mx-auto">
@@ -93,7 +89,6 @@ templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage)
 							<h2 class="text-5xl font-black text-transparent bg-gradient-to-r from-red-400 via-amber-400 to-red-400 bg-clip-text mb-8">Featured Premium Items</h2>
 							<p class="text-xl text-slate-400 max-w-3xl mx-auto">Our most detailed and sought-after pieces, crafted with precision and care</p>
 						</div>
-						
 						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12">
 							for _, product := range featuredProducts {
 								@PremiumProductCard(product)
@@ -101,14 +96,12 @@ templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage)
 						</div>
 					</div>
 				</section>
-
 				<!-- Premium Benefits -->
 				<section class="px-8 sm:px-12 lg:px-16 py-32">
 					<div class="max-w-6xl mx-auto">
 						<div class="text-center mb-20">
 							<h2 class="text-5xl font-black text-transparent bg-gradient-to-r from-amber-400 via-red-400 to-amber-400 bg-clip-text mb-8">Premium Benefits</h2>
 						</div>
-						
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
 							@PremiumBenefitCard("🎯", "Ultra-High Detail", "Microscopic precision with layer heights as low as 0.1mm for unparalleled detail quality", "from-amber-500", "to-red-500")
 							@PremiumBenefitCard("🛡️", "Premium Materials", "Aircraft-grade resins and specialty filaments for superior durability and finish", "from-gray-500", "to-slate-600")
@@ -119,7 +112,6 @@ templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage)
 						</div>
 					</div>
 				</section>
-
 				<!-- Call to Action -->
 				<section class="px-8 sm:px-12 lg:px-16 py-32">
 					<div class="max-w-4xl mx-auto text-center">
@@ -164,7 +156,6 @@ templ CollectionTierCard(collection CollectionTier, index int) {
 				{ collection.IconEmoji } { collection.Name }
 			</div>
 		</div>
-		
 		<!-- Discount Badge -->
 		if collection.Discount > 0 {
 			<div class="absolute top-6 left-6 z-20">
@@ -173,7 +164,6 @@ templ CollectionTierCard(collection CollectionTier, index int) {
 				</div>
 			</div>
 		}
-		
 		<!-- Header Section -->
 		<div class="relative p-8 pb-6">
 			<div class="text-center">
@@ -182,7 +172,6 @@ templ CollectionTierCard(collection CollectionTier, index int) {
 				<p class="text-slate-400 text-base leading-relaxed mb-6 group-hover:text-slate-300 transition-colors duration-300">{ collection.Description }</p>
 			</div>
 		</div>
-		
 		<!-- Pricing Section -->
 		<div class="px-8 mb-6">
 			<div class="text-center">
@@ -203,7 +192,6 @@ templ CollectionTierCard(collection CollectionTier, index int) {
 				<div class="text-slate-400 text-sm">{ fmt.Sprintf("%d items included", collection.Items) }</div>
 			</div>
 		</div>
-		
 		<!-- Features List -->
 		<div class="px-8 mb-8 flex-grow">
 			<ul class="space-y-3">
@@ -217,11 +205,12 @@ templ CollectionTierCard(collection CollectionTier, index int) {
 				}
 			</ul>
 		</div>
-		
 		<!-- Action Button -->
 		<div class="p-8 pt-0 mt-auto">
-			<a href={ templ.URL(fmt.Sprintf("/shop/collection/%s", collection.Slug)) } 
-			   class={ fmt.Sprintf("block w-full bg-gradient-to-r %s %s text-white text-center px-8 py-4 rounded-xl font-bold hover:shadow-xl hover:shadow-%s-500/30 transition-all duration-300 transform hover:-translate-y-1 text-lg", collection.GradientFrom, collection.GradientTo, collection.Color) }>
+			<a
+				href={ templ.URL(fmt.Sprintf("/shop/collection/%s", collection.Slug)) }
+				class={ fmt.Sprintf("block w-full bg-gradient-to-r %s %s text-white text-center px-8 py-4 rounded-xl font-bold hover:shadow-xl hover:shadow-%s-500/30 transition-all duration-300 transform hover:-translate-y-1 text-lg", collection.GradientFrom, collection.GradientTo, collection.Color) }
+			>
 				View Collection
 			</a>
 		</div>
@@ -236,11 +225,10 @@ templ PremiumProductCard(product ProductWithImage) {
 				👑 PREMIUM
 			</div>
 		</div>
-		
 		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 overflow-hidden block cursor-pointer relative">
 			<div class="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-10"></div>
 			if product.ImageURL != "" {
-				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
 			} else {
 				<div class="w-full h-full flex items-center justify-center">
 					<div class="w-24 h-24 bg-gradient-to-br from-amber-600 to-red-600 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
@@ -271,13 +259,17 @@ templ PremiumProductCard(product ProductWithImage) {
 				}
 			</div>
 			<div class="mt-auto space-y-3">
-				<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } 
-				   class="block w-full bg-gradient-to-r from-amber-600 to-red-600 text-white text-center px-6 py-4 rounded-xl font-semibold hover:from-amber-700 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/25 transform hover:-translate-y-1">
+				<a
+					href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) }
+					class="block w-full bg-gradient-to-r from-amber-600 to-red-600 text-white text-center px-6 py-4 rounded-xl font-semibold hover:from-amber-700 hover:to-red-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/25 transform hover:-translate-y-1"
+				>
 					View Details
 				</a>
 				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
-					<button class="w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm add-to-cart-btn"
-					        data-product-id={ product.Product.ID }>
+					<button
+						class="w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm add-to-cart-btn"
+						data-product-id={ product.Product.ID }
+					>
 						Add to Cart
 					</button>
 				}

@@ -4,9 +4,9 @@ import "github.com/loganlanou/logans3d-v4/views/layout"
 
 templ Shipping() {
 	@layout.Base(layout.Meta{
-		Title: "Shipping & Returns - Logan's 3D Creations",
+		Title:       "Shipping & Returns - Logan's 3D Creations",
 		Description: "Learn about our shipping methods, delivery times, return policy, and refund procedures for 3D printed products and custom orders.",
-		Keywords: "shipping, returns, refunds, delivery, policy, 3D printing",
+		Keywords:    "shipping, returns, refunds, delivery, policy, 3D printing",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,10 +15,8 @@ templ Shipping() {
 					<p class="text-slate-600 mb-8">
 						<strong>Last updated:</strong> January 1, 2025
 					</p>
-
 					<div class="prose max-w-none text-slate-700">
 						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Shipping Information</h2>
-						
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Shipping Methods</h3>
 						<div class="bg-slate-50 p-6 rounded-lg mb-6">
 							<div class="grid md:grid-cols-2 gap-6">
@@ -48,7 +46,6 @@ templ Shipping() {
 								</div>
 							</div>
 						</div>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Shipping Costs</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>Shipping costs are calculated based on size, weight, and destination</li>
@@ -56,7 +53,6 @@ templ Shipping() {
 							<li>Oversized items may require special shipping arrangements</li>
 							<li>International shipping available on request (additional fees apply)</li>
 						</ul>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Processing Time</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li><strong>In-stock items:</strong> 1-2 business days</li>
@@ -64,7 +60,6 @@ templ Shipping() {
 							<li><strong>Rush orders:</strong> Available for additional fee (contact us for details)</li>
 							<li><strong>Holiday periods:</strong> May experience extended processing times</li>
 						</ul>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Delivery</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>Signature may be required for valuable orders</li>
@@ -72,9 +67,7 @@ templ Shipping() {
 							<li>Address accuracy is crucial - we cannot reship for incorrect addresses</li>
 							<li>Tracking information will be provided via email</li>
 						</ul>
-
 						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Returns & Refunds</h2>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Return Policy Overview</h3>
 						<div class="bg-blue-50 p-6 rounded-lg mb-6">
 							<p class="text-blue-700">
@@ -83,7 +76,6 @@ templ Shipping() {
 								or error on our part.
 							</p>
 						</div>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Returnable Items</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>In-stock products within 14 days of delivery</li>
@@ -91,7 +83,6 @@ templ Shipping() {
 							<li>Incorrect items shipped due to our error</li>
 							<li>Items damaged during shipping</li>
 						</ul>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Non-Returnable Items</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>Custom printed items made to your specifications</li>
@@ -100,7 +91,6 @@ templ Shipping() {
 							<li>Digital files or design services</li>
 							<li>Items returned without original packaging</li>
 						</ul>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Quality Guarantee</h3>
 						<p class="mb-4">We stand behind the quality of our work. If you receive a custom item that:</p>
 						<ul class="list-disc pl-6 mb-6">
@@ -111,7 +101,6 @@ templ Shipping() {
 						<p class="mb-6">
 							We will work with you to resolve the issue through repair, reprint, or refund.
 						</p>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Return Process</h3>
 						<ol class="list-decimal pl-6 mb-6">
 							<li><strong>Contact Us:</strong> Email us within 14 days of delivery with photos and description</li>
@@ -120,7 +109,6 @@ templ Shipping() {
 							<li><strong>Shipping:</strong> Ship to our return address using a trackable method</li>
 							<li><strong>Processing:</strong> Allow 5-10 business days for inspection and refund processing</li>
 						</ol>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Refund Policy</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>Refunds processed to original payment method</li>
@@ -129,9 +117,7 @@ templ Shipping() {
 							<li>Partial refunds may apply for used or damaged items</li>
 							<li>Processing time: 5-10 business days after we receive the return</li>
 						</ul>
-
 						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Damaged or Lost Packages</h2>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Shipping Damage</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>Inspect packages immediately upon delivery</li>
@@ -139,7 +125,6 @@ templ Shipping() {
 							<li>Take photos of damaged packaging and items</li>
 							<li>We will work with the shipping carrier to resolve claims</li>
 						</ul>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Lost Packages</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>We are responsible until delivery confirmation</li>
@@ -147,7 +132,6 @@ templ Shipping() {
 							<li>We will investigate with the carrier and replace if necessary</li>
 							<li>Claims must be reported within 7 days of delivery date</li>
 						</ul>
-
 						<h2 class="text-2xl font-semibold text-slate-900 mb-4">International Shipping</h2>
 						<p class="mb-4">Limited international shipping available:</p>
 						<ul class="list-disc pl-6 mb-6">
@@ -156,22 +140,18 @@ templ Shipping() {
 							<li>Longer delivery times (10-30 business days)</li>
 							<li>No returns on international orders unless manufacturing defect</li>
 						</ul>
-
 						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Special Circumstances</h2>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Force Majeure</h3>
 						<p class="mb-6">
 							Shipping delays due to weather, natural disasters, or other circumstances beyond 
 							our control are not eligible for refunds, but we will work to resolve issues promptly.
 						</p>
-
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Address Changes</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>Address changes must be requested before order ships</li>
 							<li>Additional shipping fees may apply for address corrections</li>
 							<li>Cannot intercept packages already in transit</li>
 						</ul>
-
 						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Contact Us</h2>
 						<p class="mb-4">
 							For shipping questions, return authorization, or to report issues:

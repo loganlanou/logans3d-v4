@@ -11,6 +11,10 @@ templ-update:
 	go install github.com/a-h/templ/cmd/templ@latest
 	go get -u github.com/a-h/templ@latest
 
+.PHONY: templ-fmt
+templ-fmt:
+	templ fmt .
+
 .PHONY: generate
 generate:
 	go generate ./...
@@ -61,7 +65,7 @@ sqlc-generate:
 
 .PHONY: seed
 seed:
-	go run scripts/seed-db/main.go -db db/logans3d.db
+	go run scripts/seed-products/main.go -db ./data/database.db
 
 .PHONY: css
 css:

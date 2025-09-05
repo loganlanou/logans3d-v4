@@ -27,7 +27,6 @@ mkdir -p ~/go-install && tar -C ~/go-install -xzf go1.25.0.linux-amd64.tar.gz
 # Then add to your shell config: eval "$(direnv hook bash)"
 
 # 3. Install development tools
-export GOROOT=~/go-install/go && export PATH=$GOROOT/bin:$PATH && export GOPATH=~/go
 go install github.com/air-verse/air@latest
 go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -197,11 +196,6 @@ make deploy  # Deploy to production
 Copy `.envrc.example` to `.envrc` and configure:
 
 ```bash
-# Required for development
-export GOROOT=~/go-install/go           # Path to Go installation
-export PATH=$GOROOT/bin:$PATH           # Add Go to PATH
-export GOPATH=~/go                      # Go workspace path
-
 # Application settings
 export ENVIRONMENT="development"
 export PORT="8000"
@@ -224,7 +218,6 @@ export EMAIL_API_KEY=""                 # Email notifications
 
 **Required for Development:**
 
-- `GOROOT`, `PATH`, `GOPATH` - Go environment setup
 - `ENVIRONMENT`, `PORT`, `BASE_URL` - Basic application config
 - `DB_PATH` - Database location
 

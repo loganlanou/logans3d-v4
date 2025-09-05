@@ -6,10 +6,10 @@ import (
 )
 
 type Meta struct {
-	Title       string
-	Description string
-	Keywords    string
-	OGImage     string
+	Title        string
+	Description  string
+	Keywords     string
+	OGImage      string
 	CanonicalURL string
 }
 
@@ -22,187 +22,21 @@ templ Base(meta Meta) {
 			<title>{ meta.Title }</title>
 			<meta name="description" content={ meta.Description }/>
 			<meta name="keywords" content={ meta.Keywords }/>
-			
 			<!-- Open Graph -->
 			<meta property="og:title" content={ meta.Title }/>
 			<meta property="og:description" content={ meta.Description }/>
 			if meta.OGImage != "" {
 				<meta property="og:image" content={ meta.OGImage }/>
 			}
-			
 			<!-- Favicon -->
 			<link rel="icon" type="image/png" href="/public/images/favicon.png"/>
-			
 			<!-- CSS -->
 			<link rel="stylesheet" href="/public/css/styles.css"/>
-			
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-			
-			<script>
-				// Cart functionality
-				async function addToCart(productId, quantity = 1) {
-					try {
-						const response = await fetch('/cart/add', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({
-								product_id: productId,
-								quantity: quantity
-							})
-						});
-
-						if (!response.ok) {
-							throw new Error('Failed to add item to cart');
-						}
-
-						const data = await response.json();
-						
-						// Show success message
-						showToast(data.message || 'Item added to cart!', 'success');
-						
-						// Update cart count in UI if element exists
-						const cartCountElement = document.getElementById('cart-count');
-						if (cartCountElement && data.cart_count !== undefined) {
-							cartCountElement.textContent = data.cart_count;
-							cartCountElement.classList.remove('hidden');
-						}
-
-					} catch (error) {
-						console.error('Error adding to cart:', error);
-						showToast('Failed to add item to cart', 'error');
-					}
-				}
-
-				async function updateQuantity(itemId, quantity) {
-					if (quantity < 1) return;
-
-					try {
-						const response = await fetch('/cart/update', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({
-								item_id: itemId,
-								quantity: quantity
-							})
-						});
-
-						if (!response.ok) {
-							throw new Error('Failed to update cart');
-						}
-
-						// Reload the page to update the cart
-						window.location.reload();
-
-					} catch (error) {
-						console.error('Error updating cart:', error);
-						showToast('Failed to update cart', 'error');
-					}
-				}
-
-				async function removeFromCart(itemId) {
-					try {
-						const response = await fetch('/cart/remove', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-							},
-							body: JSON.stringify({
-								item_id: itemId
-							})
-						});
-
-						if (!response.ok) {
-							throw new Error('Failed to remove item');
-						}
-
-						// Reload the page to update the cart
-						window.location.reload();
-
-					} catch (error) {
-						console.error('Error removing from cart:', error);
-						showToast('Failed to remove item', 'error');
-					}
-				}
-
-				function proceedToCheckout() {
-					window.location.href = '/checkout';
-				}
-
-				// Toast notification system
-				function showToast(message, type = 'info') {
-					// Remove existing toast if any
-					const existingToast = document.getElementById('toast');
-					if (existingToast) {
-						existingToast.remove();
-					}
-
-					// Create toast element
-					const toast = document.createElement('div');
-					toast.id = 'toast';
-					toast.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-transform duration-300 translate-x-full ${
-						type === 'success' ? 'bg-green-600 text-white' : 
-						type === 'error' ? 'bg-red-600 text-white' : 
-						'bg-blue-600 text-white'
-					}`;
-					toast.textContent = message;
-
-					document.body.appendChild(toast);
-
-					// Animate in
-					setTimeout(() => {
-						toast.classList.remove('translate-x-full');
-						toast.classList.add('translate-x-0');
-					}, 100);
-
-					// Auto remove after 3 seconds
-					setTimeout(() => {
-						toast.classList.remove('translate-x-0');
-						toast.classList.add('translate-x-full');
-						setTimeout(() => {
-							toast.remove();
-						}, 300);
-					}, 3000);
-				}
-
-				// Initialize event listeners when DOM is loaded
-				document.addEventListener('DOMContentLoaded', function() {
-					// Add to cart buttons
-					document.addEventListener('click', function(e) {
-						if (e.target.classList.contains('add-to-cart-btn')) {
-							e.preventDefault();
-							const productId = e.target.dataset.productId;
-							if (productId) {
-								addToCart(productId);
-							}
-						}
-						
-						// Cart update quantity buttons
-						if (e.target.classList.contains('cart-update-btn')) {
-							e.preventDefault();
-							const itemId = e.target.dataset.itemId;
-							const quantity = parseInt(e.target.dataset.quantity);
-							if (itemId && quantity > 0) {
-								updateQuantity(itemId, quantity);
-							}
-						}
-						
-						// Cart remove buttons
-						if (e.target.classList.contains('cart-remove-btn')) {
-							e.preventDefault();
-							const itemId = e.target.dataset.itemId;
-							if (itemId) {
-								removeFromCart(itemId);
-							}
-						}
-					});
-				});
-			</script>
+			<!-- Load Cart JavaScript -->
+			<script src="/public/js/cart.js"></script>
 		</head>
 		<body class="min-h-screen bg-gray-50 custom-scrollbar">
 			@Header()
@@ -227,7 +61,6 @@ templ Header() {
 						<span class="text-lg lg:text-xl font-display font-bold text-gradient-3d whitespace-nowrap">Logan's 3D Creations</span>
 					</a>
 				</div>
-				
 				<!-- Desktop Navigation -->
 				<div class="hidden md:block">
 					<div class="ml-10 flex items-baseline space-x-4">
@@ -239,13 +72,12 @@ templ Header() {
 						<a href="/contact" class="nav-link">Contact</a>
 					</div>
 				</div>
-				
 				<!-- Cart and Mobile menu button -->
 				<div class="flex items-center space-x-4">
 					<!-- Account Menu -->
 					<div class="relative hidden md:block" x-data="{ open: false }">
-						<button 
-							@click="open = !open" 
+						<button
+							@click="open = !open"
 							@click.away="open = false"
 							class="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors duration-200 p-2 rounded-lg hover:bg-purple-50"
 						>
@@ -259,9 +91,8 @@ templ Header() {
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 							</svg>
 						</button>
-						
-						<div 
-							x-show="open" 
+						<div
+							x-show="open"
 							x-transition:enter="transition ease-out duration-100"
 							x-transition:enter-start="transform opacity-0 scale-95"
 							x-transition:enter-end="transform opacity-100 scale-100"
@@ -296,15 +127,13 @@ templ Header() {
 							</div>
 						</div>
 					</div>
-
 					<!-- Cart icon -->
 					<a href="/cart" class="text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2 relative" title="Shopping Cart">
 						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6h9M9 19.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm10.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6h9M9 19.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zm10.5 0a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path>
 						</svg>
 						<span id="cart-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
 					</a>
-					
 					<!-- Mobile menu button -->
 					<div class="md:hidden">
 						<button class="text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2" x-data @click="$dispatch('toggle-menu')" aria-label="Toggle mobile menu">
@@ -321,14 +150,19 @@ templ Header() {
 }
 
 templ MobileMenu() {
-	<div x-data="{ open: false }" @toggle-menu.window="open = !open" x-show="open" x-cloak 
-	     x-transition:enter="transition ease-out duration-200"
-	     x-transition:enter-start="opacity-0 transform -translate-y-4"
-	     x-transition:enter-end="opacity-100 transform translate-y-0"
-	     x-transition:leave="transition ease-in duration-150"
-	     x-transition:leave-start="opacity-100 transform translate-y-0"
-	     x-transition:leave-end="opacity-0 transform -translate-y-4"
-	     class="md:hidden bg-white shadow-xl border-t border-gray-100">
+	<div
+		x-data="{ open: false }"
+		@toggle-menu.window="open = !open"
+		x-show="open"
+		x-cloak
+		x-transition:enter="transition ease-out duration-200"
+		x-transition:enter-start="opacity-0 transform -translate-y-4"
+		x-transition:enter-end="opacity-100 transform translate-y-0"
+		x-transition:leave="transition ease-in duration-150"
+		x-transition:leave-start="opacity-100 transform translate-y-0"
+		x-transition:leave-end="opacity-0 transform -translate-y-4"
+		class="md:hidden bg-white shadow-xl border-t border-gray-100"
+	>
 		<nav class="container-responsive py-4">
 			<!-- Account Section -->
 			<div class="border-b pb-4 mb-4">
@@ -347,7 +181,6 @@ templ MobileMenu() {
 					Sign In with Google
 				</a>
 			</div>
-			
 			<ul class="space-y-1">
 				<li><a href="/shop" class="mobile-nav-link" @click="open = false">Shop</a></li>
 				<li><a href="/custom" class="mobile-nav-link" @click="open = false">Custom Orders</a></li>
@@ -371,12 +204,12 @@ templ Footer() {
 					<div class="flex space-x-4 mt-4">
 						<a href="https://www.facebook.com/Logans3D" target="_blank" class="text-gray-400 hover:text-white">
 							<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+								<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"></path>
 							</svg>
 						</a>
 						<a href="https://www.instagram.com/logans3dcreations/" target="_blank" class="text-gray-400 hover:text-white">
 							<svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.62 5.367 11.987 11.988 11.987 6.62 0 11.987-5.367 11.987-11.987C24.014 5.367 18.637.001 12.017.001zM8.449 16.988c-1.297 0-2.448-.473-3.342-1.257-.894-.784-1.407-1.814-1.407-2.958 0-1.144.513-2.174 1.407-2.958.894-.784 2.045-1.257 3.342-1.257 1.297 0 2.448.473 3.342 1.257.894.784 1.407 1.814 1.407 2.958 0 1.144-.513 2.174-1.407 2.958-.894.784-2.045 1.257-3.342 1.257zm3.568-7.494c-.73 0-1.321-.591-1.321-1.321s.591-1.321 1.321-1.321 1.321.591 1.321 1.321-.591 1.321-1.321 1.321z"/>
+								<path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 6.62 5.367 11.987 11.988 11.987 6.62 0 11.987-5.367 11.987-11.987C24.014 5.367 18.637.001 12.017.001zM8.449 16.988c-1.297 0-2.448-.473-3.342-1.257-.894-.784-1.407-1.814-1.407-2.958 0-1.144.513-2.174 1.407-2.958.894-.784 2.045-1.257 3.342-1.257 1.297 0 2.448.473 3.342 1.257.894.784 1.407 1.814 1.407 2.958 0 1.144-.513 2.174-1.407 2.958-.894.784-2.045 1.257-3.342 1.257zm3.568-7.494c-.73 0-1.321-.591-1.321-1.321s.591-1.321 1.321-1.321 1.321.591 1.321 1.321-.591 1.321-1.321 1.321z"></path>
 							</svg>
 						</a>
 					</div>

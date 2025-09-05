@@ -8,9 +8,9 @@ import (
 
 templ Cart(cartItems []db.GetCartBySessionRow, totalCents int64) {
 	@layout.Base(layout.Meta{
-		Title: "Shopping Cart - Logan's 3D Creations",
+		Title:       "Shopping Cart - Logan's 3D Creations",
 		Description: "Review your cart and proceed to checkout",
-		Keywords: "cart, checkout, 3D printed products",
+		Keywords:    "cart, checkout, 3D printed products",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
@@ -18,7 +18,6 @@ templ Cart(cartItems []db.GetCartBySessionRow, totalCents int64) {
 				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
 				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
 			</div>
-
 			<div class="relative z-10">
 				<!-- Header -->
 				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
@@ -36,7 +35,6 @@ templ Cart(cartItems []db.GetCartBySessionRow, totalCents int64) {
 						</div>
 					</div>
 				</section>
-
 				<!-- Cart Content -->
 				<section class="px-8 sm:px-12 lg:px-16 py-20">
 					<div class="max-w-6xl mx-auto">
@@ -66,12 +64,10 @@ templ Cart(cartItems []db.GetCartBySessionRow, totalCents int64) {
 										}
 									</div>
 								</div>
-
 								<!-- Cart Summary -->
 								<div class="lg:col-span-1">
 									<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-8 border border-slate-700/50 backdrop-blur-sm">
 										<h3 class="text-2xl font-bold text-white mb-6">Order Summary</h3>
-										
 										<div class="space-y-4 mb-8">
 											<div class="flex justify-between text-slate-300">
 												<span>Subtotal</span>
@@ -90,12 +86,12 @@ templ Cart(cartItems []db.GetCartBySessionRow, totalCents int64) {
 												</div>
 											</div>
 										</div>
-
-										<button class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold py-4 rounded-2xl hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 mb-4"
-											    onclick="proceedToCheckout()">
+										<button
+											class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold py-4 rounded-2xl hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 mb-4"
+											onclick="proceedToCheckout()"
+										>
 											Proceed to Checkout
 										</button>
-										
 										<a href="/shop" class="block w-full text-center text-slate-300 hover:text-white py-3 transition-colors duration-300">
 											Continue Shopping
 										</a>
@@ -125,36 +121,40 @@ templ CartItemCard(item db.GetCartBySessionRow) {
 					</div>
 				}
 			</div>
-
 			<!-- Product Details -->
 			<div class="flex-grow">
 				<h4 class="text-lg font-semibold text-white mb-2">{ item.Name }</h4>
 				<p class="text-slate-400 mb-4">
 					${ fmt.Sprintf("%.2f", float64(item.PriceCents)/100) } each
 				</p>
-				
 				<!-- Quantity Controls -->
 				<div class="flex items-center gap-4">
 					<div class="flex items-center bg-slate-700/50 rounded-lg border border-slate-600/50">
-						<button class="px-3 py-2 text-slate-300 hover:text-white transition-colors cart-update-btn"
-							    data-item-id={ item.ID } data-quantity={ fmt.Sprintf("%d", item.Quantity - 1) }
-								{ templ.Attributes{"disabled": item.Quantity <= 1}... }>
+						<button
+							class="px-3 py-2 text-slate-300 hover:text-white transition-colors cart-update-btn"
+							data-item-id={ item.ID }
+							data-quantity={ fmt.Sprintf("%d", item.Quantity-1) }
+							{ templ.Attributes{"disabled": item.Quantity <= 1}... }
+						>
 							-
 						</button>
 						<span class="px-4 py-2 text-white font-medium">{ fmt.Sprintf("%d", item.Quantity) }</span>
-						<button class="px-3 py-2 text-slate-300 hover:text-white transition-colors cart-update-btn"
-							    data-item-id={ item.ID } data-quantity={ fmt.Sprintf("%d", item.Quantity + 1) }>
+						<button
+							class="px-3 py-2 text-slate-300 hover:text-white transition-colors cart-update-btn"
+							data-item-id={ item.ID }
+							data-quantity={ fmt.Sprintf("%d", item.Quantity+1) }
+						>
 							+
 						</button>
 					</div>
-					
-					<button class="text-red-400 hover:text-red-300 transition-colors text-sm cart-remove-btn"
-						    data-item-id={ item.ID }>
+					<button
+						class="text-red-400 hover:text-red-300 transition-colors text-sm cart-remove-btn"
+						data-item-id={ item.ID }
+					>
 						Remove
 					</button>
 				</div>
 			</div>
-
 			<!-- Item Total -->
 			<div class="text-right flex-shrink-0">
 				<div class="text-xl font-bold text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 bg-clip-text">

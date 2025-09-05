@@ -2,11 +2,6 @@
 # Copy this file to .envrc and update with your actual values
 # Run 'direnv allow' after creating .envrc
 
-# Go environment (adjust paths if needed)
-export GOROOT=~/go-install/go
-export PATH=$GOROOT/bin:$PATH
-export GOPATH=~/go
-
 # Application settings
 export ENVIRONMENT="development"
 export PORT="8000"

@@ -27,3 +27,14 @@ RETURNING *;
 
 -- name: DeleteCategory :exec
 DELETE FROM categories WHERE id = ?;
+
+-- name: GetCategoryByName :one
+SELECT * FROM categories WHERE name = ?;
+
+-- name: UpsertCategory :one
+INSERT INTO categories (id, name, slug, created_at, updated_at)
+VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+ON CONFLICT(name) DO UPDATE SET
+    slug = excluded.slug,
+    updated_at = CURRENT_TIMESTAMP
+RETURNING *;

@@ -23,6 +23,12 @@ storage/db/querier.go
 *.db
 *.sqlite
 *.sqlite3
+data/database.db
+data/database.db-shm
+data/database.db-wal
+data/*.db
+data/*.db-shm
+data/*.db-wal
 
 # Environment and secrets
 .envrc

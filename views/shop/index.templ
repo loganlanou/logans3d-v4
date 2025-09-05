@@ -8,9 +8,9 @@ import (
 
 templ Index(products []ProductWithImage, categories []db.Category, currentCategory *db.Category) {
 	@layout.Base(layout.Meta{
-		Title: "Shop - Logan's 3D Creations",
+		Title:       "Shop - Logan's 3D Creations",
 		Description: "Browse our collection of 3D printed collectibles, dinosaurs, dragons, animals and custom items.",
-		Keywords: "3D printed products, collectibles, dinosaurs, dragons, custom printing",
+		Keywords:    "3D printed products, collectibles, dinosaurs, dragons, custom printing",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
@@ -19,7 +19,6 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
 				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
 			</div>
-
 			<div class="relative z-10">
 				<!-- Header -->
 				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
@@ -50,7 +49,6 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 						</div>
 					</div>
 				</section>
-
 				<!-- Categories Filter -->
 				<section class="px-8 sm:px-12 lg:px-16 py-16">
 					<div class="max-w-6xl mx-auto">
@@ -66,13 +64,17 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 							}
 							for _, category := range categories {
 								if currentCategory != nil && currentCategory.ID == category.ID {
-									<a href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) } 
-									   class="group px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25 rounded-2xl border border-blue-500/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1">
+									<a
+										href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) }
+										class="group px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25 rounded-2xl border border-blue-500/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1"
+									>
 										<span class="group-hover:scale-105 transition-transform duration-200">{ category.Name }</span>
 									</a>
 								} else {
-									<a href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) } 
-									   class="group px-8 py-4 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-500/10 hover:-translate-y-1">
+									<a
+										href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) }
+										class="group px-8 py-4 bg-slate-800/50 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-2xl border border-slate-600/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:border-teal-500/50 hover:shadow-lg hover:shadow-teal-500/10 hover:-translate-y-1"
+									>
 										<span class="group-hover:scale-105 transition-transform duration-200">{ category.Name }</span>
 									</a>
 								}
@@ -80,7 +82,6 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 						</div>
 					</div>
 				</section>
-
 				<!-- Products Grid -->
 				<section class="px-8 sm:px-12 lg:px-16 py-20">
 					<div class="max-w-7xl mx-auto">
@@ -89,7 +90,6 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 								@ProductCard(product)
 							}
 						</div>
-
 						if len(products) == 0 {
 							<div class="text-center py-24">
 								<div class="w-32 h-32 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-700/50 backdrop-blur-sm">
@@ -101,7 +101,6 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 						}
 					</div>
 				</section>
-
 				<!-- CTA Section -->
 				<section class="px-8 sm:px-12 lg:px-16 py-32">
 					<div class="max-w-4xl mx-auto text-center">
@@ -130,7 +129,7 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 }
 
 type ProductWithImage struct {
-	Product db.Product
+	Product  db.Product
 	ImageURL string
 }
 
@@ -139,7 +138,7 @@ templ ProductCard(product ProductWithImage) {
 		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 overflow-hidden block cursor-pointer relative">
 			<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
 			if product.ImageURL != "" {
-				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
 			} else {
 				<div class="w-full h-full flex items-center justify-center">
 					<div class="w-24 h-24 bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
@@ -170,13 +169,17 @@ templ ProductCard(product ProductWithImage) {
 				}
 			</div>
 			<div class="mt-auto space-y-3">
-				<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } 
-				   class="block w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-center px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
+				<a
+					href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) }
+					class="block w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-center px-6 py-4 rounded-xl font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
+				>
 					View Details
 				</a>
 				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
-					<button class="w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm add-to-cart-btn"
-					        data-product-id={ product.Product.ID }>
+					<button
+						class="w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm add-to-cart-btn"
+						data-product-id={ product.Product.ID }
+					>
 						Add to Cart
 					</button>
 				}

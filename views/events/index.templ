@@ -4,9 +4,9 @@ import "github.com/loganlanou/logans3d-v4/views/layout"
 
 templ Index() {
 	@layout.Base(layout.Meta{
-		Title: "Upcoming Events - Logan's 3D Creations",
+		Title:       "Upcoming Events - Logan's 3D Creations",
 		Description: "Join Logan at upcoming maker fairs, craft shows, and educational workshops. Experience 3D printing demonstrations and see our latest creations in person.",
-		Keywords: "3D printing events, maker fairs, workshops, demonstrations, craft shows",
+		Keywords:    "3D printing events, maker fairs, workshops, demonstrations, craft shows",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
@@ -15,7 +15,6 @@ templ Index() {
 				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
 				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
 			</div>
-
 			<div class="relative z-10">
 				<!-- Hero Section -->
 				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
@@ -46,7 +45,6 @@ templ Index() {
 						</div>
 					</div>
 				</section>
-
 				<!-- Upcoming Events -->
 				<section class="px-8 sm:px-12 lg:px-16 py-20">
 					<div class="max-w-7xl mx-auto">
@@ -58,7 +56,7 @@ templ Index() {
 							<div class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2">
 								<div class="lg:grid lg:grid-cols-12">
 									<div class="lg:col-span-4">
-										<img src="/public/images/event-maker-fair.jpg" alt="Springfield Maker Fair" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+										<img src="/public/images/event-maker-fair.jpg" alt="Springfield Maker Fair" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
 									</div>
 									<div class="lg:col-span-8 p-12">
 										<div class="flex flex-wrap items-center gap-6 mb-8">
@@ -96,13 +94,12 @@ templ Index() {
 										</div>
 									</div>
 								</div>
-					</div>
-
+							</div>
 							<!-- Event 2 -->
 							<div class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2">
 								<div class="lg:grid lg:grid-cols-12">
 									<div class="lg:col-span-4">
-										<img src="/public/images/event-library-workshop.jpg" alt="Library 3D Printing Workshop" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+										<img src="/public/images/event-library-workshop.jpg" alt="Library 3D Printing Workshop" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
 									</div>
 									<div class="lg:col-span-8 p-12">
 										<div class="flex flex-wrap items-center gap-6 mb-8">
@@ -141,12 +138,11 @@ templ Index() {
 									</div>
 								</div>
 							</div>
-
 							<!-- Event 3 -->
 							<div class="group bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/10 transition-all duration-700 hover:-translate-y-2">
 								<div class="lg:grid lg:grid-cols-12">
 									<div class="lg:col-span-4">
-										<img src="/public/images/event-craft-show.jpg" alt="Annual Craft Show" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+										<img src="/public/images/event-craft-show.jpg" alt="Annual Craft Show" class="w-full h-64 lg:h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
 									</div>
 									<div class="lg:col-span-8 p-12">
 										<div class="flex flex-wrap items-center gap-6 mb-8">
@@ -188,7 +184,6 @@ templ Index() {
 						</div>
 					</div>
 				</section>
-
 				<!-- What to Expect -->
 				<section class="px-8 sm:px-12 lg:px-16 py-32">
 					<div class="max-w-7xl mx-auto">
@@ -245,7 +240,6 @@ templ Index() {
 						</div>
 					</div>
 				</section>
-
 				<!-- Local Pickup Info -->
 				<section class="px-8 sm:px-12 lg:px-16 py-32">
 					<div class="max-w-6xl mx-auto">
@@ -283,7 +277,6 @@ templ Index() {
 						</div>
 					</div>
 				</section>
-
 				<!-- Newsletter Signup -->
 				<section class="px-8 sm:px-12 lg:px-16 py-32">
 					<div class="max-w-4xl mx-auto text-center">
@@ -301,13 +294,13 @@ templ Index() {
 									Get notified about upcoming events, new workshops, and special offers.
 								</p>
 								<form class="max-w-lg mx-auto flex flex-col sm:flex-row gap-6">
-									<input 
-										type="email" 
-										placeholder="Enter your email" 
+									<input
+										type="email"
+										placeholder="Enter your email"
 										class="flex-1 px-6 py-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
 									/>
-									<button 
-										type="submit" 
+									<button
+										type="submit"
 										class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-10 py-4 rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
 									>
 										Subscribe
