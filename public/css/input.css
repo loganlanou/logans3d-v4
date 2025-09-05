@@ -64,10 +64,20 @@
 }
 
 @layer base {
+  html {
+    /* Smooth scrolling for anchor links */
+    scroll-behavior: smooth;
+    /* Reduce scroll speed/sensitivity */
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  
   body {
     font-feature-settings:
       "rlig" 1,
       "calt" 1;
+    /* Prevent overscroll bounce effect */
+    overscroll-behavior-y: contain;
   }
 }
 

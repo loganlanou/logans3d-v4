@@ -4287,9 +4287,15 @@
   --radius-default: 0.75rem;
 }
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
   body {
     font-feature-settings: "rlig" 1,
       "calt" 1;
+    overscroll-behavior-y: contain;
   }
 }
 [x-cloak] {
