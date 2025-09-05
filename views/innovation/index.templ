@@ -1,0 +1,243 @@
+package innovation
+
+import "github.com/loganlanou/logans3d-v4/views/layout"
+
+templ Index() {
+	@layout.Base(layout.Meta{
+		Title:       "Innovation & Quality - Logan's 3D Creations",
+		Description: "Discover our commitment to innovation and quality through state-of-the-art 3D printing technology, precision engineering, and creative excellence.",
+		Keywords:    "3D printing innovation, quality assurance, precision manufacturing, technology excellence, creative solutions",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+			<!-- Metal Modern Background Elements -->
+			<div class="absolute inset-0 opacity-15">
+				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-red-500/20 to-slate-400/20 rounded-full mix-blend-multiply filter blur-2xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-slate-300/20 to-red-600/20 rounded-full mix-blend-multiply filter blur-2xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-red-400/15 to-slate-500/15 rounded-full mix-blend-multiply filter blur-2xl animate-pulse animation-delay-4000"></div>
+			</div>
+			<!-- Metal Grid Pattern -->
+			<div class="absolute inset-0 opacity-10">
+				<div class="h-full w-full" style="background-image: linear-gradient(rgba(148, 163, 184, 0.2) 1px, transparent 1px), linear-gradient(90deg, rgba(148, 163, 184, 0.2) 1px, transparent 1px); background-size: 40px 40px;"></div>
+			</div>
+
+			<div class="relative z-10">
+				@Hero()
+				@InnovationValues()
+				@QualityStandards()
+				@TechnologyShowcase()
+			</div>
+		</div>
+	}
+}
+
+templ Hero() {
+	<section class="pt-32 pb-32 px-8 sm:px-12 lg:px-16">
+		<div class="max-w-6xl mx-auto">
+			<div class="text-center">
+				<div class="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-red-600/20 via-slate-700/20 to-red-600/20 rounded-full border border-red-500/30 mb-12 hover:border-red-400/50 hover:bg-gradient-to-r hover:from-red-600/30 hover:via-slate-600/30 hover:to-red-600/30 transition-all duration-300 shadow-lg shadow-red-500/10">
+					<span class="text-red-300 text-sm font-medium group-hover:text-red-200 transition-colors duration-300">⚡ Advanced Manufacturing</span>
+				</div>
+				<h1 class="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] mb-16 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
+					<div class="inline-block">
+						<span class="bg-gradient-to-r from-slate-300 via-slate-200 to-red-300 bg-clip-text text-transparent hover:from-slate-200 hover:via-red-300 hover:to-slate-300 transition-all duration-300">
+							Innovation
+						</span>
+					</div>
+					<br/>
+					<div class="inline-block relative">
+						<span class="bg-gradient-to-r from-red-400 via-slate-300 to-red-500 bg-clip-text text-transparent hover:from-red-300 hover:via-slate-200 hover:to-red-400 transition-all duration-300">
+							& Quality
+						</span>
+						<div class="absolute -bottom-4 left-0 w-full h-2 bg-gradient-to-r from-red-500 via-slate-400 to-red-600 rounded-full opacity-60 shadow-lg shadow-red-500/30"></div>
+					</div>
+				</h1>
+				<p class="text-xl sm:text-2xl text-slate-300 mb-20 max-w-4xl mx-auto leading-relaxed">
+					Pushing the boundaries of digital fabrication with cutting-edge technology and unwavering commitment to excellence.
+				</p>
+				
+				<div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+					<a href="#innovation" class="group relative overflow-hidden px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 rounded-xl text-white font-bold text-lg hover:from-red-500 hover:to-red-600 transition-all duration-300 shadow-2xl shadow-red-500/25 border border-red-400/20">
+						<span class="relative z-10">Explore Innovation</span>
+						<div class="absolute inset-0 bg-gradient-to-r from-red-400/20 to-red-500/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+					</a>
+					<a href="#quality" class="group px-8 py-4 bg-transparent border-2 border-slate-400/50 rounded-xl text-slate-300 font-bold text-lg hover:bg-slate-700/30 hover:border-slate-300 transition-all duration-300">
+						Quality Standards
+					</a>
+				</div>
+			</div>
+		</div>
+	</section>
+}
+
+templ InnovationValues() {
+	<section class="px-8 sm:px-12 lg:px-16 py-32 border-t border-slate-700/50">
+		<div class="max-w-6xl mx-auto">
+			<div class="text-center mb-24">
+				<h2 class="text-4xl sm:text-5xl font-bold text-white mb-8">Our Innovation Philosophy</h2>
+				<p class="text-xl text-slate-300 max-w-3xl mx-auto">Pushing the boundaries of what's possible with advanced materials, precision engineering, and creative problem-solving</p>
+			</div>
+			
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-12 lg:gap-16">
+				<div class="group text-center">
+					<div class="w-24 h-24 bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-400/40 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-xl shadow-red-500/20 group-hover:shadow-red-400/30">
+						<svg class="w-12 h-12 text-red-300 group-hover:text-red-200 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0L19.2 12l-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
+						</svg>
+					</div>
+					<h3 class="text-2xl font-bold text-white mb-6 group-hover:text-red-300 transition-colors duration-300">Advanced Materials</h3>
+					<p class="text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors duration-300">Utilizing cutting-edge filaments including carbon fiber, metal-filled composites, and high-performance polymers for superior strength and durability.</p>
+				</div>
+				
+				<div class="group text-center">
+					<div class="w-24 h-24 bg-gradient-to-br from-slate-500/20 to-slate-600/20 border border-slate-400/40 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-xl shadow-slate-500/20 group-hover:shadow-slate-400/30">
+						<svg class="w-12 h-12 text-slate-300 group-hover:text-slate-200 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+						</svg>
+					</div>
+					<h3 class="text-2xl font-bold text-white mb-6 group-hover:text-slate-300 transition-colors duration-300">Precision Engineering</h3>
+					<p class="text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors duration-300">Sub-millimeter accuracy through calibrated equipment, controlled environments, and rigorous quality control processes.</p>
+				</div>
+				
+				<div class="group text-center">
+					<div class="w-24 h-24 bg-gradient-to-br from-red-600/20 to-slate-500/20 border border-red-400/40 rounded-3xl mx-auto mb-8 flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-xl shadow-red-500/20 group-hover:shadow-red-400/30">
+						<svg class="w-12 h-12 text-red-300 group-hover:text-red-200 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+						</svg>
+					</div>
+					<h3 class="text-2xl font-bold text-white mb-6 group-hover:text-red-300 transition-colors duration-300">Creative Solutions</h3>
+					<p class="text-slate-300 leading-relaxed group-hover:text-slate-200 transition-colors duration-300">Custom design approaches that solve unique challenges through innovative thinking and technical expertise.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+}
+
+templ QualityStandards() {
+	<section class="px-8 sm:px-12 lg:px-16 py-32 border-t border-slate-700/50">
+		<div class="max-w-6xl mx-auto">
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+				<div>
+					<h2 class="text-4xl sm:text-5xl font-bold text-white mb-8">Quality Without Compromise</h2>
+					<p class="text-xl text-slate-300 mb-12 leading-relaxed">Every project undergoes our rigorous quality assurance process, ensuring each piece meets our exacting standards for precision, durability, and finish quality.</p>
+					
+					<div class="space-y-8">
+						<div class="flex items-start gap-4">
+							<div class="w-12 h-12 bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-400/40 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-red-500/20">
+								<svg class="w-6 h-6 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+								</svg>
+							</div>
+							<div>
+								<h4 class="text-xl font-bold text-white mb-2">Layer Precision Control</h4>
+								<p class="text-slate-300">Layer heights as fine as 0.05mm for ultra-smooth surfaces and intricate detail reproduction</p>
+							</div>
+						</div>
+						
+						<div class="flex items-start gap-4">
+							<div class="w-12 h-12 bg-gradient-to-br from-slate-500/20 to-slate-600/20 border border-slate-400/40 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-slate-500/20">
+								<svg class="w-6 h-6 text-slate-300" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+								</svg>
+							</div>
+							<div>
+								<h4 class="text-xl font-bold text-white mb-2">Multi-Point Inspection</h4>
+								<p class="text-slate-300">Dimensional accuracy verification, surface quality assessment, and structural integrity testing</p>
+							</div>
+						</div>
+						
+						<div class="flex items-start gap-4">
+							<div class="w-12 h-12 bg-gradient-to-br from-red-600/20 to-slate-500/20 border border-red-400/40 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-red-500/20">
+								<svg class="w-6 h-6 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M20.83 14.6c-.11-.13-.26-.2-.42-.2H17V9c0-3.86-3.14-7-7-7S3 5.14 3 9v5.4c-.16 0-.31.07-.42.2-.11.13-.16.31-.13.48l1 7c.05.31.31.53.63.53h12.84c.32 0 .58-.22.63-.53l1-7c.03-.17-.02-.35-.13-.48z"/>
+								</svg>
+							</div>
+							<div>
+								<h4 class="text-xl font-bold text-white mb-2">Post-Processing Excellence</h4>
+								<p class="text-slate-300">Professional finishing techniques including sanding, vapor smoothing, and protective coatings</p>
+							</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="relative">
+					<div class="bg-gradient-to-br from-slate-800/30 to-slate-900/30 rounded-3xl p-12 border border-red-400/20 shadow-2xl shadow-red-500/10">
+						<div class="text-center space-y-8">
+							<div class="w-32 h-32 bg-gradient-to-br from-red-400/20 to-slate-500/20 rounded-full mx-auto flex items-center justify-center shadow-2xl shadow-red-400/20 border border-red-300/20">
+								<svg class="w-16 h-16 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+									<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+								</svg>
+							</div>
+							<div>
+								<h3 class="text-4xl font-bold bg-gradient-to-r from-slate-200 to-red-300 bg-clip-text text-transparent mb-4">99.7%</h3>
+								<p class="text-red-300 text-lg font-medium mb-2">Quality Success Rate</p>
+								<p class="text-slate-300 text-sm">Based on over 10,000 completed projects</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+}
+
+templ TechnologyShowcase() {
+	<section class="px-8 sm:px-12 lg:px-16 py-32">
+		<div class="max-w-6xl mx-auto">
+			<div class="text-center mb-24">
+				<h2 class="text-4xl sm:text-5xl font-bold text-white mb-8">State-of-the-Art Technology</h2>
+				<p class="text-xl text-slate-300 max-w-3xl mx-auto">Our advanced equipment and software capabilities enable us to handle the most demanding projects with exceptional results</p>
+			</div>
+			
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+				<div class="group relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 rounded-2xl overflow-hidden border border-red-400/20 hover:border-red-400/40 hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer p-8 text-center">
+					<div class="w-16 h-16 bg-gradient-to-br from-red-500/20 to-red-600/20 border border-red-400/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
+						<svg class="w-8 h-8 text-red-300 group-hover:text-red-200 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-bold text-white mb-4 group-hover:text-red-300 transition-colors duration-300">Multi-Material Printing</h3>
+					<p class="text-slate-300 text-sm group-hover:text-slate-200 transition-colors duration-300">Dual-extrusion capabilities for complex multi-color and multi-material designs</p>
+				</div>
+				
+				<div class="group relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 rounded-2xl overflow-hidden border border-slate-400/20 hover:border-slate-400/40 hover:shadow-2xl hover:shadow-slate-500/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer p-8 text-center">
+					<div class="w-16 h-16 bg-gradient-to-br from-slate-500/20 to-slate-600/20 border border-slate-400/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-slate-500/20">
+						<svg class="w-8 h-8 text-slate-300 group-hover:text-slate-200 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-bold text-white mb-4 group-hover:text-slate-300 transition-colors duration-300">Precision Control</h3>
+					<p class="text-slate-300 text-sm group-hover:text-slate-200 transition-colors duration-300">Advanced motion systems with microstep precision and vibration dampening</p>
+				</div>
+				
+				<div class="group relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 rounded-2xl overflow-hidden border border-red-400/20 hover:border-red-400/40 hover:shadow-2xl hover:shadow-red-500/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer p-8 text-center">
+					<div class="w-16 h-16 bg-gradient-to-br from-red-600/20 to-slate-500/20 border border-red-400/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-red-500/20">
+						<svg class="w-8 h-8 text-red-300 group-hover:text-red-200 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.94-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-bold text-white mb-4 group-hover:text-red-300 transition-colors duration-300">Smart Monitoring</h3>
+					<p class="text-slate-300 text-sm group-hover:text-slate-200 transition-colors duration-300">Real-time print monitoring with AI-powered quality detection and alerts</p>
+				</div>
+				
+				<div class="group relative bg-gradient-to-br from-slate-800/30 to-slate-900/30 rounded-2xl overflow-hidden border border-slate-400/20 hover:border-slate-400/40 hover:shadow-2xl hover:shadow-slate-500/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer p-8 text-center">
+					<div class="w-16 h-16 bg-gradient-to-br from-slate-500/20 to-slate-600/20 border border-slate-400/40 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-slate-500/20">
+						<svg class="w-8 h-8 text-slate-300 group-hover:text-slate-200 transition-colors duration-300" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M12 3L1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z"/>
+						</svg>
+					</div>
+					<h3 class="text-lg font-bold text-white mb-4 group-hover:text-slate-300 transition-colors duration-300">Advanced Software</h3>
+					<p class="text-slate-300 text-sm group-hover:text-slate-200 transition-colors duration-300">Professional slicing software with custom profiles and optimization algorithms</p>
+				</div>
+			</div>
+			
+			<div class="text-center mt-16">
+				<a href="/contact" class="group/btn inline-flex items-center px-10 py-5 bg-gradient-to-r from-red-600/20 to-slate-700/20 border border-red-400/30 text-red-200 font-semibold rounded-2xl hover:bg-gradient-to-r hover:from-red-600/30 hover:to-slate-600/30 hover:text-white hover:border-red-400/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-red-500/25">
+					<span class="group-hover/btn:scale-105 transition-transform duration-300">Discuss Your Project</span>
+					<svg class="ml-3 w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+					</svg>
+				</a>
+			</div>
+		</div>
+	</section>
+}
