@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://logans3dcreations.com/sitemap.xml
+
+# Crawl delay (optional)
+Crawl-delay: 1
+
+# Disallow admin areas
+Disallow: /admin/
+Disallow: /auth/
+
+# Allow important pages
+Allow: /
+Allow: /shop
+Allow: /custom
+Allow: /portfolio
+Allow: /about
+Allow: /contact
+Allow: /events
+Allow: /innovation

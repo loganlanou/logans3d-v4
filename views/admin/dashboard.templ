@@ -1,0 +1,145 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ Dashboard(products []db.Product, categories []db.Category) {
+	@layout.AdminBase("Dashboard") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Dashboard</h1>
+				<a href="/admin/product/new" class="admin-btn admin-btn-primary">
+					+ Add Product
+				</a>
+			</div>
+
+			<!-- Stats Cards -->
+			<div class="admin-stats-grid">
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(products)) }</div>
+					<div class="admin-stat-label">Total Products</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(categories)) }</div>
+					<div class="admin-stat-label">Categories</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countLowStock(products)) }</div>
+					<div class="admin-stat-label">Low Stock Items</div>
+				</div>
+			</div>
+
+			<!-- Products Table -->
+			<div class="admin-card mt-8">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Products</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>SKU</th>
+								<th>Price</th>
+								<th>Stock</th>
+								<th>Status</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, product := range products {
+								<tr>
+									<td>
+										<div class="admin-text-primary admin-font-medium">{ product.Name }</div>
+										if product.CategoryID.Valid {
+											<div class="admin-text-muted admin-text-xs">Category: { getCategoryName(categories, product.CategoryID.String) }</div>
+										}
+									</td>
+									<td>
+										if product.Sku.Valid {
+											{ product.Sku.String }
+										} else {
+											<span class="admin-text-disabled">-</span>
+										}
+									</td>
+									<td>
+										${ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
+									</td>
+									<td>
+										if product.StockQuantity.Valid {
+											if product.StockQuantity.Int64 <= 5 {
+												<span class="admin-text-warning admin-font-medium">{ fmt.Sprintf("%d", product.StockQuantity.Int64) }</span>
+											} else {
+												{ fmt.Sprintf("%d", product.StockQuantity.Int64) }
+											}
+										} else {
+											<span class="admin-text-disabled">-</span>
+										}
+									</td>
+									<td>
+										<div class="flex flex-wrap gap-1">
+											if product.IsActive.Valid && product.IsActive.Bool {
+												<div class="admin-status admin-status-active">
+													<div class="admin-status-dot"></div>
+													Active
+												</div>
+											} else {
+												<div class="admin-status admin-status-inactive">
+													<div class="admin-status-dot"></div>
+													Inactive
+												</div>
+											}
+											if product.IsFeatured.Valid && product.IsFeatured.Bool {
+												<div class="admin-status admin-status-featured">
+													<div class="admin-status-dot"></div>
+													Featured
+												</div>
+											}
+										</div>
+									</td>
+									<td>
+										<div class="flex space-x-2">
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.ID)) } 
+											   class="admin-btn admin-btn-sm admin-btn-primary">
+												Edit
+											</a>
+											<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/product/%s/delete", product.ID)) } 
+												  onsubmit="return confirm('Are you sure you want to delete this product?');" class="inline">
+												<button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">
+													Delete
+												</button>
+											</form>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		}
+	}
+}
+
+func countLowStock(products []db.Product) int {
+	count := 0
+	for _, p := range products {
+		if p.StockQuantity.Valid && p.StockQuantity.Int64 <= 5 {
+			count++
+		}
+	}
+	return count
+}
+
+func getCategoryName(categories []db.Category, categoryID string) string {
+	for _, c := range categories {
+		if c.ID == categoryID {
+			return c.Name
+		}
+	}
+	return "Unknown"
+}

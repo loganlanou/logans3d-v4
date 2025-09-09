@@ -8,7 +8,9 @@
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
     "test:report": "playwright show-report",
-    "build:css": "postcss public/css/input.css -o public/css/styles.css",
+    "build:css": "npm run build:css:public && npm run build:css:admin",
+    "build:css:public": "postcss public/css/public-input.css -o public/css/public-styles.css",
+    "build:css:admin": "postcss public/css/admin-input.css -o public/css/admin-styles.css",
     "watch:css": "postcss public/css/input.css -o public/css/styles.css --watch"
   },
   "keywords": [

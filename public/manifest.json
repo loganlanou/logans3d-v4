@@ -1,0 +1,18 @@
+{
+  "name": "Logan's 3D Creations",
+  "short_name": "Logan's3D",
+  "description": "Professional 3D printing services, custom designs, and educational workshops",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e293b",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/public/images/favicon.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["business", "education", "technology"],
+  "lang": "en-US"
+}
