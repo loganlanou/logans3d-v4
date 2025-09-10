@@ -1,0 +1,528 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/loganlanou/logans3d-v4/internal/types"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ DeveloperDashboard(sysInfo types.SystemInfo, dbStats types.DatabaseStats, memStats types.MemoryStats) {
+	@layout.AdminBase("Developer Dashboard") {
+		<div class="dev-container">
+			<!-- Header -->
+			<header class="dev-header">
+				<h1>
+					<span class="dev-icon">
+						<img src="/public/images/favicon.png" alt="Logan's 3D" style="width: 24px; height: 24px; border-radius: 4px;"/>
+					</span>
+					Developer Dashboard
+				</h1>
+			</header>
+
+			<!-- Navigation -->
+			<nav class="dev-nav">
+				<ul class="dev-nav-list">
+					<li class="dev-nav-item">
+						<a href="#overview" class="dev-nav-link active">Overview</a>
+					</li>
+					<li class="dev-nav-item">
+						<a href="#system" class="dev-nav-link">System Info</a>
+					</li>
+					<li class="dev-nav-item">
+						<a href="#database" class="dev-nav-link">Database</a>
+					</li>
+					<li class="dev-nav-item">
+						<a href="#memory" class="dev-nav-link">Memory</a>
+					</li>
+					<li class="dev-nav-item">
+						<a href="#logs" class="dev-nav-link">Logs</a>
+					</li>
+					<li class="dev-nav-item">
+						<a href="#config" class="dev-nav-link">Config</a>
+					</li>
+				</ul>
+			</nav>
+
+			<!-- Main Content -->
+			<main class="dev-main">
+				<!-- Overview Section -->
+				<section id="overview" class="dev-section">
+					<div class="dev-section-header">
+						<h2 class="dev-section-title">System Overview</h2>
+						<div class="dev-actions">
+							<button onclick="refreshData()" class="dev-btn primary small">
+								🔄 Refresh
+							</button>
+							<button onclick="triggerGC()" class="dev-btn secondary small">
+								🗑️ Force GC
+							</button>
+						</div>
+					</div>
+
+					<!-- Status Cards -->
+					<div class="dev-dashboard">
+						<!-- Application Status -->
+						<div class="dev-card">
+							<div class="dev-card-header">
+								<span class="dev-card-icon">
+									<img src="/public/images/favicon.png" alt="Logan's 3D" style="width: 20px; height: 20px; border-radius: 3px;"/>
+								</span>
+								<h3>Logan's 3D Creations v4</h3>
+							</div>
+							<div class="dev-card-body">
+								<div class="dev-status success">
+									<span>●</span> Running
+								</div>
+								<div class="dev-metrics">
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ sysInfo.Uptime }</span>
+										<div class="dev-metric-label">Uptime</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ fmt.Sprintf("%d", sysInfo.PID) }</span>
+										<div class="dev-metric-label">Process ID</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- System Information -->
+						<div class="dev-card">
+							<div class="dev-card-header">
+								<span class="dev-card-icon">💻</span>
+								<h3>System Information</h3>
+							</div>
+							<div class="dev-card-body">
+								<div class="dev-metrics">
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ sysInfo.GoVersion }</span>
+										<div class="dev-metric-label">Go Version</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ sysInfo.OS }</span>
+										<div class="dev-metric-label">Operating System</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ sysInfo.Architecture }</span>
+										<div class="dev-metric-label">Architecture</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Memory Usage -->
+						<div class="dev-card">
+							<div class="dev-card-header">
+								<span class="dev-card-icon">🧠</span>
+								<h3>Memory Usage</h3>
+							</div>
+							<div class="dev-card-body">
+								<div class="dev-metrics">
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ fmt.Sprintf("%.1f", memStats.AllocMB) }</span>
+										<div class="dev-metric-label">Allocated (MB)</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ fmt.Sprintf("%.1f", memStats.SysMB) }</span>
+										<div class="dev-metric-label">System (MB)</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ fmt.Sprintf("%d", memStats.Goroutines) }</span>
+										<div class="dev-metric-label">Goroutines</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ fmt.Sprintf("%d", memStats.NumGC) }</span>
+										<div class="dev-metric-label">GC Cycles</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Database Stats -->
+						<div class="dev-card">
+							<div class="dev-card-header">
+								<span class="dev-card-icon">🗄️</span>
+								<h3>Database Statistics</h3>
+							</div>
+							<div class="dev-card-body">
+								<div class="dev-metrics">
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ fmt.Sprintf("%d", dbStats.ProductCount) }</span>
+										<div class="dev-metric-label">Products</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ fmt.Sprintf("%d", dbStats.CategoryCount) }</span>
+										<div class="dev-metric-label">Categories</div>
+									</div>
+									<div class="dev-metric">
+										<span class="dev-metric-value">{ dbStats.DatabaseSize }</span>
+										<div class="dev-metric-label">DB Size</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- System Information Section -->
+				<section id="system" class="dev-section">
+					<div class="dev-section-header">
+						<h2 class="dev-section-title">Detailed System Information</h2>
+					</div>
+					
+					<div class="dev-card">
+						<div class="dev-card-header">
+							<span class="dev-card-icon">⚙️</span>
+							<h3>Runtime Information</h3>
+						</div>
+						<div class="dev-card-body">
+							<div class="dev-table-container">
+								<table class="dev-table">
+									<tbody>
+										<tr>
+											<td><strong>Application Name</strong></td>
+											<td>{ sysInfo.AppName }</td>
+										</tr>
+										<tr>
+											<td><strong>Version</strong></td>
+											<td>{ sysInfo.Version }</td>
+										</tr>
+										<tr>
+											<td><strong>Environment</strong></td>
+											<td>
+												if sysInfo.Environment != "" {
+													<span class="dev-status info">{ sysInfo.Environment }</span>
+												} else {
+													<span class="dev-status warning">Not Set</span>
+												}
+											</td>
+										</tr>
+										<tr>
+											<td><strong>Start Time</strong></td>
+											<td>{ sysInfo.StartTime.Format("2006-01-02 15:04:05 MST") }</td>
+										</tr>
+										<tr>
+											<td><strong>Port</strong></td>
+											<td>{ sysInfo.Port }</td>
+										</tr>
+										<tr>
+											<td><strong>Database Path</strong></td>
+											<td><code>{ sysInfo.DBPath }</code></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Memory Section -->
+				<section id="memory" class="dev-section">
+					<div class="dev-section-header">
+						<h2 class="dev-section-title">Memory Management</h2>
+						<div class="dev-actions">
+							<button onclick="updateMemoryStats()" class="dev-btn primary small">
+								📊 Update Stats
+							</button>
+						</div>
+					</div>
+					
+					<div class="dev-card">
+						<div class="dev-card-header">
+							<span class="dev-card-icon">📈</span>
+							<h3>Memory Statistics</h3>
+						</div>
+						<div class="dev-card-body">
+							<div id="memory-stats">
+								<div class="dev-table-container">
+									<table class="dev-table">
+										<tbody>
+											<tr>
+												<td><strong>Allocated Memory</strong></td>
+												<td>{ fmt.Sprintf("%.2f MB", memStats.AllocMB) }</td>
+											</tr>
+											<tr>
+												<td><strong>System Memory</strong></td>
+												<td>{ fmt.Sprintf("%.2f MB", memStats.SysMB) }</td>
+											</tr>
+											<tr>
+												<td><strong>Total Allocations</strong></td>
+												<td>{ fmt.Sprintf("%d bytes", memStats.TotalAlloc) }</td>
+											</tr>
+											<tr>
+												<td><strong>GC Cycles</strong></td>
+												<td>{ fmt.Sprintf("%d", memStats.NumGC) }</td>
+											</tr>
+											<tr>
+												<td><strong>Active Goroutines</strong></td>
+												<td>{ fmt.Sprintf("%d", memStats.Goroutines) }</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Database Section -->
+				<section id="database" class="dev-section">
+					<div class="dev-section-header">
+						<h2 class="dev-section-title">Database Management</h2>
+						<div class="dev-actions">
+							<button onclick="updateDatabaseStats()" class="dev-btn primary small">
+								🔄 Refresh Stats
+							</button>
+						</div>
+					</div>
+					
+					<div class="dev-card">
+						<div class="dev-card-header">
+							<span class="dev-card-icon">🗃️</span>
+							<h3>Database Overview</h3>
+						</div>
+						<div class="dev-card-body">
+							<div id="database-stats">
+								<div class="dev-alert info">
+									<strong>Database Location:</strong> { sysInfo.DBPath }
+								</div>
+								<div class="dev-table-container">
+									<table class="dev-table">
+										<thead>
+											<tr>
+												<th>Table</th>
+												<th>Record Count</th>
+												<th>Status</th>
+											</tr>
+										</thead>
+										<tbody>
+											<tr>
+												<td>Products</td>
+												<td>{ fmt.Sprintf("%d", dbStats.ProductCount) }</td>
+												<td><span class="dev-status success">Active</span></td>
+											</tr>
+											<tr>
+												<td>Categories</td>
+												<td>{ fmt.Sprintf("%d", dbStats.CategoryCount) }</td>
+												<td><span class="dev-status success">Active</span></td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Configuration Section -->
+				<section id="config" class="dev-section">
+					<div class="dev-section-header">
+						<h2 class="dev-section-title">Configuration</h2>
+					</div>
+					
+					<div class="dev-card">
+						<div class="dev-card-header">
+							<span class="dev-card-icon">🔧</span>
+							<h3>Environment Variables</h3>
+						</div>
+						<div class="dev-card-body">
+							<div class="dev-code">
+								<pre id="config-display">
+DB_PATH={ sysInfo.DBPath }
+PORT={ sysInfo.Port }
+ENVIRONMENT={ sysInfo.Environment }
+								</pre>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<!-- Logs Section -->
+				<section id="logs" class="dev-section">
+					<div class="dev-section-header">
+						<h2 class="dev-section-title">Application Logs</h2>
+						<div class="dev-actions">
+							<button onclick="refreshLogs()" class="dev-btn primary small">
+								🔄 Refresh
+							</button>
+							<button onclick="clearLogs()" class="dev-btn danger small">
+								🗑️ Clear
+							</button>
+						</div>
+					</div>
+					
+					<div class="dev-card">
+						<div class="dev-card-header">
+							<span class="dev-card-icon">📋</span>
+							<h3>Recent Activity</h3>
+						</div>
+						<div class="dev-card-body">
+							<div class="dev-logs" id="log-viewer">
+								<div class="dev-log-entry">
+									<span class="dev-log-timestamp">[{ sysInfo.StartTime.Format("15:04:05") }]</span>
+									<span class="dev-log-level info">INFO</span>
+									<span class="dev-log-message">Application started successfully</span>
+								</div>
+								<div class="dev-log-entry">
+									<span class="dev-log-timestamp">[{ sysInfo.StartTime.Format("15:04:05") }]</span>
+									<span class="dev-log-level info">INFO</span>
+									<span class="dev-log-message">Database connection established</span>
+								</div>
+								<div class="dev-log-entry">
+									<span class="dev-log-timestamp">[{ sysInfo.StartTime.Format("15:04:05") }]</span>
+									<span class="dev-log-level info">INFO</span>
+									<span class="dev-log-message">Server listening on port { sysInfo.Port }</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</section>
+			</main>
+		</div>
+
+		<!-- JavaScript for Developer Dashboard -->
+		<script>
+			// Navigation handling
+			document.querySelectorAll('.dev-nav-link').forEach(link => {
+				link.addEventListener('click', function(e) {
+					e.preventDefault();
+					
+					// Remove active class from all links
+					document.querySelectorAll('.dev-nav-link').forEach(l => l.classList.remove('active'));
+					
+					// Add active class to clicked link
+					this.classList.add('active');
+					
+					// Show corresponding section
+					const targetId = this.getAttribute('href').substring(1);
+					document.querySelectorAll('.dev-section').forEach(section => {
+						section.style.display = section.id === targetId ? 'block' : 'none';
+					});
+				});
+			});
+
+			// Initialize - show only overview section
+			document.querySelectorAll('.dev-section').forEach((section, index) => {
+				section.style.display = index === 0 ? 'block' : 'none';
+			});
+
+			// API functions
+			async function refreshData() {
+				try {
+					window.location.reload();
+				} catch (error) {
+					console.error('Error refreshing data:', error);
+				}
+			}
+
+			async function triggerGC() {
+				try {
+					const response = await fetch('/dev/gc', { method: 'POST' });
+					const result = await response.json();
+					alert('Garbage collection completed. Check memory stats for updated values.');
+					updateMemoryStats();
+				} catch (error) {
+					console.error('Error triggering GC:', error);
+					alert('Error triggering garbage collection');
+				}
+			}
+
+			async function updateMemoryStats() {
+				try {
+					const response = await fetch('/dev/memory');
+					const data = await response.json();
+					
+					const memoryStats = document.getElementById('memory-stats');
+					if (memoryStats && data.memory) {
+						memoryStats.innerHTML = `
+							<div class="dev-table-container">
+								<table class="dev-table">
+									<tbody>
+										<tr>
+											<td><strong>Allocated Memory</strong></td>
+											<td>${data.memory.alloc_mb.toFixed(2)} MB</td>
+										</tr>
+										<tr>
+											<td><strong>System Memory</strong></td>
+											<td>${data.memory.sys_mb.toFixed(2)} MB</td>
+										</tr>
+										<tr>
+											<td><strong>Total Allocations</strong></td>
+											<td>${data.memory.total_alloc} bytes</td>
+										</tr>
+										<tr>
+											<td><strong>GC Cycles</strong></td>
+											<td>${data.memory.num_gc}</td>
+										</tr>
+										<tr>
+											<td><strong>Active Goroutines</strong></td>
+											<td>${data.memory.goroutines}</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						`;
+					}
+				} catch (error) {
+					console.error('Error updating memory stats:', error);
+				}
+			}
+
+			async function updateDatabaseStats() {
+				try {
+					const response = await fetch('/dev/database');
+					const data = await response.json();
+					
+					const dbStats = document.getElementById('database-stats');
+					if (dbStats) {
+						dbStats.innerHTML = `
+							<div class="dev-alert info">
+								<strong>Database Size:</strong> ${data.database_size_mb ? data.database_size_mb.toFixed(2) + ' MB' : 'Unknown'}
+							</div>
+							<div class="dev-table-container">
+								<table class="dev-table">
+									<thead>
+										<tr>
+											<th>Table</th>
+											<th>Record Count</th>
+											<th>Status</th>
+										</tr>
+									</thead>
+									<tbody>
+										<tr>
+											<td>Products</td>
+											<td>${data.product_count || 0}</td>
+											<td><span class="dev-status success">Active</span></td>
+										</tr>
+										<tr>
+											<td>Categories</td>
+											<td>${data.category_count || 0}</td>
+											<td><span class="dev-status success">Active</span></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+						`;
+					}
+				} catch (error) {
+					console.error('Error updating database stats:', error);
+				}
+			}
+
+			function refreshLogs() {
+				// In a real implementation, this would fetch fresh logs from the server
+				console.log('Refreshing logs...');
+			}
+
+			function clearLogs() {
+				const logViewer = document.getElementById('log-viewer');
+				if (logViewer) {
+					logViewer.innerHTML = '<div class="dev-log-entry"><span class="dev-log-message">Logs cleared</span></div>';
+				}
+			}
+
+			// Auto-refresh memory stats every 30 seconds
+			setInterval(updateMemoryStats, 30000);
+		</script>
+	}
+}

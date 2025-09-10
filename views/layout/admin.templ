@@ -15,6 +15,7 @@ templ AdminBase(title string) {
 			
 			<!-- Admin CSS -->
 			<link rel="stylesheet" href="/public/css/admin-styles.css"/>
+			<link rel="stylesheet" href="/public/css/developer-styles.css"/>
 			
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
@@ -34,8 +35,8 @@ templ AdminHeader() {
 		<div class="flex items-center justify-between">
 			<!-- Logo -->
 			<div class="flex items-center space-x-3">
-				<div class="h-8 w-8 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-					<span class="text-white font-bold text-sm">L3D</span>
+				<div class="h-8 w-8 rounded-lg flex items-center justify-center">
+					<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-8 h-8 rounded-lg"/>
 				</div>
 				<h1 class="admin-text-primary admin-text-lg admin-font-semibold">Admin Dashboard</h1>
 			</div>
@@ -47,6 +48,7 @@ templ AdminHeader() {
 				<a href="/admin/orders" class="admin-nav-item">Orders</a>
 				<a href="/admin/quotes" class="admin-nav-item">Quotes</a>
 				<a href="/admin/events" class="admin-nav-item">Events</a>
+				<a href="/dev" class="admin-nav-item">Developer</a>
 				<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary">View Site</a>
 			</nav>
 		</div>

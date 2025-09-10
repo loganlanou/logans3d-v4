@@ -115,6 +115,25 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	api.POST("/payment/create-customer", s.paymentHandler.CreateCustomer)
 	api.POST("/stripe/webhook", s.paymentHandler.HandleWebhook)
 	
+	// Admin routes
+	adminHandler := handlers.NewAdminHandler(s.storage)
+	admin := e.Group("/admin")
+	admin.GET("", adminHandler.HandleAdminDashboard)
+	admin.GET("/product/new", adminHandler.HandleProductForm)
+	admin.POST("/product", adminHandler.HandleCreateProduct)
+	admin.GET("/product/edit", adminHandler.HandleProductForm)
+	admin.POST("/product/:id", adminHandler.HandleUpdateProduct)
+	admin.POST("/product/:id/delete", adminHandler.HandleDeleteProduct)
+	
+	// Developer routes
+	dev := e.Group("/dev")
+	dev.GET("", adminHandler.HandleDeveloperDashboard)
+	dev.GET("/system", adminHandler.HandleSystemInfo)
+	dev.GET("/memory", adminHandler.HandleMemoryStats)
+	dev.GET("/database", adminHandler.HandleDatabaseInfo)
+	dev.GET("/config", adminHandler.HandleConfigInfo)
+	dev.POST("/gc", adminHandler.HandleGarbageCollect)
+	
 	// Health check
 	e.GET("/health", s.handleHealth)
 }
