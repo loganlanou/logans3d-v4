@@ -119,6 +119,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 	categoryID := c.FormValue("category_id")
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
+	isPremiumCollectionStr := c.FormValue("is_premium_collection")
 	
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
@@ -135,6 +136,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 	productID := uuid.New().String()
+	isPremiumCollection := isPremiumCollectionStr == "on" || isPremiumCollectionStr == "true"
 
 	params := db.CreateProductParams{
 		ID:               productID,
@@ -146,6 +148,10 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 		CategoryID:       sql.NullString{String: categoryID, Valid: categoryID != ""},
 		Sku:              sql.NullString{String: sku, Valid: sku != ""},
 		StockQuantity:    sql.NullInt64{Int64: stockQuantity, Valid: true},
+		WeightGrams:      sql.NullInt64{Valid: false},
+		LeadTimeDays:     sql.NullInt64{Valid: false},
+		IsActive:         sql.NullBool{Bool: true, Valid: true},
+		IsFeatured:       sql.NullBool{Bool: isPremiumCollection, Valid: true},
 	}
 
 	_, err = h.storage.Queries.CreateProduct(c.Request().Context(), params)
@@ -205,7 +211,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
 	isActiveStr := c.FormValue("is_active")
-	isFeaturedStr := c.FormValue("is_featured")
+	isPremiumCollectionStr := c.FormValue("is_premium_collection")
 	
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
@@ -221,7 +227,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	}
 
 	isActive := isActiveStr == "on" || isActiveStr == "true"
-	isFeatured := isFeaturedStr == "on" || isFeaturedStr == "true"
+	isPremiumCollection := isPremiumCollectionStr == "on" || isPremiumCollectionStr == "true"
 
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 
@@ -235,8 +241,10 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		CategoryID:       sql.NullString{String: categoryID, Valid: categoryID != ""},
 		Sku:              sql.NullString{String: sku, Valid: sku != ""},
 		StockQuantity:    sql.NullInt64{Int64: stockQuantity, Valid: true},
+		WeightGrams:      sql.NullInt64{Valid: false},
+		LeadTimeDays:     sql.NullInt64{Valid: false},
 		IsActive:         sql.NullBool{Bool: isActive, Valid: true},
-		IsFeatured:       sql.NullBool{Bool: isFeatured, Valid: true},
+		IsFeatured:       sql.NullBool{Bool: isPremiumCollection, Valid: true},
 	}
 
 	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)
@@ -287,6 +295,108 @@ func (h *AdminHandler) HandleDeleteProduct(c echo.Context) error {
 	err := h.storage.Queries.DeleteProduct(c.Request().Context(), productID)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to delete product")
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin")
+}
+
+// Category Management Functions
+
+func (h *AdminHandler) HandleCategoryForm(c echo.Context) error {
+	categoryID := c.QueryParam("id")
+	var category *db.Category
+	
+	if categoryID != "" {
+		cat, err := h.storage.Queries.GetCategory(c.Request().Context(), categoryID)
+		if err != nil && err != sql.ErrNoRows {
+			return c.String(http.StatusInternalServerError, "Failed to fetch category")
+		}
+		if err == nil {
+			category = &cat
+		}
+	}
+
+	categories, err := h.storage.Queries.ListCategories(c.Request().Context())
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
+	}
+
+	return Render(c, admin.CategoryForm(category, categories))
+}
+
+func (h *AdminHandler) HandleCreateCategory(c echo.Context) error {
+	name := c.FormValue("name")
+	description := c.FormValue("description")
+	parentID := c.FormValue("parent_id")
+	displayOrderStr := c.FormValue("display_order")
+	
+	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+	categoryID := uuid.New().String()
+	
+	var displayOrder sql.NullInt64
+	if displayOrderStr != "" {
+		if order, err := strconv.ParseInt(displayOrderStr, 10, 64); err == nil {
+			displayOrder = sql.NullInt64{Int64: order, Valid: true}
+		}
+	}
+
+	params := db.CreateCategoryParams{
+		ID:           categoryID,
+		Name:         name,
+		Slug:         slug,
+		Description:  sql.NullString{String: description, Valid: description != ""},
+		ParentID:     sql.NullString{String: parentID, Valid: parentID != ""},
+		DisplayOrder: displayOrder,
+	}
+
+	_, err := h.storage.Queries.CreateCategory(c.Request().Context(), params)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to create category: " + err.Error())
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin")
+}
+
+func (h *AdminHandler) HandleUpdateCategory(c echo.Context) error {
+	categoryID := c.Param("id")
+	
+	name := c.FormValue("name")
+	description := c.FormValue("description")
+	parentID := c.FormValue("parent_id")
+	displayOrderStr := c.FormValue("display_order")
+	
+	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+	
+	var displayOrder sql.NullInt64
+	if displayOrderStr != "" {
+		if order, err := strconv.ParseInt(displayOrderStr, 10, 64); err == nil {
+			displayOrder = sql.NullInt64{Int64: order, Valid: true}
+		}
+	}
+
+	params := db.UpdateCategoryParams{
+		ID:           categoryID,
+		Name:         name,
+		Slug:         slug,
+		Description:  sql.NullString{String: description, Valid: description != ""},
+		ParentID:     sql.NullString{String: parentID, Valid: parentID != ""},
+		DisplayOrder: displayOrder,
+	}
+
+	_, err := h.storage.Queries.UpdateCategory(c.Request().Context(), params)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to update category: " + err.Error())
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin")
+}
+
+func (h *AdminHandler) HandleDeleteCategory(c echo.Context) error {
+	categoryID := c.Param("id")
+	
+	err := h.storage.Queries.DeleteCategory(c.Request().Context(), categoryID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to delete category")
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/admin")

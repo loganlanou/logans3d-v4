@@ -125,6 +125,13 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/product/:id", adminHandler.HandleUpdateProduct)
 	admin.POST("/product/:id/delete", adminHandler.HandleDeleteProduct)
 	
+	// Category management routes
+	admin.GET("/category/new", adminHandler.HandleCategoryForm)
+	admin.POST("/category", adminHandler.HandleCreateCategory)
+	admin.GET("/category/edit", adminHandler.HandleCategoryForm)
+	admin.POST("/category/:id", adminHandler.HandleUpdateCategory)
+	admin.POST("/category/:id/delete", adminHandler.HandleDeleteCategory)
+	
 	// Developer routes
 	dev := e.Group("/dev")
 	dev.GET("", adminHandler.HandleDeveloperDashboard)

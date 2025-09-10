@@ -13,9 +13,14 @@ templ Dashboard(products []types.ProductWithImage, categories []db.Category) {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">
 				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Dashboard</h1>
-				<a href="/admin/product/new" class="admin-btn admin-btn-primary">
-					+ Add Product
-				</a>
+				<div class="flex space-x-3">
+					<a href="/admin/category/new" class="admin-btn admin-btn-secondary">
+						+ Add Category
+					</a>
+					<a href="/admin/product/new" class="admin-btn admin-btn-primary">
+						+ Add Product
+					</a>
+				</div>
 			</div>
 
 			<!-- Stats Cards -->
@@ -107,7 +112,7 @@ templ Dashboard(products []types.ProductWithImage, categories []db.Category) {
 											if product.Product.IsFeatured.Valid && product.Product.IsFeatured.Bool {
 												<div class="admin-status admin-status-featured">
 													<div class="admin-status-dot"></div>
-													Featured
+													Premium Collection
 												</div>
 											}
 										</div>
@@ -121,6 +126,73 @@ templ Dashboard(products []types.ProductWithImage, categories []db.Category) {
 											<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/product/%s/delete", product.Product.ID)) } 
 												  onsubmit="return confirm('Are you sure you want to delete this product?');" class="inline">
 												<button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">
+													Delete
+												</button>
+											</form>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Categories Table -->
+			<div class="admin-card mt-8">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Categories</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Description</th>
+								<th>Parent</th>
+								<th>Display Order</th>
+								<th>Products</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, category := range categories {
+								<tr>
+									<td>
+										<div class="admin-text-primary admin-font-medium">{ category.Name }</div>
+										<div class="admin-text-muted admin-text-xs">{ category.Slug }</div>
+									</td>
+									<td>
+										if category.Description.Valid {
+											<span class="admin-text-sm">{ category.Description.String }</span>
+										} else {
+											<span class="admin-text-disabled">No description</span>
+										}
+									</td>
+									<td>
+										if category.ParentID.Valid {
+											<span class="admin-text-sm">{ getCategoryName(categories, category.ParentID.String) }</span>
+										} else {
+											<span class="admin-text-disabled">Root Category</span>
+										}
+									</td>
+									<td>
+										if category.DisplayOrder.Valid {
+											{ fmt.Sprintf("%d", category.DisplayOrder.Int64) }
+										} else {
+											<span class="admin-text-disabled">-</span>
+										}
+									</td>
+									<td>
+										<span class="admin-text-sm">{ fmt.Sprintf("%d", countProductsInCategory(products, category.ID)) }</span>
+									</td>
+									<td>
+										<div class="admin-actions">
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/category/edit?id=%s", category.ID)) } class="admin-btn admin-btn-small admin-btn-secondary">
+												Edit
+											</a>
+											<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/category/%s/delete", category.ID)) } class="admin-inline-form">
+												<button type="submit" class="admin-btn admin-btn-small admin-btn-danger" onclick="return confirm('Are you sure? This will remove the category from all products.')">
 													Delete
 												</button>
 											</form>
@@ -153,4 +225,14 @@ func getCategoryName(categories []db.Category, categoryID string) string {
 		}
 	}
 	return "Unknown"
+}
+
+func countProductsInCategory(products []types.ProductWithImage, categoryID string) int {
+	count := 0
+	for _, p := range products {
+		if p.Product.CategoryID.Valid && p.Product.CategoryID.String == categoryID {
+			count++
+		}
+	}
+	return count
 }
