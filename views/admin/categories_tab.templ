@@ -1,0 +1,201 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/loganlanou/logans3d-v4/internal/types"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ CategoriesTab(products []types.ProductWithImage, categories []db.Category, filter string) {
+	@layout.AdminBase("Categories") {
+		@layout.AdminContainer() {
+	<!-- Filter Controls -->
+	<div class="flex justify-between items-center mb-6">
+		<div class="flex space-x-2">
+			<a href="/admin/categories" 
+			   class={ "admin-btn admin-btn-sm", templ.KV("admin-btn-primary", filter == "all"), templ.KV("admin-btn-secondary", filter != "all") }>
+				All Categories
+			</a>
+			<a href="/admin/categories?filter=root" 
+			   class={ "admin-btn admin-btn-sm", templ.KV("admin-btn-primary", filter == "root"), templ.KV("admin-btn-secondary", filter != "root") }>
+				Root Categories
+			</a>
+			<a href="/admin/categories?filter=subcategories" 
+			   class={ "admin-btn admin-btn-sm", templ.KV("admin-btn-primary", filter == "subcategories"), templ.KV("admin-btn-secondary", filter != "subcategories") }>
+				Subcategories
+			</a>
+			<a href="/admin/categories?filter=empty" 
+			   class={ "admin-btn admin-btn-sm", templ.KV("admin-btn-primary", filter == "empty"), templ.KV("admin-btn-secondary", filter != "empty") }>
+				Empty Categories
+			</a>
+		</div>
+		<div class="flex space-x-3">
+			<a href="/admin/category/new" class="admin-btn admin-btn-primary">
+				+ Add Category
+			</a>
+		</div>
+	</div>
+
+	<!-- Categories Stats -->
+	<div class="admin-stats-grid mb-6">
+		<div class="admin-stat-card">
+			<div class="admin-stat-number">{ fmt.Sprintf("%d", len(categories)) }</div>
+			<div class="admin-stat-label">
+				if filter == "all" {
+					Total Categories
+				} else if filter == "root" {
+					Root Categories
+				} else if filter == "subcategories" {
+					Subcategories
+				} else if filter == "empty" {
+					Empty Categories
+				} else {
+					Categories
+				}
+			</div>
+		</div>
+		<div class="admin-stat-card">
+			<div class="admin-stat-number">{ fmt.Sprintf("%d", countRootCategories(categories)) }</div>
+			<div class="admin-stat-label">Root Categories</div>
+		</div>
+		<div class="admin-stat-card">
+			<div class="admin-stat-number">{ fmt.Sprintf("%d", countSubcategories(categories)) }</div>
+			<div class="admin-stat-label">Subcategories</div>
+		</div>
+		<div class="admin-stat-card">
+			<div class="admin-stat-number">{ fmt.Sprintf("%d", countEmptyCategories(products, categories)) }</div>
+			<div class="admin-stat-label">Empty Categories</div>
+		</div>
+	</div>
+
+	<!-- Categories Table -->
+	<div class="admin-card">
+		<div class="admin-card-header">
+			<h2 class="admin-card-title">
+				if filter == "all" {
+					All Categories
+				} else if filter == "root" {
+					Root Categories
+				} else if filter == "subcategories" {
+					Subcategories
+				} else if filter == "empty" {
+					Empty Categories
+				} else {
+					Categories
+				}
+			</h2>
+		</div>
+		<div class="overflow-x-auto">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Description</th>
+						<th>Parent</th>
+						<th>Display Order</th>
+						<th>Products</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					if len(categories) == 0 {
+						<tr>
+							<td colspan="6" class="text-center admin-text-muted py-8">
+								if filter == "root" {
+									No root categories found
+								} else if filter == "subcategories" {
+									No subcategories found
+								} else if filter == "empty" {
+									No empty categories found
+								} else {
+									No categories found
+								}
+							</td>
+						</tr>
+					} else {
+						for _, category := range categories {
+							<tr>
+								<td>
+									<div class="admin-text-primary admin-font-medium">{ category.Name }</div>
+									<div class="admin-text-muted admin-text-xs">{ category.Slug }</div>
+								</td>
+								<td>
+									if category.Description.Valid {
+										<span class="admin-text-sm">{ category.Description.String }</span>
+									} else {
+										<span class="admin-text-disabled">No description</span>
+									}
+								</td>
+								<td>
+									if category.ParentID.Valid {
+										<span class="admin-text-sm">{ getCategoryName(categories, category.ParentID.String) }</span>
+									} else {
+										<span class="admin-text-disabled">Root Category</span>
+									}
+								</td>
+								<td>
+									if category.DisplayOrder.Valid {
+										{ fmt.Sprintf("%d", category.DisplayOrder.Int64) }
+									} else {
+										<span class="admin-text-disabled">-</span>
+									}
+								</td>
+								<td>
+									<span class="admin-text-sm">{ fmt.Sprintf("%d", countProductsInCategory(products, category.ID)) }</span>
+								</td>
+								<td>
+									<div class="flex space-x-2">
+										<a href={ templ.SafeURL(fmt.Sprintf("/admin/category/edit?id=%s", category.ID)) } 
+										   class="admin-btn admin-btn-sm admin-btn-primary">
+											Edit
+										</a>
+										<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/category/%s/delete", category.ID)) } 
+											  onsubmit="return confirm('Are you sure you want to delete this category? This will remove the category from all products.');" class="inline">
+											<button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">
+												Delete
+											</button>
+										</form>
+									</div>
+								</td>
+							</tr>
+						}
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+		}
+	}
+}
+
+func countRootCategories(categories []db.Category) int {
+	count := 0
+	for _, c := range categories {
+		if !c.ParentID.Valid {
+			count++
+		}
+	}
+	return count
+}
+
+func countSubcategories(categories []db.Category) int {
+	count := 0
+	for _, c := range categories {
+		if c.ParentID.Valid {
+			count++
+		}
+	}
+	return count
+}
+
+func countEmptyCategories(products []types.ProductWithImage, categories []db.Category) int {
+	count := 0
+	for _, c := range categories {
+		productCount := countProductsInCategory(products, c.ID)
+		if productCount == 0 {
+			count++
+		}
+	}
+	return count
+}

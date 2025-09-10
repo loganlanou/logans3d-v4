@@ -119,6 +119,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	adminHandler := handlers.NewAdminHandler(s.storage)
 	admin := e.Group("/admin")
 	admin.GET("", adminHandler.HandleAdminDashboard)
+	admin.GET("/categories", adminHandler.HandleCategoriesTab)
 	admin.GET("/product/new", adminHandler.HandleProductForm)
 	admin.POST("/product", adminHandler.HandleCreateProduct)
 	admin.GET("/product/edit", adminHandler.HandleProductForm)
@@ -131,6 +132,24 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/category/edit", adminHandler.HandleCategoryForm)
 	admin.POST("/category/:id", adminHandler.HandleUpdateCategory)
 	admin.POST("/category/:id/delete", adminHandler.HandleDeleteCategory)
+	
+	// Orders management routes
+	admin.GET("/orders", adminHandler.HandleOrdersList)
+	admin.GET("/orders/:id", adminHandler.HandleOrderDetail)
+	admin.POST("/orders/:id/status", adminHandler.HandleUpdateOrderStatus)
+	
+	// Quotes management routes
+	admin.GET("/quotes", adminHandler.HandleQuotesList)
+	admin.GET("/quotes/:id", adminHandler.HandleQuoteDetail)
+	admin.POST("/quotes/:id", adminHandler.HandleUpdateQuote)
+	
+	// Events management routes
+	admin.GET("/events", adminHandler.HandleEventsList)
+	admin.GET("/events/new", adminHandler.HandleEventForm)
+	admin.POST("/events", adminHandler.HandleCreateEvent)
+	admin.GET("/events/edit", adminHandler.HandleEventForm)
+	admin.POST("/events/:id", adminHandler.HandleUpdateEvent)
+	admin.POST("/events/:id/delete", adminHandler.HandleDeleteEvent)
 	
 	// Developer routes
 	dev := e.Group("/dev")

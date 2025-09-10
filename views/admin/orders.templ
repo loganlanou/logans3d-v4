@@ -1,0 +1,297 @@
+package admin
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ OrdersList(orders []db.Order) {
+	@layout.AdminBase("Orders") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Orders Management</h1>
+			</div>
+
+			<!-- Stats Cards -->
+			<div class="admin-stats-grid">
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(orders)) }</div>
+					<div class="admin-stat-label">Total Orders</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countOrdersByStatus(orders, "pending")) }</div>
+					<div class="admin-stat-label">Pending Orders</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countOrdersByStatus(orders, "processing")) }</div>
+					<div class="admin-stat-label">Processing</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countOrdersByStatus(orders, "shipped")) }</div>
+					<div class="admin-stat-label">Shipped</div>
+				</div>
+			</div>
+
+			<!-- Filters -->
+			<div class="admin-card mb-6">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Filter Orders</h2>
+				</div>
+				<div class="p-4">
+					<div class="flex flex-wrap gap-3">
+						<a href="/admin/orders" class="admin-btn admin-btn-sm admin-btn-secondary">All Orders</a>
+						<a href="/admin/orders?status=pending" class="admin-btn admin-btn-sm admin-btn-warning">Pending</a>
+						<a href="/admin/orders?status=processing" class="admin-btn admin-btn-sm admin-btn-primary">Processing</a>
+						<a href="/admin/orders?status=shipped" class="admin-btn admin-btn-sm admin-btn-success">Shipped</a>
+						<a href="/admin/orders?status=delivered" class="admin-btn admin-btn-sm admin-btn-success">Delivered</a>
+						<a href="/admin/orders?status=cancelled" class="admin-btn admin-btn-sm admin-btn-danger">Cancelled</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Orders Table -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Orders</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Order ID</th>
+								<th>Customer</th>
+								<th>Total</th>
+								<th>Status</th>
+								<th>Payment</th>
+								<th>Fulfillment</th>
+								<th>Date</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							if len(orders) == 0 {
+								<tr>
+									<td colspan="8" class="text-center admin-text-muted py-8">
+										No orders found
+									</td>
+								</tr>
+							}
+							for _, order := range orders {
+								<tr>
+									<td>
+										<div class="admin-text-primary admin-font-mono admin-text-sm">
+											{ order.ID[:8] }...
+										</div>
+									</td>
+									<td>
+										<div class="admin-text-primary admin-font-medium">{ order.CustomerName }</div>
+										<div class="admin-text-muted admin-text-sm">{ order.CustomerEmail }</div>
+									</td>
+									<td>
+										<div class="admin-text-primary admin-font-semibold">
+											${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }
+										</div>
+										<div class="admin-text-muted admin-text-sm">
+											Subtotal: ${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }
+										</div>
+									</td>
+									<td>
+										@OrderStatusBadge(getOrderStatusString(order.Status))
+									</td>
+									<td>
+										@PaymentStatusBadge(getPaymentStatusString(order.PaymentStatus))
+									</td>
+									<td>
+										@FulfillmentStatusBadge(getFulfillmentStatusString(order.FulfillmentStatus))
+									</td>
+									<td>
+										<div class="admin-text-sm">
+											{ formatOrderDate(getOrderCreatedAt(order.CreatedAt)) }
+										</div>
+									</td>
+									<td>
+										<div class="flex space-x-2">
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/orders/%s", order.ID)) } 
+											   class="admin-btn admin-btn-sm admin-btn-primary">
+												View
+											</a>
+											<button 
+												onclick={ updateOrderStatus(order.ID) }
+												class="admin-btn admin-btn-sm admin-btn-secondary">
+												Update
+											</button>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		}
+	}
+}
+
+templ OrderStatusBadge(status string) {
+	<div class={ "admin-status", getOrderStatusClass(status) }>
+		<div class="admin-status-dot"></div>
+		{ getOrderStatusText(status) }
+	</div>
+}
+
+templ PaymentStatusBadge(status string) {
+	<div class={ "admin-status", getPaymentStatusClass(status) }>
+		<div class="admin-status-dot"></div>
+		{ getPaymentStatusText(status) }
+	</div>
+}
+
+templ FulfillmentStatusBadge(status string) {
+	<div class={ "admin-status", getFulfillmentStatusClass(status) }>
+		<div class="admin-status-dot"></div>
+		{ getFulfillmentStatusText(status) }
+	</div>
+}
+
+script updateOrderStatus(orderID string) {
+	if (confirm('Update order status?')) {
+		// Add modal or form for status update
+		alert('Status update functionality to be implemented');
+	}
+}
+
+func countOrdersByStatus(orders []db.Order, status string) int {
+	count := 0
+	for _, order := range orders {
+		if order.Status.Valid && order.Status.String == status {
+			count++
+		}
+	}
+	return count
+}
+
+func formatOrderDate(createdAt time.Time) string {
+	return createdAt.Format("Jan 2, 2006")
+}
+
+func getOrderStatusClass(status string) string {
+	switch status {
+	case "pending":
+		return "admin-status-warning"
+	case "processing":
+		return "admin-status-primary"
+	case "shipped":
+		return "admin-status-success"
+	case "delivered":
+		return "admin-status-success"
+	case "cancelled":
+		return "admin-status-danger"
+	default:
+		return "admin-status-inactive"
+	}
+}
+
+func getOrderStatusText(status string) string {
+	switch status {
+	case "pending":
+		return "Pending"
+	case "processing":
+		return "Processing"
+	case "shipped":
+		return "Shipped"
+	case "delivered":
+		return "Delivered"
+	case "cancelled":
+		return "Cancelled"
+	default:
+		return "Unknown"
+	}
+}
+
+func getPaymentStatusClass(status string) string {
+	switch status {
+	case "paid":
+		return "admin-status-success"
+	case "partially_paid":
+		return "admin-status-warning"
+	case "unpaid":
+		return "admin-status-danger"
+	case "refunded":
+		return "admin-status-inactive"
+	default:
+		return "admin-status-inactive"
+	}
+}
+
+func getPaymentStatusText(status string) string {
+	switch status {
+	case "paid":
+		return "Paid"
+	case "partially_paid":
+		return "Partial"
+	case "unpaid":
+		return "Unpaid"
+	case "refunded":
+		return "Refunded"
+	default:
+		return "Unknown"
+	}
+}
+
+func getFulfillmentStatusClass(status string) string {
+	switch status {
+	case "fulfilled":
+		return "admin-status-success"
+	case "partial":
+		return "admin-status-warning"
+	case "unfulfilled":
+		return "admin-status-danger"
+	default:
+		return "admin-status-inactive"
+	}
+}
+
+func getFulfillmentStatusText(status string) string {
+	switch status {
+	case "fulfilled":
+		return "Fulfilled"
+	case "partial":
+		return "Partial"
+	case "unfulfilled":
+		return "Unfulfilled"
+	default:
+		return "Unknown"
+	}
+}
+
+func getOrderStatusString(status sql.NullString) string {
+	if status.Valid {
+		return status.String
+	}
+	return "unknown"
+}
+
+func getPaymentStatusString(status sql.NullString) string {
+	if status.Valid {
+		return status.String
+	}
+	return "unknown"
+}
+
+func getFulfillmentStatusString(status sql.NullString) string {
+	if status.Valid {
+		return status.String
+	}
+	return "unknown"
+}
+
+func getOrderCreatedAt(createdAt sql.NullTime) time.Time {
+	if createdAt.Valid {
+		return createdAt.Time
+	}
+	return time.Time{}
+}

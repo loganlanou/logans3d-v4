@@ -1,0 +1,394 @@
+package admin
+
+import (
+	"database/sql"
+	"fmt"
+	"time"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ QuotesList(quotes []db.QuoteRequest) {
+	@layout.AdminBase("Quote Requests") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Quote Requests</h1>
+			</div>
+
+			<!-- Stats Cards -->
+			<div class="admin-stats-grid">
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(quotes)) }</div>
+					<div class="admin-stat-label">Total Quotes</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countQuotesByStatus(quotes, "pending")) }</div>
+					<div class="admin-stat-label">Pending Review</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countQuotesByStatus(quotes, "quoted")) }</div>
+					<div class="admin-stat-label">Quoted</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countQuotesByStatus(quotes, "approved")) }</div>
+					<div class="admin-stat-label">Approved</div>
+				</div>
+			</div>
+
+			<!-- Filters -->
+			<div class="admin-card mb-6">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Filter Quote Requests</h2>
+				</div>
+				<div class="p-4">
+					<div class="flex flex-wrap gap-3">
+						<a href="/admin/quotes" class="admin-btn admin-btn-sm admin-btn-secondary">All Quotes</a>
+						<a href="/admin/quotes?status=pending" class="admin-btn admin-btn-sm admin-btn-warning">Pending</a>
+						<a href="/admin/quotes?status=reviewing" class="admin-btn admin-btn-sm admin-btn-primary">Reviewing</a>
+						<a href="/admin/quotes?status=quoted" class="admin-btn admin-btn-sm admin-btn-success">Quoted</a>
+						<a href="/admin/quotes?status=approved" class="admin-btn admin-btn-sm admin-btn-success">Approved</a>
+						<a href="/admin/quotes?status=rejected" class="admin-btn admin-btn-sm admin-btn-danger">Rejected</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Quotes Table -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Quote Requests</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Quote ID</th>
+								<th>Customer</th>
+								<th>Project</th>
+								<th>Status</th>
+								<th>Quoted Price</th>
+								<th>Deadline</th>
+								<th>Created</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							if len(quotes) == 0 {
+								<tr>
+									<td colspan="8" class="text-center admin-text-muted py-8">
+										No quote requests found
+									</td>
+								</tr>
+							}
+							for _, quote := range quotes {
+								<tr>
+									<td>
+										<div class="admin-text-primary admin-font-mono admin-text-sm">
+											{ quote.ID[:8] }...
+										</div>
+									</td>
+									<td>
+										<div class="admin-text-primary admin-font-medium">{ quote.CustomerName }</div>
+										<div class="admin-text-muted admin-text-sm">{ quote.CustomerEmail }</div>
+										if quote.CustomerPhone.Valid {
+											<div class="admin-text-muted admin-text-xs">{ quote.CustomerPhone.String }</div>
+										}
+									</td>
+									<td>
+										<div class="admin-text-primary admin-text-sm max-w-xs truncate" title={ quote.ProjectDescription }>
+											{ quote.ProjectDescription }
+										</div>
+										<div class="admin-text-muted admin-text-xs">
+											Qty: { fmt.Sprintf("%d", quote.Quantity) }
+											if quote.MaterialPreference.Valid {
+												• { quote.MaterialPreference.String }
+											}
+										</div>
+									</td>
+									<td>
+										@QuoteStatusBadge(getQuoteStatusString(quote.Status))
+									</td>
+									<td>
+										if quote.QuotedPriceCents.Valid {
+											<div class="admin-text-primary admin-font-semibold">
+												${ fmt.Sprintf("%.2f", float64(quote.QuotedPriceCents.Int64)/100) }
+											</div>
+										} else {
+											<span class="admin-text-disabled">Not quoted</span>
+										}
+									</td>
+									<td>
+										if quote.DeadlineDate.Valid {
+											<div class="admin-text-sm">
+												{ formatQuoteDate(quote.DeadlineDate.Time) }
+											</div>
+										} else {
+											<span class="admin-text-disabled">No deadline</span>
+										}
+									</td>
+									<td>
+										<div class="admin-text-sm">
+											{ formatQuoteDate(getQuoteCreatedAt(quote.CreatedAt)) }
+										</div>
+									</td>
+									<td>
+										<div class="flex space-x-2">
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/quotes/%s", quote.ID)) } 
+											   class="admin-btn admin-btn-sm admin-btn-primary">
+												View
+											</a>
+											<button 
+												onclick={ updateQuoteStatus(quote.ID) }
+												class="admin-btn admin-btn-sm admin-btn-secondary">
+												Update
+											</button>
+										</div>
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		}
+	}
+}
+
+templ QuoteDetail(quote db.QuoteRequest) {
+	@layout.AdminBase("Quote Details") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Quote Request Details</h1>
+				<a href="/admin/quotes" class="admin-btn admin-btn-secondary">← Back to Quotes</a>
+			</div>
+
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+				<!-- Quote Information -->
+				<div class="admin-card">
+					<div class="admin-card-header">
+						<h2 class="admin-card-title">Quote Information</h2>
+						@QuoteStatusBadge(getQuoteStatusString(quote.Status))
+					</div>
+					<div class="p-6 space-y-4">
+						<div>
+							<label class="admin-text-muted admin-text-sm">Quote ID</label>
+							<div class="admin-text-primary admin-font-mono">{ quote.ID }</div>
+						</div>
+						
+						<div>
+							<label class="admin-text-muted admin-text-sm">Project Description</label>
+							<div class="admin-text-primary">{ quote.ProjectDescription }</div>
+						</div>
+
+						<div class="grid grid-cols-2 gap-4">
+							<div>
+								<label class="admin-text-muted admin-text-sm">Quantity</label>
+								<div class="admin-text-primary">{ fmt.Sprintf("%d", quote.Quantity) }</div>
+							</div>
+							
+							if quote.MaterialPreference.Valid {
+								<div>
+									<label class="admin-text-muted admin-text-sm">Material Preference</label>
+									<div class="admin-text-primary">{ quote.MaterialPreference.String }</div>
+								</div>
+							}
+						</div>
+
+						if quote.FinishPreference.Valid {
+							<div>
+								<label class="admin-text-muted admin-text-sm">Finish Preference</label>
+								<div class="admin-text-primary">{ quote.FinishPreference.String }</div>
+							</div>
+						}
+
+						if quote.BudgetRange.Valid {
+							<div>
+								<label class="admin-text-muted admin-text-sm">Budget Range</label>
+								<div class="admin-text-primary">{ quote.BudgetRange.String }</div>
+							</div>
+						}
+
+						if quote.DeadlineDate.Valid {
+							<div>
+								<label class="admin-text-muted admin-text-sm">Deadline</label>
+								<div class="admin-text-primary">{ formatQuoteDate(quote.DeadlineDate.Time) }</div>
+							</div>
+						}
+					</div>
+				</div>
+
+				<!-- Customer Information -->
+				<div class="admin-card">
+					<div class="admin-card-header">
+						<h2 class="admin-card-title">Customer Information</h2>
+					</div>
+					<div class="p-6 space-y-4">
+						<div>
+							<label class="admin-text-muted admin-text-sm">Customer Name</label>
+							<div class="admin-text-primary admin-font-medium">{ quote.CustomerName }</div>
+						</div>
+						
+						<div>
+							<label class="admin-text-muted admin-text-sm">Email</label>
+							<div class="admin-text-primary">
+								<a href={ templ.SafeURL("mailto:" + quote.CustomerEmail) } class="text-blue-400 hover:text-blue-300">
+									{ quote.CustomerEmail }
+								</a>
+							</div>
+						</div>
+
+						if quote.CustomerPhone.Valid {
+							<div>
+								<label class="admin-text-muted admin-text-sm">Phone</label>
+								<div class="admin-text-primary">
+									<a href={ templ.SafeURL("tel:" + quote.CustomerPhone.String) } class="text-blue-400 hover:text-blue-300">
+										{ quote.CustomerPhone.String }
+									</a>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
+
+				<!-- Admin Actions -->
+				<div class="admin-card lg:col-span-2">
+					<div class="admin-card-header">
+						<h2 class="admin-card-title">Admin Actions</h2>
+					</div>
+					<div class="p-6">
+						<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/quotes/%s", quote.ID)) } class="space-y-4">
+							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div>
+									<label for="status" class="admin-text-sm admin-font-medium">Status</label>
+									<select name="status" id="status" class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white">
+										<option value="pending" if quote.Status.Valid && quote.Status.String == "pending" { selected }>Pending</option>
+										<option value="reviewing" if quote.Status.Valid && quote.Status.String == "reviewing" { selected }>Reviewing</option>
+										<option value="quoted" if quote.Status.Valid && quote.Status.String == "quoted" { selected }>Quoted</option>
+										<option value="approved" if quote.Status.Valid && quote.Status.String == "approved" { selected }>Approved</option>
+										<option value="rejected" if quote.Status.Valid && quote.Status.String == "rejected" { selected }>Rejected</option>
+									</select>
+								</div>
+
+								<div>
+									<label for="quoted_price" class="admin-text-sm admin-font-medium">Quoted Price ($)</label>
+									<input 
+										type="number" 
+										name="quoted_price" 
+										id="quoted_price" 
+										step="0.01" 
+										min="0"
+										if quote.QuotedPriceCents.Valid {
+											value={ fmt.Sprintf("%.2f", float64(quote.QuotedPriceCents.Int64)/100) }
+										}
+										class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white"
+										placeholder="0.00"
+									/>
+								</div>
+							</div>
+
+							<div>
+								<label for="admin_notes" class="admin-text-sm admin-font-medium">Admin Notes</label>
+								<textarea 
+									name="admin_notes" 
+									id="admin_notes" 
+									rows="4"
+									class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white"
+									placeholder="Internal notes about this quote request..."
+								>{ getQuoteNotes(quote) }</textarea>
+							</div>
+
+							<div class="flex justify-end space-x-4">
+								<button type="submit" class="admin-btn admin-btn-primary">
+									Update Quote
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			</div>
+		}
+	}
+}
+
+templ QuoteStatusBadge(status string) {
+	<div class={ "admin-status", getQuoteStatusClass(status) }>
+		<div class="admin-status-dot"></div>
+		{ getQuoteStatusText(status) }
+	</div>
+}
+
+script updateQuoteStatus(quoteID string) {
+	if (confirm('Update quote status?')) {
+		window.location.href = '/admin/quotes/' + quoteID;
+	}
+}
+
+func countQuotesByStatus(quotes []db.QuoteRequest, status string) int {
+	count := 0
+	for _, quote := range quotes {
+		if quote.Status.Valid && quote.Status.String == status {
+			count++
+		}
+	}
+	return count
+}
+
+func formatQuoteDate(date time.Time) string {
+	return date.Format("Jan 2, 2006")
+}
+
+func getQuoteStatusClass(status string) string {
+	switch status {
+	case "pending":
+		return "admin-status-warning"
+	case "reviewing":
+		return "admin-status-primary"
+	case "quoted":
+		return "admin-status-success"
+	case "approved":
+		return "admin-status-success"
+	case "rejected":
+		return "admin-status-danger"
+	default:
+		return "admin-status-inactive"
+	}
+}
+
+func getQuoteStatusText(status string) string {
+	switch status {
+	case "pending":
+		return "Pending"
+	case "reviewing":
+		return "Reviewing"
+	case "quoted":
+		return "Quoted"
+	case "approved":
+		return "Approved"
+	case "rejected":
+		return "Rejected"
+	default:
+		return "Unknown"
+	}
+}
+
+func getQuoteNotes(quote db.QuoteRequest) string {
+	if quote.AdminNotes.Valid {
+		return quote.AdminNotes.String
+	}
+	return ""
+}
+
+func getQuoteStatusString(status sql.NullString) string {
+	if status.Valid {
+		return status.String
+	}
+	return "unknown"
+}
+
+func getQuoteCreatedAt(createdAt sql.NullTime) time.Time {
+	if createdAt.Valid {
+		return createdAt.Time
+	}
+	return time.Time{}
+}

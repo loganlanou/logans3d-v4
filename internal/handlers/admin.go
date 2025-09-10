@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"io"
@@ -37,20 +38,94 @@ func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch products")
 	}
 
-	categories, err := h.storage.Queries.ListCategories(c.Request().Context())
+	productsWithImages := h.buildProductsWithImages(c.Request().Context(), products)
+
+	return Render(c, admin.Dashboard(productsWithImages))
+}
+
+func (h *AdminHandler) HandleCategoriesTab(c echo.Context) error {
+	filter := c.QueryParam("filter")
+	if filter == "" {
+		filter = "all"
+	}
+
+	// Get all categories first
+	allCategories, err := h.storage.Queries.ListCategories(c.Request().Context())
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
 	}
 
+	// Filter categories based on the filter parameter
+	var categories []db.Category
+	switch filter {
+	case "root":
+		for _, cat := range allCategories {
+			if !cat.ParentID.Valid {
+				categories = append(categories, cat)
+			}
+		}
+	case "subcategories":
+		for _, cat := range allCategories {
+			if cat.ParentID.Valid {
+				categories = append(categories, cat)
+			}
+		}
+	case "empty":
+		// Get products to check which categories are empty
+		products, err := h.storage.Queries.ListProducts(c.Request().Context())
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to fetch products")
+		}
+		productsWithImages := h.buildProductsWithImages(c.Request().Context(), products)
+		
+		for _, cat := range allCategories {
+			productCount := 0
+			for _, p := range productsWithImages {
+				if p.Product.CategoryID.Valid && p.Product.CategoryID.String == cat.ID {
+					productCount++
+				}
+			}
+			if productCount == 0 {
+				categories = append(categories, cat)
+			}
+		}
+	default: // "all"
+		categories = allCategories
+	}
+
+	// Get products for statistics (always get all products for accurate counts)
+	products, err := h.storage.Queries.ListProducts(c.Request().Context())
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch products")
+	}
+
+	productsWithImages := h.buildProductsWithImages(c.Request().Context(), products)
+
+	return Render(c, admin.CategoriesTab(productsWithImages, categories, filter))
+}
+
+
+func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []db.Product) []types.ProductWithImage {
+	// Calculate cutoff date for "new" items (60 days ago)
+	newItemCutoff := time.Now().AddDate(0, 0, -60)
+
 	// Get products with their primary images
 	productsWithImages := make([]types.ProductWithImage, 0, len(products))
 	for _, product := range products {
-		images, err := h.storage.Queries.GetProductImages(c.Request().Context(), product.ID)
+		images, err := h.storage.Queries.GetProductImages(ctx, product.ID)
 		if err != nil {
 			// Continue without image if there's an error
+			// Check if product is new (within last 60 days)
+			isNew := product.CreatedAt.Valid && product.CreatedAt.Time.After(newItemCutoff)
+			
+			// Check if product is discontinued (inactive)
+			isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
+			
 			productsWithImages = append(productsWithImages, types.ProductWithImage{
-				Product:  product,
-				ImageURL: "",
+				Product:       product,
+				ImageURL:      "",
+				IsNew:         isNew,
+				IsDiscontinued: isDiscontinued,
 			})
 			continue
 		}
@@ -80,13 +155,21 @@ func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
 			}
 		}
 
+		// Check if product is new (within last 60 days)
+		isNew := product.CreatedAt.Valid && product.CreatedAt.Time.After(newItemCutoff)
+		
+		// Check if product is discontinued (inactive)
+		isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
+
 		productsWithImages = append(productsWithImages, types.ProductWithImage{
-			Product:  product,
-			ImageURL: imageURL,
+			Product:       product,
+			ImageURL:      imageURL,
+			IsNew:         isNew,
+			IsDiscontinued: isDiscontinued,
 		})
 	}
 
-	return Render(c, admin.Dashboard(productsWithImages, categories))
+	return productsWithImages
 }
 
 func (h *AdminHandler) HandleProductForm(c echo.Context) error {
@@ -556,4 +639,292 @@ func (h *AdminHandler) HandleGarbageCollect(c echo.Context) error {
 	}
 	
 	return c.JSON(http.StatusOK, result)
+}
+
+// Orders Management Functions
+
+func (h *AdminHandler) HandleOrdersList(c echo.Context) error {
+	status := c.QueryParam("status")
+	
+	var orders []db.Order
+	var err error
+	
+	if status != "" {
+		orders, err = h.storage.Queries.ListOrdersByStatus(c.Request().Context(), sql.NullString{String: status, Valid: true})
+	} else {
+		orders, err = h.storage.Queries.ListOrders(c.Request().Context())
+	}
+	
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch orders")
+	}
+	
+	return Render(c, admin.OrdersList(orders))
+}
+
+func (h *AdminHandler) HandleOrderDetail(c echo.Context) error {
+	orderID := c.Param("id")
+	
+	_, err := h.storage.Queries.GetOrder(c.Request().Context(), orderID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.String(http.StatusNotFound, "Order not found")
+		}
+		return c.String(http.StatusInternalServerError, "Failed to fetch order")
+	}
+	
+	// For now, just redirect back to orders list
+	// In the future, implement order detail view
+	return c.Redirect(http.StatusSeeOther, "/admin/orders")
+}
+
+func (h *AdminHandler) HandleUpdateOrderStatus(c echo.Context) error {
+	orderID := c.Param("id")
+	status := c.FormValue("status")
+	
+	if status == "" {
+		return c.String(http.StatusBadRequest, "Status is required")
+	}
+	
+	_, err := h.storage.Queries.UpdateOrderStatus(c.Request().Context(), db.UpdateOrderStatusParams{
+		ID:     orderID,
+		Status: sql.NullString{String: status, Valid: true},
+	})
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to update order status")
+	}
+	
+	return c.Redirect(http.StatusSeeOther, "/admin/orders")
+}
+
+// Quotes Management Functions
+
+func (h *AdminHandler) HandleQuotesList(c echo.Context) error {
+	status := c.QueryParam("status")
+	
+	var quotes []db.QuoteRequest
+	var err error
+	
+	if status != "" {
+		quotes, err = h.storage.Queries.ListQuoteRequestsByStatus(c.Request().Context(), sql.NullString{String: status, Valid: true})
+	} else {
+		quotes, err = h.storage.Queries.ListQuoteRequests(c.Request().Context())
+	}
+	
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch quote requests")
+	}
+	
+	return Render(c, admin.QuotesList(quotes))
+}
+
+func (h *AdminHandler) HandleQuoteDetail(c echo.Context) error {
+	quoteID := c.Param("id")
+	
+	quote, err := h.storage.Queries.GetQuoteRequest(c.Request().Context(), quoteID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return c.String(http.StatusNotFound, "Quote request not found")
+		}
+		return c.String(http.StatusInternalServerError, "Failed to fetch quote request")
+	}
+	
+	return Render(c, admin.QuoteDetail(quote))
+}
+
+func (h *AdminHandler) HandleUpdateQuote(c echo.Context) error {
+	quoteID := c.Param("id")
+	
+	status := c.FormValue("status")
+	adminNotes := c.FormValue("admin_notes")
+	quotedPriceStr := c.FormValue("quoted_price")
+	
+	var quotedPriceCents sql.NullInt64
+	if quotedPriceStr != "" {
+		if price, err := strconv.ParseFloat(quotedPriceStr, 64); err == nil {
+			quotedPriceCents = sql.NullInt64{Int64: int64(price * 100), Valid: true}
+		}
+	}
+	
+	// Get existing quote to preserve other fields
+	existingQuote, err := h.storage.Queries.GetQuoteRequest(c.Request().Context(), quoteID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch existing quote")
+	}
+	
+	params := db.UpdateQuoteRequestParams{
+		ID:                  quoteID,
+		CustomerName:        existingQuote.CustomerName,
+		CustomerEmail:       existingQuote.CustomerEmail,
+		CustomerPhone:       existingQuote.CustomerPhone,
+		ProjectDescription:  existingQuote.ProjectDescription,
+		Quantity:            existingQuote.Quantity,
+		MaterialPreference:  existingQuote.MaterialPreference,
+		FinishPreference:    existingQuote.FinishPreference,
+		DeadlineDate:        existingQuote.DeadlineDate,
+		BudgetRange:         existingQuote.BudgetRange,
+		Status:              sql.NullString{String: status, Valid: true},
+		AdminNotes:          sql.NullString{String: adminNotes, Valid: adminNotes != ""},
+		QuotedPriceCents:    quotedPriceCents,
+	}
+	
+	_, err = h.storage.Queries.UpdateQuoteRequest(c.Request().Context(), params)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to update quote request")
+	}
+	
+	return c.Redirect(http.StatusSeeOther, "/admin/quotes")
+}
+
+// Events Management Functions
+
+func (h *AdminHandler) HandleEventsList(c echo.Context) error {
+	filter := c.QueryParam("filter")
+	
+	var events []db.Event
+	var err error
+	
+	switch filter {
+	case "upcoming":
+		events, err = h.storage.Queries.ListUpcomingEvents(c.Request().Context())
+	case "active":
+		events, err = h.storage.Queries.ListActiveEvents(c.Request().Context())
+	case "past":
+		events, err = h.storage.Queries.ListPastEvents(c.Request().Context())
+	default:
+		events, err = h.storage.Queries.ListEvents(c.Request().Context())
+	}
+	
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch events")
+	}
+	
+	return Render(c, admin.EventsList(events))
+}
+
+func (h *AdminHandler) HandleEventForm(c echo.Context) error {
+	eventID := c.QueryParam("id")
+	var event *db.Event
+	
+	if eventID != "" {
+		e, err := h.storage.Queries.GetEvent(c.Request().Context(), eventID)
+		if err != nil && err != sql.ErrNoRows {
+			return c.String(http.StatusInternalServerError, "Failed to fetch event")
+		}
+		if err == nil {
+			event = &e
+		}
+	}
+	
+	return Render(c, admin.EventForm(event))
+}
+
+func (h *AdminHandler) HandleCreateEvent(c echo.Context) error {
+	title := c.FormValue("title")
+	description := c.FormValue("description")
+	location := c.FormValue("location")
+	address := c.FormValue("address")
+	startDateStr := c.FormValue("start_date")
+	endDateStr := c.FormValue("end_date")
+	url := c.FormValue("url")
+	isActiveStr := c.FormValue("is_active")
+	
+	if title == "" || startDateStr == "" {
+		return c.String(http.StatusBadRequest, "Title and start date are required")
+	}
+	
+	startDate, err := time.Parse("2006-01-02T15:04", startDateStr)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid start date format")
+	}
+	
+	var endDate sql.NullTime
+	if endDateStr != "" {
+		if ed, err := time.Parse("2006-01-02T15:04", endDateStr); err == nil {
+			endDate = sql.NullTime{Time: ed, Valid: true}
+		}
+	}
+	
+	isActive := isActiveStr == "on" || isActiveStr == "true"
+	eventID := uuid.New().String()
+	
+	params := db.CreateEventParams{
+		ID:          eventID,
+		Title:       title,
+		Description: sql.NullString{String: description, Valid: description != ""},
+		Location:    sql.NullString{String: location, Valid: location != ""},
+		Address:     sql.NullString{String: address, Valid: address != ""},
+		StartDate:   startDate,
+		EndDate:     endDate,
+		Url:         sql.NullString{String: url, Valid: url != ""},
+		IsActive:    sql.NullBool{Bool: isActive, Valid: true},
+	}
+	
+	_, err = h.storage.Queries.CreateEvent(c.Request().Context(), params)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to create event: "+err.Error())
+	}
+	
+	return c.Redirect(http.StatusSeeOther, "/admin/events")
+}
+
+func (h *AdminHandler) HandleUpdateEvent(c echo.Context) error {
+	eventID := c.Param("id")
+	
+	title := c.FormValue("title")
+	description := c.FormValue("description")
+	location := c.FormValue("location")
+	address := c.FormValue("address")
+	startDateStr := c.FormValue("start_date")
+	endDateStr := c.FormValue("end_date")
+	url := c.FormValue("url")
+	isActiveStr := c.FormValue("is_active")
+	
+	if title == "" || startDateStr == "" {
+		return c.String(http.StatusBadRequest, "Title and start date are required")
+	}
+	
+	startDate, err := time.Parse("2006-01-02T15:04", startDateStr)
+	if err != nil {
+		return c.String(http.StatusBadRequest, "Invalid start date format")
+	}
+	
+	var endDate sql.NullTime
+	if endDateStr != "" {
+		if ed, err := time.Parse("2006-01-02T15:04", endDateStr); err == nil {
+			endDate = sql.NullTime{Time: ed, Valid: true}
+		}
+	}
+	
+	isActive := isActiveStr == "on" || isActiveStr == "true"
+	
+	params := db.UpdateEventParams{
+		ID:          eventID,
+		Title:       title,
+		Description: sql.NullString{String: description, Valid: description != ""},
+		Location:    sql.NullString{String: location, Valid: location != ""},
+		Address:     sql.NullString{String: address, Valid: address != ""},
+		StartDate:   startDate,
+		EndDate:     endDate,
+		Url:         sql.NullString{String: url, Valid: url != ""},
+		IsActive:    sql.NullBool{Bool: isActive, Valid: true},
+	}
+	
+	_, err = h.storage.Queries.UpdateEvent(c.Request().Context(), params)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to update event: "+err.Error())
+	}
+	
+	return c.Redirect(http.StatusSeeOther, "/admin/events")
+}
+
+func (h *AdminHandler) HandleDeleteEvent(c echo.Context) error {
+	eventID := c.Param("id")
+	
+	err := h.storage.Queries.DeleteEvent(c.Request().Context(), eventID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to delete event")
+	}
+	
+	return c.Redirect(http.StatusSeeOther, "/admin/events")
 }
