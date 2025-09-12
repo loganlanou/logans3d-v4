@@ -138,7 +138,7 @@ templ ProductCard(product ProductWithImage) {
 		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 overflow-hidden block cursor-pointer relative">
 			<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
 			if product.ImageURL != "" {
-				<img src={ fmt.Sprintf("/public/images/products/%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+				<img src={ fmt.Sprintf("/public%s", product.ImageURL) } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
 			} else {
 				<div class="w-full h-full flex items-center justify-center">
 					<div class="w-24 h-24 bg-gradient-to-br from-slate-600 to-slate-700 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
@@ -176,11 +176,28 @@ templ ProductCard(product ProductWithImage) {
 					View Details
 				</a>
 				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
+					<!-- Add to Cart Button -->
 					<button
-						class="w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm add-to-cart-btn"
+						type="button"
+						class="add-to-cart-btn w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
 						data-product-id={ product.Product.ID }
+						data-product-name={ product.Product.Name }
+						data-product-price={ fmt.Sprintf("%d", product.Product.PriceCents) }
+						data-product-image={ product.ImageURL }
+						data-quantity="1"
 					>
 						Add to Cart
+					</button>
+					<!-- Buy Now Button -->
+					<button
+						type="button"
+						class="buy-now-btn w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm"
+						data-product-id={ product.Product.ID }
+						data-product-name={ product.Product.Name }
+						data-product-price={ fmt.Sprintf("%d", product.Product.PriceCents) }
+						data-quantity="1"
+					>
+						Buy Now
 					</button>
 				}
 			</div>

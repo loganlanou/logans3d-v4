@@ -11,10 +11,14 @@
   top-level `./db/` directory (actual database files) and the `./storage/db/`
   directory (generated Go database code)
 
-## Development Commands
+## Environment Management
 
-To run the application with proper environment variables:
+This project uses **direnv** to manage environment variables:
 
-```bash
-source .envrc
-```
+- Environment variables are configured in `.envrc`
+- After making changes to `.envrc`, run `direnv allow` to activate them
+- The environment is automatically loaded when entering the directory (if direnv is installed)
+
+To make environment changes:
+1. Update `.envrc` 
+2. Run `direnv allow`

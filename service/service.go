@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/a-h/templ"
 	"github.com/google/uuid"
@@ -13,6 +14,8 @@ import (
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/google"
 	"github.com/gorilla/sessions"
+	"github.com/stripe/stripe-go/v80"
+	"github.com/stripe/stripe-go/v80/checkout/session"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -96,18 +99,22 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	
 	// Cart routes
 	e.GET("/cart", s.handleCart)
-	e.POST("/cart/add", s.handleAddToCart)
-	e.POST("/cart/update", s.handleUpdateCart)
-	e.POST("/cart/remove", s.handleRemoveFromCart)
+	e.POST("/api/cart/add", s.handleAddToCart)
+	e.DELETE("/api/cart/item/:id", s.handleRemoveFromCart)
+	e.PUT("/api/cart/item/:id", s.handleUpdateCartItem)
+	e.GET("/api/cart", s.handleGetCart)
 	
 	// Custom quote routes
 	e.GET("/custom", s.handleCustom)
 	e.POST("/custom/quote", s.handleCustomQuote)
 	
-	// Checkout routes
-	e.GET("/checkout", s.handleCheckout)
-	e.POST("/checkout", s.handleProcessCheckout)
+	// Stripe Checkout routes
+	e.POST("/checkout/create-session", s.handleCreateStripeCheckoutSession)
+	e.POST("/checkout/create-session-single", s.handleCreateStripeCheckoutSessionSingle)
+	e.POST("/checkout/create-session-multi", s.handleCreateStripeCheckoutSessionMulti)
+	e.POST("/checkout/create-session-cart", s.handleCreateStripeCheckoutSessionCart)
 	e.GET("/checkout/success", s.handleCheckoutSuccess)
+	e.GET("/checkout/cancel", s.handleCheckoutCancel)
 	
 	// Payment API routes
 	api := e.Group("/api")
@@ -499,172 +506,7 @@ func (s *Service) handleCategory(c echo.Context) error {
 	return Render(c, shop.Index(productsWithImages, categories, &category))
 }
 
-func (s *Service) handleCart(c echo.Context) error {
-	ctx := c.Request().Context()
-	sessionID := s.getOrCreateSessionID(c)
-	
-	// Get cart items
-	cartItems, err := s.storage.Queries.GetCartBySession(ctx, sql.NullString{String: sessionID, Valid: true})
-	if err != nil {
-		slog.Error("failed to fetch cart items", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load cart")
-	}
-	
-	// Calculate total
-	totalInterface, err := s.storage.Queries.GetCartTotal(ctx, db.GetCartTotalParams{
-		SessionID: sql.NullString{String: sessionID, Valid: true},
-		UserID:    sql.NullString{Valid: false},
-	})
-	var total int64
-	if err != nil {
-		slog.Error("failed to calculate cart total", "error", err)
-		total = 0
-	} else {
-		if t, ok := totalInterface.(int64); ok {
-			total = t
-		} else {
-			total = 0
-		}
-	}
-	
-	return Render(c, shop.Cart(cartItems, total))
-}
-
-func (s *Service) handleAddToCart(c echo.Context) error {
-	ctx := c.Request().Context()
-	sessionID := s.getOrCreateSessionID(c)
-	
-	var req struct {
-		ProductID string `json:"product_id" form:"product_id"`
-		Quantity  int64  `json:"quantity" form:"quantity"`
-	}
-	
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
-	}
-	
-	if req.Quantity <= 0 {
-		req.Quantity = 1
-	}
-	
-	// Verify product exists
-	product, err := s.storage.Queries.GetProduct(ctx, req.ProductID)
-	if err != nil {
-		slog.Error("product not found", "product_id", req.ProductID, "error", err)
-		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
-	}
-	
-	// Check stock
-	if product.StockQuantity.Valid && product.StockQuantity.Int64 <= 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Product out of stock")
-	}
-	
-	// Check if item already exists in cart
-	existingItem, err := s.storage.Queries.GetExistingCartItem(ctx, db.GetExistingCartItemParams{
-		SessionID: sql.NullString{String: sessionID, Valid: true},
-		UserID:    sql.NullString{Valid: false}, // TODO: Handle logged-in users
-		ProductID: req.ProductID,
-	})
-	
-	if err != nil && err != sql.ErrNoRows {
-		slog.Error("failed to check existing cart item", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to check cart")
-	}
-	
-	if err == sql.ErrNoRows {
-		// Item doesn't exist, add new
-		err = s.storage.Queries.AddToCart(ctx, db.AddToCartParams{
-			ID:        uuid.New().String(),
-			SessionID: sql.NullString{String: sessionID, Valid: true},
-			UserID:    sql.NullString{Valid: false}, // TODO: Handle logged-in users
-			ProductID: req.ProductID,
-			Quantity:  req.Quantity,
-		})
-	} else {
-		// Item exists, update quantity
-		err = s.storage.Queries.UpdateCartItemQuantity(ctx, db.UpdateCartItemQuantityParams{
-			ID:       existingItem.ID,
-			Quantity: existingItem.Quantity + req.Quantity,
-		})
-	}
-	
-	if err != nil {
-		slog.Error("failed to add item to cart", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add item to cart")
-	}
-	
-	// Get updated cart count
-	cartCountInterface, err := s.storage.Queries.GetCartItemCount(ctx, db.GetCartItemCountParams{
-		SessionID: sql.NullString{String: sessionID, Valid: true},
-		UserID:    sql.NullString{Valid: false},
-	})
-	var cartCount int64
-	if err != nil {
-		slog.Error("failed to get cart count", "error", err)
-		cartCount = 0
-	} else {
-		if c, ok := cartCountInterface.(int64); ok {
-			cartCount = c
-		} else {
-			cartCount = 0
-		}
-	}
-	
-	return c.JSON(http.StatusOK, map[string]any{
-		"status":     "added",
-		"message":    fmt.Sprintf("Added %s to cart", product.Name),
-		"cart_count": cartCount,
-	})
-}
-
-func (s *Service) handleUpdateCart(c echo.Context) error {
-	ctx := c.Request().Context()
-	
-	var req struct {
-		ItemID   string `json:"item_id" form:"item_id"`
-		Quantity int64  `json:"quantity" form:"quantity"`
-	}
-	
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
-	}
-	
-	if req.Quantity <= 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Quantity must be greater than 0")
-	}
-	
-	err := s.storage.Queries.UpdateCartItemQuantity(ctx, db.UpdateCartItemQuantityParams{
-		Quantity: req.Quantity,
-		ID:       req.ItemID,
-	})
-	
-	if err != nil {
-		slog.Error("failed to update cart item", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update cart item")
-	}
-	
-	return c.JSON(http.StatusOK, map[string]string{"status": "updated"})
-}
-
-func (s *Service) handleRemoveFromCart(c echo.Context) error {
-	ctx := c.Request().Context()
-	
-	var req struct {
-		ItemID string `json:"item_id" form:"item_id"`
-	}
-	
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request")
-	}
-	
-	err := s.storage.Queries.RemoveCartItem(ctx, req.ItemID)
-	if err != nil {
-		slog.Error("failed to remove cart item", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove cart item")
-	}
-	
-	return c.JSON(http.StatusOK, map[string]string{"status": "removed"})
-}
+// Cart handlers removed - replaced with Stripe Checkout
 
 func (s *Service) handleCustom(c echo.Context) error {
 	return Render(c, custom.Index())
@@ -674,121 +516,363 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received"})
 }
 
-func (s *Service) handleCheckout(c echo.Context) error {
-	// Basic checkout page with Stripe integration
-	checkoutHTML := `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Checkout - Logan's 3D Creations</title>
-    <script src="https://js.stripe.com/v3/"></script>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .checkout-form { background: #f5f5f5; padding: 30px; border-radius: 8px; }
-        input[type="email"], input[type="text"] { width: 100%; padding: 10px; margin: 10px 0; }
-        #card-element { padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin: 10px 0; }
-        #submit { background: #5469d4; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; }
-        #submit:hover { background: #4f63d2; }
-        #submit:disabled { opacity: 0.6; cursor: default; }
-        .error { color: #fa755a; }
-    </style>
-</head>
-<body>
-    <h1>Checkout</h1>
-    <div class="checkout-form">
-        <form id="payment-form">
-            <div>
-                <label for="email">Email Address</label>
-                <input type="email" id="email" placeholder="your@email.com" required />
-            </div>
-            
-            <div>
-                <label for="card-element">Credit or debit card</label>
-                <div id="card-element"></div>
-                <div id="card-errors" role="alert" class="error"></div>
-            </div>
-            
-            <button type="submit" id="submit">Pay $10.00</button>
-        </form>
-    </div>
-
-    <script>
-        const stripe = Stripe('` + s.config.Stripe.PublishableKey + `');
-        const elements = stripe.elements();
-        
-        const cardElement = elements.create('card');
-        cardElement.mount('#card-element');
-        
-        const form = document.getElementById('payment-form');
-        const submitButton = document.getElementById('submit');
-        
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            submitButton.disabled = true;
-            submitButton.textContent = 'Processing...';
-            
-            const email = document.getElementById('email').value;
-            
-            // Create customer first
-            const customerResponse = await fetch('/api/payment/create-customer', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    email: email,
-                    name: email.split('@')[0]
-                })
-            });
-            
-            const customer = await customerResponse.json();
-            
-            // Create payment intent
-            const paymentIntentResponse = await fetch('/api/payment/create-intent', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    amount: 1000, // $10.00 in cents
-                    currency: 'usd',
-                    customer_id: customer.customer_id
-                })
-            });
-            
-            const paymentIntent = await paymentIntentResponse.json();
-            
-            // Confirm payment with Stripe
-            const result = await stripe.confirmCardPayment(paymentIntent.client_secret, {
-                payment_method: {
-                    card: cardElement,
-                    billing_details: {
-                        email: email,
-                    },
-                }
-            });
-            
-            if (result.error) {
-                document.getElementById('card-errors').textContent = result.error.message;
-                submitButton.disabled = false;
-                submitButton.textContent = 'Pay $10.00';
-            } else {
-                window.location.href = '/checkout/success';
-            }
-        });
-    </script>
-</body>
-</html>`
+func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
+	ctx := c.Request().Context()
 	
-	return c.HTML(http.StatusOK, checkoutHTML)
+	// Parse form data
+	productID := c.FormValue("product_id")
+	quantityStr := c.FormValue("quantity")
+	
+	if productID == "" || quantityStr == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing product_id or quantity")
+	}
+	
+	quantity, err := strconv.ParseInt(quantityStr, 10, 64)
+	if err != nil || quantity <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quantity")
+	}
+	
+	// Get product details from database
+	product, err := s.storage.Queries.GetProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+	
+	// Check stock
+	if product.StockQuantity.Valid && product.StockQuantity.Int64 < quantity {
+		return echo.NewHTTPError(http.StatusBadRequest, "Not enough stock available")
+	}
+	
+	// Get primary product image (optional)
+	imageURL := ""
+	images, err := s.storage.Queries.GetProductImages(ctx, productID)
+	if err == nil && len(images) > 0 {
+		// Ensure we have an absolute URL for Stripe
+		imageURL = fmt.Sprintf("%s://%s/public/images/products/%s", c.Scheme(), c.Request().Host, images[0].ImageUrl)
+	}
+	
+	// Create Stripe Checkout Session with dynamic product
+	stripe.Key = s.config.Stripe.SecretKey
+	
+	params := &stripe.CheckoutSessionParams{
+		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+					Currency:   stripe.String("usd"),
+					UnitAmount: stripe.Int64(product.PriceCents),
+					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+						Name:        stripe.String(product.Name),
+						Description: &product.Description.String,
+					},
+				},
+				Quantity: stripe.Int64(quantity),
+			},
+		},
+		SuccessURL: stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
+		CancelURL:  stripe.String(fmt.Sprintf("%s://%s/shop", c.Scheme(), c.Request().Host)),
+		CustomerCreation: stripe.String("always"), // Always create customer for order tracking
+		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
+			Metadata: map[string]string{
+				"product_id": productID,
+				"quantity":   quantityStr,
+			},
+		},
+	}
+	
+	// Add product image if available
+	if imageURL != "" {
+		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
+	}
+	
+	session, err := session.New(params)
+	if err != nil {
+		slog.Error("failed to create stripe checkout session", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
+	}
+	
+	// Redirect to Stripe Checkout
+	return c.Redirect(http.StatusSeeOther, session.URL)
 }
 
-func (s *Service) handleProcessCheckout(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"status": "processing"})
+func (s *Service) handleCheckoutCancel(c echo.Context) error {
+	return c.Redirect(http.StatusSeeOther, "/shop")
 }
 
 func (s *Service) handleCheckoutSuccess(c echo.Context) error {
-	return c.HTML(http.StatusOK, "<h1>Order Confirmed!</h1><p>Thank you for your purchase.</p>")
+	// Clear cart after successful purchase
+	successHTML := `
+		<html>
+		<head>
+			<title>Order Confirmed - Logan's 3D Creations</title>
+			<script>
+				// Clear cart after successful purchase
+				if (localStorage.getItem('stripe_cart')) {
+					localStorage.removeItem('stripe_cart');
+				}
+				// Redirect to home page after 3 seconds
+				setTimeout(() => {
+					window.location.href = '/';
+				}, 3000);
+			</script>
+		</head>
+		<body>
+			<h1>Order Confirmed!</h1>
+			<p>Thank you for your purchase. You will be redirected shortly...</p>
+		</body>
+		</html>
+	`
+	return c.HTML(http.StatusOK, successHTML)
+}
+
+// handleCart renders the shopping cart page
+func (s *Service) handleCart(c echo.Context) error {
+	return Render(c, shop.Cart())
+}
+
+// handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)
+func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error {
+	ctx := c.Request().Context()
+	
+	// Parse JSON data
+	var request struct {
+		ProductID string `json:"productId"`
+		Quantity  int64  `json:"quantity"`
+	}
+	
+	if err := c.Bind(&request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
+	}
+	
+	if request.ProductID == "" || request.Quantity <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing or invalid productId or quantity")
+	}
+	
+	// Get product details from database
+	product, err := s.storage.Queries.GetProduct(ctx, request.ProductID)
+	if err != nil {
+		slog.Error("failed to get product", "error", err, "product_id", request.ProductID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+	
+	// Check stock
+	if product.StockQuantity.Valid && product.StockQuantity.Int64 < request.Quantity {
+		return echo.NewHTTPError(http.StatusBadRequest, "Not enough stock available")
+	}
+	
+	// Get primary product image (optional)
+	imageURL := ""
+	images, err := s.storage.Queries.GetProductImages(ctx, request.ProductID)
+	if err == nil && len(images) > 0 {
+		// Ensure we have an absolute URL for Stripe
+		imageURL = fmt.Sprintf("%s://%s/public/images/products/%s", c.Scheme(), c.Request().Host, images[0].ImageUrl)
+	}
+	
+	// Create Stripe Checkout Session with dynamic product
+	stripe.Key = s.config.Stripe.SecretKey
+	
+	params := &stripe.CheckoutSessionParams{
+		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+					Currency:   stripe.String("usd"),
+					UnitAmount: stripe.Int64(product.PriceCents),
+					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+						Name:        stripe.String(product.Name),
+						Description: &product.Description.String,
+					},
+				},
+				Quantity: stripe.Int64(request.Quantity),
+			},
+		},
+		SuccessURL: stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
+		CancelURL:  stripe.String(fmt.Sprintf("%s://%s/shop", c.Scheme(), c.Request().Host)),
+		CustomerCreation: stripe.String("always"),
+		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
+			Metadata: map[string]string{
+				"product_id": request.ProductID,
+				"quantity":   strconv.FormatInt(request.Quantity, 10),
+			},
+		},
+	}
+	
+	// Add product image if available
+	if imageURL != "" {
+		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
+	}
+	
+	session, err := session.New(params)
+	if err != nil {
+		slog.Error("failed to create stripe checkout session", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
+	}
+	
+	return c.JSON(http.StatusOK, map[string]string{"url": session.URL})
+}
+
+// handleCreateStripeCheckoutSessionMulti handles multi-item checkout (Cart)
+func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
+	ctx := c.Request().Context()
+	
+	// Parse JSON data
+	var request struct {
+		Items []struct {
+			ProductID string `json:"productId"`
+			Name      string `json:"name"`
+			Price     int64  `json:"price"` // price in cents
+			ImageURL  string `json:"imageUrl"`
+			Quantity  int64  `json:"quantity"`
+		} `json:"items"`
+	}
+	
+	if err := c.Bind(&request); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
+	}
+	
+	if len(request.Items) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "No items in cart")
+	}
+	
+	// Validate each item and check stock
+	var lineItems []*stripe.CheckoutSessionLineItemParams
+	
+	for _, item := range request.Items {
+		if item.ProductID == "" || item.Quantity <= 0 {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid item data")
+		}
+		
+		// Get product details to verify and check stock
+		product, err := s.storage.Queries.GetProduct(ctx, item.ProductID)
+		if err != nil {
+			slog.Error("failed to get product", "error", err, "product_id", item.ProductID)
+			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Product %s not found", item.ProductID))
+		}
+		
+		// Check stock
+		if product.StockQuantity.Valid && product.StockQuantity.Int64 < item.Quantity {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Not enough stock available for %s", product.Name))
+		}
+		
+		// Create line item
+		lineItem := &stripe.CheckoutSessionLineItemParams{
+			PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+				Currency:   stripe.String("usd"),
+				UnitAmount: stripe.Int64(item.Price),
+				ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+					Name: stripe.String(item.Name),
+				},
+			},
+			Quantity: stripe.Int64(item.Quantity),
+		}
+		
+		// Add product image if available
+		if item.ImageURL != "" {
+			// Convert relative URL to absolute URL
+			var imageURL string
+			if item.ImageURL[0] == '/' {
+				imageURL = fmt.Sprintf("%s://%s%s", c.Scheme(), c.Request().Host, item.ImageURL)
+			} else {
+				// Handle direct filename - prepend full product image path
+				imageURL = fmt.Sprintf("%s://%s/public/images/products/%s", c.Scheme(), c.Request().Host, item.ImageURL)
+			}
+			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
+		}
+		
+		lineItems = append(lineItems, lineItem)
+	}
+	
+	// Create Stripe Checkout Session with multiple items
+	stripe.Key = s.config.Stripe.SecretKey
+	
+	params := &stripe.CheckoutSessionParams{
+		Mode:             stripe.String(string(stripe.CheckoutSessionModePayment)),
+		LineItems:        lineItems,
+		SuccessURL:       stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
+		CancelURL:        stripe.String(fmt.Sprintf("%s://%s/cart", c.Scheme(), c.Request().Host)),
+		CustomerCreation: stripe.String("always"),
+	}
+	
+	session, err := session.New(params)
+	if err != nil {
+		slog.Error("failed to create stripe checkout session", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
+	}
+	
+	return c.JSON(http.StatusOK, map[string]string{"url": session.URL})
+}
+
+// handleCreateStripeCheckoutSessionCart handles checkout from cart session
+func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
+	ctx := c.Request().Context()
+	
+	// Get session ID from cookie
+	sessionID, err := s.getOrCreateSessionID(c)
+	if err != nil {
+		slog.Error("failed to get session ID", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Session error")
+	}
+	
+	// Get cart items from database
+	sessionIDParam := sql.NullString{String: sessionID, Valid: true}
+	cartItems, err := s.storage.Queries.GetCartBySession(ctx, sessionIDParam)
+	if err != nil {
+		slog.Error("failed to get cart items", "error", err, "session_id", sessionID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to fetch cart")
+	}
+	
+	if len(cartItems) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Cart is empty")
+	}
+	
+	// Convert cart items to Stripe line items
+	var lineItems []*stripe.CheckoutSessionLineItemParams
+	
+	for _, item := range cartItems {
+		lineItem := &stripe.CheckoutSessionLineItemParams{
+			PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
+				Currency:   stripe.String("usd"),
+				UnitAmount: stripe.Int64(item.PriceCents),
+				ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
+					Name: stripe.String(item.Name),
+				},
+			},
+			Quantity: stripe.Int64(item.Quantity),
+		}
+		
+		// Add product image if available
+		if item.ImageUrl != "" {
+			var imageURL string
+			if item.ImageUrl[0] == '/' {
+				imageURL = fmt.Sprintf("%s://%s%s", c.Scheme(), c.Request().Host, item.ImageUrl)
+			} else {
+				imageURL = fmt.Sprintf("%s://%s/public/images/products/%s", c.Scheme(), c.Request().Host, item.ImageUrl)
+			}
+			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
+		}
+		
+		lineItems = append(lineItems, lineItem)
+	}
+	
+	// Create Stripe Checkout Session
+	stripe.Key = s.config.Stripe.SecretKey
+	
+	params := &stripe.CheckoutSessionParams{
+		Mode:             stripe.String(string(stripe.CheckoutSessionModePayment)),
+		LineItems:        lineItems,
+		SuccessURL:       stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
+		CancelURL:        stripe.String(fmt.Sprintf("%s://%s/cart", c.Scheme(), c.Request().Host)),
+		CustomerCreation: stripe.String("always"),
+	}
+	
+	session, err := session.New(params)
+	if err != nil {
+		slog.Error("failed to create stripe checkout session", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
+	}
+	
+	return c.JSON(http.StatusOK, map[string]string{"url": session.URL})
 }
 
 func (s *Service) handleEvents(c echo.Context) error {
@@ -831,31 +915,7 @@ func (s *Service) handleHealth(c echo.Context) error {
 	})
 }
 
-// getOrCreateSessionID gets or creates a session ID for cart management
-func (s *Service) getOrCreateSessionID(c echo.Context) string {
-	// First check for existing session cookie
-	cookie, err := c.Cookie("session_id")
-	if err == nil && cookie.Value != "" {
-		return cookie.Value
-	}
-	
-	// Create new session ID
-	sessionID := uuid.New().String()
-	
-	// Set cookie (valid for 30 days)
-	cookie = &http.Cookie{
-		Name:     "session_id",
-		Value:    sessionID,
-		Path:     "/",
-		MaxAge:   30 * 24 * 60 * 60, // 30 days
-		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
-		SameSite: http.SameSiteStrictMode,
-	}
-	c.SetCookie(cookie)
-	
-	return sessionID
-}
+// Session management removed - no longer needed without cart
 
 // handleGoogleAuth initiates Google OAuth flow
 func (s *Service) handleGoogleAuth(c echo.Context) error {
@@ -1026,6 +1086,199 @@ func (s *Service) handleLoginPlaceholder(c echo.Context) error {
 </html>`
 	
 	return c.HTML(http.StatusOK, loginHTML)
+}
+
+// Cart API Handlers
+
+// handleAddToCart adds an item to the cart
+func (s *Service) handleAddToCart(c echo.Context) error {
+	var req struct {
+		ProductID string `json:"productId"`
+		Quantity  int64  `json:"quantity"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+	}
+
+	if req.ProductID == "" || req.Quantity <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Missing or invalid productId or quantity")
+	}
+
+	// Get or create session ID
+	sessionID, err := s.getOrCreateSessionID(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create session")
+	}
+
+	ctx := c.Request().Context()
+
+	// Check if product exists
+	_, err = s.storage.Queries.GetProduct(ctx, req.ProductID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+
+	// Check if item already exists in cart
+	existingItem, err := s.storage.Queries.GetExistingCartItem(ctx, db.GetExistingCartItemParams{
+		SessionID: sql.NullString{String: sessionID, Valid: true},
+		UserID:    sql.NullString{Valid: false}, // Handle user auth later
+		ProductID: req.ProductID,
+	})
+
+	if err == nil {
+		// Item exists, update quantity
+		newQuantity := existingItem.Quantity + req.Quantity
+		err = s.storage.Queries.UpdateCartItemQuantity(ctx, db.UpdateCartItemQuantityParams{
+			ID:       existingItem.ID,
+			Quantity: newQuantity,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update cart item")
+		}
+	} else {
+		// Item doesn't exist, add new item
+		itemID := uuid.New().String()
+		err = s.storage.Queries.AddToCart(ctx, db.AddToCartParams{
+			ID:        itemID,
+			SessionID: sql.NullString{String: sessionID, Valid: true},
+			UserID:    sql.NullString{Valid: false},
+			ProductID: req.ProductID,
+			Quantity:  req.Quantity,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add item to cart")
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Item added to cart successfully",
+	})
+}
+
+// handleRemoveFromCart removes an item from the cart
+func (s *Service) handleRemoveFromCart(c echo.Context) error {
+	itemID := c.Param("id")
+	if itemID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Item ID is required")
+	}
+
+	ctx := c.Request().Context()
+	err := s.storage.Queries.RemoveCartItem(ctx, itemID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove item from cart")
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Item removed from cart successfully",
+	})
+}
+
+// handleUpdateCartItem updates the quantity of an item in the cart
+func (s *Service) handleUpdateCartItem(c echo.Context) error {
+	itemID := c.Param("id")
+	if itemID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Item ID is required")
+	}
+
+	var req struct {
+		Quantity int64 `json:"quantity"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+	}
+
+	if req.Quantity < 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quantity")
+	}
+
+	ctx := c.Request().Context()
+
+	if req.Quantity == 0 {
+		// Remove item if quantity is 0
+		err := s.storage.Queries.RemoveCartItem(ctx, itemID)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to remove item from cart")
+		}
+	} else {
+		// Update quantity
+		err := s.storage.Queries.UpdateCartItemQuantity(ctx, db.UpdateCartItemQuantityParams{
+			ID:       itemID,
+			Quantity: req.Quantity,
+		})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update cart item")
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Cart updated successfully",
+	})
+}
+
+// handleGetCart returns the current cart contents
+func (s *Service) handleGetCart(c echo.Context) error {
+	sessionID, err := s.getOrCreateSessionID(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create session")
+	}
+
+	ctx := c.Request().Context()
+
+	// Get cart items
+	items, err := s.storage.Queries.GetCartBySession(ctx, sql.NullString{String: sessionID, Valid: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart items")
+	}
+
+	// Get cart total
+	total, err := s.storage.Queries.GetCartTotal(ctx, db.GetCartTotalParams{
+		SessionID: sql.NullString{String: sessionID, Valid: true},
+		UserID:    sql.NullString{Valid: false},
+	})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart total")
+	}
+
+	// Convert total to int64 (it comes as sql.NullFloat64)
+	var totalCents int64
+	if total.Valid {
+		totalCents = int64(total.Float64)
+	}
+
+	// Format response
+	response := map[string]interface{}{
+		"items":       items,
+		"totalCents":  totalCents,
+		"totalDollar": float64(totalCents) / 100,
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// getOrCreateSessionID gets existing session ID or creates new one
+func (s *Service) getOrCreateSessionID(c echo.Context) (string, error) {
+	cookie, err := c.Cookie("session_id")
+	if err != nil || cookie.Value == "" {
+		// Create new session ID
+		sessionID := uuid.New().String()
+		
+		// Set session cookie
+		newCookie := &http.Cookie{
+			Name:     "session_id",
+			Value:    sessionID,
+			Path:     "/",
+			MaxAge:   86400 * 30, // 30 days
+			HttpOnly: true,
+			SameSite: http.SameSiteLaxMode,
+		}
+		c.SetCookie(newCookie)
+		
+		return sessionID, nil
+	}
+	
+	return cookie.Value, nil
 }
 
 // Render renders a templ component and writes it to the response

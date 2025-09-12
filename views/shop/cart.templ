@@ -1,166 +1,102 @@
 package shop
 
 import (
-	"fmt"
-	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Cart(cartItems []db.GetCartBySessionRow, totalCents int64) {
+templ Cart() {
 	@layout.Base(layout.Meta{
 		Title:       "Shopping Cart - Logan's 3D Creations",
-		Description: "Review your cart and proceed to checkout",
-		Keywords:    "cart, checkout, 3D printed products",
+		Description: "Review your items and proceed to checkout",
+		Keywords:    "shopping cart, checkout, 3D printed items",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">
 				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
 				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
 			</div>
+			
 			<div class="relative z-10">
-				<!-- Header -->
-				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
-					<div class="max-w-6xl mx-auto">
-						<div class="text-center">
-							<h1 class="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] mb-8 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
-								<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent">
-									Shopping
-								</span>
-								<br/>
-								<span class="bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent">
-									Cart
-								</span>
-							</h1>
-						</div>
-					</div>
-				</section>
-				<!-- Cart Content -->
-				<section class="px-8 sm:px-12 lg:px-16 py-20">
-					<div class="max-w-6xl mx-auto">
-						if len(cartItems) == 0 {
-							<!-- Empty Cart -->
-							<div class="text-center py-24">
-								<div class="w-32 h-32 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-700/50 backdrop-blur-sm">
-									<div class="text-6xl">🛒</div>
-								</div>
-								<h3 class="text-3xl font-bold text-white mb-4">Your cart is empty</h3>
-								<p class="text-slate-400 text-lg mb-8">Add some amazing 3D printed items to get started!</p>
-								<a href="/shop" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold rounded-2xl hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
-									<span>Continue Shopping</span>
-									<svg class="ml-3 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+				<!-- Breadcrumb -->
+				<nav class="pt-32 pb-8 px-8 sm:px-12 lg:px-16" aria-label="Breadcrumb">
+					<div class="max-w-7xl mx-auto">
+						<ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm">
+							<li class="inline-flex items-center">
+								<a href="/" class="text-slate-300 hover:text-blue-400 transition-colors duration-200">Home</a>
+							</li>
+							<li>
+								<div class="flex items-center">
+									<svg class="w-4 h-4 mx-1 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
 									</svg>
+									<a href="/shop" class="text-slate-300 hover:text-blue-400 transition-colors duration-200">Shop</a>
+								</div>
+							</li>
+							<li>
+								<div class="flex items-center">
+									<svg class="w-4 h-4 mx-1 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+										<path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 111.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+									</svg>
+									<span class="text-slate-400">Shopping Cart</span>
+								</div>
+							</li>
+						</ol>
+					</div>
+				</nav>
+
+				<div class="max-w-4xl mx-auto px-8 sm:px-12 lg:px-16 py-12">
+					<h1 class="text-4xl font-bold text-white mb-12 bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent text-center">
+						Your Shopping Cart
+					</h1>
+
+					<!-- Cart Items Container (populated by JavaScript) -->
+					<div id="cart-items-container">
+						<!-- Empty cart state -->
+						<div id="empty-cart" class="text-center py-16">
+							<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-12">
+								<svg class="w-24 h-24 text-slate-500 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 11-4 0v-6m4 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+								</svg>
+								<h3 class="text-2xl font-bold text-slate-300 mb-4">Your cart is empty</h3>
+								<p class="text-slate-400 mb-8">Start adding some amazing 3D printed items to your cart!</p>
+								<a href="/shop" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-4 px-8 rounded-2xl font-bold text-lg hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
+									<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+									</svg>
+									Continue Shopping
 								</a>
 							</div>
-						} else {
-							<!-- Cart Items -->
-							<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-								<!-- Cart Items List -->
-								<div class="lg:col-span-2">
-									<div class="space-y-6">
-										for _, item := range cartItems {
-											@CartItemCard(item)
-										}
-									</div>
-								</div>
-								<!-- Cart Summary -->
-								<div class="lg:col-span-1">
-									<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-8 border border-slate-700/50 backdrop-blur-sm">
-										<h3 class="text-2xl font-bold text-white mb-6">Order Summary</h3>
-										<div class="space-y-4 mb-8">
-											<div class="flex justify-between text-slate-300">
-												<span>Subtotal</span>
-												<span>${ fmt.Sprintf("%.2f", float64(totalCents)/100) }</span>
-											</div>
-											<div class="flex justify-between text-slate-300">
-												<span>Shipping</span>
-												<span>Calculated at checkout</span>
-											</div>
-											<div class="border-t border-slate-600 pt-4">
-												<div class="flex justify-between text-xl font-bold text-white">
-													<span>Total</span>
-													<span class="text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 bg-clip-text">
-														${ fmt.Sprintf("%.2f", float64(totalCents)/100) }
-													</span>
-												</div>
-											</div>
-										</div>
-										<button
-											class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white font-semibold py-4 rounded-2xl hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 mb-4"
-											onclick="proceedToCheckout()"
-										>
-											Proceed to Checkout
-										</button>
-										<a href="/shop" class="block w-full text-center text-slate-300 hover:text-white py-3 transition-colors duration-300">
-											Continue Shopping
-										</a>
-									</div>
-								</div>
-							</div>
-						}
-					</div>
-				</section>
-			</div>
-		</div>
-	}
-}
+						</div>
 
-templ CartItemCard(item db.GetCartBySessionRow) {
-	<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl p-6 border border-slate-700/50 backdrop-blur-sm">
-		<div class="flex items-start gap-6">
-			<!-- Product Image -->
-			<div class="w-24 h-24 bg-gradient-to-br from-slate-700 to-slate-800 rounded-xl overflow-hidden flex-shrink-0">
-				if item.ImageUrl != "" {
-					<img src={ fmt.Sprintf("/public/images/products/%s", item.ImageUrl) } alt={ item.Name } class="w-full h-full object-cover"/>
-				} else {
-					<div class="w-full h-full flex items-center justify-center">
-						<svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-						</svg>
+						<!-- Cart items will be populated here by JavaScript -->
+						<div id="cart-items" class="hidden space-y-6">
+							<!-- Items will be inserted here -->
+						</div>
 					</div>
-				}
-			</div>
-			<!-- Product Details -->
-			<div class="flex-grow">
-				<h4 class="text-lg font-semibold text-white mb-2">{ item.Name }</h4>
-				<p class="text-slate-400 mb-4">
-					${ fmt.Sprintf("%.2f", float64(item.PriceCents)/100) } each
-				</p>
-				<!-- Quantity Controls -->
-				<div class="flex items-center gap-4">
-					<div class="flex items-center bg-slate-700/50 rounded-lg border border-slate-600/50">
-						<button
-							class="px-3 py-2 text-slate-300 hover:text-white transition-colors cart-update-btn"
-							data-item-id={ item.ID }
-							data-quantity={ fmt.Sprintf("%d", item.Quantity-1) }
-							{ templ.Attributes{"disabled": item.Quantity <= 1}... }
-						>
-							-
-						</button>
-						<span class="px-4 py-2 text-white font-medium">{ fmt.Sprintf("%d", item.Quantity) }</span>
-						<button
-							class="px-3 py-2 text-slate-300 hover:text-white transition-colors cart-update-btn"
-							data-item-id={ item.ID }
-							data-quantity={ fmt.Sprintf("%d", item.Quantity+1) }
-						>
-							+
-						</button>
+
+					<!-- Cart Summary (hidden when empty) -->
+					<div id="cart-summary" class="hidden mt-12 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-8">
+						<div class="flex justify-between items-center mb-6 pb-6 border-b border-slate-600/50">
+							<span class="text-xl font-bold text-white">Total:</span>
+							<span id="cart-total" class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">$0.00</span>
+						</div>
+						
+						<div class="flex flex-col sm:flex-row gap-4">
+							<a href="/shop" class="flex-1 bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-4 px-6 rounded-xl font-semibold text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm">
+								Continue Shopping
+							</a>
+							<button class="proceed-checkout-btn flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
+								Proceed to Checkout
+							</button>
+						</div>
 					</div>
-					<button
-						class="text-red-400 hover:text-red-300 transition-colors text-sm cart-remove-btn"
-						data-item-id={ item.ID }
-					>
-						Remove
-					</button>
-				</div>
-			</div>
-			<!-- Item Total -->
-			<div class="text-right flex-shrink-0">
-				<div class="text-xl font-bold text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 bg-clip-text">
-					${ fmt.Sprintf("%.2f", float64(item.PriceCents * item.Quantity)/100) }
 				</div>
 			</div>
 		</div>
-	</div>
+
+		<!-- Load cart rendering script -->
+		<script src="/public/js/cart-render.js"></script>
+	}
 }
