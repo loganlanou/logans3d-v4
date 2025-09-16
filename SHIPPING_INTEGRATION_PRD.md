@@ -80,214 +80,335 @@ type Parcel struct {
 }
 ```
 
-### 2. Item Size Classification System
+### 2. Configuration-Driven Data Model
 
-#### Size Categories Configuration
+#### Product Class Configuration (YAML)
 ```yaml
-item_sizes:
-  small:
-    base_weight: 2.5      # ounces
-    dimensions:
-      length: 2.0         # inches
-      width: 2.0
-      height: 1.0
-    packing_weight: 0.5
+classes:
+  S:  { weight_oz: 2.0,  dim_in: [4, 4, 1.5] }
+  M:  { weight_oz: 6.0,  dim_in: [6, 6, 3] }
+  L:  { weight_oz: 16.0, dim_in: [8, 8, 4] }
+  XL: { weight_oz: 36.0, dim_in: [12, 10, 6] }
 
-  medium:
-    base_weight: 7.5      # 3x small
-    dimensions:
-      length: 3.0
-      width: 3.0
-      height: 2.0
-    packing_weight: 0.8
+combine_rules:               # Equivalences apply to volume & weight
+  S_to_M:  { S: 3, result: M }
+  M_to_L:  { M: 2, result: L }
+  L_to_XL: { L: 3, result: XL }
 
-  large:
-    base_weight: 15.0     # 2x medium
-    dimensions:
-      length: 4.5
-      width: 4.5
-      height: 3.0
-    packing_weight: 1.2
+boxes:                        # Interior dims (inches) and max weight (lb)
+  SMail: { sku: "BX-SM-MAIL", type: "box", inner_in: [8, 5, 2],  max_wt_lb: 4 }
+  S:     { sku: "BX-SM",      type: "box", inner_in: [8, 6, 4],  max_wt_lb: 10 }
+  M:     { sku: "BX-MD",      type: "box", inner_in: [12, 9, 4], max_wt_lb: 20 }
+  L:     { sku: "BX-LG",      type: "box", inner_in: [14, 10, 6],max_wt_lb: 30 }
+  XL:    { sku: "BX-XL",      type: "box", inner_in: [18, 12, 8],max_wt_lb: 40 }
 
-  extra_large:
-    base_weight: 45.0     # 3x large
-    dimensions:
-      length: 6.0
-      width: 6.0
-      height: 4.5
-    packing_weight: 2.0
+packing_prefs:
+  max_boxes: 6
+  allow_softpack: true
+  softpack_thickness_in: 0.5
+  respect_overrides: true
+  evaluate_split_vs_consolidate: true
+  prefer_usps_cubic_when_eligible: true
+  max_candidate_plans: 5
 ```
 
-#### Conversion Rules
-- 3 Small items = 1 Medium item (volume and weight)
-- 2 Medium items = 1 Large item
-- 3 Large items = 1 Extra Large item
-
-#### Product-Specific Shipping Overrides
-Some products require special packing and cannot be consolidated with other items:
+#### Per-SKU Shipping Overrides
+Items with special packing that must ship alone or in a fixed box:
 
 ```yaml
-product_shipping_overrides:
-  # Product SKU or ID with custom shipping requirements
+product_overrides:
+  "SKU-DRAGON-SWORD-42":
+    requires_separate_box: true
+    own_box:
+      dim_in: [36, 6, 4]         # L×W×H interior used for rating; outer derived via padding
+      weight_lb: 7.5             # includes inserts/foam
+      padding_in: 0.25           # added per side → outer ship dims
+      max_per_box: 1             # 1 item per parcel
+      orientation_lock: true     # no 90° rotation
+      fragile: true
+      insurance_value_usd: 180.00
+      signature_required: false
+    fallback_box_sku: "BX-LG"    # optional; used if dim_in omitted
+
+  "SKU-STATUE-XL-001":
+    requires_separate_box: true
+    own_box:
+      box_sku: "BX-XL"
+      weight_lb: 12.0
+      max_per_box: 1
+
   "DELICATE-MINIATURE-SET":
-    weight: 4.2               # ounces - exact weight
-    dimensions:
-      length: 8.0             # inches - exact dimensions
-      width: 6.0
-      height: 3.0
-    requires_own_box: true    # Cannot be combined with other items
-    box_type: "custom_padded" # Specific box type required
+    requires_separate_box: true
+    own_box:
+      dim_in: [8, 6, 3]
+      weight_lb: 0.3
+      padding_in: 0.5
+      max_per_box: 1
+      fragile: true
+      insurance_value_usd: 45.00
     packing_instructions: "Wrap each piece individually in bubble wrap"
+```
 
-  "LARGE-PROTOTYPE-MODEL":
-    weight: 12.5
-    dimensions:
-      length: 14.0
-      width: 10.0
-      height: 8.0
-    requires_own_box: true
-    box_type: "large_reinforced"
-    fragile: true
-    packing_instructions: "Double-wall box with foam padding on all sides"
+#### Order Packing Output Example
+```json
+{
+  "order_id": "ORD-10001",
+  "carton_plan": [
+    {
+      "box_sku": "BX-MD",
+      "inner_dim_in": [12, 9, 4],
+      "items": [{"class":"S","qty":4},{"class":"M","qty":1}],
+      "packed_weight_lb": 2.2,
+      "ship_dim_in": [12, 9, 4]
+    },
+    {
+      "box_sku": "BX-XL",
+      "items": [{"sku":"SKU-STATUE-XL-001","qty":1}],
+      "packed_weight_lb": 12.0,
+      "ship_dim_in": [18, 12, 8],
+      "override": true
+    }
+  ]
+}
+```
 
-### 3. Packaging Optimization Algorithm
+### 3. Cartonization Algorithm with Split-vs-Consolidate Evaluation
 
-#### Core Algorithm Flow
+#### Enhanced Algorithm Flow
 ```go
-type OptimizationResult struct {
-    Packages []Package
+type CartonPlan struct {
+    OrderID   string
+    Packages  []Package
     TotalCost float64
-    TotalWeight float64
+    Strategy  string  // "split-heavy", "consolidated", "softpack-first"
+    BoxCount  int
 }
 
 type Package struct {
-    BoxType         string
+    BoxSKU          string
+    InnerDimensions []float64  // [L, W, H] inches
+    ShipDimensions  []float64  // Outer dimensions for rating
     Items           []ItemGroup
-    Weight          float64
-    Dimensions      Dimensions
-    SpecialHandling string  // Packing instructions for override items
-    Fragile         bool    // Special handling flag
+    PackedWeight    float64    // pounds
+    Override        bool       // true if from product override
+    SpecialHandling string
+    Fragile         bool
+    Insurance       float64
+    Signature       bool
 }
 
-func OptimizePackaging(order []OrderItem, config ShippingConfig) OptimizationResult {
-    // Step 1: Separate override items from regular items
-    overrideItems, regularItems := separateOverrideItems(order, config.ProductOverrides)
-
-    // Step 2: Create packages for override items (each gets own box)
+func OptimizeCartonization(order []OrderItem, config ShippingConfig) []CartonPlan {
+    // Step 1: Split Overrides First
+    overrideItems, regularItems := extractOverrideItems(order, config.ProductOverrides)
     overridePackages := createOverridePackages(overrideItems, config)
 
-    // Step 3: Consolidate regular items using conversion rules
-    consolidatedItems := consolidateItems(regularItems, config.ConversionRules)
+    // Step 2: Class Normalization
+    normalizedItems := normalizeToClasses(regularItems, config.Classes)
 
-    // Step 4: Generate packaging combinations for regular items
-    combinations := generatePackagingCombinations(consolidatedItems, config.BoxSizes)
+    // Step 3: Equivalence Folding
+    consolidatedItems := applyEquivalenceRules(normalizedItems, config.CombineRules)
 
-    // Step 5: Evaluate combinations and combine with override packages
-    regularResult := evaluateCombinations(combinations, config)
+    // Step 4: Generate Strategy Variants
+    strategies := []string{"split-heavy", "consolidated", "softpack-first"}
+    var candidatePlans []CartonPlan
 
-    // Step 6: Combine override and regular packages
-    return combineResults(overridePackages, regularResult)
-}
+    for _, strategy := range strategies {
+        packages := generatePackagesByStrategy(consolidatedItems, config, strategy)
 
-func separateOverrideItems(items []OrderItem, overrides map[string]ProductShippingOverride) ([]OrderItem, []OrderItem) {
-    var overrideItems, regularItems []OrderItem
+        // Always include override packages in every plan
+        allPackages := append(overridePackages, packages...)
 
-    for _, item := range items {
-        if override, exists := overrides[item.ProductID]; exists && override.RequiresOwnBox {
-            overrideItems = append(overrideItems, item)
-        } else {
-            regularItems = append(regularItems, item)
-        }
-    }
-
-    return overrideItems, regularItems
-}
-
-func createOverridePackages(items []OrderItem, config ShippingConfig) []Package {
-    var packages []Package
-
-    for _, item := range items {
-        override := config.ProductOverrides[item.ProductID]
-
-        // Each override item gets its own package
-        for i := 0; i < item.Quantity; i++ {
-            package := Package{
-                BoxType: override.BoxType,
-                Items: []ItemGroup{{
-                    ProductID: item.ProductID,
-                    Quantity: 1,
-                }},
-                Weight: override.Weight + getBoxWeight(override.BoxType, config),
-                Dimensions: override.Dimensions,
-                SpecialHandling: override.PackingInstructions,
-                Fragile: override.Fragile,
+        if len(allPackages) <= config.PackingPrefs.MaxBoxes {
+            plan := CartonPlan{
+                OrderID:  order[0].OrderID,
+                Packages: allPackages,
+                Strategy: strategy,
+                BoxCount: len(allPackages),
             }
-            packages = append(packages, package)
+            candidatePlans = append(candidatePlans, plan)
         }
     }
 
-    return packages
+    // Step 5: Cost Preview per Plan
+    for i := range candidatePlans {
+        candidatePlans[i].TotalCost = calculatePlanCost(candidatePlans[i], config)
+    }
+
+    // Step 6: Choose Best Plans (top 3 for checkout)
+    return selectBestPlans(candidatePlans, config.PackingPrefs.MaxCandidatePlans)
 }
 
-func consolidateItems(items []OrderItem, rules ConversionRules) []ConsolidatedItem {
+func generatePackagesByStrategy(items []ConsolidatedItem, config ShippingConfig, strategy string) []Package {
+    switch strategy {
+    case "split-heavy":
+        // Prefer many small/medium cartons (favors USPS Cubic tiers)
+        return packSplitHeavy(items, config)
+    case "consolidated":
+        // Merge into as few large boxes as possible (watch DIM weight)
+        return packConsolidated(items, config)
+    case "softpack-first":
+        // Pack softpacks where eligible before boxes
+        return packSoftpackFirst(items, config)
+    default:
+        return packFirstFitDecreasing(items, config)
+    }
+}
+
+func calculatePlanCost(plan CartonPlan, config ShippingConfig) float64 {
+    totalCost := 0.0
+
+    for _, pkg := range plan.Packages {
+        // Calculate billable weight using DIM weight formula
+        billableWeight := calculateBillableWeight(pkg, config.DIMDivisors)
+
+        // Get shipping rates from provider
+        rates := getShippingRates(pkg, billableWeight)
+        totalCost += rates.LowestRate
+
+        // Add box material cost
+        boxCost := getBoxCost(pkg.BoxSKU, config)
+        totalCost += boxCost
+    }
+
+    return totalCost
+}
+
+func calculateBillableWeight(pkg Package, dimDivisors map[string]int) float64 {
+    // billable_weight = max(actual, ceil((L×W×H)/divisor))
+    dims := pkg.ShipDimensions
+    dimWeight := math.Ceil((dims[0] * dims[1] * dims[2]) / float64(dimDivisors["default"]))
+    return math.Max(pkg.PackedWeight, dimWeight)
+}
+
+func applyEquivalenceRules(items []ConsolidatedItem, rules CombineRules) []ConsolidatedItem {
     counts := make(map[string]int)
 
-    // Count items by size
+    // Count items by class
     for _, item := range items {
-        counts[item.Size] += item.Quantity
+        counts[item.Class] += item.Quantity
     }
 
-    // Apply bottom-up consolidation
-    // Small → Medium
-    mediumFromSmall := counts["small"] / rules.SmallToMedium
-    counts["medium"] += mediumFromSmall
-    counts["small"] %= rules.SmallToMedium
+    // Apply combine rules greedily, largest reductions first
+    // 3×S → 1×M
+    if rule, exists := rules["S_to_M"]; exists {
+        converted := counts["S"] / rule.S
+        counts["M"] += converted
+        counts["S"] %= rule.S
+    }
 
-    // Medium → Large
-    largeFromMedium := counts["medium"] / rules.MediumToLarge
-    counts["large"] += largeFromMedium
-    counts["medium"] %= rules.MediumToLarge
+    // 2×M → 1×L
+    if rule, exists := rules["M_to_L"]; exists {
+        converted := counts["M"] / rule.M
+        counts["L"] += converted
+        counts["M"] %= rule.M
+    }
 
-    // Large → Extra Large
-    extraLargeFromLarge := counts["large"] / rules.LargeToExtraLarge
-    counts["extra_large"] += extraLargeFromLarge
-    counts["large"] %= rules.LargeToExtraLarge
+    // 3×L → 1×XL
+    if rule, exists := rules["L_to_XL"]; exists {
+        converted := counts["L"] / rule.L
+        counts["XL"] += converted
+        counts["L"] %= rule.L
+    }
 
-    return countsToItems(counts)
+    return countsToConsolidatedItems(counts)
 }
 ```
 
-#### Optimization Factors
-1. **Total Shipping Cost** (primary factor)
-2. **Packaging Material Cost**
-3. **Dimensional Weight Considerations**
-4. **Carrier-Specific Rate Optimization**
+#### Split vs Consolidate Decision Logic
+```go
+func selectOptimalStrategy(plans []CartonPlan) CartonPlan {
+    // Bias toward split-heavy when consolidating crosses DIM threshold
+    splitPlan := findPlanByStrategy(plans, "split-heavy")
+    consolidatedPlan := findPlanByStrategy(plans, "consolidated")
 
-### 4. Box Configuration System
+    if splitPlan != nil && consolidatedPlan != nil {
+        // If consolidated plan triggers higher DIM weight bracket, prefer split
+        if consolidatedPlan.TotalCost > splitPlan.TotalCost*1.15 {
+            return *splitPlan
+        }
+    }
 
-#### Standard Box Sizes
-```yaml
-box_configs:
-  small_box:
-    internal_dims: {length: 6, width: 4, height: 2}
-    max_weight: 16
-    cost_per_unit: 0.45
-
-  medium_box:
-    internal_dims: {length: 8, width: 6, height: 4}
-    max_weight: 32
-    cost_per_unit: 0.65
-
-  large_box:
-    internal_dims: {length: 12, width: 9, height: 6}
-    max_weight: 64
-    cost_per_unit: 0.85
-
-  extra_large_box:
-    internal_dims: {length: 16, width: 12, height: 8}
-    max_weight: 128
-    cost_per_unit: 1.15
+    // Otherwise choose cheapest plan
+    return findCheapestPlan(plans)
+}
 ```
+
+#### Optimization Factors (Updated)
+1. **Total Shipping Cost** (primary factor - includes DIM weight calculations)
+2. **Split vs Consolidate Strategy** (DIM weight threshold awareness)
+3. **USPS Cubic Tier Eligibility** (for small packages)
+4. **Packaging Material Cost**
+5. **Box Count Constraints** (respect max_boxes preference)
+
+### 4. Checkout Rate Shopping Flow
+
+#### Enhanced Rate Shopping Process
+1. **Build 2-3 Candidate Carton Plans** using the cartonization algorithm
+2. **For Each Plan**: Call shipping provider API for each parcel with flags:
+   - Residential delivery
+   - Signature required (based on value thresholds or override flags)
+   - Insurance (based on value thresholds or override requirements)
+   - Saturday delivery option
+3. **Deduplicate by (carrier, service, ETA)** and present top options:
+   - **Cheapest**: Lowest total cost across all packages
+   - **Best Value**: Balanced cost and delivery time (Pareto optimization)
+   - **Fastest**: Shortest max delivery time, with cost as tiebreaker
+4. **On Selection**: Persist `rate_id`/`shipment_id` for each package for label purchase
+
+### 5. Fulfillment & Label Management
+
+#### Label Purchase and Printing
+- **On Order Capture**: Buy labels for each parcel using stored rate tokens
+- **Persist Assets**: Store PDF/ZPL labels, tracking numbers, and rating I/O for audit
+- **Packer UI**: Print labels + packing slip; display tracking information
+
+#### Label Refunds and Voids (New Capability)
+**Objective**: If an order is canceled or a label is unused, void/refund labels within provider windows and credit back to balance.
+
+**Refund Behavior**:
+```go
+type LabelRefundService struct {
+    provider Provider
+    storage  LabelStorage
+}
+
+func (s *LabelRefundService) RefundLabels(orderID string) error {
+    labels := s.storage.GetLabelsByOrder(orderID)
+
+    for _, label := range labels {
+        // Check if pay-on-scan/use (not charged until first scan)
+        if s.provider.IsPayOnScan(label) {
+            label.Status = "not_charged"
+            continue
+        }
+
+        // Attempt void/refund within provider window
+        result, err := s.provider.VoidLabel(context.Background(), label.ID)
+        if err != nil {
+            label.RefundStatus = "pending"
+            label.RefundReason = err.Error()
+        } else {
+            label.RefundStatus = result.Status  // "approved", "denied", "pending"
+            label.CreditedAmount = result.Amount
+            label.VoidBy = result.VoidBy
+        }
+
+        s.storage.UpdateLabel(label)
+    }
+
+    return nil
+}
+```
+
+**Nightly Refund Retry Job**:
+- Process labels with `refund_status = "pending"`
+- Retry refund attempts until approved or expired
+- Track void_by deadline per label (strictest cutoff from provider)
+
+**Admin UI Features**:
+- **Action**: "Void/Refund Label" with reasons (canceled, address error, duplicate)
+- **Display**: Eligibility window, current status, and credited amount
+- **Bulk Operations**: Cancel entire order with automatic refund attempts
 
 ## Implementation Plan
 
@@ -511,27 +632,190 @@ type ConversionMatrix struct {
 4. Implement rate shopping workflow
 5. Set up webhook endpoints for tracking updates
 
-### Sample Integration Code
+### 6. Provider Integration Interface
+
+**Supported Aggregators**: EasyPost, ShipEngine/ShipStation API, Shippo
+
+**Provider Interface (Go Implementation)**:
+```go
+type Provider interface {
+    GetRates(ctx context.Context, shipments []Shipment, opts RateOpts) ([]Rate, error)
+    BuyLabel(ctx context.Context, rateID string) (Label, error)
+    VoidLabel(ctx context.Context, labelID string) (VoidResult, error)
+    Track(ctx context.Context, trackingNumber string) (Tracking, error)
+    ValidateAddress(ctx context.Context, addr Address) (Address, error)
+    // Optional capabilities:
+    IsPayOnScan(label Label) bool
+}
+
+type RateOpts struct {
+    Residential   bool
+    Signature     bool
+    Insurance     float64
+    Saturday      bool
+    IdempotencyKey string
+}
+
+type VoidResult struct {
+    Status        string    // "approved", "denied", "pending"
+    Amount        float64   // credited amount
+    VoidBy        time.Time // deadline for void eligibility
+    Reason        string    // denial reason if applicable
+}
+
+type Label struct {
+    ID            string
+    TrackingNumber string
+    LabelURL      string
+    Cost          float64
+    VoidBy        time.Time
+    RefundStatus  string
+    CreditedAmount float64
+}
+```
+
+**Key Integration Requirements**:
+- **Idempotency**: All purchase/void requests must include idempotency keys
+- **DIM Divisors**: Configure per-carrier/service with admin override capability
+- **Error Handling**: Graceful degradation with fallback providers
+- **Rate Caching**: Cache rates for identical shipment parameters (15-minute TTL)
+
+### Sample EasyPost Integration
 ```go
 import "github.com/EasyPost/easypost-go"
 
 client := easypost.New("your-api-key")
 
-// Create shipment and get rates
-shipment, err := client.CreateShipment(&easypost.Shipment{
-    ToAddress: toAddr,
-    FromAddress: fromAddr,
-    Parcel: parcel,
-})
+// Create shipment and get rates for all packages in plan
+for _, pkg := range cartonPlan.Packages {
+    shipment, err := client.CreateShipment(&easypost.Shipment{
+        ToAddress: toAddr,
+        FromAddress: fromAddr,
+        Parcel: &easypost.Parcel{
+            Length: pkg.ShipDimensions[0],
+            Width:  pkg.ShipDimensions[1],
+            Height: pkg.ShipDimensions[2],
+            Weight: pkg.PackedWeight,
+        },
+        Options: &easypost.ShipmentOptions{
+            Insurance:    pkg.Insurance,
+            Signature:    pkg.Signature,
+        },
+    })
 
-// Buy cheapest rate
-rate := shipment.LowestRate()
-shipment, err = client.BuyShipment(shipment.ID, rate.ID)
+    // Store rates for checkout selection
+    storeRatesForPackage(pkg.ID, shipment.Rates)
+}
 
-// Print label
-labelURL := shipment.PostageLabel.LabelURL
+// On checkout selection, buy labels
+func purchaseLabels(selectedRates []RateSelection) error {
+    for _, selection := range selectedRates {
+        label, err := client.BuyShipment(selection.ShipmentID, selection.RateID)
+        if err != nil {
+            return err
+        }
+
+        // Store label for printing and tracking
+        storeLabelForPackage(selection.PackageID, label)
+    }
+    return nil
+}
 ```
+
+## Acceptance Criteria
+
+### 1. Split vs Consolidate Evaluation
+- **AC-1.1**: Given a cart that fits in 1×L vs 2×M boxes, system selects the cheaper plan based on actual shipping rates
+- **AC-1.2**: Given 1×XL vs 3×S scenario, system prefers split strategy if DIM weight makes XL more expensive
+- **AC-1.3**: System respects `max_boxes` preference and excludes plans exceeding this limit
+- **AC-1.4**: USPS Cubic tier eligibility is correctly identified and biases toward split-heavy strategy
+
+### 2. Product Shipping Overrides
+- **AC-2.1**: An override SKU ships alone with specified dimensions/weight, respecting `max_per_box` limits
+- **AC-2.2**: Orientation lock prevents 90° rotations during box fitting calculations
+- **AC-2.3**: Override items with `requires_separate_box: true` never consolidate with regular items
+- **AC-2.4**: Insurance and signature requirements from overrides propagate to shipping labels
+
+### 3. Label Purchase and Management
+- **AC-3.1**: Selected checkout option purchases the exact rated service and generates PDF/ZPL labels
+- **AC-3.2**: All label purchase requests include idempotency keys to prevent duplicates
+- **AC-3.3**: Labels store complete audit trail: rating inputs/outputs, purchase timestamp, costs
+- **AC-3.4**: Packer UI displays labels, packing instructions, and tracking information
+
+### 4. Refunds and Voids
+- **AC-4.1**: Canceling an order triggers automatic refund attempts for all associated labels
+- **AC-4.2**: Pay-on-scan labels are marked as `not_charged` and skip refund process
+- **AC-4.3**: Labels past `void_by` deadline show as ineligible with clear reason messaging
+- **AC-4.4**: Nightly job retries pending refunds until approved/expired
+- **AC-4.5**: Admin UI shows void eligibility window, status, and credited amounts
+
+### 5. Configuration Management
+- **AC-5.1**: YAML configuration changes hot-reload without service restart
+- **AC-5.2**: Class equivalence rules (3×S→1×M, 2×M→1×L, 3×L→1×XL) apply correctly
+- **AC-5.3**: DIM divisors can be configured per carrier/service with admin overrides
+- **AC-5.4**: Box configurations include interior dimensions, weight limits, and costs
+
+## Test Matrix
+
+### Class Mix Testing
+- **Single Classes**: S×1 through S×9, M×2, L×3, XL edge cases
+- **Mixed Orders**: 2×S + 1×M, 3×S + 2×M + 1×L combinations
+- **Softpack vs Box**: Items eligible for softpack vs rigid box requirements
+- **Weight Limits**: Orders exceeding individual box weight limits
+
+### Override Product Testing
+- **Single Override**: One override item with fixed `box_sku`
+- **Custom Dimensions**: Override with `dim_in + padding_in` calculations
+- **Multi-Quantity**: Override items with `max_per_box: 2` constraints
+- **Insurance/Signature**: Propagation of special handling requirements
+- **Mixed Orders**: Override items combined with regular class-based items
+
+### Split vs Consolidate Scenarios
+- **1×L vs 2×M**: Compare costs when consolidation vs split strategies differ
+- **1×XL vs 3×S**: DIM weight threshold testing
+- **Softpack Multiples**: Multiple softpacks vs single box consolidation
+- **Max Boxes**: Enforcement of `max_boxes` constraint with plan elimination
+
+### Refund Testing
+- **Eligible Windows**: Labels within void deadline
+- **Expired Windows**: Labels past void deadline
+- **Pay-on-Scan**: Labels not yet charged by carrier
+- **Denial Reasons**: Various refund denial scenarios and handling
+
+## Open Questions (Claude to Confirm)
+
+1. **DIM Divisors**: Exact divisors per carrier/service for launch (default 139/166 vs carrier-specific)
+2. **Box Catalog**: Final interior dimensions and USPS Cubic tier qualifications
+3. **Default Services**: Which services to show at checkout (USPS Ground Advantage/Priority, UPS Ground, FedEx Ground Economy)
+4. **Surcharge Configuration**: Default insurance thresholds, signature requirements, Saturday delivery, residential flags
+5. **Manual Override UI**: Do we need admin capability to force specific packaging plan/service at checkout?
+
+## Implementation Milestones (Updated)
+
+### M1: Configuration + Cartonization MVP (Weeks 1-3)
+- Implement YAML configuration system with class definitions
+- Build core cartonization algorithm with equivalence rules
+- Create sandbox rate integration with EasyPost
+- Basic override item handling
+
+### M2: Split-vs-Consolidate + Checkout Integration (Weeks 4-6)
+- Implement strategy evaluation (split-heavy, consolidated, softpack-first)
+- Production rate shopping with 2-3 plan candidates
+- Checkout UI for shipping option selection
+- DIM weight calculations and carrier-specific divisors
+
+### M3: Label Management + Fulfillment UI (Weeks 7-9)
+- Label purchase with idempotency
+- Packer UI with label printing and tracking
+- Refund/void capability with admin controls
+- Audit trail and error handling
+
+### M4: Optimization + USPS Cubic (Weeks 10-12)
+- USPS Cubic tier detection and optimization
+- Box assortment tuning based on actual order patterns
+- Performance optimization and rate caching
+- International shipping foundation (if needed)
 
 ---
 
-This comprehensive PRD provides all the technical specifications, business requirements, and implementation guidance needed to build an intelligent shipping integration and packaging optimization system for your 3D printing business.
+This comprehensive PRD provides all the technical specifications, business requirements, and implementation guidance needed to build an intelligent shipping integration and packaging optimization system with advanced split-vs-consolidate evaluation, product overrides, and label management capabilities.
