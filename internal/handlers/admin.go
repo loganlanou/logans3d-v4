@@ -145,13 +145,11 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 				rawImageURL = images[0].ImageUrl
 			}
 			
-			// Ensure the image URL has the correct path prefix
+			// Build the full path from the filename
 			if rawImageURL != "" {
-				if strings.HasPrefix(rawImageURL, "/public/") {
-					imageURL = rawImageURL
-				} else {
-					imageURL = "/public/images/products/" + rawImageURL
-				}
+				// Database should only contain filenames
+				// Always build the full path here
+				imageURL = "/public/images/products/" + rawImageURL
 			}
 		}
 
@@ -272,11 +270,11 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 				return c.String(http.StatusInternalServerError, "Failed to save image")
 			}
 
-			// Save image URL to database
-			imageURL := "/public/uploads/products/" + filename
-			// For now, we'll store the image URL in memory
-			// We'll need to add the CreateProductImage query to the SQL files
-			_ = imageURL
+			// Save only the filename to database
+			// The view layer will build the full path
+			imageFilename := filename
+			// TODO: Save to database using CreateProductImage
+			_ = imageFilename
 		}
 	}
 
@@ -361,11 +359,11 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 				return c.String(http.StatusInternalServerError, "Failed to save image")
 			}
 
-			// Save new image URL to database
-			imageURL := "/public/uploads/products/" + filename
-			// For now, we'll store the image URL in memory
-			// We'll need to add the CreateProductImage query to the SQL files
-			_ = imageURL
+			// Save only the filename to database
+			// The view layer will build the full path
+			imageFilename := filename
+			// TODO: Save to database using UpdateProductImage
+			_ = imageFilename
 		}
 	}
 

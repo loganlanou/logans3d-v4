@@ -209,7 +209,23 @@ func (s *Service) handleShop(c echo.Context) error {
 		
 		imageURL := ""
 		if len(images) > 0 {
-			imageURL = images[0].ImageUrl
+			// Get the primary image or the first one
+			rawImageURL := ""
+			for _, img := range images {
+				if img.IsPrimary.Valid && img.IsPrimary.Bool {
+					rawImageURL = img.ImageUrl
+					break
+				}
+			}
+			if rawImageURL == "" {
+				rawImageURL = images[0].ImageUrl
+			}
+
+			// Build the full path from the filename
+			if rawImageURL != "" {
+				// Database should only contain filenames
+				imageURL = "/public/images/products/" + rawImageURL
+			}
 		}
 		
 		productsWithImages = append(productsWithImages, shop.ProductWithImage{
@@ -411,7 +427,23 @@ func (s *Service) handlePremium(c echo.Context) error {
 		
 		imageURL := ""
 		if len(images) > 0 {
-			imageURL = images[0].ImageUrl
+			// Get the primary image or the first one
+			rawImageURL := ""
+			for _, img := range images {
+				if img.IsPrimary.Valid && img.IsPrimary.Bool {
+					rawImageURL = img.ImageUrl
+					break
+				}
+			}
+			if rawImageURL == "" {
+				rawImageURL = images[0].ImageUrl
+			}
+
+			// Build the full path from the filename
+			if rawImageURL != "" {
+				// Database should only contain filenames
+				imageURL = "/public/images/products/" + rawImageURL
+			}
 		}
 		
 		featuredProducts = append(featuredProducts, shop.ProductWithImage{
@@ -494,7 +526,23 @@ func (s *Service) handleCategory(c echo.Context) error {
 		
 		imageURL := ""
 		if len(images) > 0 {
-			imageURL = images[0].ImageUrl
+			// Get the primary image or the first one
+			rawImageURL := ""
+			for _, img := range images {
+				if img.IsPrimary.Valid && img.IsPrimary.Bool {
+					rawImageURL = img.ImageUrl
+					break
+				}
+			}
+			if rawImageURL == "" {
+				rawImageURL = images[0].ImageUrl
+			}
+
+			// Build the full path from the filename
+			if rawImageURL != "" {
+				// Database should only contain filenames
+				imageURL = "/public/images/products/" + rawImageURL
+			}
 		}
 		
 		productsWithImages = append(productsWithImages, shop.ProductWithImage{
