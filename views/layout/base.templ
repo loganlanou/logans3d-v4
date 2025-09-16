@@ -84,7 +84,7 @@ templ Header() {
 						<button
 							@click="open = !open"
 							@click.away="open = false"
-							class="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors duration-200 p-2 rounded-lg hover:bg-purple-50"
+							class="flex items-center space-x-2 text-gray-700 hover:text-purple-600 transition-colors duration-200 p-2 rounded-lg hover:bg-purple-50 cursor-pointer hover:cursor-pointer"
 						>
 							<div class="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
 								<svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,12 +133,23 @@ templ Header() {
 						</div>
 					</div>
 					<!-- Cart -->
-					<button class="cart-preview-btn text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2 relative" title="View Cart">
-						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5"></path>
+					<button class="cart-preview-btn text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2 relative cursor-pointer hover:cursor-pointer" title="View Cart">
+						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+							<!-- Cart handle -->
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h3l.5 2h13.5a1 1 0 0 1 .98 1.2l-1 5A1 1 0 0 1 18 12H7.5"></path>
+							<!-- Cart body -->
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6h13l-1.5 7H7.5L6 6z"></path>
+							<!-- Cart bottom support -->
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7.5 13v4"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.5 13v4"></path>
+							<!-- Wheels -->
+							<circle cx="8" cy="19" r="1.5" stroke-width="2"></circle>
+							<circle cx="17" cy="19" r="1.5" stroke-width="2"></circle>
+							<!-- Cart items indicator lines -->
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 8h6M9 10h4" opacity="0.6"></path>
 						</svg>
 						<!-- Cart count badge -->
-						<span id="cart-count" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">0</span>
+						<span id="cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center" style="display: none;">0</span>
 					</button>
 					<!-- Mobile menu button -->
 					<div class="md:hidden">

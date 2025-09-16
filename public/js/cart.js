@@ -55,7 +55,7 @@ async function addToCart(productId, quantity = 1, productName = '') {
         showToast(`Added ${displayName} to cart!`, 'success');
         
         // Update cart count if element exists
-        updateCartCount();
+        await updateCartCount();
         
     } catch (error) {
         console.error('Error adding to cart:', error);
@@ -92,7 +92,7 @@ async function removeFromCart(cartItemId) {
             }, 100);
         }
         
-        updateCartCount();
+        await updateCartCount();
         
     } catch (error) {
         console.error('Error removing from cart:', error);
@@ -128,7 +128,7 @@ async function updateCartQuantity(cartItemId, quantity) {
             window.refreshCart();
         }
         
-        updateCartCount();
+        await updateCartCount();
         
     } catch (error) {
         console.error('Error updating cart:', error);
@@ -147,7 +147,13 @@ async function updateCartCount() {
             const cartCountElement = document.querySelector('#cart-count');
             if (cartCountElement) {
                 cartCountElement.textContent = totalItems;
-                cartCountElement.style.display = totalItems > 0 ? 'block' : 'none';
+                if (totalItems > 0) {
+                    cartCountElement.style.display = 'flex';
+                    cartCountElement.classList.add('show');
+                } else {
+                    cartCountElement.style.display = 'none';
+                    cartCountElement.classList.remove('show');
+                }
             }
         }
     } catch (error) {
@@ -224,6 +230,9 @@ function showToast(message, type = 'info') {
 document.addEventListener('DOMContentLoaded', function() {
     // Update cart count on page load
     updateCartCount();
+    
+    // Initialize interactive cart button
+    initializeCartHoverEffects();
     
     // Buy Now buttons - direct to Stripe checkout
     document.addEventListener('click', function(e) {
@@ -415,4 +424,83 @@ function handleModalCheckout(e) {
     
     console.log('Modal checkout button clicked');
     proceedToCheckout();
+}
+
+// Interactive Cart Button Effects
+function initializeCartHoverEffects() {
+    const cartButton = document.querySelector('.chatgpt-cart-btn, .modern-cart-btn, .custom-cart-btn');
+    const cartContainer = document.querySelector('.cart-logo-container');
+    
+    if (!cartButton || !cartContainer) return;
+    
+    // Mouse tracking for 3D tilt effect
+    cartButton.addEventListener('mousemove', function(e) {
+        const rect = cartButton.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        
+        const mouseX = e.clientX - centerX;
+        const mouseY = e.clientY - centerY;
+        
+        // Calculate rotation angles (limited range for subtle effect)
+        const rotateX = (mouseY / rect.height) * -5; // Reduced for cleaner effect
+        const rotateY = (mouseX / rect.width) * 5;   // Reduced for cleaner effect
+        
+        // Apply transform with CSS custom properties
+        cartContainer.style.setProperty('--tilt-x', `${rotateY}deg`);
+        cartContainer.style.setProperty('--tilt-y', `${rotateX}deg`);
+        cartContainer.classList.add('cart-tilt-both');
+    });
+    
+    // Reset on mouse leave
+    cartButton.addEventListener('mouseleave', function() {
+        cartContainer.style.removeProperty('--tilt-x');
+        cartContainer.style.removeProperty('--tilt-y');
+        cartContainer.classList.remove('cart-tilt-both');
+    });
+    
+    // Pulse effect when items are added to cart
+    const originalAddToCart = window.addToCart;
+    if (originalAddToCart) {
+        window.addToCart = async function(...args) {
+            const result = await originalAddToCart.apply(this, args);
+            
+            // Add pulse animation class
+            cartButton.classList.add('cart-added');
+            
+            // Remove class after animation
+            setTimeout(() => {
+                cartButton.classList.remove('cart-added');
+            }, 500);
+            
+            return result;
+        };
+    }
+}
+
+// Enhanced cart count update with animation
+function updateCartCountWithAnimation(newCount) {
+    const cartCountElement = document.querySelector('#cart-count');
+    const cartButton = document.querySelector('.chatgpt-cart-btn, .modern-cart-btn, .custom-cart-btn');
+    
+    if (cartCountElement && cartButton) {
+        const oldCount = parseInt(cartCountElement.textContent) || 0;
+        
+        if (newCount > oldCount) {
+            // Trigger pulse animation for new items
+            cartButton.classList.add('cart-added');
+            setTimeout(() => {
+                cartButton.classList.remove('cart-added');
+            }, 500);
+        }
+        
+        cartCountElement.textContent = newCount;
+        if (newCount > 0) {
+            cartCountElement.style.display = 'flex';
+            cartCountElement.classList.add('show');
+        } else {
+            cartCountElement.style.display = 'none';
+            cartCountElement.classList.remove('show');
+        }
+    }
 }
