@@ -5,8 +5,11 @@ go 1.25
 require (
 	github.com/a-h/templ v0.3.943
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/sessions v1.4.0
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lmittmann/tint v1.0.7
+	github.com/markbates/goth v1.82.0
+	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/stripe/stripe-go/v80 v80.2.1
 	modernc.org/sqlite v1.38.2
 )
@@ -18,9 +21,7 @@ require (
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/gorilla/securecookie v1.1.2 // indirect
-	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/labstack/gommon v0.4.2 // indirect
-	github.com/markbates/goth v1.82.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
