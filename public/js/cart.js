@@ -122,12 +122,24 @@ async function updateCartQuantity(cartItemId, quantity) {
         }
 
         showToast('Cart updated', 'success');
-        
+
         // Refresh cart if on cart page
         if (window.location.pathname === '/cart' && window.refreshCart) {
             window.refreshCart();
         }
-        
+
+        // Refresh modal if it's open
+        const cartModal = document.getElementById('modal-cart-items');
+        if (cartModal && cartModal.innerHTML.trim() !== '') {
+            setTimeout(async () => {
+                const modalResponse = await fetch('/api/cart');
+                if (modalResponse.ok) {
+                    const cart = await modalResponse.json();
+                    renderCartModal(cart);
+                }
+            }, 100);
+        }
+
         await updateCartCount();
         
     } catch (error) {
@@ -241,8 +253,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const productId = e.target.dataset.productId;
             const productName = e.target.dataset.productName;
             const productPrice = e.target.dataset.productPrice;
-            const quantity = e.target.dataset.quantity || '1';
-            
+
+            // Check for quantity from dropdown first, then fallback to data attribute
+            let quantity = e.target.dataset.quantity || '1';
+            const quantitySelect = document.getElementById('product-quantity');
+            if (quantitySelect) {
+                quantity = quantitySelect.value || '1';
+            }
+
             if (productId && productName && productPrice) {
                 buyNow(productId, productName, productPrice, parseInt(quantity));
             }
@@ -253,8 +271,14 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const productId = e.target.dataset.productId;
             const productName = e.target.dataset.productName || '';
-            const quantity = e.target.dataset.quantity || '1';
-            
+
+            // Check for quantity from dropdown first, then fallback to data attribute
+            let quantity = e.target.dataset.quantity || '1';
+            const quantitySelect = document.getElementById('product-quantity');
+            if (quantitySelect) {
+                quantity = quantitySelect.value || '1';
+            }
+
             if (productId) {
                 addToCart(productId, parseInt(quantity), productName);
             }
@@ -372,7 +396,12 @@ function renderCartModal(cart) {
                 <p class="text-emerald-400">$${(item.price_cents / 100).toFixed(2)}</p>
             </div>
             <div class="flex items-center space-x-2">
-                <span class="text-slate-300">Qty: ${item.quantity}</span>
+                <div class="flex items-center space-x-2">
+                    <span class="text-slate-300 text-sm">Qty:</span>
+                    <button class="cart-update-btn w-6 h-6 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center text-sm transition-colors duration-200" data-cart-item-id="${item.id}" data-quantity="${item.quantity - 1}">−</button>
+                    <span class="text-white font-semibold min-w-[1.5rem] text-center text-sm">${item.quantity}</span>
+                    <button class="cart-update-btn w-6 h-6 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center text-sm transition-colors duration-200" data-cart-item-id="${item.id}" data-quantity="${item.quantity + 1}">+</button>
+                </div>
                 <button class="cart-remove-btn text-red-400 hover:text-red-300 p-1" data-cart-item-id="${item.id}">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -393,7 +422,15 @@ function renderCartModal(cart) {
         button.removeEventListener('click', handleModalRemove);
         button.addEventListener('click', handleModalRemove);
     });
-    
+
+    // Add event listeners to modal quantity update buttons
+    const modalUpdateButtons = document.querySelectorAll('#modal-cart-items .cart-update-btn');
+    modalUpdateButtons.forEach(button => {
+        // Remove any existing listeners to avoid duplicates
+        button.removeEventListener('click', handleModalQuantityUpdate);
+        button.addEventListener('click', handleModalQuantityUpdate);
+    });
+
     // Add event listener to modal checkout button
     const modalCheckoutButton = document.querySelector('.modal-checkout-btn');
     if (modalCheckoutButton) {
@@ -417,11 +454,27 @@ function handleModalRemove(e) {
     }
 }
 
+// Handler specifically for modal quantity update buttons
+function handleModalQuantityUpdate(e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const button = e.currentTarget;
+    const cartItemId = button.dataset.cartItemId;
+    const quantity = parseInt(button.dataset.quantity);
+
+    console.log('Modal quantity update button clicked, ID:', cartItemId, 'New quantity:', quantity);
+
+    if (cartItemId && !isNaN(quantity)) {
+        updateCartQuantity(cartItemId, quantity);
+    }
+}
+
 // Handler specifically for modal checkout button
 function handleModalCheckout(e) {
     e.preventDefault();
     e.stopPropagation();
-    
+
     console.log('Modal checkout button clicked');
     proceedToCheckout();
 }

@@ -36,7 +36,7 @@ templ Base(meta Meta) {
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 			<!-- Load Cart JavaScript -->
-			<script src="/public/js/cart.js?v=2"></script>
+			<script src="/public/js/cart.js?v=3"></script>
 			<!-- Scroll speed control -->
 			<script src="/public/js/scroll-control.js"></script>
 		</head>
@@ -60,15 +60,12 @@ templ Header() {
 				<!-- Logo -->
 				<div class="flex-shrink-0">
 					<a href="/" class="flex items-center space-x-3 group">
-						<div class="h-10 w-10 bg-gradient-to-br from-3d-blue to-3d-purple rounded-lg flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
-							<span class="text-white font-bold text-xl">L3D</span>
-						</div>
-						<span class="text-lg lg:text-xl font-display font-bold text-gradient-3d whitespace-nowrap">Logan's 3D Creations</span>
+						<span class="text-lg lg:text-xl font-display font-bold text-gradient-navbar-logo whitespace-nowrap">Logan's 3D Creations</span>
 					</a>
 				</div>
 				<!-- Desktop Navigation -->
 				<div class="hidden md:block">
-					<div class="ml-10 flex items-baseline space-x-4">
+					<div class="ml-10 flex items-baseline space-x-6">
 						<a href="/shop" class="nav-link">Shop</a>
 						<a href="/custom" class="nav-link">Custom Orders</a>
 						<a href="/events" class="nav-link">Events</a>
