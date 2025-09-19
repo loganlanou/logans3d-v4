@@ -20,39 +20,25 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
 			</div>
 			<div class="relative z-10">
-				<!-- Header -->
-				<section class="pt-32 pb-20 px-8 sm:px-12 lg:px-16">
-					<div class="max-w-6xl mx-auto">
-						<div class="text-center">
-							<a href="/shop/premium" class="group inline-flex items-center px-6 py-4 bg-gradient-to-r from-amber-600/20 via-red-600/20 to-amber-600/20 rounded-full border-2 border-amber-500/40 mb-12 hover:border-red-500/60 hover:bg-gradient-to-r hover:from-amber-600/30 hover:via-red-600/30 hover:to-amber-600/30 transition-all duration-300 cursor-pointer shadow-lg shadow-amber-500/25">
-								<span class="text-amber-300 text-sm font-bold group-hover:text-red-300 transition-colors duration-200 tracking-wider uppercase">👑 Premium Collection</span>
-							</a>
-							<h1 class="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] mb-16 hover:scale-105 transition-transform duration-500 cursor-default tracking-tight">
-								<div class="inline-block">
-									<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent hover:from-blue-400 hover:via-teal-300 hover:to-emerald-400 transition-all duration-300">
-										Our
-									</span>
-								</div>
-								<br/>
-								<div class="inline-block relative">
-									<span class="bg-gradient-to-r from-blue-400 via-teal-400 to-emerald-400 bg-clip-text text-transparent hover:from-emerald-400 hover:via-teal-400 hover:to-blue-400 transition-all duration-300">
-										Collection
-									</span>
-									<div class="absolute -bottom-2 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500"></div>
-								</div>
+				<!-- Compact Header -->
+				<section class="pt-24 pb-4 px-8 sm:px-12 lg:px-16">
+					<div class="max-w-7xl mx-auto">
+						<div class="flex flex-col items-center">
+							<h1 class="text-3xl sm:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-center">
+								<span class="bg-gradient-to-r from-blue-300 via-blue-200 to-teal-300 bg-clip-text text-transparent hover:from-blue-400 hover:via-teal-300 hover:to-emerald-400 transition-all duration-300">
+									Our Collection
+								</span>
 							</h1>
-							<p class="text-xl sm:text-2xl text-slate-300 mb-20 max-w-4xl mx-auto leading-relaxed group hover:text-slate-200 transition-colors duration-300">
-								Discover our unique 3D printed creations, from
-								<span class="text-blue-400 font-semibold hover:text-emerald-400 transition-colors duration-200 cursor-pointer">detailed dinosaur models</span>
-								to mystical dragons and everything in between
-							</p>
 						</div>
 					</div>
 				</section>
 				<!-- Categories Filter -->
-				<section class="px-8 sm:px-12 lg:px-16 py-16">
+				<section class="px-8 sm:px-12 lg:px-16 py-4">
 					<div class="max-w-6xl mx-auto">
 						<div class="flex flex-wrap justify-center gap-4 lg:gap-6">
+							<a href="/shop/premium" class="group px-8 py-4 bg-gradient-to-r from-amber-600/20 via-red-600/20 to-amber-600/20 text-amber-300 shadow-lg shadow-amber-500/25 rounded-2xl border-2 border-amber-500/40 hover:border-red-500/60 hover:bg-gradient-to-r hover:from-amber-600/30 hover:via-red-600/30 hover:to-amber-600/30 transition-all duration-300 font-semibold backdrop-blur-sm hover:shadow-xl hover:shadow-amber-500/30 hover:-translate-y-1">
+								<span class="group-hover:scale-105 group-hover:text-red-300 transition-all duration-200">👑 Premium</span>
+							</a>
 							if currentCategory == nil {
 								<a href="/shop" class="group px-8 py-4 bg-gradient-to-r from-blue-600 to-teal-600 text-white shadow-lg shadow-blue-500/25 rounded-2xl border border-blue-500/50 transition-all duration-300 font-semibold backdrop-blur-sm hover:shadow-xl hover:shadow-blue-500/30 hover:-translate-y-1">
 									<span class="group-hover:scale-105 transition-transform duration-200">All Products</span>
@@ -83,7 +69,7 @@ templ Index(products []ProductWithImage, categories []db.Category, currentCatego
 					</div>
 				</section>
 				<!-- Products Grid -->
-				<section class="px-8 sm:px-12 lg:px-16 py-20">
+				<section class="px-8 sm:px-12 lg:px-16 py-12">
 					<div class="max-w-7xl mx-auto">
 						<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-12">
 							for _, product := range products {

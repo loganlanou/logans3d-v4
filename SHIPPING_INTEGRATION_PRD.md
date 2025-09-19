@@ -95,12 +95,66 @@ combine_rules:               # Equivalences apply to volume & weight
   M_to_L:  { M: 2, result: L }
   L_to_XL: { L: 3, result: XL }
 
-boxes:                        # Interior dims (inches) and max weight (lb)
-  SMail: { sku: "BX-SM-MAIL", type: "box", inner_in: [8, 5, 2],  max_wt_lb: 4 }
-  S:     { sku: "BX-SM",      type: "box", inner_in: [8, 6, 4],  max_wt_lb: 10 }
-  M:     { sku: "BX-MD",      type: "box", inner_in: [12, 9, 4], max_wt_lb: 20 }
-  L:     { sku: "BX-LG",      type: "box", inner_in: [14, 10, 6],max_wt_lb: 30 }
-  XL:    { sku: "BX-XL",      type: "box", inner_in: [18, 12, 8],max_wt_lb: 40 }
+boxes:                        # Actual vendor specifications from The Boxery
+  S:
+    sku: "BX-SM"
+    vendor: "The Boxery"
+    vendor_sku: "CXBSS18"
+    url: "https://www.theboxery.com/Product.asp?Name=8%27%27x6%27%27x4%27%27+Corrugated+Shipping+Boxes&Product=CXBSS18&d=105505"
+    inner_in: [8, 6, 4]
+    ect: 32
+    pack_qty: 25
+    unit_price_usd: 0.38
+    bundle_price_usd: 9.50
+    volume_in3: 192
+    cost_per_in3_usd: 0.001979
+    max_wt_lb: 10
+    notes: "Standard brown RSC; interior dims; sold in 25-pack."
+
+  M:
+    sku: "BX-MD"
+    vendor: "The Boxery"
+    vendor_sku: "CXBSM1294"
+    url: "https://www.theboxery.com/Product.asp?Name=12%27%27x9%27%27x4%27%27+Corrugated+Shipping+Boxes&Product=CXBSM1294&d=1055"
+    inner_in: [12, 9, 4]
+    ect: 32
+    pack_qty: 25
+    unit_price_usd: 0.62
+    bundle_price_usd: 15.50
+    volume_in3: 432
+    cost_per_in3_usd: 0.001435
+    max_wt_lb: 20
+    notes: "Best seller size; interior dims; 25-pack."
+
+  L:
+    sku: "BX-LG"
+    vendor: "The Boxery"
+    vendor_sku: "CXBSM146"
+    url: "https://www.theboxery.com/Product.asp?Name=14x10.5x6+Corrugated+Shipping+Boxes&Product=CXBSM146&d=1001"
+    inner_in: [14, 10.5, 6]
+    ect: 32
+    pack_qty: 25
+    unit_price_usd: 0.77
+    bundle_price_usd: 19.25
+    volume_in3: 882
+    cost_per_in3_usd: 0.000873
+    max_wt_lb: 30
+    notes: "Interior dims; 25-pack."
+
+  XL:
+    sku: "BX-XL"
+    vendor: "The Boxery"
+    vendor_sku: "CXBSM18128"
+    url: "https://www.theboxery.com/Product.asp?Name=18%27%27x12%27%27x8%27%27+Corrugated+Shipping+Boxes&Product=CXBSM18128&d=1055"
+    inner_in: [18, 12, 8]
+    ect: 32
+    pack_qty: 25
+    unit_price_usd: 1.12
+    bundle_price_usd: 28.00
+    volume_in3: 1728
+    cost_per_in3_usd: 0.000648
+    max_wt_lb: 40
+    notes: "Interior dims; 25-pack."
 
 packing_prefs:
   max_boxes: 6

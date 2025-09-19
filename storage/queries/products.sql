@@ -89,6 +89,11 @@ INSERT INTO product_images (
 RETURNING *;
 
 -- name: UpdateProductImage :exec
-UPDATE product_images 
+UPDATE product_images
 SET image_url = ?, alt_text = ?
+WHERE id = ?;
+
+-- name: UpdateProductPrice :exec
+UPDATE products
+SET price_cents = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
