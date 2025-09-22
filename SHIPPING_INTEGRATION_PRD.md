@@ -22,21 +22,25 @@ This document outlines the requirements for implementing a comprehensive shippin
 
 ## Research Findings
 
-### Shipping API Provider Recommendation: EasyPost
+### Shipping API Provider Recommendation: ShipEngine/ShipStation
 
 **Rationale:**
-- Free tier supports up to 120,000 shipments annually
-- Official Go SDK with comprehensive documentation at https://github.com/EasyPost/easypost-go
-- Supports 100+ carriers including USPS, FedEx, UPS, DHL
-- Up to 83% discounted shipping rates
-- Active developer community and documentation at https://docs.easypost.com
+- Free developer account with no credit card required for testing
+- Official SDKs in multiple languages including Go (https://github.com/ShipEngine/shipengine-go)
+- Supports 100+ carriers including USPS, FedEx, UPS, DHL Express
+- Discounted shipping rates through carrier partnerships
+- Comprehensive OpenAPI 3.0 specification at https://github.com/ShipEngine/shipengine-openapi
+- Active developer community and robust documentation at https://shipengine.github.io/shipengine-openapi/
 
-**Alternative:** Shippo (if budget constraints exist)
-- Free 30 labels/month, then $0.07/label
-- 85+ carrier integration
-- 4-6 hour integration time
+**Key Features:**
+- Rate comparison across multiple carriers
+- Label creation and management with void/refund capabilities
+- Real-time package tracking with webhook support
+- Address validation for 160+ countries
+- Pickup scheduling and service point lookup
+- Custom package type creation
 
-**Why Not ShipStation:** 2025 policy changes require $99.99/month minimum for API access
+**Why ShipEngine over EasyPost:** Better pricing structure for growing businesses, more comprehensive carrier integrations, and superior webhook/tracking capabilities
 
 ### Box Purchasing Strategy Research
 - Volume purchasing can save ~20% on packaging costs
@@ -467,7 +471,7 @@ func (s *LabelRefundService) RefundLabels(orderID string) error {
 ## Implementation Plan
 
 ### Phase 1: Foundation (Week 1-2)
-1. Set up EasyPost account and API integration
+1. Set up ShipEngine account and API integration
 2. Implement basic shipping rate retrieval
 3. Create item size configuration system
 4. Build basic packaging calculator
@@ -679,16 +683,18 @@ type ConversionMatrix struct {
 
 ## API Integration Details
 
-### EasyPost Setup Steps
-1. Create account at https://easypost.com
-2. Obtain API keys (test and production)
-3. Install Go SDK: `go get github.com/EasyPost/easypost-go`
-4. Implement rate shopping workflow
-5. Set up webhook endpoints for tracking updates
+### ShipEngine Setup Steps
+1. Create free developer account at https://www.shipengine.com/docs/getting-started/
+2. Obtain API keys (test and production environments)
+3. Install Go SDK: `go get github.com/ShipEngine/shipengine-go`
+4. Connect carrier accounts (USPS, FedEx, UPS, etc.)
+5. Implement rate shopping workflow using `/v1/rates` endpoint
+6. Set up webhook endpoints for tracking updates
+7. Configure carrier-specific settings and DIM divisors
 
 ### 6. Provider Integration Interface
 
-**Supported Aggregators**: EasyPost, ShipEngine/ShipStation API, Shippo
+**Primary Provider**: ShipEngine/ShipStation API
 
 **Provider Interface (Go Implementation)**:
 ```go
@@ -734,43 +740,87 @@ type Label struct {
 - **Error Handling**: Graceful degradation with fallback providers
 - **Rate Caching**: Cache rates for identical shipment parameters (15-minute TTL)
 
-### Sample EasyPost Integration
+### Sample ShipEngine Integration
 ```go
-import "github.com/EasyPost/easypost-go"
+import "github.com/ShipEngine/shipengine-go"
 
-client := easypost.New("your-api-key")
+client := shipengine.NewClient("your-api-key")
 
 // Create shipment and get rates for all packages in plan
 for _, pkg := range cartonPlan.Packages {
-    shipment, err := client.CreateShipment(&easypost.Shipment{
-        ToAddress: toAddr,
-        FromAddress: fromAddr,
-        Parcel: &easypost.Parcel{
-            Length: pkg.ShipDimensions[0],
-            Width:  pkg.ShipDimensions[1],
-            Height: pkg.ShipDimensions[2],
-            Weight: pkg.PackedWeight,
+    // Create rate request
+    rateRequest := &shipengine.RateRequest{
+        RateOptions: shipengine.RateOptions{
+            CarrierIds: []string{"carrier-id-1", "carrier-id-2"},
         },
-        Options: &easypost.ShipmentOptions{
-            Insurance:    pkg.Insurance,
-            Signature:    pkg.Signature,
+        Shipment: shipengine.Shipment{
+            ShipTo: shipengine.Address{
+                Name:         toAddr.Name,
+                AddressLine1: toAddr.Street1,
+                CityLocality: toAddr.City,
+                StateProvince: toAddr.State,
+                PostalCode:   toAddr.ZIP,
+                CountryCode:  toAddr.Country,
+            },
+            ShipFrom: shipengine.Address{
+                Name:         fromAddr.Name,
+                AddressLine1: fromAddr.Street1,
+                CityLocality: fromAddr.City,
+                StateProvince: fromAddr.State,
+                PostalCode:   fromAddr.ZIP,
+                CountryCode:  fromAddr.Country,
+            },
+            Packages: []shipengine.Package{
+                {
+                    Weight: shipengine.Weight{
+                        Value: pkg.PackedWeight,
+                        Unit:  "pound",
+                    },
+                    Dimensions: shipengine.Dimensions{
+                        Length: pkg.ShipDimensions[0],
+                        Width:  pkg.ShipDimensions[1],
+                        Height: pkg.ShipDimensions[2],
+                        Unit:   "inch",
+                    },
+                },
+            },
         },
-    })
+    }
+
+    rates, err := client.GetRates(context.Background(), rateRequest)
+    if err != nil {
+        return err
+    }
 
     // Store rates for checkout selection
-    storeRatesForPackage(pkg.ID, shipment.Rates)
+    storeRatesForPackage(pkg.ID, rates.RateResponse)
 }
 
 // On checkout selection, buy labels
 func purchaseLabels(selectedRates []RateSelection) error {
     for _, selection := range selectedRates {
-        label, err := client.BuyShipment(selection.ShipmentID, selection.RateID)
+        labelRequest := &shipengine.CreateLabelRequest{
+            RateId: selection.RateID,
+        }
+
+        label, err := client.CreateLabel(context.Background(), labelRequest)
         if err != nil {
             return err
         }
 
         // Store label for printing and tracking
         storeLabelForPackage(selection.PackageID, label)
+    }
+    return nil
+}
+
+// Void labels for refunds
+func voidLabels(labelIDs []string) error {
+    for _, labelID := range labelIDs {
+        err := client.VoidLabel(context.Background(), labelID)
+        if err != nil {
+            return err
+        }
     }
     return nil
 }
@@ -849,7 +899,7 @@ func purchaseLabels(selectedRates []RateSelection) error {
 ### M1: Configuration + Cartonization MVP (Weeks 1-3)
 - Implement YAML configuration system with class definitions
 - Build core cartonization algorithm with equivalence rules
-- Create sandbox rate integration with EasyPost
+- Create sandbox rate integration with ShipEngine
 - Basic override item handling
 
 ### M2: Split-vs-Consolidate + Checkout Integration (Weeks 4-6)

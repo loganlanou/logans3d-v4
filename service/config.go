@@ -45,10 +45,15 @@ type Config struct {
 		MaxSize int64
 		Dir     string
 	}
-	
+
 	Admin struct {
 		Username string
 		Password string
+	}
+
+	Shipping struct {
+		ConfigPath        string
+		ShipStationAPIKey string
 	}
 }
 
@@ -94,7 +99,11 @@ func LoadConfig() (*Config, error) {
 	// Admin
 	config.Admin.Username = getEnv("ADMIN_USERNAME", "admin")
 	config.Admin.Password = getEnv("ADMIN_PASSWORD", "password")
-	
+
+	// Shipping
+	config.Shipping.ConfigPath = getEnv("SHIPPING_CONFIG_PATH", "./config/shipping.json")
+	config.Shipping.ShipStationAPIKey = getEnv("SHIPSTATION_API_KEY", "")
+
 	return config, nil
 }
 

@@ -1,0 +1,115 @@
+{
+  "packing": {
+    "unit_volume_in3": 27,
+    "unit_weight_oz": 2.0,
+    "equivalences": {
+      "small": 1,
+      "medium": 3,
+      "large": 6,
+      "xlarge": 18
+    },
+    "fill_ratio": 0.80,
+    "dimension_guard_in": {
+      "small": { "L": 4, "W": 4, "H": 4 },
+      "medium": { "L": 8, "W": 5, "H": 5 },
+      "large": { "L": 20, "W": 10, "H": 6 },
+      "xlarge": { "L": 24, "W": 12, "H": 10 }
+    },
+    "item_weights": {
+      "small": {
+        "min_grams": 70,
+        "max_grams": 100,
+        "avg_grams": 85,
+        "avg_oz": 3.0
+      },
+      "medium": {
+        "min_grams": 180,
+        "max_grams": 220,
+        "avg_grams": 200,
+        "avg_oz": 7.05
+      },
+      "large": {
+        "min_grams": 350,
+        "max_grams": 500,
+        "avg_grams": 425,
+        "avg_oz": 15.0
+      },
+      "xlarge": {
+        "min_grams": 800,
+        "max_grams": 1200,
+        "avg_grams": 1000,
+        "avg_oz": 35.3
+      }
+    },
+    "packing_materials": {
+      "bubble_wrap_per_item_oz": 0.2,
+      "packing_paper_per_box_oz": 1.0,
+      "tape_and_labels_per_box_oz": 0.5,
+      "air_pillows_per_box_oz": 0.8
+    }
+  },
+  "boxes": [
+    {
+      "sku": "CXBSS21",
+      "name": "8x6x4",
+      "L": 8,
+      "W": 6,
+      "H": 4,
+      "box_weight_oz": 4.0,
+      "unit_cost_usd": 0.38
+    },
+    {
+      "sku": "CXBSS24",
+      "name": "10x8x6",
+      "L": 10,
+      "W": 8,
+      "H": 6,
+      "box_weight_oz": 6.0,
+      "unit_cost_usd": 0.54
+    },
+    {
+      "sku": "CXBSM1294",
+      "name": "12x9x4",
+      "L": 12,
+      "W": 9,
+      "H": 4,
+      "box_weight_oz": 6.0,
+      "unit_cost_usd": 0.62
+    },
+    {
+      "sku": "MD12126",
+      "name": "12x12x6 (MD)",
+      "L": 12,
+      "W": 12,
+      "H": 6,
+      "box_weight_oz": 8.0,
+      "unit_cost_usd": 0.70
+    }
+  ],
+  "shipping": {
+    "shipstation_api_version": "v2",
+    "api_key_secret_storage": "env",
+    "ship_from": {
+      "name": "Creswood Corners",
+      "phone": "715-XXX-XXXX",
+      "address_line1": "YOUR ADDRESS",
+      "city_locality": "Cadott",
+      "state_province": "WI",
+      "postal_code": "54727",
+      "country_code": "US",
+      "address_residential_indicator": "no"
+    },
+    "dim_divisors": {
+      "usps": 166,
+      "ups": 139,
+      "fedex": 139
+    },
+    "rate_preferences": {
+      "present_top_n": 3,
+      "sort": "price_then_days"
+    },
+    "labels": {
+      "format": "pdf"
+    }
+  }
+}
