@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"database/sql"
 	"fmt"
 	"time"
@@ -8,8 +9,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ QuotesList(quotes []db.QuoteRequest) {
-	@layout.AdminBase("Quote Requests") {
+templ QuotesList(quotes []db.QuoteRequest, authCtx *auth.Context) {
+	@layout.AdminBase("Quote Requests", authCtx) {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">
@@ -99,7 +100,9 @@ templ QuotesList(quotes []db.QuoteRequest) {
 											{ quote.ProjectDescription }
 										</div>
 										<div class="admin-text-muted admin-text-xs">
-											Qty: { fmt.Sprintf("%d", quote.Quantity) }
+											if quote.Quantity.Valid {
+												Qty: { fmt.Sprintf("%d", quote.Quantity.Int64) }
+											}
 											if quote.MaterialPreference.Valid {
 												• { quote.MaterialPreference.String }
 											}
@@ -154,8 +157,8 @@ templ QuotesList(quotes []db.QuoteRequest) {
 	}
 }
 
-templ QuoteDetail(quote db.QuoteRequest) {
-	@layout.AdminBase("Quote Details") {
+templ QuoteDetail(quote db.QuoteRequest, authCtx *auth.Context) {
+	@layout.AdminBase("Quote Details", authCtx) {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">
@@ -184,7 +187,13 @@ templ QuoteDetail(quote db.QuoteRequest) {
 						<div class="grid grid-cols-2 gap-4">
 							<div>
 								<label class="admin-text-muted admin-text-sm">Quantity</label>
-								<div class="admin-text-primary">{ fmt.Sprintf("%d", quote.Quantity) }</div>
+								<div class="admin-text-primary">
+									if quote.Quantity.Valid {
+										{ fmt.Sprintf("%d", quote.Quantity.Int64) }
+									} else {
+										N/A
+									}
+								</div>
 							</div>
 							
 							if quote.MaterialPreference.Valid {

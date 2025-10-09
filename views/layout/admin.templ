@@ -1,6 +1,8 @@
 package layout
 
-templ AdminBase(title string) {
+import "github.com/loganlanou/logans3d-v4/internal/auth"
+
+templ AdminBase(title string, authCtx *auth.Context) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -9,20 +11,20 @@ templ AdminBase(title string) {
 			<title>{ title } - Admin - Logan's 3D Creations</title>
 			<meta name="robots" content="noindex, nofollow"/>
 			<meta name="theme-color" content="#0f172a"/>
-			
+
 			<!-- Favicon -->
 			<link rel="icon" type="image/png" sizes="32x32" href="/public/images/favicon.png"/>
-			
+
 			<!-- Admin CSS -->
 			<link rel="stylesheet" href="/public/css/admin-styles.css"/>
 			<link rel="stylesheet" href="/public/css/developer-styles.css"/>
-			
+
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 		</head>
 		<body class="admin-root">
-			@AdminHeader()
+			@AdminHeader(authCtx)
 			<div class="admin-main">
 				{ children... }
 			</div>
@@ -30,7 +32,7 @@ templ AdminBase(title string) {
 	</html>
 }
 
-templ AdminHeader() {
+templ AdminHeader(authCtx *auth.Context) {
 	<header class="admin-header">
 		<div class="flex items-center justify-between">
 			<!-- Logo -->
@@ -40,7 +42,7 @@ templ AdminHeader() {
 				</div>
 				<h1 class="admin-text-primary admin-text-lg admin-font-semibold">Admin Dashboard</h1>
 			</div>
-			
+
 			<!-- Navigation -->
 			<nav class="flex items-center space-x-1">
 				<a href="/admin" class="admin-nav-item">Dashboard</a>
@@ -49,6 +51,18 @@ templ AdminHeader() {
 				<a href="/admin/quotes" class="admin-nav-item">Quotes</a>
 				<a href="/admin/events" class="admin-nav-item">Events</a>
 				<a href="/dev" class="admin-nav-item">Developer</a>
+				if authCtx != nil && authCtx.IsAuthenticated && authCtx.User != nil {
+					<div class="flex items-center space-x-2 px-3 py-1.5 bg-slate-700 rounded-lg">
+						if authCtx.User.HasImage {
+							<img src={ authCtx.User.ImageURL } alt="Admin" class="h-6 w-6 rounded-full"/>
+						} else {
+							<div class="h-6 w-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+								<span class="text-white text-xs font-bold">{ authCtx.User.FullName[:1] }</span>
+							</div>
+						}
+						<span class="text-sm text-slate-300">{ authCtx.User.FullName }</span>
+					</div>
+				}
 				<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary">View Site</a>
 			</nav>
 		</div>

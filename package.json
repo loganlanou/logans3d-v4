@@ -4,10 +4,6 @@
   "description": "Logan's 3D Creations - Modern e-commerce platform for 3D printing business",
   "main": "tailwind.config.js",
   "scripts": {
-    "test": "playwright test",
-    "test:ui": "playwright test --ui",
-    "test:headed": "playwright test --headed",
-    "test:report": "playwright show-report",
     "build:css": "npm run build:css:public && npm run build:css:admin",
     "build:css:public": "postcss public/css/public-input.css -o public/css/public-styles.css",
     "build:css:admin": "postcss public/css/admin-input.css -o public/css/admin-styles.css",
@@ -23,7 +19,6 @@
   "author": "Logan Lanou",
   "license": "ISC",
   "devDependencies": {
-    "@playwright/test": "^1.55.0",
     "@tailwindcss/cli": "^4.0.0",
     "@tailwindcss/postcss": "^4.1.12",
     "postcss": "^8.5.6",

@@ -22,9 +22,7 @@ func NewShippingHandler(queries *db.Queries, shippingService *shipping.ShippingS
 }
 
 type GetShippingRatesRequest struct {
-	SessionID string           `json:"session_id,omitempty"`
-	UserID    string           `json:"user_id,omitempty"`
-	ShipTo    shipping.Address `json:"ship_to"`
+	ShipTo shipping.Address `json:"ship_to"`
 }
 
 type GetShippingRatesResponse struct {
@@ -43,7 +41,13 @@ func (h *ShippingHandler) GetShippingRates(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Shipping address is required")
 	}
 
-	counts, err := h.getCartItemCounts(c, req.SessionID, req.UserID)
+	// Get session ID from cookie
+	sessionID, err := h.getSessionID(c)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get session")
+	}
+
+	counts, err := h.getCartItemCounts(c, sessionID, "")
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart items")
 	}
@@ -65,6 +69,15 @@ func (h *ShippingHandler) GetShippingRates(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, response)
+}
+
+// getSessionID extracts session ID from cookie
+func (h *ShippingHandler) getSessionID(c echo.Context) (string, error) {
+	cookie, err := c.Cookie("session_id")
+	if err != nil || cookie.Value == "" {
+		return "", echo.NewHTTPError(http.StatusBadRequest, "No session found")
+	}
+	return cookie.Value, nil
 }
 
 func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID string) (*shipping.ItemCounts, error) {

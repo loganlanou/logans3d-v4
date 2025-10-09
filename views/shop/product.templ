@@ -60,13 +60,13 @@ templ ProductDetail(product db.Product, images []db.ProductImage, category db.Ca
 						<div class="space-y-4">
 							if len(images) > 0 {
 								<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl overflow-hidden group hover:border-emerald-500/30 transition-all duration-500">
-									<img src={ fmt.Sprintf("/public/images/products/%s", images[0].ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+									<img src={ fmt.Sprintf("/public%s", images[0].ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
 								</div>
 								if len(images) > 1 {
 									<div class="grid grid-cols-4 gap-3">
 										for _, image := range images[1:] {
 											<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl border border-slate-700/50 backdrop-blur-sm overflow-hidden cursor-pointer hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 group">
-												<img src={ fmt.Sprintf("/public/images/products/%s", image.ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
+												<img src={ fmt.Sprintf("/public%s", image.ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
 											</div>
 										}
 									</div>
@@ -153,14 +153,14 @@ templ ProductDetail(product db.Product, images []db.ProductImage, category db.Ca
 										data-product-name={ product.Name }
 										data-product-price={ fmt.Sprintf("%d", product.PriceCents) }
 										if len(images) > 0 {
-											data-product-image={ fmt.Sprintf("/public/images/products/%s", images[0].ImageUrl) }
+											data-product-image={ images[0].ImageUrl }
 										} else {
 											data-product-image=""
 										}
 									>
 										Add to Cart
 									</button>
-									
+
 									<!-- Buy Now Button -->
 									<button
 										type="button"
@@ -169,7 +169,7 @@ templ ProductDetail(product db.Product, images []db.ProductImage, category db.Ca
 										data-product-name={ product.Name }
 										data-product-price={ fmt.Sprintf("%d", product.PriceCents) }
 										if len(images) > 0 {
-											data-product-image={ fmt.Sprintf("/public/images/products/%s", images[0].ImageUrl) }
+											data-product-image={ images[0].ImageUrl }
 										} else {
 											data-product-image=""
 										}

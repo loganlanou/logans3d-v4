@@ -10,37 +10,23 @@ type Config struct {
 	Port        string
 	BaseURL     string
 	DBPath      string
-	
-	// JWT configuration
-	JWTSecret string
-	
-	// Google OAuth configuration
-	GoogleClientID     string
-	GoogleClientSecret string
-	GoogleRedirectURL  string
-	
+
 	JWT struct {
 		Secret string
 	}
-	
-	OAuth struct {
-		ClientID     string
-		ClientSecret string
-		RedirectURL  string
-	}
-	
+
 	Stripe struct {
 		PublishableKey string
 		SecretKey      string
 		WebhookSecret  string
 	}
-	
+
 	Email struct {
 		From     string
 		Provider string
 		APIKey   string
 	}
-	
+
 	Upload struct {
 		MaxSize int64
 		Dir     string
@@ -66,17 +52,8 @@ func LoadConfig() (*Config, error) {
 	}
 	
 	// JWT
-	config.JWTSecret = getEnv("JWT_SECRET", "development-secret")
 	config.JWT.Secret = getEnv("JWT_SECRET", "development-secret")
-	
-	// OAuth
-	config.GoogleClientID = getEnv("GOOGLE_CLIENT_ID", "")
-	config.GoogleClientSecret = getEnv("GOOGLE_CLIENT_SECRET", "")
-	config.GoogleRedirectURL = getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8000/auth/google/callback")
-	config.OAuth.ClientID = getEnv("GOOGLE_CLIENT_ID", "")
-	config.OAuth.ClientSecret = getEnv("GOOGLE_CLIENT_SECRET", "")
-	config.OAuth.RedirectURL = getEnv("GOOGLE_REDIRECT_URL", "http://localhost:8000/auth/google/callback")
-	
+
 	// Stripe
 	config.Stripe.PublishableKey = getEnv("STRIPE_PUBLISHABLE_KEY", "")
 	config.Stripe.SecretKey = getEnv("STRIPE_SECRET_KEY", "")

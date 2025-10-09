@@ -31,10 +31,11 @@ type ShippingQuoteResponse struct {
 }
 
 type ShippingService struct {
-	config     *ShippingConfig
-	client     *ShipStationClient
-	packer     *Packer
-	carrierIDs []string
+	config       *ShippingConfig
+	client       *ShipStationClient
+	packer       *Packer
+	carrierIDs   []string
+	carrierMap   map[string]Carrier // Maps carrier ID to carrier info
 }
 
 func NewShippingService(config *ShippingConfig) (*ShippingService, error) {
@@ -48,6 +49,11 @@ func NewShippingService(config *ShippingConfig) (*ShippingService, error) {
 	}
 
 	if err := service.loadCarrierIDs(); err != nil {
+		// In development mode without API credentials, use mock data
+		if client.IsUsingMockData() {
+			service.carrierIDs = []string{"mock-usps", "mock-ups", "mock-fedex"}
+			return service, nil
+		}
 		return nil, fmt.Errorf("failed to load carrier IDs: %w", err)
 	}
 
@@ -61,8 +67,10 @@ func (s *ShippingService) loadCarrierIDs() error {
 	}
 
 	s.carrierIDs = make([]string, 0, len(carriersResp.Carriers))
+	s.carrierMap = make(map[string]Carrier)
 	for _, carrier := range carriersResp.Carriers {
 		s.carrierIDs = append(s.carrierIDs, carrier.CarrierID)
+		s.carrierMap[carrier.CarrierID] = carrier
 	}
 
 	return nil
@@ -129,13 +137,79 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 }
 
 func (s *ShippingService) getRatesForBox(boxSelection BoxSelection, shipTo Address) ([]Rate, error) {
+	// If using mock data (no API credentials), return mock rates
+	if s.client.IsUsingMockData() {
+		return s.getMockRates(boxSelection, shipTo), nil
+	}
+
+	var allRates []Rate
+
+	// Separate carriers into USPS and non-USPS
+	uspsCarriers, otherCarriers := s.separateCarriersByType()
+
+	// Get rates for USPS carriers from Cadott, WI (54727)
+	if len(uspsCarriers) > 0 {
+		uspsRates, err := s.getRatesForCarriers(uspsCarriers, boxSelection, shipTo, s.addressFromConfigUSPS())
+		if err == nil {
+			allRates = append(allRates, uspsRates...)
+		}
+	}
+
+	// Get rates for non-USPS carriers from Eau Claire, WI (54701)
+	if len(otherCarriers) > 0 {
+		otherRates, err := s.getRatesForCarriers(otherCarriers, boxSelection, shipTo, s.addressFromConfigOther())
+		if err == nil {
+			allRates = append(allRates, otherRates...)
+		}
+	}
+
+	if len(allRates) == 0 {
+		return nil, fmt.Errorf("no rates available from any carrier")
+	}
+
+	return allRates, nil
+}
+
+// separateCarriersByType separates carrier IDs into USPS and non-USPS groups
+func (s *ShippingService) separateCarriersByType() (usps []string, other []string) {
+	for _, carrierID := range s.carrierIDs {
+		// Check if this is a USPS carrier by checking if the carrier nickname or code contains "usps" or "stamps"
+		// We'll make an API call to get carrier details, but for now use a simple heuristic
+		// ShipStation USPS carrier IDs typically contain "stamps_com" or similar
+		if s.isUSPSCarrier(carrierID) {
+			usps = append(usps, carrierID)
+		} else {
+			other = append(other, carrierID)
+		}
+	}
+	return usps, other
+}
+
+// isUSPSCarrier checks if a carrier ID represents a USPS carrier
+func (s *ShippingService) isUSPSCarrier(carrierID string) bool {
+	carrier, exists := s.carrierMap[carrierID]
+	if !exists {
+		return false
+	}
+
+	// Check carrier code and nickname for USPS identifiers
+	code := carrier.CarrierCode
+	nickname := carrier.CarrierNickname
+
+	// ShipStation uses "stamps_com" for USPS, and nickname typically contains "USPS"
+	return code == "stamps_com" || code == "usps" ||
+		nickname == "USPS" || nickname == "Stamps.com"
+}
+
+// getRatesForCarriers gets rates for specific carriers from a specific origin
+func (s *ShippingService) getRatesForCarriers(carrierIDs []string, boxSelection BoxSelection, shipTo Address, shipFrom Address) ([]Rate, error) {
 	rateReq := &RateRequest{
 		RateOptions: RateOptions{
-			CarrierIDs: s.carrierIDs,
+			CarrierIDs: carrierIDs,
 		},
 		Shipment: Shipment{
 			ValidateAddress: "no_validation",
-			ShipFrom:        s.addressFromConfig(),
+			ShipFrom:        shipFrom,
 			ShipTo:          shipTo,
 			Packages: []Package{
 				{
@@ -163,8 +237,87 @@ func (s *ShippingService) getRatesForBox(boxSelection BoxSelection, shipTo Addre
 	return rateResp.Rates, nil
 }
 
+func (s *ShippingService) getMockRates(boxSelection BoxSelection, shipTo Address) []Rate {
+	// Generate realistic mock rates based on box size and weight
+	basePrice := 5.0 + (boxSelection.Weight * 0.5) + (boxSelection.Box.L * boxSelection.Box.W * boxSelection.Box.H * 0.01)
+
+	return []Rate{
+		{
+			RateID:          "mock-rate-usps-ground",
+			CarrierID:       "mock-usps",
+			CarrierCode:     "stamps_com",
+			CarrierNickname: "USPS",
+			ServiceCode:     "usps_ground_advantage",
+			ServiceType:     "USPS Ground Advantage",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice},
+			DeliveryDays:    5,
+			EstimatedDate:   "",
+		},
+		{
+			RateID:          "mock-rate-ups-ground",
+			CarrierID:       "mock-ups",
+			CarrierCode:     "ups",
+			CarrierNickname: "UPS",
+			ServiceCode:     "ups_ground",
+			ServiceType:     "UPS Ground",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 2.50},
+			DeliveryDays:    4,
+			EstimatedDate:   "",
+		},
+		{
+			RateID:          "mock-rate-fedex-ground",
+			CarrierID:       "mock-fedex",
+			CarrierCode:     "fedex",
+			CarrierNickname: "FedEx",
+			ServiceCode:     "fedex_ground",
+			ServiceType:     "FedEx Ground",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 3.00},
+			DeliveryDays:    3,
+			EstimatedDate:   "",
+		},
+	}
+}
+
 func (s *ShippingService) addressFromConfig() Address {
 	cf := s.config.Shipping.ShipFrom
+	return Address{
+		Name:                        cf.Name,
+		Phone:                       cf.Phone,
+		AddressLine1:                cf.AddressLine1,
+		CityLocality:                cf.CityLocality,
+		StateProvince:               cf.StateProvince,
+		PostalCode:                  cf.PostalCode,
+		CountryCode:                 cf.CountryCode,
+		AddressResidentialIndicator: cf.AddressResidentialIndicator,
+	}
+}
+
+// addressFromConfigUSPS returns the USPS ship-from address (Cadott, WI 54727)
+func (s *ShippingService) addressFromConfigUSPS() Address {
+	// Use USPS-specific address if configured, fallback to default
+	cf := s.config.Shipping.ShipFromUSPS
+	if cf.PostalCode == "" {
+		cf = s.config.Shipping.ShipFrom
+	}
+	return Address{
+		Name:                        cf.Name,
+		Phone:                       cf.Phone,
+		AddressLine1:                cf.AddressLine1,
+		CityLocality:                cf.CityLocality,
+		StateProvince:               cf.StateProvince,
+		PostalCode:                  cf.PostalCode,
+		CountryCode:                 cf.CountryCode,
+		AddressResidentialIndicator: cf.AddressResidentialIndicator,
+	}
+}
+
+// addressFromConfigOther returns the non-USPS ship-from address (Eau Claire, WI 54701)
+func (s *ShippingService) addressFromConfigOther() Address {
+	// Use non-USPS-specific address if configured, fallback to default
+	cf := s.config.Shipping.ShipFromOther
+	if cf.PostalCode == "" {
+		cf = s.config.Shipping.ShipFrom
+	}
 	return Address{
 		Name:                        cf.Name,
 		Phone:                       cf.Phone,

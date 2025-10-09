@@ -1,14 +1,15 @@
 package admin
 
 import (
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"fmt"
 	"github.com/loganlanou/logans3d-v4/internal/types"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ CategoriesTab(products []types.ProductWithImage, categories []db.Category, filter string) {
-	@layout.AdminBase("Categories") {
+templ CategoriesTab(products []types.ProductWithImage, categories []db.Category, filter string, authCtx *auth.Context) {
+	@layout.AdminBase("Categories", authCtx) {
 		@layout.AdminContainer() {
 	<!-- Filter Controls -->
 	<div class="flex justify-between items-center mb-6">

@@ -154,6 +154,10 @@ func NewShipStationClient() *ShipStationClient {
 	}
 }
 
+func (c *ShipStationClient) IsUsingMockData() bool {
+	return c.apiKey == ""
+}
+
 func (c *ShipStationClient) makeRequest(method, endpoint string, body interface{}) (*http.Response, error) {
 	var bodyReader io.Reader
 	if body != nil {

@@ -69,7 +69,9 @@ type LabelsConfig struct {
 type ShippingAPIConfig struct {
 	ShipStationAPIVersion  string                     `json:"shipstation_api_version"`
 	APIKeySecretStorage    string                     `json:"api_key_secret_storage"`
-	ShipFrom               ShipFromAddress            `json:"ship_from"`
+	ShipFrom               ShipFromAddress            `json:"ship_from"`      // Default/fallback address
+	ShipFromUSPS           ShipFromAddress            `json:"ship_from_usps"` // USPS origin (Cadott, WI 54727)
+	ShipFromOther          ShipFromAddress            `json:"ship_from_other"` // Non-USPS origin (Eau Claire, WI 54701)
 	DimDivisors            map[string]int             `json:"dim_divisors"`
 	RatePreferences        RatePreferences            `json:"rate_preferences"`
 	Labels                 LabelsConfig               `json:"labels"`

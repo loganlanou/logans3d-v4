@@ -80,8 +80,6 @@ func (h *PaymentHandler) CreateCustomer(c echo.Context) error {
 }
 
 func (h *PaymentHandler) HandleWebhook(c echo.Context) error {
-	const MaxBodyBytes = int64(65536)
-	
 	payload, err := io.ReadAll(c.Request().Body)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Request body too large")

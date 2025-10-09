@@ -21,8 +21,11 @@ generate:
 
 .PHONY: dev
 dev:
-	@echo "🚀 Starting development server with Air (hot reload + auto-regeneration)..."
-	air
+	@if [ -f tmp/air-combined.log ]; then \
+		mv tmp/air-combined.log tmp/air-combined-$$(date +%Y%m%d-%H%M%S).log; \
+	fi
+	@ls -t tmp/air-combined-*.log 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null || true
+	@air 2>&1 | tee tmp/air-combined.log
 
 .PHONY: run
 run:

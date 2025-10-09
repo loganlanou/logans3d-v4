@@ -1,5 +1,57 @@
 # Claude AI Assistant Notes
 
+## Development Workflow
+
+### IMPORTANT: `make dev` is Always Running
+
+**The development server is ALWAYS running** - started by the user with `make dev`.
+
+**AI assistants / agents should NEVER run `make dev` or any development server commands.**
+
+The user manages the development server, and it's always available. AI assistants should:
+
+- **NEVER** run `make dev`, `air`, or any server startup commands
+- **ALWAYS** assume the dev server is running
+- **Check logs** in `./tmp/` directory when troubleshooting (logs are always available)
+- **Make code changes** and let Air automatically detect and rebuild
+
+### What `make dev` Does (For Reference)
+
+`make dev` runs Air, which provides automatic hot-reloading and handles all code generation:
+
+- **Automatically runs code generation** via `go generate ./...` on every file change
+  - Generates templ files (`.templ` → `_templ.go`)
+  - Generates sqlc database code
+- **Automatically compiles CSS** via `npm run build:css` (Tailwind CSS)
+- **Hot reloads** the Go application on file changes
+- **Cleans up port 8000** before starting (kills any existing process)
+- **Watches** for changes in `.go`, `.templ`, and `.css` files
+
+### AI Assistants: Never Run These Commands
+
+AI assistants should **NEVER** run these commands, as the user manages the dev server:
+
+- `make dev` (user only - always running)
+- `air` (user only - always running)
+- `go generate ./...` (Air runs this automatically)
+- `templ generate` (part of `go generate`)
+- `sqlc generate` (part of `go generate`)
+- `npm run build:css` or `npx postcss` (Air runs this automatically)
+- `make generate` (Air handles this)
+- `make css` or `make css-watch` (Air handles this)
+
+### Development Logs (Always Available)
+
+All development logs are **always available** in the `./tmp/` directory:
+
+- `./tmp/air-combined.log` - Current combined output (stdout + stderr)
+- `./tmp/build-errors.log` - Build errors from Air
+- `./tmp/air-combined-YYYYMMDD-HHMMSS.log` - Archived historical logs
+
+**AI assistants can read these logs at any time** to troubleshoot build issues or check application output.
+
+**Note**: `make dev` keeps only the 5 most recent archived logs and automatically rotates them.
+
 ## Database Configuration
 
 **Official database location**: `./data/database.db`
@@ -20,5 +72,5 @@ This project uses **direnv** to manage environment variables:
 - The environment is automatically loaded when entering the directory (if direnv is installed)
 
 To make environment changes:
-1. Update `.envrc` 
+1. Update `.envrc`
 2. Run `direnv allow`

@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"database/sql"
 	"fmt"
 	"time"
@@ -8,8 +9,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ OrdersList(orders []db.Order) {
-	@layout.AdminBase("Orders") {
+templ OrdersList(orders []db.Order, authCtx *auth.Context) {
+	@layout.AdminBase("Orders", authCtx) {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">

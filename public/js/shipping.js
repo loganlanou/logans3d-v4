@@ -1,0 +1,379 @@
+// Shipping functionality for rate display and selection
+class ShippingManager {
+    constructor() {
+        this.selectedShippingOption = null;
+        this.shippingRates = [];
+        this.shippingAddress = {};
+        this.isLoadingRates = false;
+    }
+
+    // Get shipping rates from backend
+    async getShippingRates(shippingAddress) {
+        this.isLoadingRates = true;
+        this.updateShippingUI('loading');
+
+        try {
+            const response = await fetch('/api/shipping/rates', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ship_to: {
+                        name: shippingAddress.name || '',
+                        address_line1: shippingAddress.address_line1 || '',
+                        city_locality: shippingAddress.city_locality || '',
+                        state_province: shippingAddress.state_province || '',
+                        postal_code: shippingAddress.postal_code || '',
+                        country_code: shippingAddress.country_code || 'US'
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to get shipping rates');
+            }
+
+            const data = await response.json();
+            this.shippingRates = data.options || [];
+            this.shippingAddress = shippingAddress;
+
+            this.updateShippingUI('rates');
+            return this.shippingRates;
+
+        } catch (error) {
+            console.error('Error getting shipping rates:', error);
+            this.updateShippingUI('error', error.message);
+            throw error;
+        } finally {
+            this.isLoadingRates = false;
+        }
+    }
+
+    // Select a shipping option
+    selectShippingOption(optionId) {
+        const option = this.shippingRates.find(rate => rate.rate_id === optionId);
+        if (option) {
+            this.selectedShippingOption = option;
+            this.updateSelectedShippingUI();
+            this.saveShippingSelection(option);
+        }
+    }
+
+    // Save shipping selection to backend
+    async saveShippingSelection(option) {
+        try {
+            const response = await fetch('/api/shipping/selection', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    rate_id: option.rate_id,
+                    carrier_code: option.carrier_code,
+                    service_code: option.service_code,
+                    package_type: option.package_type,
+                    ship_date: option.ship_date,
+                    rate: {
+                        currency: option.shipping_amount.currency,
+                        amount: option.shipping_amount.amount
+                    },
+                    ship_to: this.shippingAddress
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to save shipping selection');
+            }
+
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving shipping selection:', error);
+            throw error;
+        }
+    }
+
+    // Update shipping UI based on state
+    updateShippingUI(state, message = '') {
+        const shippingContainer = document.getElementById('shipping-options-container');
+        if (!shippingContainer) return;
+
+        switch (state) {
+            case 'loading':
+                shippingContainer.innerHTML = this.getLoadingHTML();
+                break;
+            case 'rates':
+                shippingContainer.innerHTML = this.getShippingRatesHTML();
+                this.attachShippingEventListeners();
+                break;
+            case 'error':
+                shippingContainer.innerHTML = this.getErrorHTML(message);
+                break;
+            case 'address-required':
+                shippingContainer.innerHTML = this.getAddressRequiredHTML();
+                break;
+        }
+    }
+
+    // Update selected shipping option UI
+    updateSelectedShippingUI() {
+        // Update cart total with shipping
+        this.updateCartTotalWithShipping();
+
+        // Update shipping option selection styling
+        const radioButtons = document.querySelectorAll('input[name="shipping-option"]');
+        radioButtons.forEach(radio => {
+            const container = radio.closest('.shipping-option');
+            if (container) {
+                if (radio.value === this.selectedShippingOption.rate_id) {
+                    container.classList.add('selected');
+                    radio.checked = true;
+                } else {
+                    container.classList.remove('selected');
+                    radio.checked = false;
+                }
+            }
+        });
+    }
+
+    // Update cart total to include shipping cost
+    updateCartTotalWithShipping() {
+        const cartTotalElement = document.getElementById('cart-total') || document.getElementById('modal-cart-total');
+        const subtotalElement = document.getElementById('cart-subtotal') || document.getElementById('modal-cart-subtotal');
+        const shippingCostElement = document.getElementById('shipping-cost') || document.getElementById('modal-shipping-cost');
+
+        if (!cartTotalElement) return;
+
+        // Get current cart subtotal (without shipping)
+        fetch('/api/cart')
+            .then(response => response.json())
+            .then(cart => {
+                const subtotal = cart.totalCents || 0;
+                const shippingCost = this.selectedShippingOption ?
+                    Math.round(parseFloat(this.selectedShippingOption.total_cost) * 100) : 0;
+                const total = subtotal + shippingCost;
+
+                // Update display elements
+                if (subtotalElement) {
+                    subtotalElement.textContent = '$' + (subtotal / 100).toFixed(2);
+                }
+                if (shippingCostElement) {
+                    shippingCostElement.textContent = this.selectedShippingOption ?
+                        '$' + (shippingCost / 100).toFixed(2) : 'TBD';
+                }
+                cartTotalElement.textContent = '$' + (total / 100).toFixed(2);
+            })
+            .catch(error => {
+                console.error('Error updating cart total:', error);
+            });
+    }
+
+    // Generate HTML templates
+    getLoadingHTML() {
+        return `
+            <div class="shipping-loading text-center py-8">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <p class="text-slate-300">Getting shipping rates...</p>
+            </div>
+        `;
+    }
+
+    getShippingRatesHTML() {
+        if (!this.shippingRates || this.shippingRates.length === 0) {
+            return this.getErrorHTML('No shipping options available for this address');
+        }
+
+        return `
+            <div class="shipping-rates">
+                <h3 class="text-lg font-semibold text-white mb-4">Select Shipping Method</h3>
+                <div class="space-y-3">
+                    ${this.shippingRates.map(rate => `
+                        <div class="shipping-option bg-slate-700/30 rounded-xl p-4 border border-slate-600/50 hover:border-blue-500/50 transition-all duration-200 cursor-pointer" data-rate-id="${rate.rate_id}">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <div class="flex items-center space-x-3">
+                                    <input type="radio" name="shipping-option" value="${rate.rate_id}" class="text-blue-500 focus:ring-blue-500">
+                                    <div>
+                                        <div class="font-semibold text-white">
+                                            ${rate.carrier_name} ${rate.service_name}
+                                        </div>
+                                        <div class="text-sm text-slate-300">
+                                            ${rate.delivery_days ? `${rate.delivery_days} business days` : 'Standard delivery'}
+                                            ${rate.estimated_date ? ` • Arrives by ${new Date(rate.estimated_date).toLocaleDateString()}` : ''}
+                                        </div>
+                                        <div class="text-xs text-slate-400">
+                                            Box: ${rate.box_sku} (+$${rate.box_cost.toFixed(2)})
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-lg font-semibold text-emerald-400">
+                                    $${rate.total_cost.toFixed(2)}
+                                </div>
+                            </label>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    getErrorHTML(message) {
+        return `
+            <div class="shipping-error text-center py-8">
+                <div class="text-red-400 mb-4">
+                    <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <p class="text-slate-300">${message}</p>
+                <button onclick="window.shippingManager.showAddressForm()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Enter Different Address
+                </button>
+            </div>
+        `;
+    }
+
+    getAddressRequiredHTML() {
+        return `
+            <div class="shipping-address-required text-center py-8">
+                <div class="text-slate-300 mb-4">
+                    <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                </div>
+                <p class="text-slate-300 mb-6">Enter your ZIP code to see shipping options</p>
+                <div class="max-w-sm mx-auto">
+                    <div class="flex gap-3">
+                        <input
+                            type="text"
+                            id="shipping-zip-input"
+                            placeholder="ZIP Code"
+                            class="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:text-white"
+                            maxlength="10"
+                            style="color: white !important;"
+                        >
+                        <button
+                            onclick="window.shippingManager.getQuickRates()"
+                            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
+                        >
+                            Get Rates
+                        </button>
+                    </div>
+                    <button
+                        onclick="window.shippingManager.showAddressForm()"
+                        class="mt-3 text-sm text-slate-400 hover:text-slate-300 transition-colors"
+                    >
+                        Enter full address instead
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Get quick rates with ZIP code
+    async getQuickRates() {
+        const zipInput = document.getElementById('shipping-zip-input');
+        if (!zipInput) return;
+
+        const zipCode = zipInput.value.trim();
+        if (!zipCode) {
+            showToast('Please enter a ZIP code', 'error');
+            return;
+        }
+
+        try {
+            const rates = await this.getEstimatedRates(zipCode);
+            if (rates.length > 0) {
+                this.shippingRates = rates;
+                this.shippingAddress = {
+                    postal_code: zipCode,
+                    country_code: 'US'
+                };
+                this.updateShippingUI('rates');
+            } else {
+                this.updateShippingUI('error', 'No shipping options available for this ZIP code');
+            }
+        } catch (error) {
+            this.updateShippingUI('error', 'Failed to get shipping rates');
+        }
+    }
+
+    // Show address form
+    showAddressForm() {
+        // This will be implemented when we add the address form modal
+        console.log('Address form functionality to be implemented');
+        // For now, we'll use the simplified checkout flow
+    }
+
+    // Attach event listeners to shipping options
+    attachShippingEventListeners() {
+        const shippingOptions = document.querySelectorAll('.shipping-option');
+        shippingOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                const rateId = option.dataset.rateId;
+                if (rateId) {
+                    this.selectShippingOption(rateId);
+                }
+            });
+        });
+
+        const radioButtons = document.querySelectorAll('input[name="shipping-option"]');
+        radioButtons.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    this.selectShippingOption(e.target.value);
+                }
+            });
+        });
+    }
+
+    // Get estimated rates without full address (for quick preview)
+    async getEstimatedRates(zipCode) {
+        try {
+            const response = await fetch('/api/shipping/rates', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ship_to: {
+                        name: 'Customer',
+                        address_line1: '123 Main St',
+                        city_locality: 'Anytown',
+                        state_province: 'CA',
+                        postal_code: zipCode,
+                        country_code: 'US'
+                    }
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                return data.options || [];
+            }
+        } catch (error) {
+            console.error('Error getting estimated rates:', error);
+        }
+        return [];
+    }
+}
+
+// Initialize shipping manager
+window.shippingManager = new ShippingManager();
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on a page that needs shipping
+    if (document.getElementById('shipping-options-container')) {
+        window.shippingManager.updateShippingUI('address-required');
+    }
+
+    // Add global event listener for Enter key on ZIP input
+    document.addEventListener('keypress', function(e) {
+        if (e.target.id === 'shipping-zip-input' && e.key === 'Enter') {
+            e.preventDefault();
+            window.shippingManager.getQuickRates();
+        }
+    });
+});

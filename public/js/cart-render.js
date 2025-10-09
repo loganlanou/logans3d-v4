@@ -19,23 +19,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const emptyCart = document.getElementById('empty-cart');
         const cartItems = document.getElementById('cart-items');
         const cartSummary = document.getElementById('cart-summary');
+        const cartShipping = document.getElementById('cart-shipping');
         const cartTotal = document.getElementById('cart-total');
-        
+        const cartSubtotal = document.getElementById('cart-subtotal');
+
         if (items.length === 0) {
             emptyCart.classList.remove('hidden');
             cartItems.classList.add('hidden');
             cartSummary.classList.add('hidden');
+            cartShipping.classList.add('hidden');
             return;
         }
-        
+
         emptyCart.classList.add('hidden');
         cartItems.classList.remove('hidden');
         cartSummary.classList.remove('hidden');
+        cartShipping.classList.remove('hidden');
         
         // Render cart items using string concatenation
         cartItems.innerHTML = items.map(item => {
-            const imageHtml = item.image_url ?
-                '<img src="/public/images/products/' + item.image_url + '" alt="' + item.name + '" class="w-24 h-24 rounded-xl object-cover bg-slate-700/50">' :
+            // Fix image URL - check if it already has the full path
+            let imageSrc = '';
+            if (item.image_url) {
+                if (item.image_url.startsWith('/public/')) {
+                    imageSrc = item.image_url;
+                } else if (item.image_url.startsWith('/images/')) {
+                    imageSrc = '/public' + item.image_url;
+                } else {
+                    imageSrc = '/public/images/products/' + item.image_url;
+                }
+            }
+
+            const imageHtml = imageSrc ?
+                '<img src="' + imageSrc + '" alt="' + item.name + '" class="w-24 h-24 rounded-xl object-cover bg-slate-700/50">' :
                 '<div class="w-24 h-24 rounded-xl bg-slate-700/50 flex items-center justify-center">' +
                     '<svg class="w-12 h-12 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
                         '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>' +
@@ -50,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<p class="text-lg font-semibold text-emerald-400 mb-4">$' + (item.price_cents / 100).toFixed(2) + '</p>' +
                         '<div class="flex items-center justify-between">' +
                             '<div class="flex items-center space-x-3">' +
-                                '<label class="text-slate-300 font-medium">Qty:</label>' +
+                                '<label class="text-white font-medium">Qty:</label>' +
                                 '<button class="cart-update-btn w-8 h-8 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center transition-colors duration-200" data-cart-item-id="' + item.id + '" data-quantity="' + (item.quantity - 1) + '">−</button>' +
                                 '<span class="text-white font-semibold min-w-[2rem] text-center">' + item.quantity + '</span>' +
                                 '<button class="cart-update-btn w-8 h-8 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center transition-colors duration-200" data-cart-item-id="' + item.id + '" data-quantity="' + (item.quantity + 1) + '">+</button>' +
@@ -66,9 +82,15 @@ document.addEventListener('DOMContentLoaded', function() {
             '</div>';
         }).join('');
         
-        // Update total - API returns totalCents (camelCase), not total_cents (snake_case)
-        const total = cart.totalCents || 0;
-        cartTotal.textContent = '$' + (total / 100).toFixed(2);
+        // Update subtotal and total - API returns totalCents (camelCase), not total_cents (snake_case)
+        const subtotal = cart.totalCents || 0;
+        cartSubtotal.textContent = '$' + (subtotal / 100).toFixed(2);
+        cartTotal.textContent = '$' + (subtotal / 100).toFixed(2); // Initial total = subtotal
+
+        // Initialize shipping options
+        if (window.shippingManager) {
+            window.shippingManager.updateShippingUI('address-required');
+        }
     }
     
     // Initial render

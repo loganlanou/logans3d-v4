@@ -89,6 +89,26 @@
   "shipping": {
     "shipstation_api_version": "v2",
     "api_key_secret_storage": "env",
+    "ship_from_usps": {
+      "name": "Creswood Corners",
+      "phone": "715-XXX-XXXX",
+      "address_line1": "YOUR ADDRESS",
+      "city_locality": "Cadott",
+      "state_province": "WI",
+      "postal_code": "54727",
+      "country_code": "US",
+      "address_residential_indicator": "no"
+    },
+    "ship_from_other": {
+      "name": "Creswood Corners",
+      "phone": "715-XXX-XXXX",
+      "address_line1": "YOUR ADDRESS",
+      "city_locality": "Eau Claire",
+      "state_province": "WI",
+      "postal_code": "54701",
+      "country_code": "US",
+      "address_residential_indicator": "no"
+    },
     "ship_from": {
       "name": "Creswood Corners",
       "phone": "715-XXX-XXXX",
