@@ -9,12 +9,14 @@ import (
 	"strconv"
 
 	"github.com/a-h/templ"
+	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stripe/stripe-go/v80"
 	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
+	"github.com/loganlanou/logans3d-v4/internal/middleware"
 	"github.com/loganlanou/logans3d-v4/internal/session"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/storage"
@@ -41,7 +43,11 @@ type Service struct {
 }
 
 func New(storage *storage.Storage, config *Config) *Service {
-	// Auth removed - will be rebuilt later
+	// Initialize auth service
+	authService := auth.NewService()
+
+	// Initialize session manager
+	sessionManager := session.NewManager(os.Getenv("JWT_SECRET"))
 
 	// Initialize shipping service
 	shippingConfig, err := shipping.LoadShippingConfig(config.Shipping.ConfigPath)
@@ -67,16 +73,28 @@ func New(storage *storage.Storage, config *Config) *Service {
 		config:          config,
 		paymentHandler:  handlers.NewPaymentHandler(),
 		shippingHandler: shippingHandler,
-		authService:     nil,
-		sessionManager:  nil,
+		authService:     authService,
+		sessionManager:  sessionManager,
 	}
 }
 
 func (s *Service) RegisterRoutes(e *echo.Echo) {
-	// Auth middleware removed - will be rebuilt later
+	// Initialize Clerk SDK with secret key
+	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+
+	// Apply global middleware
+	e.Use(middleware.ClerkAuth())          // Optional Clerk auth for all routes
+	e.Use(middleware.LoadSession(s.sessionManager)) // Load session into context
 
 	// Static files
 	e.Static("/public", "public")
+
+	// Auth routes (public)
+	e.GET("/login", s.handleLoginPlaceholder)
+	e.GET("/sign-up", s.handleSignUp)
+	e.GET("/account", s.handleAccount)
+	e.GET("/sso-callback", s.handleSSOCallback)
+	e.POST("/logout", s.handleLogout)
 
 	// Home page
 	e.GET("/", s.handleHome)
@@ -94,8 +112,6 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	e.GET("/terms", s.handleTerms)
 	e.GET("/shipping", s.handleShipping)
 	e.GET("/custom-policy", s.handleCustomPolicy)
-
-	// Auth routes removed - will be rebuilt later
 	
 	// Shop routes
 	shop := e.Group("/shop")
@@ -141,9 +157,9 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 		api.POST("/shipping/validate-address", s.shippingHandler.ValidateAddress)
 	}
 	
-	// Admin routes - public for now (will add auth later)
+	// Admin routes - protected with RequireAuth middleware
 	adminHandler := handlers.NewAdminHandler(s.storage, s.authService)
-	admin := e.Group("/admin")
+	admin := e.Group("/admin", middleware.RequireAuth())
 	admin.GET("", adminHandler.HandleAdminDashboard)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
 	admin.GET("/product/new", adminHandler.HandleProductForm)
@@ -184,8 +200,8 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 		admin.GET("/shipping/test", s.handleShippingTest)
 	}
 	
-	// Developer routes - public for now (will add auth later)
-	dev := e.Group("/dev")
+	// Developer routes - protected with RequireAuth middleware
+	dev := e.Group("/dev", middleware.RequireAuth())
 	dev.GET("", adminHandler.HandleDeveloperDashboard)
 	dev.GET("/system", adminHandler.HandleSystemInfo)
 	dev.GET("/memory", adminHandler.HandleMemoryStats)
@@ -200,7 +216,8 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 // Basic handler implementations
 func (s *Service) handleHome(c echo.Context) error {
 	slog.Info("Home page requested", "ip", c.RealIP())
-	return Render(c, home.Index())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, home.Index(authCtx))
 }
 
 func (s *Service) handleAbout(c echo.Context) error {
@@ -1158,6 +1175,31 @@ func (s *Service) handleAccount(c echo.Context) error {
 </html>`, clerkPublishableKey)
 
 	return c.HTML(http.StatusOK, accountHTML)
+}
+
+// handleLogout logs out the user by clearing both Clerk and server sessions
+func (s *Service) handleLogout(c echo.Context) error {
+	// Destroy server session
+	if err := s.sessionManager.DestroySession(c); err != nil {
+		slog.Error("failed to destroy session", "error", err)
+	}
+
+	// Clear Clerk session cookie
+	c.SetCookie(&http.Cookie{
+		Name:     "__session",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+	})
+
+	// Return JSON response for API calls
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Logged out successfully",
+		"redirect": "/",
+	})
 }
 
 // Cart API Handlers

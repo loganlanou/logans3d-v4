@@ -2,7 +2,9 @@ package layout
 
 import (
 	"fmt"
+	"os"
 	"time"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 )
 
 type Meta struct {
@@ -13,7 +15,7 @@ type Meta struct {
 	CanonicalURL string
 }
 
-templ Base(meta Meta) {
+templ Base(meta Meta, authCtx *auth.Context) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -41,9 +43,33 @@ templ Base(meta Meta) {
 			<script src="/public/js/shipping.js?v=1"></script>
 			<!-- Scroll speed control -->
 			<script src="/public/js/scroll-control.js"></script>
+			<!-- Clerk Authentication -->
+			<script async crossorigin="anonymous" data-clerk-publishable-key={ os.Getenv("CLERK_PUBLISHABLE_KEY") } src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
+			<script src="/public/js/clerk-init.js"></script>
+			<!-- Logout Function -->
+			<script>
+				async function logout() {
+					try {
+						// Sign out from Clerk
+						if (window.Clerk && window.Clerk.user) {
+							await window.Clerk.signOut();
+						}
+
+						// Call backend logout endpoint
+						await fetch('/logout', { method: 'POST' });
+
+						// Redirect to home
+						window.location.href = '/';
+					} catch (error) {
+						console.error('Logout error:', error);
+						// Force redirect even on error
+						window.location.href = '/';
+					}
+				}
+			</script>
 		</head>
 		<body class="min-h-screen bg-gray-50 custom-scrollbar">
-			@Header()
+			@Header(authCtx)
 			<main>
 				{ children... }
 			</main>
@@ -56,7 +82,7 @@ templ Base(meta Meta) {
 	</html>
 }
 
-templ Header() {
+templ Header(authCtx *auth.Context) {
 	<header class="nav-primary">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="flex h-16 items-center justify-between">
@@ -77,8 +103,49 @@ templ Header() {
 						<a href="/contact" class="nav-link">Contact</a>
 					</div>
 				</div>
-				<!-- Cart and Mobile menu button -->
+				<!-- Auth, Cart and Mobile menu button -->
 				<div class="flex items-center space-x-4">
+					<!-- User Menu / Auth -->
+					if authCtx != nil && authCtx.IsAuthenticated {
+						<!-- Authenticated User Menu -->
+						<div class="hidden md:block" x-data="{ open: false }">
+							<div class="relative">
+								<button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2">
+									if authCtx.User.HasImage {
+										<img src={ authCtx.User.ImageURL } alt={ authCtx.User.FullName } class="h-8 w-8 rounded-full"/>
+									} else {
+										<div class="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+											{ string([]rune(authCtx.User.FullName)[0]) }
+										</div>
+									}
+									<span class="font-medium">{ authCtx.User.FullName }</span>
+									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+									</svg>
+								</button>
+								<!-- Dropdown Menu -->
+								<div x-show="open" @click.away="open = false" x-cloak
+									x-transition:enter="transition ease-out duration-100"
+									x-transition:enter-start="transform opacity-0 scale-95"
+									x-transition:enter-end="transform opacity-100 scale-100"
+									x-transition:leave="transition ease-in duration-75"
+									x-transition:leave-start="transform opacity-100 scale-100"
+									x-transition:leave-end="transform opacity-0 scale-95"
+									class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
+									<a href="/account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Account</a>
+									<a href="/admin" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
+									<hr class="my-1"/>
+									<button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Sign Out</button>
+								</div>
+							</div>
+						</div>
+					} else {
+						<!-- Not Authenticated -->
+						<div class="hidden md:flex items-center space-x-2">
+							<a href="/login" class="nav-link">Sign In</a>
+							<a href="/sign-up" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300">Sign Up</a>
+						</div>
+					}
 					<!-- Cart -->
 					<button class="cart-preview-btn text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2 relative cursor-pointer hover:cursor-pointer" title="View Cart">
 						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -109,11 +176,11 @@ templ Header() {
 				</div>
 			</div>
 		</div>
-		@MobileMenu()
+		@MobileMenu(authCtx)
 	</header>
 }
 
-templ MobileMenu() {
+templ MobileMenu(authCtx *auth.Context) {
 	<div
 		x-data="{ open: false }"
 		@toggle-menu.window="open = !open"
@@ -136,6 +203,16 @@ templ MobileMenu() {
 				<li><a href="/about" class="mobile-nav-link" @click="open = false">About</a></li>
 				<li><a href="/contact" class="mobile-nav-link" @click="open = false">Contact</a></li>
 				<li><button class="cart-preview-btn mobile-nav-link text-left w-full" @click="open = false">View Cart</button></li>
+				<li class="border-t border-gray-200 pt-2 mt-2">
+					if authCtx != nil && authCtx.IsAuthenticated {
+						<a href="/account" class="mobile-nav-link" @click="open = false">My Account</a>
+						<a href="/admin" class="mobile-nav-link" @click="open = false">Admin Dashboard</a>
+						<button onclick="logout()" class="mobile-nav-link text-left w-full text-red-600" @click="open = false">Sign Out</button>
+					} else {
+						<a href="/login" class="mobile-nav-link" @click="open = false">Sign In</a>
+						<a href="/sign-up" class="mobile-nav-link bg-gradient-to-r from-blue-600 to-purple-600 text-white" @click="open = false">Sign Up</a>
+					}
+				</li>
 			</ul>
 		</nav>
 	</div>
