@@ -4940,10 +4940,10 @@
   font-family: var(--font-display);
 }
 input[type="text"], input[type="email"], input[type="password"], input[type="search"], textarea, select {
-  color: var(--color-gray-900) !important;
+  color: white;
 }
 input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="password"]::placeholder, input[type="search"]::placeholder, textarea::placeholder {
-  color: var(--color-gray-400) !important;
+  color: var(--color-gray-400);
 }
 :root {
   --account-primary: #7C3AED;
