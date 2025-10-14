@@ -17,7 +17,6 @@ import (
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
 	"github.com/loganlanou/logans3d-v4/internal/middleware"
-	"github.com/loganlanou/logans3d-v4/internal/session"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -38,17 +37,10 @@ type Service struct {
 	config          *Config
 	paymentHandler  *handlers.PaymentHandler
 	shippingHandler *handlers.ShippingHandler
-	authService     *auth.Service
-	sessionManager  *session.Manager
+	authHandler     *handlers.AuthHandler
 }
 
 func New(storage *storage.Storage, config *Config) *Service {
-	// Initialize auth service
-	authService := auth.NewService()
-
-	// Initialize session manager
-	sessionManager := session.NewManager(os.Getenv("JWT_SECRET"))
-
 	// Initialize shipping service
 	shippingConfig, err := shipping.LoadShippingConfig(config.Shipping.ConfigPath)
 	if err != nil {
@@ -73,8 +65,7 @@ func New(storage *storage.Storage, config *Config) *Service {
 		config:          config,
 		paymentHandler:  handlers.NewPaymentHandler(),
 		shippingHandler: shippingHandler,
-		authService:     authService,
-		sessionManager:  sessionManager,
+		authHandler:     handlers.NewAuthHandler(),
 	}
 }
 
@@ -82,19 +73,18 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Initialize Clerk SDK with secret key
 	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
 
-	// Apply global middleware
-	e.Use(middleware.ClerkAuth())          // Optional Clerk auth for all routes
-	e.Use(middleware.LoadSession(s.sessionManager)) // Load session into context
+	// Apply global middleware - NEW: Server-side Clerk auth with database sync
+	e.Use(middleware.ClerkAuthMiddleware(s.storage))
 
 	// Static files
 	e.Static("/public", "public")
 
-	// Auth routes (public)
-	e.GET("/login", s.handleLoginPlaceholder)
-	e.GET("/sign-up", s.handleSignUp)
-	e.GET("/account", s.handleAccount)
-	e.GET("/sso-callback", s.handleSSOCallback)
-	e.POST("/logout", s.handleLogout)
+	// Auth routes (public) - NEW: Server-side only, no JavaScript
+	e.GET("/login", s.authHandler.HandleLogin)
+	e.GET("/sign-up", s.authHandler.HandleSignUp)
+	e.GET("/auth/callback", s.authHandler.HandleAuthCallback)
+	e.GET("/account", s.authHandler.HandleAccount)
+	e.GET("/logout", s.authHandler.HandleLogout)
 
 	// Home page
 	e.GET("/", s.handleHome)
@@ -157,9 +147,9 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 		api.POST("/shipping/validate-address", s.shippingHandler.ValidateAddress)
 	}
 	
-	// Admin routes - protected with RequireAuth middleware
-	adminHandler := handlers.NewAdminHandler(s.storage, s.authService)
-	admin := e.Group("/admin", middleware.RequireAuth())
+	// Admin routes - protected with RequireClerkAuth middleware
+	adminHandler := handlers.NewAdminHandler(s.storage)
+	admin := e.Group("/admin", middleware.RequireClerkAuth())
 	admin.GET("", adminHandler.HandleAdminDashboard)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
 	admin.GET("/product/new", adminHandler.HandleProductForm)
@@ -200,8 +190,8 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 		admin.GET("/shipping/test", s.handleShippingTest)
 	}
 	
-	// Developer routes - protected with RequireAuth middleware
-	dev := e.Group("/dev", middleware.RequireAuth())
+	// Developer routes - protected with RequireClerkAuth middleware
+	dev := e.Group("/dev", middleware.RequireClerkAuth())
 	dev.GET("", adminHandler.HandleDeveloperDashboard)
 	dev.GET("/system", adminHandler.HandleSystemInfo)
 	dev.GET("/memory", adminHandler.HandleMemoryStats)
@@ -221,7 +211,8 @@ func (s *Service) handleHome(c echo.Context) error {
 }
 
 func (s *Service) handleAbout(c echo.Context) error {
-	return Render(c, about.Index())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, about.Index(authCtx))
 }
 
 func (s *Service) handleShop(c echo.Context) error {
@@ -276,7 +267,8 @@ func (s *Service) handleShop(c echo.Context) error {
 		})
 	}
 
-	return Render(c, shop.Index(productsWithImages, categories, nil))
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, shop.Index(productsWithImages, categories, nil, authCtx))
 }
 
 func (s *Service) handlePremium(c echo.Context) error {
@@ -494,7 +486,8 @@ func (s *Service) handlePremium(c echo.Context) error {
 		count++
 	}
 
-	return Render(c, shop.Premium(collections, featuredProducts))
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, shop.Premium(collections, featuredProducts, authCtx))
 }
 
 func (s *Service) handleProduct(c echo.Context) error {
@@ -528,7 +521,8 @@ func (s *Service) handleProduct(c echo.Context) error {
 		category = db.Category{Name: "Uncategorized", Slug: "uncategorized"}
 	}
 
-	return Render(c, shop.ProductDetail(product, images, category))
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, shop.ProductDetail(product, images, category, authCtx))
 }
 
 func (s *Service) handleCategory(c echo.Context) error {
@@ -591,13 +585,15 @@ func (s *Service) handleCategory(c echo.Context) error {
 		})
 	}
 
-	return Render(c, shop.Index(productsWithImages, categories, &category))
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, shop.Index(productsWithImages, categories, &category, authCtx))
 }
 
 // Cart handlers removed - replaced with Stripe Checkout
 
 func (s *Service) handleCustom(c echo.Context) error {
-	return Render(c, custom.Index())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, custom.Index(authCtx))
 }
 
 func (s *Service) handleCustomQuote(c echo.Context) error {
@@ -716,7 +712,8 @@ func (s *Service) handleCheckoutSuccess(c echo.Context) error {
 
 // handleCart renders the shopping cart page
 func (s *Service) handleCart(c echo.Context) error {
-	return Render(c, shop.Cart())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, shop.Cart(authCtx))
 }
 
 // handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)
@@ -965,39 +962,48 @@ func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 }
 
 func (s *Service) handleEvents(c echo.Context) error {
-	return Render(c, events.Index())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, events.Index(authCtx))
 }
 
 func (s *Service) handleContact(c echo.Context) error {
-	return Render(c, contact.Index())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, contact.Index(authCtx))
 }
 
 func (s *Service) handlePortfolio(c echo.Context) error {
-	return Render(c, portfolio.Index())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, portfolio.Index(authCtx))
 }
 
 func (s *Service) handleInnovation(c echo.Context) error {
-	return Render(c, innovation.Index())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, innovation.Index(authCtx))
 }
 
 func (s *Service) handleManufacturing(c echo.Context) error {
-	return Render(c, innovation.Manufacturing())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, innovation.Manufacturing(authCtx))
 }
 
 func (s *Service) handlePrivacy(c echo.Context) error {
-	return Render(c, legal.Privacy())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, legal.Privacy(authCtx))
 }
 
 func (s *Service) handleTerms(c echo.Context) error {
-	return Render(c, legal.Terms())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, legal.Terms(authCtx))
 }
 
 func (s *Service) handleShipping(c echo.Context) error {
-	return Render(c, legal.Shipping())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, legal.Shipping(authCtx))
 }
 
 func (s *Service) handleCustomPolicy(c echo.Context) error {
-	return Render(c, legal.CustomPolicy())
+	authCtx := auth.GetAuthContext(c)
+	return Render(c, legal.CustomPolicy(authCtx))
 }
 
 func (s *Service) handleHealth(c echo.Context) error {
@@ -1005,200 +1011,6 @@ func (s *Service) handleHealth(c echo.Context) error {
 		"status":      "healthy",
 		"environment": s.config.Environment,
 		"database":    "connected",
-	})
-}
-
-// handleLoginPlaceholder handles the login page with Clerk integration
-// handleLoginPlaceholder renders a minimal login page with ONLY Clerk's SignIn component
-func (s *Service) handleLoginPlaceholder(c echo.Context) error {
-	clerkPublishableKey := os.Getenv("CLERK_PUBLISHABLE_KEY")
-	if clerkPublishableKey == "" {
-		clerkPublishableKey = "pk_test_YOUR_KEY_HERE"
-	}
-
-	loginHTML := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign In - Logan's 3D Creations</title>
-    <script async crossorigin="anonymous" data-clerk-publishable-key="%s" src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        #clerk-signin {
-            width: 100%%;
-            max-width: 400px;
-            margin: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div id="clerk-signin"></div>
-    <script>
-        window.addEventListener('load', async () => {
-            if (!window.Clerk) return;
-            await window.Clerk.load();
-            window.Clerk.mountSignIn(document.getElementById('clerk-signin'), {
-                signUpUrl: '/sign-up',
-                signInFallbackRedirectUrl: '/',
-                signInForceRedirectUrl: '/'
-            });
-        });
-    </script>
-</body>
-</html>`, clerkPublishableKey)
-
-	return c.HTML(http.StatusOK, loginHTML)
-}
-
-// handleSignUp renders a minimal sign-up page with ONLY Clerk's SignUp component
-func (s *Service) handleSignUp(c echo.Context) error {
-	clerkPublishableKey := os.Getenv("CLERK_PUBLISHABLE_KEY")
-	if clerkPublishableKey == "" {
-		clerkPublishableKey = "pk_test_YOUR_KEY_HERE"
-	}
-
-	signUpHTML := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign Up - Logan's 3D Creations</title>
-    <script async crossorigin="anonymous" data-clerk-publishable-key="%s" src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        #clerk-signup {
-            width: 100%%;
-            max-width: 400px;
-            margin: 20px;
-        }
-    </style>
-</head>
-<body>
-    <div id="clerk-signup"></div>
-    <script>
-        window.addEventListener('load', async () => {
-            if (!window.Clerk) return;
-            await window.Clerk.load();
-            window.Clerk.mountSignUp(document.getElementById('clerk-signup'), {
-                signInUrl: '/login',
-                fallbackRedirectUrl: '/',
-                forceRedirectUrl: null
-            });
-        });
-    </script>
-</body>
-</html>`, clerkPublishableKey)
-
-	return c.HTML(http.StatusOK, signUpHTML)
-}
-
-// handleSSOCallback handles the Clerk SSO callback after OAuth authentication
-func (s *Service) handleSSOCallback(c echo.Context) error {
-	// Get the redirect URL from query parameters
-	afterSignInURL := c.QueryParam("after_sign_in_url")
-	redirectURL := c.QueryParam("redirect_url")
-
-	// Default to home page if no redirect URL specified
-	destination := "/"
-	if afterSignInURL != "" {
-		destination = afterSignInURL
-	} else if redirectURL != "" {
-		destination = redirectURL
-	}
-
-	// Clerk will handle the session creation on the client side
-	// Just redirect to the destination
-	return c.Redirect(http.StatusFound, destination)
-}
-
-// handleAccount renders a minimal account page with ONLY Clerk's UserProfile component
-func (s *Service) handleAccount(c echo.Context) error {
-	clerkPublishableKey := os.Getenv("CLERK_PUBLISHABLE_KEY")
-	if clerkPublishableKey == "" {
-		clerkPublishableKey = "pk_test_YOUR_KEY_HERE"
-	}
-
-	accountHTML := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My Account - Logan's 3D Creations</title>
-    <script async crossorigin="anonymous" data-clerk-publishable-key="%s" src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        #user-profile {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-    </style>
-</head>
-<body>
-    <div id="user-profile"></div>
-    <script>
-        window.addEventListener('load', async () => {
-            if (!window.Clerk) return;
-            await window.Clerk.load();
-            if (!window.Clerk.user) {
-                window.location.href = '/login?redirect_url=/account';
-                return;
-            }
-            window.Clerk.mountUserProfile(document.getElementById('user-profile'));
-        });
-    </script>
-</body>
-</html>`, clerkPublishableKey)
-
-	return c.HTML(http.StatusOK, accountHTML)
-}
-
-// handleLogout logs out the user by clearing both Clerk and server sessions
-func (s *Service) handleLogout(c echo.Context) error {
-	// Destroy server session
-	if err := s.sessionManager.DestroySession(c); err != nil {
-		slog.Error("failed to destroy session", "error", err)
-	}
-
-	// Clear Clerk session cookie
-	c.SetCookie(&http.Cookie{
-		Name:     "__session",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
-		SameSite: http.SameSiteLaxMode,
-	})
-
-	// Return JSON response for API calls
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Logged out successfully",
-		"redirect": "/",
 	})
 }
 

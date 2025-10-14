@@ -2,16 +2,17 @@ package shop
 
 import (
 	"fmt"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index(products []ProductWithImage, categories []db.Category, currentCategory *db.Category) {
+templ Index(products []ProductWithImage, categories []db.Category, currentCategory *db.Category, authCtx *auth.Context) {
 	@layout.Base(layout.Meta{
 		Title:       "Shop - Logan's 3D Creations",
 		Description: "Browse our collection of 3D printed collectibles, dinosaurs, dragons, animals and custom items.",
 		Keywords:    "3D printed products, collectibles, dinosaurs, dragons, custom printing",
-	}) {
+	}, authCtx) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

@@ -1,15 +1,16 @@
 package legal
 
 import (
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Privacy() {
+templ Privacy(authCtx *auth.Context) {
 	@layout.Base(layout.Meta{
 		Title:       "Privacy Policy - Logan's 3D Creations",
 		Description: "Our privacy policy explains how Logan's 3D Creations collects, uses, and protects your personal information when you use our website and services.",
 		Keywords:    "privacy policy, data protection, personal information, GDPR compliance",
-	}) {
+	}, authCtx) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
 				<div class="bg-white rounded-2xl shadow-lg p-8 lg:p-12">

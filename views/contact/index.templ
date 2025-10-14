@@ -1,15 +1,16 @@
 package contact
 
 import (
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index() {
+templ Index(authCtx *auth.Context) {
 	@layout.Base(layout.Meta{
 		Title:       "Contact Us - Logan's 3D Creations",
 		Description: "Get in touch with Logan's 3D Creations. Contact us for custom quotes, project consultations, or general questions about our 3D printing services.",
 		Keywords:    "contact, 3D printing services, custom quotes, consultations, support",
-	}) {
+	}, authCtx) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

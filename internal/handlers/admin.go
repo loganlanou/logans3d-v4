@@ -24,19 +24,17 @@ import (
 
 
 type AdminHandler struct {
-	storage     *storage.Storage
-	authService *auth.Service
+	storage *storage.Storage
 }
 
-func NewAdminHandler(storage *storage.Storage, authService *auth.Service) *AdminHandler {
+func NewAdminHandler(storage *storage.Storage) *AdminHandler {
 	return &AdminHandler{
-		storage:     storage,
-		authService: authService,
+		storage: storage,
 	}
 }
 
 func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	products, err := h.storage.Queries.ListProducts(c.Request().Context())
 	if err != nil {
@@ -49,7 +47,7 @@ func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
 }
 
 func (h *AdminHandler) HandleCategoriesTab(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	filter := c.QueryParam("filter")
 	if filter == "" {
@@ -178,7 +176,7 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 }
 
 func (h *AdminHandler) HandleProductForm(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	productID := c.QueryParam("id")
 	var product *db.Product
@@ -393,7 +391,7 @@ func (h *AdminHandler) HandleDeleteProduct(c echo.Context) error {
 // Category Management Functions
 
 func (h *AdminHandler) HandleCategoryForm(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	categoryID := c.QueryParam("id")
 	var category *db.Category
@@ -499,7 +497,7 @@ func (h *AdminHandler) HandleDeleteCategory(c echo.Context) error {
 var appStartTime = time.Now()
 
 func (h *AdminHandler) HandleDeveloperDashboard(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	// Get system information
 	sysInfo := types.SystemInfo{
@@ -655,7 +653,7 @@ func (h *AdminHandler) HandleGarbageCollect(c echo.Context) error {
 // Orders Management Functions
 
 func (h *AdminHandler) HandleOrdersList(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	status := c.QueryParam("status")
 
@@ -713,7 +711,7 @@ func (h *AdminHandler) HandleUpdateOrderStatus(c echo.Context) error {
 // Quotes Management Functions
 
 func (h *AdminHandler) HandleQuotesList(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	status := c.QueryParam("status")
 
@@ -734,7 +732,7 @@ func (h *AdminHandler) HandleQuotesList(c echo.Context) error {
 }
 
 func (h *AdminHandler) HandleQuoteDetail(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	quoteID := c.Param("id")
 
@@ -796,7 +794,7 @@ func (h *AdminHandler) HandleUpdateQuote(c echo.Context) error {
 // Events Management Functions
 
 func (h *AdminHandler) HandleEventsList(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	filter := c.QueryParam("filter")
 
@@ -822,7 +820,7 @@ func (h *AdminHandler) HandleEventsList(c echo.Context) error {
 }
 
 func (h *AdminHandler) HandleEventForm(c echo.Context) error {
-	authCtx := auth.NewContext(c, h.authService)
+	authCtx := auth.GetAuthContext(c)
 
 	eventID := c.QueryParam("id")
 	var event *db.Event

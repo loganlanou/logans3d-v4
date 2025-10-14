@@ -2,16 +2,17 @@ package shop
 
 import (
 	"fmt"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ ProductDetail(product db.Product, images []db.ProductImage, category db.Category) {
+templ ProductDetail(product db.Product, images []db.ProductImage, category db.Category, authCtx *auth.Context) {
 	@layout.Base(layout.Meta{
 		Title:       fmt.Sprintf("%s - Logan's 3D Creations", product.Name),
 		Description: product.Description.String,
 		Keywords:    fmt.Sprintf("3D printed, %s, collectible, custom printing", product.Name),
-	}) {
+	}, authCtx) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

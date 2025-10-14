@@ -2,7 +2,6 @@ package layout
 
 import (
 	"fmt"
-	"os"
 	"time"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 )
@@ -43,30 +42,6 @@ templ Base(meta Meta, authCtx *auth.Context) {
 			<script src="/public/js/shipping.js?v=1"></script>
 			<!-- Scroll speed control -->
 			<script src="/public/js/scroll-control.js"></script>
-			<!-- Clerk Authentication -->
-			<script async crossorigin="anonymous" data-clerk-publishable-key={ os.Getenv("CLERK_PUBLISHABLE_KEY") } src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"></script>
-			<script src="/public/js/clerk-init.js"></script>
-			<!-- Logout Function -->
-			<script>
-				async function logout() {
-					try {
-						// Sign out from Clerk
-						if (window.Clerk && window.Clerk.user) {
-							await window.Clerk.signOut();
-						}
-
-						// Call backend logout endpoint
-						await fetch('/logout', { method: 'POST' });
-
-						// Redirect to home
-						window.location.href = '/';
-					} catch (error) {
-						console.error('Logout error:', error);
-						// Force redirect even on error
-						window.location.href = '/';
-					}
-				}
-			</script>
 		</head>
 		<body class="min-h-screen bg-gray-50 custom-scrollbar">
 			@Header(authCtx)
@@ -135,7 +110,7 @@ templ Header(authCtx *auth.Context) {
 									<a href="/account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Account</a>
 									<a href="/admin" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
 									<hr class="my-1"/>
-									<button onclick="logout()" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Sign Out</button>
+									<a href="/logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Sign Out</a>
 								</div>
 							</div>
 						</div>
@@ -207,7 +182,7 @@ templ MobileMenu(authCtx *auth.Context) {
 					if authCtx != nil && authCtx.IsAuthenticated {
 						<a href="/account" class="mobile-nav-link" @click="open = false">My Account</a>
 						<a href="/admin" class="mobile-nav-link" @click="open = false">Admin Dashboard</a>
-						<button onclick="logout()" class="mobile-nav-link text-left w-full text-red-600" @click="open = false">Sign Out</button>
+						<a href="/logout" class="mobile-nav-link text-left w-full text-red-600" @click="open = false">Sign Out</a>
 					} else {
 						<a href="/login" class="mobile-nav-link" @click="open = false">Sign In</a>
 						<a href="/sign-up" class="mobile-nav-link bg-gradient-to-r from-blue-600 to-purple-600 text-white" @click="open = false">Sign Up</a>

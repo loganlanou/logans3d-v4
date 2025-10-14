@@ -1,15 +1,16 @@
 package about
 
 import (
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index() {
+templ Index(authCtx *auth.Context) {
 	@layout.Base(layout.Meta{
 		Title:       "About - Logan's 3D Creations",
 		Description: "Learn about Logan's 3D printing journey",
 		Keywords:    "3D printing, Logan, about us",
-	}) {
+	}, authCtx) {
 		@AboutContent()
 	}
 }

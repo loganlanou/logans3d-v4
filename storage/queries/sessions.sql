@@ -4,13 +4,13 @@ VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
 RETURNING *;
 
 -- name: GetSessionByToken :one
-SELECT 
+SELECT
     s.*,
     u.id AS user_id,
     u.email,
-    u.name,
+    u.full_name,
     u.google_id,
-    u.avatar_url
+    u.profile_image_url
 FROM user_sessions s
 INNER JOIN users u ON s.user_id = u.id
 WHERE s.session_token = ? AND s.expires_at > CURRENT_TIMESTAMP;
