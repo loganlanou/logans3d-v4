@@ -105,7 +105,6 @@ func validateRequiredEnvVars() {
 	requiredVars := []string{
 		"CLERK_SECRET_KEY",
 		"CLERK_PUBLISHABLE_KEY",
-		"CLERK_FRONTEND_API",
 	}
 
 	var missing []string
