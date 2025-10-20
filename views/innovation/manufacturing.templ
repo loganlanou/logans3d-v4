@@ -1,16 +1,16 @@
 package innovation
 
 import (
-	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Manufacturing(authCtx *auth.Context) {
-	@layout.Base(layout.Meta{
+templ Manufacturing(c echo.Context) {
+	@layout.Base(c, layout.Meta{
 		Title:       "Advanced Manufacturing - Logan's 3D Creations",
 		Description: "Explore our advanced manufacturing capabilities including multi-material printing, precision engineering, and state-of-the-art 3D printing technology.",
 		Keywords:    "advanced manufacturing, 3D printing technology, multi-material printing, precision engineering, digital fabrication",
-	}, authCtx) {
+	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Background Elements -->
 			<div class="absolute inset-0 opacity-15">

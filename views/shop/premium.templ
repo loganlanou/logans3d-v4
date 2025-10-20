@@ -1,8 +1,8 @@
 package shop
 
 import (
+	"github.com/labstack/echo/v4"
 	"fmt"
-	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
@@ -22,12 +22,12 @@ type CollectionTier struct {
 	Products      []ProductWithImage
 }
 
-templ Premium(collections []CollectionTier, featuredProducts []ProductWithImage, authCtx *auth.Context) {
-	@layout.Base(layout.Meta{
+templ Premium(c echo.Context, collections []CollectionTier, featuredProducts []ProductWithImage) {
+	@layout.Base(c, layout.Meta{
 		Title:       "Premium Collections - Logan's 3D Creations",
 		Description: "Discover our premium collection tiers with the most detailed models, bundled discounts, and exclusive variations.",
 		Keywords:    "premium 3D prints, collector items, detailed models, bundle discounts, exclusive collections",
-	}, authCtx) {
+	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Enhanced Animated Background Elements -->
 			<div class="absolute inset-0 opacity-15">

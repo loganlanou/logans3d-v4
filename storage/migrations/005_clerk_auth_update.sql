@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 
 -- Update users table for Clerk integration
-ALTER TABLE users ADD COLUMN clerk_id TEXT UNIQUE;
+ALTER TABLE users ADD COLUMN clerk_id TEXT;
 ALTER TABLE users ADD COLUMN first_name TEXT;
 ALTER TABLE users ADD COLUMN last_name TEXT;
 ALTER TABLE users ADD COLUMN username TEXT;
@@ -13,8 +13,8 @@ ALTER TABLE users ADD COLUMN last_synced_at DATETIME;
 ALTER TABLE users RENAME COLUMN name TO full_name;
 ALTER TABLE users RENAME COLUMN avatar_url TO legacy_avatar_url;
 
--- Create index on clerk_id for fast lookups
-CREATE INDEX idx_users_clerk_id ON users(clerk_id);
+-- Create unique index on clerk_id for fast lookups and uniqueness constraint
+CREATE UNIQUE INDEX idx_users_clerk_id ON users(clerk_id);
 
 -- Update user_sessions table to reference clerk session tokens
 ALTER TABLE user_sessions ADD COLUMN clerk_session_id TEXT;

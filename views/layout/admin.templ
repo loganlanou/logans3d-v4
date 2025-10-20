@@ -1,8 +1,11 @@
 package layout
 
-import "github.com/loganlanou/logans3d-v4/internal/auth"
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
+)
 
-templ AdminBase(title string, authCtx *auth.Context) {
+templ AdminBase(c echo.Context, title string) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -24,7 +27,7 @@ templ AdminBase(title string, authCtx *auth.Context) {
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 		</head>
 		<body class="admin-root">
-			@AdminHeader(authCtx)
+			@AdminHeader(c)
 			<div class="admin-main">
 				{ children... }
 			</div>
@@ -32,7 +35,7 @@ templ AdminBase(title string, authCtx *auth.Context) {
 	</html>
 }
 
-templ AdminHeader(authCtx *auth.Context) {
+templ AdminHeader(c echo.Context) {
 	<header class="admin-header">
 		<div class="flex items-center justify-between">
 			<!-- Logo -->
@@ -51,16 +54,16 @@ templ AdminHeader(authCtx *auth.Context) {
 				<a href="/admin/quotes" class="admin-nav-item">Quotes</a>
 				<a href="/admin/events" class="admin-nav-item">Events</a>
 				<a href="/dev" class="admin-nav-item">Developer</a>
-				if authCtx != nil && authCtx.IsAuthenticated && authCtx.User != nil {
+				if user, ok := auth.GetDBUser(c); ok {
 					<div class="flex items-center space-x-2 px-3 py-1.5 bg-slate-700 rounded-lg">
-						if authCtx.User.HasImage {
-							<img src={ authCtx.User.ImageURL } alt="Admin" class="h-6 w-6 rounded-full"/>
+						if user.ProfileImageUrl.Valid {
+							<img src={ user.ProfileImageUrl.String } alt="Admin" class="h-6 w-6 rounded-full"/>
 						} else {
 							<div class="h-6 w-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-								<span class="text-white text-xs font-bold">{ authCtx.User.FullName[:1] }</span>
+								<span class="text-white text-xs font-bold">{ user.FullName[:1] }</span>
 							</div>
 						}
-						<span class="text-sm text-slate-300">{ authCtx.User.FullName }</span>
+						<span class="text-sm text-slate-300">{ user.FullName }</span>
 					</div>
 				}
 				<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary">View Site</a>

@@ -1,16 +1,16 @@
 package admin
 
 import (
-	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"database/sql"
 	"fmt"
 	"time"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ QuotesList(quotes []db.QuoteRequest, authCtx *auth.Context) {
-	@layout.AdminBase("Quote Requests", authCtx) {
+templ QuotesList(c echo.Context, quotes []db.QuoteRequest) {
+	@layout.AdminBase(c, "Quote Requests") {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">
@@ -157,8 +157,8 @@ templ QuotesList(quotes []db.QuoteRequest, authCtx *auth.Context) {
 	}
 }
 
-templ QuoteDetail(quote db.QuoteRequest, authCtx *auth.Context) {
-	@layout.AdminBase("Quote Details", authCtx) {
+templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
+	@layout.AdminBase(c, "Quote Details") {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">

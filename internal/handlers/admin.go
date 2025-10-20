@@ -15,7 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/internal/types"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -34,8 +33,6 @@ func NewAdminHandler(storage *storage.Storage) *AdminHandler {
 }
 
 func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	products, err := h.storage.Queries.ListProducts(c.Request().Context())
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to fetch products")
@@ -43,12 +40,10 @@ func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
 
 	productsWithImages := h.buildProductsWithImages(c.Request().Context(), products)
 
-	return Render(c, admin.Dashboard(productsWithImages, authCtx))
+	return Render(c, admin.Dashboard(c, productsWithImages))
 }
 
 func (h *AdminHandler) HandleCategoriesTab(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	filter := c.QueryParam("filter")
 	if filter == "" {
 		filter = "all"
@@ -106,7 +101,7 @@ func (h *AdminHandler) HandleCategoriesTab(c echo.Context) error {
 
 	productsWithImages := h.buildProductsWithImages(c.Request().Context(), products)
 
-	return Render(c, admin.CategoriesTab(productsWithImages, categories, filter, authCtx))
+	return Render(c, admin.CategoriesTab(c, productsWithImages, categories, filter))
 }
 
 
@@ -176,8 +171,6 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 }
 
 func (h *AdminHandler) HandleProductForm(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	productID := c.QueryParam("id")
 	var product *db.Product
 
@@ -196,7 +189,7 @@ func (h *AdminHandler) HandleProductForm(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
 	}
 
-	return Render(c, admin.ProductForm(product, categories, authCtx))
+	return Render(c, admin.ProductForm(c, product, categories))
 }
 
 func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
@@ -391,8 +384,6 @@ func (h *AdminHandler) HandleDeleteProduct(c echo.Context) error {
 // Category Management Functions
 
 func (h *AdminHandler) HandleCategoryForm(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	categoryID := c.QueryParam("id")
 	var category *db.Category
 
@@ -406,12 +397,12 @@ func (h *AdminHandler) HandleCategoryForm(c echo.Context) error {
 		}
 	}
 
-	categories, err := h.storage.Queries.ListCategories(c.Request().Context())
+	allCategories, err := h.storage.Queries.ListCategories(c.Request().Context())
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
 	}
 
-	return Render(c, admin.CategoryForm(category, categories, authCtx))
+	return Render(c, admin.CategoryForm(c, category, allCategories))
 }
 
 func (h *AdminHandler) HandleCreateCategory(c echo.Context) error {
@@ -497,8 +488,6 @@ func (h *AdminHandler) HandleDeleteCategory(c echo.Context) error {
 var appStartTime = time.Now()
 
 func (h *AdminHandler) HandleDeveloperDashboard(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	// Get system information
 	sysInfo := types.SystemInfo{
 		AppName:      "Logan's 3D Creations v4",
@@ -547,7 +536,7 @@ func (h *AdminHandler) HandleDeveloperDashboard(c echo.Context) error {
 		dbStats.DatabaseSize = fmt.Sprintf("%.2f MB", float64(stat.Size())/1024/1024)
 	}
 
-	return Render(c, admin.DeveloperDashboard(sysInfo, dbStats, memStats, authCtx))
+	return Render(c, admin.DeveloperDashboard(c, sysInfo, dbStats, memStats))
 }
 
 func (h *AdminHandler) HandleSystemInfo(c echo.Context) error {
@@ -653,8 +642,6 @@ func (h *AdminHandler) HandleGarbageCollect(c echo.Context) error {
 // Orders Management Functions
 
 func (h *AdminHandler) HandleOrdersList(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	status := c.QueryParam("status")
 
 	var orders []db.Order
@@ -670,7 +657,7 @@ func (h *AdminHandler) HandleOrdersList(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch orders")
 	}
 
-	return Render(c, admin.OrdersList(orders, authCtx))
+	return Render(c, admin.OrdersList(c, orders))
 }
 
 func (h *AdminHandler) HandleOrderDetail(c echo.Context) error {
@@ -711,8 +698,6 @@ func (h *AdminHandler) HandleUpdateOrderStatus(c echo.Context) error {
 // Quotes Management Functions
 
 func (h *AdminHandler) HandleQuotesList(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	status := c.QueryParam("status")
 
 	var quotes []db.QuoteRequest
@@ -728,12 +713,10 @@ func (h *AdminHandler) HandleQuotesList(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch quote requests")
 	}
 
-	return Render(c, admin.QuotesList(quotes, authCtx))
+	return Render(c, admin.QuotesList(c, quotes))
 }
 
 func (h *AdminHandler) HandleQuoteDetail(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	quoteID := c.Param("id")
 
 	quote, err := h.storage.Queries.GetQuoteRequest(c.Request().Context(), quoteID)
@@ -744,7 +727,7 @@ func (h *AdminHandler) HandleQuoteDetail(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch quote request")
 	}
 
-	return Render(c, admin.QuoteDetail(quote, authCtx))
+	return Render(c, admin.QuoteDetail(c, quote))
 }
 
 func (h *AdminHandler) HandleUpdateQuote(c echo.Context) error {
@@ -794,8 +777,6 @@ func (h *AdminHandler) HandleUpdateQuote(c echo.Context) error {
 // Events Management Functions
 
 func (h *AdminHandler) HandleEventsList(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	filter := c.QueryParam("filter")
 
 	var events []db.Event
@@ -816,12 +797,10 @@ func (h *AdminHandler) HandleEventsList(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch events")
 	}
 
-	return Render(c, admin.EventsList(events, authCtx))
+	return Render(c, admin.EventsList(c, events))
 }
 
 func (h *AdminHandler) HandleEventForm(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-
 	eventID := c.QueryParam("id")
 	var event *db.Event
 
@@ -835,7 +814,7 @@ func (h *AdminHandler) HandleEventForm(c echo.Context) error {
 		}
 	}
 
-	return Render(c, admin.EventForm(event, authCtx))
+	return Render(c, admin.EventForm(c, event))
 }
 
 func (h *AdminHandler) HandleCreateEvent(c echo.Context) error {

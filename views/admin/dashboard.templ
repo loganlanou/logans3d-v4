@@ -2,14 +2,14 @@ package admin
 
 import (
 	"fmt"
-	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/types"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Dashboard(products []types.ProductWithImage, authCtx *auth.Context) {
-	@layout.AdminBase("Dashboard", authCtx) {
+templ Dashboard(c echo.Context, products []types.ProductWithImage) {
+	@layout.AdminBase(c, "Dashboard") {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">

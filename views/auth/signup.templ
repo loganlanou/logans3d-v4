@@ -1,0 +1,48 @@
+package auth
+
+templ SignUp(publishableKey string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>Sign Up - Logan's 3D Creations</title>
+			<link href="/public/css/public-styles.css" rel="stylesheet"/>
+			<!-- Clerk JS SDK Script with publishable key -->
+			<script
+				data-clerk-publishable-key={ publishableKey }
+				src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+				crossorigin="anonymous"
+			></script>
+		</head>
+		<body class="bg-gray-900">
+			<div class="min-h-screen flex items-center justify-center">
+				<!-- Target container for Clerk SignUp component -->
+				<div id="sign-up"></div>
+			</div>
+			<script>
+			async function initClerk() {
+				try {
+					await window.Clerk.load();
+
+					// Listen for sign-up completion to force full page reload
+					window.Clerk.addListener((event) => {
+						if (event.type === 'session' && event.session) {
+							// Force full page reload to update server-side nav
+							window.location.href = '/';
+						}
+					});
+
+					window.Clerk.mountSignUp(document.getElementById('sign-up'), {
+						afterSignUpUrl: '/',
+						signInUrl: '/login'
+					});
+				} catch (err) {
+					console.error('Failed to initialize Clerk:', err);
+				}
+			}
+			window.addEventListener('load', initClerk);
+			</script>
+		</body>
+	</html>
+}

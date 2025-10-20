@@ -1,16 +1,16 @@
 package admin
 
 import (
-	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"database/sql"
 	"fmt"
 	"time"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ OrdersList(orders []db.Order, authCtx *auth.Context) {
-	@layout.AdminBase("Orders", authCtx) {
+templ OrdersList(c echo.Context, orders []db.Order) {
+	@layout.AdminBase(c, "Orders") {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">

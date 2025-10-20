@@ -1,14 +1,14 @@
 package admin
 
 import (
-	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"fmt"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/types"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ DeveloperDashboard(sysInfo types.SystemInfo, dbStats types.DatabaseStats, memStats types.MemoryStats, authCtx *auth.Context) {
-	@layout.AdminBase("Developer Dashboard", authCtx) {
+templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types.DatabaseStats, memStats types.MemoryStats) {
+	@layout.AdminBase(c, "Developer Dashboard") {
 		<div class="dev-container">
 			<!-- Header -->
 			<header class="dev-header">

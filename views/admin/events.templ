@@ -1,15 +1,15 @@
 package admin
 
 import (
-	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"fmt"
 	"time"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ EventsList(events []db.Event, authCtx *auth.Context) {
-	@layout.AdminBase("Events", authCtx) {
+templ EventsList(c echo.Context, events []db.Event) {
+	@layout.AdminBase(c, "Events") {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">
@@ -144,8 +144,8 @@ templ EventsList(events []db.Event, authCtx *auth.Context) {
 	}
 }
 
-templ EventForm(event *db.Event, authCtx *auth.Context) {
-	@layout.AdminBase("Event Form", authCtx) {
+templ EventForm(c echo.Context, event *db.Event) {
+	@layout.AdminBase(c, "Event Form") {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-8">

@@ -3,6 +3,7 @@ package layout
 import (
 	"fmt"
 	"time"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 )
 
@@ -14,7 +15,7 @@ type Meta struct {
 	CanonicalURL string
 }
 
-templ Base(meta Meta, authCtx *auth.Context) {
+templ Base(c echo.Context, meta Meta) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -44,7 +45,7 @@ templ Base(meta Meta, authCtx *auth.Context) {
 			<script src="/public/js/scroll-control.js"></script>
 		</head>
 		<body class="min-h-screen bg-gray-50 custom-scrollbar">
-			@Header(authCtx)
+			@Header(c)
 			<main>
 				{ children... }
 			</main>
@@ -57,7 +58,7 @@ templ Base(meta Meta, authCtx *auth.Context) {
 	</html>
 }
 
-templ Header(authCtx *auth.Context) {
+templ Header(c echo.Context) {
 	<header class="nav-primary">
 		<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 			<div class="flex h-16 items-center justify-between">
@@ -81,19 +82,19 @@ templ Header(authCtx *auth.Context) {
 				<!-- Auth, Cart and Mobile menu button -->
 				<div class="flex items-center space-x-4">
 					<!-- User Menu / Auth -->
-					if authCtx != nil && authCtx.IsAuthenticated {
+					if user, ok := auth.GetDBUser(c); ok {
 						<!-- Authenticated User Menu -->
 						<div class="hidden md:block" x-data="{ open: false }">
 							<div class="relative">
 								<button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2">
-									if authCtx.User.HasImage {
-										<img src={ authCtx.User.ImageURL } alt={ authCtx.User.FullName } class="h-8 w-8 rounded-full"/>
+									if user.ProfileImageUrl.Valid {
+										<img src={ user.ProfileImageUrl.String } alt={ user.FullName } class="h-8 w-8 rounded-full"/>
 									} else {
 										<div class="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
-											{ string([]rune(authCtx.User.FullName)[0]) }
+											{ string([]rune(user.FullName)[0]) }
 										</div>
 									}
-									<span class="font-medium">{ authCtx.User.FullName }</span>
+									<span class="font-medium">{ user.FullName }</span>
 									<svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 									</svg>
@@ -151,11 +152,11 @@ templ Header(authCtx *auth.Context) {
 				</div>
 			</div>
 		</div>
-		@MobileMenu(authCtx)
+		@MobileMenu(c)
 	</header>
 }
 
-templ MobileMenu(authCtx *auth.Context) {
+templ MobileMenu(c echo.Context) {
 	<div
 		x-data="{ open: false }"
 		@toggle-menu.window="open = !open"
@@ -179,7 +180,7 @@ templ MobileMenu(authCtx *auth.Context) {
 				<li><a href="/contact" class="mobile-nav-link" @click="open = false">Contact</a></li>
 				<li><button class="cart-preview-btn mobile-nav-link text-left w-full" @click="open = false">View Cart</button></li>
 				<li class="border-t border-gray-200 pt-2 mt-2">
-					if authCtx != nil && authCtx.IsAuthenticated {
+					if _, ok := auth.GetDBUser(c); ok {
 						<a href="/account" class="mobile-nav-link" @click="open = false">My Account</a>
 						<a href="/admin" class="mobile-nav-link" @click="open = false">Admin Dashboard</a>
 						<a href="/logout" class="mobile-nav-link text-left w-full text-red-600" @click="open = false">Sign Out</a>

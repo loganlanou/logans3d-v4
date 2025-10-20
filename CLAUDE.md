@@ -74,3 +74,28 @@ This project uses **direnv** to manage environment variables:
 To make environment changes:
 1. Update `.envrc`
 2. Run `direnv allow`
+
+## Image Path Architecture
+
+**IMPORTANT: Product images follow a strict separation between database storage and view rendering.**
+
+### Database Storage (product_images table)
+- **ONLY store the filename** (e.g., `pachycephalosaurus.jpg`)
+- **NEVER store paths** like `/public/images/products/` in the database
+- This keeps the database portable and allows path changes without database migrations
+
+### View Layer (Service Handlers)
+- The view layer constructs the full public path when rendering
+- Pattern: `imageURL = "/public/images/products/" + filename`
+- This happens in:
+  - `service/service.go` - `handleShop()`, `handleShopCategory()`, `handlePremium()`, `handleProduct()`
+  - `internal/handlers/admin.go` - Admin product listings
+
+### Verification
+- Run `sqlite3 ./data/database.db "SELECT COUNT(*) FROM product_images WHERE image_url LIKE '%/%';"`
+- Should return `0` - no paths in the database
+- The script `scripts/fix-image-urls-correct/main.go` can clean up any incorrect path storage
+
+### File System Location
+- Product images are stored at: `./public/images/products/`
+- Served at URL: `http://localhost:8000/public/images/products/filename.jpg`

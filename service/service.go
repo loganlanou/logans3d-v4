@@ -16,7 +16,6 @@ import (
 	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
-	"github.com/loganlanou/logans3d-v4/internal/middleware"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -70,69 +69,78 @@ func New(storage *storage.Storage, config *Config) *Service {
 }
 
 func (s *Service) RegisterRoutes(e *echo.Echo) {
-	// Initialize Clerk SDK with secret key
-	clerk.SetKey(os.Getenv("CLERK_SECRET_KEY"))
+	// Initialize Clerk SDK with secret key - this configures the default backend
+	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
+	if clerkSecretKey == "" {
+		slog.Error("CLERK_SECRET_KEY is not set!")
+	} else {
+		slog.Debug("Clerk SDK initialized", "secret_key_prefix", clerkSecretKey[:min(len(clerkSecretKey), 10)])
+	}
+	clerk.SetKey(clerkSecretKey)
 
-	// Apply global middleware - NEW: Server-side Clerk auth with database sync
-	e.Use(middleware.ClerkAuthMiddleware(s.storage))
-
-	// Static files
+	// Static files - no auth middleware
 	e.Static("/public", "public")
 
-	// Auth routes (public) - NEW: Server-side only, no JavaScript
-	e.GET("/login", s.authHandler.HandleLogin)
-	e.GET("/sign-up", s.authHandler.HandleSignUp)
-	e.GET("/auth/callback", s.authHandler.HandleAuthCallback)
-	e.GET("/account", s.authHandler.HandleAccount)
+	// Logout - no auth middleware (must clear cookies without re-authentication)
 	e.GET("/logout", s.authHandler.HandleLogout)
 
+	// All other routes get auth middleware
+	withAuth := e.Group("")
+	withAuth.Use(auth.ClerkHandshakeMiddleware())
+	withAuth.Use(auth.ClerkAuthMiddleware(s.storage))
+
+	// Auth routes (public) - Clerk JavaScript SDK components
+	withAuth.GET("/login", s.authHandler.HandleLogin)
+	withAuth.GET("/signup", s.authHandler.HandleSignUp)
+	withAuth.GET("/sign-up", s.authHandler.HandleSignUp) // Support both /signup and /sign-up
+
 	// Home page
-	e.GET("/", s.handleHome)
+	withAuth.GET("/", s.handleHome)
 
 	// Static pages
-	e.GET("/about", s.handleAbout)
-	e.GET("/events", s.handleEvents)
-	e.GET("/contact", s.handleContact)
-	e.GET("/portfolio", s.handlePortfolio)
-	e.GET("/innovation", s.handleInnovation)
-	e.GET("/innovation/manufacturing", s.handleManufacturing)
+	withAuth.GET("/about", s.handleAbout)
+	withAuth.GET("/events", s.handleEvents)
+	withAuth.GET("/contact", s.handleContact)
+	withAuth.GET("/portfolio", s.handlePortfolio)
+	withAuth.GET("/innovation", s.handleInnovation)
+	withAuth.GET("/innovation/manufacturing", s.handleManufacturing)
 
 	// Legal pages
-	e.GET("/privacy", s.handlePrivacy)
-	e.GET("/terms", s.handleTerms)
-	e.GET("/shipping", s.handleShipping)
-	e.GET("/custom-policy", s.handleCustomPolicy)
-	
+	withAuth.GET("/privacy", s.handlePrivacy)
+	withAuth.GET("/terms", s.handleTerms)
+	withAuth.GET("/shipping", s.handleShipping)
+	withAuth.GET("/custom-policy", s.handleCustomPolicy)
+
 	// Shop routes
-	shop := e.Group("/shop")
+	shop := withAuth.Group("/shop")
 	shop.GET("", s.handleShop)
 	shop.GET("/premium", s.handlePremium)
 	shop.GET("/product/:slug", s.handleProduct)
 	shop.GET("/category/:slug", s.handleCategory)
-	
+
 	// Cart routes
-	e.GET("/cart", s.handleCart)
+	withAuth.GET("/cart", s.handleCart)
 
 	// Cart API - all routes public for now
-	e.GET("/api/cart", s.handleGetCart)
-	e.POST("/api/cart/add", s.handleAddToCart)
-	e.DELETE("/api/cart/item/:id", s.handleRemoveFromCart)
-	e.PUT("/api/cart/item/:id", s.handleUpdateCartItem)
-	
+	withAuth.GET("/api/cart", s.handleGetCart)
+	withAuth.POST("/api/cart/add", s.handleAddToCart)
+	withAuth.DELETE("/api/cart/item/:id", s.handleRemoveFromCart)
+	withAuth.PUT("/api/cart/item/:id", s.handleUpdateCartItem)
+
 	// Custom quote routes
-	e.GET("/custom", s.handleCustom)
-	e.POST("/custom/quote", s.handleCustomQuote)
-	
+	withAuth.GET("/custom", s.handleCustom)
+	withAuth.POST("/custom/quote", s.handleCustomQuote)
+
 	// Stripe Checkout routes
-	e.POST("/checkout/create-session", s.handleCreateStripeCheckoutSession)
-	e.POST("/checkout/create-session-single", s.handleCreateStripeCheckoutSessionSingle)
-	e.POST("/checkout/create-session-multi", s.handleCreateStripeCheckoutSessionMulti)
-	e.POST("/checkout/create-session-cart", s.handleCreateStripeCheckoutSessionCart)
-	e.GET("/checkout/success", s.handleCheckoutSuccess)
-	e.GET("/checkout/cancel", s.handleCheckoutCancel)
-	
+	withAuth.POST("/checkout/create-session", s.handleCreateStripeCheckoutSession)
+	withAuth.POST("/checkout/create-session-single", s.handleCreateStripeCheckoutSessionSingle)
+	withAuth.POST("/checkout/create-session-multi", s.handleCreateStripeCheckoutSessionMulti)
+	withAuth.POST("/checkout/create-session-cart", s.handleCreateStripeCheckoutSessionCart)
+	withAuth.GET("/checkout/success", s.handleCheckoutSuccess)
+	withAuth.GET("/checkout/cancel", s.handleCheckoutCancel)
+
 	// Payment API routes
-	api := e.Group("/api")
+	api := withAuth.Group("/api")
 	api.POST("/payment/create-intent", s.paymentHandler.CreatePaymentIntent)
 	api.POST("/payment/create-customer", s.paymentHandler.CreateCustomer)
 	api.POST("/stripe/webhook", s.paymentHandler.HandleWebhook)
@@ -149,7 +157,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	
 	// Admin routes - protected with RequireClerkAuth middleware
 	adminHandler := handlers.NewAdminHandler(s.storage)
-	admin := e.Group("/admin", middleware.RequireClerkAuth())
+	admin := withAuth.Group("/admin", auth.RequireClerkAuth())
 	admin.GET("", adminHandler.HandleAdminDashboard)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
 	admin.GET("/product/new", adminHandler.HandleProductForm)
@@ -191,7 +199,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	}
 	
 	// Developer routes - protected with RequireClerkAuth middleware
-	dev := e.Group("/dev", middleware.RequireClerkAuth())
+	dev := withAuth.Group("/dev", auth.RequireClerkAuth())
 	dev.GET("", adminHandler.HandleDeveloperDashboard)
 	dev.GET("/system", adminHandler.HandleSystemInfo)
 	dev.GET("/memory", adminHandler.HandleMemoryStats)
@@ -199,38 +207,38 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	dev.GET("/config", adminHandler.HandleConfigInfo)
 	dev.POST("/gc", adminHandler.HandleGarbageCollect)
 	
-	// Health check
+	// Health check - no auth
 	e.GET("/health", s.handleHealth)
 }
 
 // Basic handler implementations
 func (s *Service) handleHome(c echo.Context) error {
 	slog.Info("Home page requested", "ip", c.RealIP())
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, home.Index(authCtx))
+	return Render(c, home.Index(c))
 }
 
 func (s *Service) handleAbout(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, about.Index(authCtx))
+	return Render(c, about.Index(c))
 }
 
 func (s *Service) handleShop(c echo.Context) error {
 	ctx := c.Request().Context()
-	
+
 	// Get all categories for filter
 	categories, err := s.storage.Queries.ListCategories(ctx)
 	if err != nil {
 		slog.Error("failed to fetch categories", "error", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load categories")
 	}
-	
+	slog.Debug("fetched categories", "count", len(categories))
+
 	// Get all products
 	products, err := s.storage.Queries.ListProducts(ctx)
 	if err != nil {
 		slog.Error("failed to fetch products", "error", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load products")
 	}
+	slog.Debug("fetched products", "count", len(products))
 	
 	// Combine with images
 	productsWithImages := make([]shop.ProductWithImage, 0, len(products))
@@ -255,9 +263,8 @@ func (s *Service) handleShop(c echo.Context) error {
 				rawImageURL = images[0].ImageUrl
 			}
 
-			// Build the full path - database already contains /images/products/ path
 			if rawImageURL != "" {
-				imageURL = "/public" + rawImageURL
+				imageURL = "/public/images/products/" + rawImageURL
 			}
 		}
 		
@@ -267,8 +274,7 @@ func (s *Service) handleShop(c echo.Context) error {
 		})
 	}
 
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, shop.Index(productsWithImages, categories, nil, authCtx))
+	return Render(c, shop.Index(c, productsWithImages, categories, nil))
 }
 
 func (s *Service) handlePremium(c echo.Context) error {
@@ -473,9 +479,8 @@ func (s *Service) handlePremium(c echo.Context) error {
 				rawImageURL = images[0].ImageUrl
 			}
 
-			// Build the full path - database already contains /images/products/ path
 			if rawImageURL != "" {
-				imageURL = "/public" + rawImageURL
+				imageURL = "/public/images/products/" + rawImageURL
 			}
 		}
 		
@@ -486,8 +491,7 @@ func (s *Service) handlePremium(c echo.Context) error {
 		count++
 	}
 
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, shop.Premium(collections, featuredProducts, authCtx))
+	return Render(c, shop.Premium(c, collections, featuredProducts))
 }
 
 func (s *Service) handleProduct(c echo.Context) error {
@@ -521,8 +525,7 @@ func (s *Service) handleProduct(c echo.Context) error {
 		category = db.Category{Name: "Uncategorized", Slug: "uncategorized"}
 	}
 
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, shop.ProductDetail(product, images, category, authCtx))
+	return Render(c, shop.Product(c, product, category, images))
 }
 
 func (s *Service) handleCategory(c echo.Context) error {
@@ -573,9 +576,8 @@ func (s *Service) handleCategory(c echo.Context) error {
 				rawImageURL = images[0].ImageUrl
 			}
 
-			// Build the full path - database already contains /images/products/ path
 			if rawImageURL != "" {
-				imageURL = "/public" + rawImageURL
+				imageURL = "/public/images/products/" + rawImageURL
 			}
 		}
 		
@@ -585,15 +587,13 @@ func (s *Service) handleCategory(c echo.Context) error {
 		})
 	}
 
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, shop.Index(productsWithImages, categories, &category, authCtx))
+	return Render(c, shop.Index(c, productsWithImages, categories, &category))
 }
 
 // Cart handlers removed - replaced with Stripe Checkout
 
 func (s *Service) handleCustom(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, custom.Index(authCtx))
+	return Render(c, custom.Index(c))
 }
 
 func (s *Service) handleCustomQuote(c echo.Context) error {
@@ -712,8 +712,7 @@ func (s *Service) handleCheckoutSuccess(c echo.Context) error {
 
 // handleCart renders the shopping cart page
 func (s *Service) handleCart(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, shop.Cart(authCtx))
+	return Render(c, shop.Cart(c))
 }
 
 // handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)
@@ -962,48 +961,39 @@ func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 }
 
 func (s *Service) handleEvents(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, events.Index(authCtx))
+	return Render(c, events.Index(c))
 }
 
 func (s *Service) handleContact(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, contact.Index(authCtx))
+	return Render(c, contact.Index(c))
 }
 
 func (s *Service) handlePortfolio(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, portfolio.Index(authCtx))
+	return Render(c, portfolio.Index(c))
 }
 
 func (s *Service) handleInnovation(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, innovation.Index(authCtx))
+	return Render(c, innovation.Index(c))
 }
 
 func (s *Service) handleManufacturing(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, innovation.Manufacturing(authCtx))
+	return Render(c, innovation.Manufacturing(c))
 }
 
 func (s *Service) handlePrivacy(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, legal.Privacy(authCtx))
+	return Render(c, legal.Privacy(c))
 }
 
 func (s *Service) handleTerms(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, legal.Terms(authCtx))
+	return Render(c, legal.Terms(c))
 }
 
 func (s *Service) handleShipping(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, legal.Shipping(authCtx))
+	return Render(c, legal.Shipping(c))
 }
 
 func (s *Service) handleCustomPolicy(c echo.Context) error {
-	authCtx := auth.GetAuthContext(c)
-	return Render(c, legal.CustomPolicy(authCtx))
+	return Render(c, legal.CustomPolicy(c))
 }
 
 func (s *Service) handleHealth(c echo.Context) error {

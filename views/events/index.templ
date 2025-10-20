@@ -1,16 +1,16 @@
 package events
 
 import (
-	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index(authCtx *auth.Context) {
-	@layout.Base(layout.Meta{
+templ Index(c echo.Context) {
+	@layout.Base(c, layout.Meta{
 		Title:       "Upcoming Events - Logan's 3D Creations",
 		Description: "Join Logan at upcoming maker fairs, craft shows, and educational workshops. Experience 3D printing demonstrations and see our latest creations in person.",
 		Keywords:    "3D printing events, maker fairs, workshops, demonstrations, craft shows",
-	}, authCtx) {
+	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

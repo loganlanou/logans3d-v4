@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -14,6 +15,9 @@ import (
 
 func main() {
 	// slog is configured in slog.go via init()
+
+	// Validate required environment variables
+	validateRequiredEnvVars()
 
 	// Load configuration
 	config, err := service.LoadConfig()
@@ -91,6 +95,34 @@ func main() {
 	
 	if err := e.Start(addr); err != nil {
 		slog.Error("server failed", "error", err)
+		os.Exit(1)
+	}
+}
+
+func validateRequiredEnvVars() {
+	requiredVars := []string{
+		"CLERK_SECRET_KEY",
+		"CLERK_PUBLISHABLE_KEY",
+		"CLERK_FRONTEND_API",
+	}
+
+	var missing []string
+	for _, envVar := range requiredVars {
+		if os.Getenv(envVar) == "" {
+			missing = append(missing, envVar)
+		}
+	}
+
+	if len(missing) > 0 {
+		slog.Error("missing required environment variables",
+			"missing", strings.Join(missing, ", "),
+			"hint", "add these to .envrc and run 'direnv allow'",
+		)
+		fmt.Fprintf(os.Stderr, "\nRequired environment variables missing:\n")
+		for _, v := range missing {
+			fmt.Fprintf(os.Stderr, "  - %s\n", v)
+		}
+		fmt.Fprintf(os.Stderr, "\nAdd these to .envrc and run 'direnv allow'\n\n")
 		os.Exit(1)
 	}
 }
