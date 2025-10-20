@@ -2,6 +2,7 @@ package layout
 
 import (
 	"fmt"
+	"os"
 	"time"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
@@ -34,6 +35,12 @@ templ Base(c echo.Context, meta Meta) {
 			<link rel="icon" type="image/png" href="/public/images/favicon.png"/>
 			<!-- CSS -->
 			<link rel="stylesheet" href="/public/css/public-styles.css"/>
+			<!-- Clerk JS SDK for automatic token refresh -->
+			<script
+				data-clerk-publishable-key={ os.Getenv("CLERK_PUBLISHABLE_KEY") }
+				src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+				crossorigin="anonymous"
+			></script>
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -54,6 +61,16 @@ templ Base(c echo.Context, meta Meta) {
 			<!-- Cart Preview Modal -->
 			@CartModal()
 
+			<!-- Initialize Clerk for token refresh -->
+			<script>
+				window.addEventListener('load', async function() {
+					try {
+						await window.Clerk.load();
+					} catch (err) {
+						console.error('Failed to load Clerk:', err);
+					}
+				});
+			</script>
 		</body>
 	</html>
 }

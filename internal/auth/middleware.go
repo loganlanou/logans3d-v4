@@ -9,9 +9,10 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/clerk/clerk-sdk-go/v2"
-	clerkhttp "github.com/clerk/clerk-sdk-go/v2/http"
+	"github.com/clerk/clerk-sdk-go/v2/jwt"
 	"github.com/clerk/clerk-sdk-go/v2/user"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage"
@@ -53,62 +54,65 @@ func ClerkHandshakeMiddleware() echo.MiddlewareFunc {
 }
 
 // ClerkAuthMiddleware verifies Clerk session tokens and loads user from DB
-// This middleware is OPTIONAL - it allows unauthenticated requests through (matches corp's WithAuth)
+// This middleware is OPTIONAL - it allows unauthenticated requests through
+// Uses direct JWT verification (proper approach for SSR)
 func ClerkAuthMiddleware(storage *storage.Storage) echo.MiddlewareFunc {
-	authMiddleware := clerkhttp.WithHeaderAuthorization(
-		clerkhttp.AuthorizationJWTExtractor(extractSessionToken),
-	)
-
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			// DEBUG: Log all cookies to see what Clerk might have set
-			for _, cookie := range c.Request().Cookies() {
-				slog.Debug("=== MIDDLEWARE: Cookie available ===", "name", cookie.Name, "value_prefix", cookie.Value[:min(len(cookie.Value), 20)])
-			}
+			// Extract session token from cookie
+			sessionToken := extractSessionToken(c.Request())
 
-			handlerCalled := false
-
-			// Wrap the Echo handler as http.Handler for clerkhttp middleware
-			authMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				handlerCalled = true
-
-				// Check if Clerk successfully verified the session (optional - no failure if missing)
-				if claims, ok := clerk.SessionClaimsFromContext(r.Context()); ok {
-					slog.Debug("=== MIDDLEWARE: Session claims verified ===", "user_id", claims.Subject)
-
-					// Get or create user from Clerk user ID
-					dbUser, err := getOrCreateUser(r.Context(), storage, claims.Subject)
-					if err != nil {
-						slog.Error("=== MIDDLEWARE: Failed to get/create user ===", "error", err)
-						c.Set(IsAuthenticatedKey, false)
-						next(c)
-						return
-					}
-
-					slog.Debug("=== MIDDLEWARE: User authenticated ===", "user_id", dbUser.ID, "email", dbUser.Email)
-
-					// Store user in Echo context
-					c.Set(DBUserKey, dbUser)
-					c.Set(IsAuthenticatedKey, true)
-					c.SetRequest(r)
-				} else {
-					slog.Debug("=== MIDDLEWARE: No valid session claims ===")
-					c.Set(IsAuthenticatedKey, false)
-				}
-
-				next(c)
-			})).ServeHTTP(c.Response().Writer, c.Request())
-
-			// If handler wasn't called, clerkhttp silently rejected the token
-			// This can happen after restarts when JWKS cache is cold
-			// Allow through as unauthenticated
-			if !handlerCalled {
-				slog.Warn("=== MIDDLEWARE: Clerk did not call handler - allowing as unauthenticated ===")
+			if sessionToken == "" {
+				slog.Debug("=== MIDDLEWARE: No session token found ===")
 				c.Set(IsAuthenticatedKey, false)
 				return next(c)
 			}
 
-			return nil
+			slog.Debug("=== MIDDLEWARE: Found session token ===", "token_prefix", sessionToken[:min(len(sessionToken), 20)])
+
+			// Verify JWT using Clerk SDK (proper SSR approach)
+			claims, err := jwt.Verify(c.Request().Context(), &jwt.VerifyParams{
+				Token: sessionToken,
+			})
+
+			if err != nil {
+				slog.Warn("=== MIDDLEWARE: JWT verification failed - clearing cookies ===", "error", err)
+				clearAuthCookie(c)
+				c.Set(IsAuthenticatedKey, false)
+				return next(c)
+			}
+
+			// Log token expiry details
+			var timeToExpiry int64
+			var expiryTime, issuedTime string
+			if claims.Expiry != nil {
+				timeToExpiry = *claims.Expiry - time.Now().Unix()
+				expiryTime = time.Unix(*claims.Expiry, 0).Format(time.RFC3339)
+			}
+			if claims.IssuedAt != nil {
+				issuedTime = time.Unix(*claims.IssuedAt, 0).Format(time.RFC3339)
+			}
+			slog.Debug("=== MIDDLEWARE: JWT verified ===",
+				"user_id", claims.Subject,
+				"expires_at", expiryTime,
+				"issued_at", issuedTime,
+				"seconds_until_expiry", timeToExpiry)
+
+			// Get or create user from Clerk user ID
+			dbUser, err := getOrCreateUser(c.Request().Context(), storage, claims.Subject)
+			if err != nil {
+				slog.Error("=== MIDDLEWARE: Failed to get/create user ===", "error", err)
+				c.Set(IsAuthenticatedKey, false)
+				return next(c)
+			}
+
+			slog.Debug("=== MIDDLEWARE: User authenticated ===", "user_id", dbUser.ID, "email", dbUser.Email)
+
+			// Store user in Echo context
+			c.Set(DBUserKey, dbUser)
+			c.Set(IsAuthenticatedKey, true)
+
+			return next(c)
 		}
 	}
 }
@@ -257,5 +261,3 @@ func RequireClerkAuth() echo.MiddlewareFunc {
 		}
 	}
 }
-
-

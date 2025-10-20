@@ -1462,5 +1462,7 @@ func (s *Service) handleShippingTest(c echo.Context) error {
 
 // Render renders a templ component and writes it to the response
 func Render(c echo.Context, component templ.Component) error {
-	return component.Render(c.Request().Context(), c.Response().Writer)
+	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
+	// Don't call WriteHeader here - let Echo handle it on first Write()
+	return component.Render(c.Request().Context(), c.Response())
 }

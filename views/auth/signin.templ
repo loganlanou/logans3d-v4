@@ -28,6 +28,13 @@ templ SignIn(publishableKey string, redirectURL string) {
 					const signInElement = document.getElementById('sign-in');
 					const redirectUrl = signInElement.dataset.redirectUrl;
 
+					// Check if user already has an active session
+					if (window.Clerk.session) {
+						console.log('User already signed in, redirecting...');
+						window.location.href = redirectUrl;
+						return;
+					}
+
 					// Listen for sign-in completion to force full page reload
 					window.Clerk.addListener((event) => {
 						if (event.type === 'session' && event.session) {

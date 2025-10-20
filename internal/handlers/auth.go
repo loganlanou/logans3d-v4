@@ -31,6 +31,10 @@ func (h *AuthHandler) HandleLogin(c echo.Context) error {
 
 	slog.Info("Rendering sign-in page", "redirect_url", redirectURL)
 
+	// Clear any existing Clerk cookies to prevent stale session issues
+	// This ensures a clean slate when user explicitly navigates to /login
+	clearClerkCookies(c)
+
 	// Render the sign-in template with Clerk JS SDK
 	return auth.SignIn(h.publishableKey, redirectURL).Render(c.Request().Context(), c.Response().Writer)
 }
