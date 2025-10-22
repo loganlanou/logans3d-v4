@@ -175,8 +175,7 @@ INSERT INTO box_catalog (id, sku, name, length_inches, width_inches, height_inch
 -- +goose Down
 -- +goose StatementBegin
 
-ALTER TABLE products DROP COLUMN shipping_category;
-
+-- Drop indexes first
 DROP INDEX IF EXISTS idx_products_shipping_category;
 DROP INDEX IF EXISTS idx_box_catalog_is_active;
 DROP INDEX IF EXISTS idx_box_catalog_sku;
@@ -185,9 +184,52 @@ DROP INDEX IF EXISTS idx_shipping_labels_tracking_number;
 DROP INDEX IF EXISTS idx_shipping_labels_order_id;
 DROP INDEX IF EXISTS idx_order_shipping_selection_order_id;
 
+-- Drop tables
 DROP TABLE IF EXISTS shipping_labels;
 DROP TABLE IF EXISTS order_shipping_selection;
 DROP TABLE IF EXISTS box_catalog;
 DROP TABLE IF EXISTS shipping_config;
+
+-- SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
+-- Recreate products table without shipping_category column (using schema from migration 001)
+CREATE TABLE products_new (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    description TEXT,
+    short_description TEXT,
+    price_cents INTEGER NOT NULL DEFAULT 0,
+    category_id TEXT REFERENCES categories(id),
+    sku TEXT,
+    stock_quantity INTEGER DEFAULT 0,
+    low_stock_threshold INTEGER DEFAULT 5,
+    weight_grams INTEGER,
+    dimensions_length_mm INTEGER,
+    dimensions_width_mm INTEGER,
+    dimensions_height_mm INTEGER,
+    lead_time_days INTEGER DEFAULT 7,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_featured BOOLEAN DEFAULT FALSE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Copy data (excluding shipping_category)
+INSERT INTO products_new SELECT
+    id, name, slug, description, short_description, price_cents, category_id, sku,
+    stock_quantity, low_stock_threshold, weight_grams, dimensions_length_mm,
+    dimensions_width_mm, dimensions_height_mm, lead_time_days, is_active, is_featured,
+    created_at, updated_at
+FROM products;
+
+-- Drop old table and rename new one
+DROP TABLE products;
+ALTER TABLE products_new RENAME TO products;
+
+-- Recreate original indexes on products table (from migration 001 and 003)
+CREATE UNIQUE INDEX idx_products_slug ON products(slug);
+CREATE UNIQUE INDEX idx_products_name ON products(name);
+CREATE INDEX idx_products_category_id ON products(category_id);
+CREATE INDEX idx_products_is_active ON products(is_active);
 
 -- +goose StatementEnd

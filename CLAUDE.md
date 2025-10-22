@@ -63,6 +63,64 @@ All development logs are **always available** in the `./tmp/` directory:
   top-level `./db/` directory (actual database files) and the `./storage/db/`
   directory (generated Go database code)
 
+### Database Migrations
+
+**CRITICAL: Migrations run automatically on server startup.**
+
+- Migrations are embedded in the binary using `//go:embed` in `storage/storage.go`
+- They run automatically after database connection in `storage.New()`
+- Goose tracks which migrations have been applied and only runs new ones
+- Migration files are located in `./storage/migrations/`
+
+**IMPORTANT: Database Schema Changes MUST Be Made Via Migrations**
+
+AI assistants must NEVER make database schema changes directly. All schema changes MUST be made through migration files.
+
+### Creating and Testing Migrations
+
+When creating a new migration:
+
+1. **Create the migration file**:
+   ```bash
+   goose -dir storage/migrations create migration_name sql
+   ```
+
+2. **Write the Up and Down migrations**:
+   - The `Up` section applies the change
+   - The `Down` section MUST correctly reverse the change
+   - For SQLite, remember that `DROP COLUMN` is not supported - you must recreate the table
+
+3. **ALWAYS test migrations before committing**:
+   ```bash
+   # Delete local database (safe pre-launch)
+   rm -f ./data/database.db*
+
+   # Test up
+   goose -dir storage/migrations sqlite3 ./data/database.db up
+
+   # Test down (reset runs all down migrations)
+   goose -dir storage/migrations sqlite3 ./data/database.db reset
+
+   # Test up again
+   goose -dir storage/migrations sqlite3 ./data/database.db up
+   ```
+
+4. **SQLite-specific considerations**:
+   - SQLite doesn't support `DROP COLUMN` - you must recreate the table
+   - When recreating tables in Down migrations, use the exact schema from the previous migration state
+   - Drop indexes BEFORE attempting table recreation
+   - Recreate all indexes that existed before your migration
+
+5. **Never commit untested migrations** - broken Down migrations will cause issues for other developers
+
+### Migration Best Practices
+
+- **Idempotent**: Migrations should be safe to run multiple times
+- **Reversible**: Every Up migration must have a working Down migration
+- **Atomic**: Each migration should represent a single logical change
+- **Tested**: Always test both up and down before committing
+- **No direct schema changes**: Never use `ALTER TABLE` or similar commands outside of migrations
+
 ## Environment Management
 
 This project uses **direnv** to manage environment variables:
