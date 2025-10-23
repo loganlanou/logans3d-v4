@@ -5733,7 +5733,6 @@
 .footer {
   background: linear-gradient(to bottom right, var(--color-gray-900), var(--color-gray-800));
   color: white;
-  margin-top: 5rem;
 }
 .footer-section {
   margin-bottom: 1.5rem;

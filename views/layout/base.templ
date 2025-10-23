@@ -51,9 +51,9 @@ templ Base(c echo.Context, meta Meta) {
 			<!-- Scroll speed control -->
 			<script src="/public/js/scroll-control.js"></script>
 		</head>
-		<body class="min-h-screen bg-gray-50 custom-scrollbar">
+		<body class="min-h-screen bg-gray-50 custom-scrollbar flex flex-col">
 			@Header(c)
-			<main>
+			<main class="flex-1">
 				{ children... }
 			</main>
 			@Footer()
