@@ -1,15 +1,13 @@
-# Litestream v0.3.x Configuration for Logan's 3D Creations Production
-# This configuration backs up the SQLite database to DigitalOcean Spaces
+# Litestream v0.3.x Configuration for Production
+# This configuration backs up all SQLite databases to DigitalOcean Spaces
 
 # Authentication - uses environment variables from /etc/litestream/environment
 # LITESTREAM_ACCESS_KEY_ID and LITESTREAM_SECRET_ACCESS_KEY
 
 dbs:
+  # Logan's 3D Creations - Production
   - path: /home/apprunner/sites/logans3d/data/database.db
     replicas:
-      # DigitalOcean Spaces replica
-      # Using path 'logans3d-production' within the 'digital-drywood' bucket
-      # You can use the same bucket for multiple databases by using different paths
       - type: s3
         bucket: digital-drywood
         path: logans3d-production
@@ -21,10 +19,30 @@ dbs:
         sync-interval: 10s
         snapshot-interval: 24h
 
-      # Optional: Keep local file backup for quick recovery
-      # Uncomment if you want both local and remote backups
-      # - type: file
-      #   path: /home/apprunner/sites/logans3d/backups/litestream
-      #   retention: 24h
-      #   sync-interval: 10s
-      #   snapshot-interval: 24h
+  # Creswood Corners Armory - Production
+  - path: /home/apprunner/sites/creswoodcornersarmory/db/storage.db
+    replicas:
+      - type: s3
+        bucket: digital-drywood
+        path: armory-production
+        endpoint: ${DIGITALOCEAN_SPACES_ENDPOINT}
+        region: ${DIGITALOCEAN_SPACES_REGION}
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        retention: 168h
+        sync-interval: 10s
+        snapshot-interval: 24h
+
+  # Creswood Corners Outlet (Collectibles) - Production
+  - path: /home/apprunner/sites/creswoodcornersoutlet/db/storage.db
+    replicas:
+      - type: s3
+        bucket: digital-drywood
+        path: outlet-production
+        endpoint: ${DIGITALOCEAN_SPACES_ENDPOINT}
+        region: ${DIGITALOCEAN_SPACES_REGION}
+        access-key-id: ${LITESTREAM_ACCESS_KEY_ID}
+        secret-access-key: ${LITESTREAM_SECRET_ACCESS_KEY}
+        retention: 168h
+        sync-interval: 10s
+        snapshot-interval: 24h
