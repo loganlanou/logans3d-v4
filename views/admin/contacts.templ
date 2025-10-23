@@ -1,0 +1,594 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
+)
+
+templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetContactRequestStatsRow, statusFilter, priorityFilter, subjectFilter, searchQuery string) {
+	@layout.AdminBase(c, "Contact Requests") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Contact Requests</h1>
+				<div class="flex items-center gap-4">
+					<span class="text-sm text-gray-600">
+						Total: { fmt.Sprintf("%d", stats.Total) } |
+						New: <span class="font-semibold text-blue-600">{ fmt.Sprintf("%.0f", stats.NewCount.Float64) }</span> |
+						Urgent: <span class="font-semibold text-red-600">{ fmt.Sprintf("%.0f", stats.UrgentCount.Float64) }</span>
+					</span>
+				</div>
+			</div>
+
+			<!-- Search and Filters -->
+			<div class="mb-6 space-y-4">
+				<!-- Search Bar -->
+				<div class="relative">
+					<input
+						type="text"
+						id="contact-search"
+						name="search"
+						value={ searchQuery }
+						placeholder="Search by name, email, or message..."
+						class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						hx-get="/admin/contacts/table"
+						hx-trigger="keyup changed delay:500ms"
+						hx-target="#contacts-table-container"
+						hx-include="[name='status'], [name='priority'], [name='subject']"
+						oninput="toggleClearButton()"
+						onkeydown="if(event.key === 'Escape') { this.value = ''; toggleClearButton(); htmx.trigger('#contact-search', 'keyup'); }"
+					/>
+					if searchQuery == "" {
+						<button
+							type="button"
+							id="clear-search-btn"
+							onclick="document.getElementById('contact-search').value = ''; toggleClearButton(); htmx.trigger('#contact-search', 'keyup');"
+							class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+							style="display: none;"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					} else {
+						<button
+							type="button"
+							id="clear-search-btn"
+							onclick="document.getElementById('contact-search').value = ''; toggleClearButton(); htmx.trigger('#contact-search', 'keyup');"
+							class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					}
+				</div>
+
+				<script>
+					function toggleClearButton() {
+						const input = document.getElementById('contact-search');
+						const btn = document.getElementById('clear-search-btn');
+						if (input.value.length > 0) {
+							btn.style.display = 'block';
+						} else {
+							btn.style.display = 'none';
+						}
+					}
+
+					function clearAllFilters() {
+						// Clear search input
+						const searchInput = document.getElementById('contact-search');
+						searchInput.value = '';
+						toggleClearButton();
+
+						// Reset all dropdowns to first option
+						document.querySelectorAll('select[name="status"], select[name="priority"], select[name="subject"]').forEach(select => {
+							select.selectedIndex = 0;
+						});
+
+						// Trigger HTMX update on the status dropdown to reload table
+						htmx.trigger('select[name="status"]', 'change');
+					}
+				</script>
+
+				<!-- Filters -->
+				<div class="flex gap-4 flex-wrap">
+					<select
+						name="status"
+						class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						hx-get="/admin/contacts/table"
+						hx-trigger="change"
+						hx-target="#contacts-table-container"
+						hx-include="[name='search'], [name='priority'], [name='subject']"
+					>
+						<option value="">Active (exclude resolved/spam)</option>
+						<option value="new" selected?={ statusFilter == "new" }>New</option>
+						<option value="in_progress" selected?={ statusFilter == "in_progress" }>In Progress</option>
+						<option value="responded" selected?={ statusFilter == "responded" }>Responded</option>
+						<option value="resolved" selected?={ statusFilter == "resolved" }>Resolved</option>
+						<option value="spam" selected?={ statusFilter == "spam" }>Spam</option>
+					</select>
+
+					<select
+						name="priority"
+						class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						hx-get="/admin/contacts/table"
+						hx-trigger="change"
+						hx-target="#contacts-table-container"
+						hx-include="[name='search'], [name='status'], [name='subject']"
+					>
+						<option value="">All Priorities</option>
+						<option value="low" selected?={ priorityFilter == "low" }>Low</option>
+						<option value="normal" selected?={ priorityFilter == "normal" }>Normal</option>
+						<option value="high" selected?={ priorityFilter == "high" }>High</option>
+						<option value="urgent" selected?={ priorityFilter == "urgent" }>Urgent</option>
+					</select>
+
+					<select
+						name="subject"
+						class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						hx-get="/admin/contacts/table"
+						hx-trigger="change"
+						hx-target="#contacts-table-container"
+						hx-include="[name='search'], [name='status'], [name='priority']"
+					>
+						<option value="">All Subjects</option>
+						<option value="custom-quote" selected?={ subjectFilter == "custom-quote" }>Custom Print Quote</option>
+						<option value="general-inquiry" selected?={ subjectFilter == "general-inquiry" }>General Inquiry</option>
+						<option value="technical-support" selected?={ subjectFilter == "technical-support" }>Technical Support</option>
+						<option value="business-partnership" selected?={ subjectFilter == "business-partnership" }>Business Partnership</option>
+						<option value="workshop-booking" selected?={ subjectFilter == "workshop-booking" }>Workshop Booking</option>
+						<option value="other" selected?={ subjectFilter == "other" }>Other</option>
+					</select>
+
+					<button
+						type="button"
+						onclick="clearAllFilters()"
+						class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50"
+					>
+						Clear All Filters
+					</button>
+				</div>
+			</div>
+
+			<!-- Contacts Table -->
+			<div id="contacts-table-container">
+				@ContactsTable(contacts)
+			</div>
+		}
+	}
+}
+
+templ ContactsTable(contacts []db.ContactRequest) {
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Contact Requests ({ fmt.Sprintf("%d", len(contacts)) })</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Status</th>
+								<th>Priority</th>
+								<th>Name</th>
+								<th>Contact</th>
+								<th>Subject</th>
+								<th>Message</th>
+								<th>Received</th>
+							</tr>
+						</thead>
+						<tbody>
+							if len(contacts) == 0 {
+								<tr>
+									<td colspan="7" class="px-6 py-12 text-center admin-text-muted">
+										No contact requests found.
+									</td>
+								</tr>
+							}
+							for _, contact := range contacts {
+								<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;">
+									<td>
+										@StatusBadge(contact.Status.String)
+									</td>
+									<td>
+										@PriorityBadge(contact.Priority.String)
+									</td>
+									<td>
+										<div class="admin-text-primary admin-font-medium">{ contact.FirstName } { contact.LastName }</div>
+										if contact.NewsletterSubscribe.Bool {
+											<div class="text-xs text-green-600">📧 Newsletter</div>
+										}
+									</td>
+									<td>
+										if contact.Email.Valid {
+											<div class="text-sm">
+												<a href={ templ.URL("mailto:" + contact.Email.String) } class="text-blue-600 hover:text-blue-800" onclick="event.stopPropagation()">
+													{ contact.Email.String }
+												</a>
+											</div>
+										}
+										if contact.Phone.Valid {
+											<div class="text-sm admin-text-muted">{ contact.Phone.String }</div>
+										}
+									</td>
+									<td>
+										{ formatSubject(contact.Subject) }
+									</td>
+									<td>
+										<div class="max-w-md truncate">{ contact.Message }</div>
+									</td>
+									<td>
+										if contact.CreatedAt.Valid {
+											{ formatTime(contact.CreatedAt.Time) }
+										} else {
+											<span class="admin-text-disabled">Unknown</span>
+										}
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+}
+
+templ StatusBadge(status string) {
+	switch status {
+		case "new":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">New</span>
+		case "in_progress":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
+		case "responded":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Responded</span>
+		case "resolved":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Resolved</span>
+		case "spam":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Spam</span>
+		default:
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">{ status }</span>
+	}
+}
+
+templ PriorityBadge(priority string) {
+	switch priority {
+		case "urgent":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Urgent</span>
+		case "high":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">High</span>
+		case "normal":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Normal</span>
+		case "low":
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">Low</span>
+		default:
+			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">{ priority }</span>
+	}
+}
+
+func formatSubject(subject string) string {
+	switch subject {
+	case "custom-quote":
+		return "Custom Print Quote"
+	case "general-inquiry":
+		return "General Inquiry"
+	case "technical-support":
+		return "Technical Support"
+	case "business-partnership":
+		return "Business Partnership"
+	case "workshop-booking":
+		return "Workshop Booking"
+	case "other":
+		return "Other"
+	default:
+		return subject
+	}
+}
+
+templ ContactDetail(c echo.Context, contact db.ContactRequest) {
+	@layout.AdminBase(c, "Contact Request Details") {
+		@layout.AdminContainer() {
+			<!-- Back Button -->
+			<div class="mb-6">
+				<a href="/admin/contacts" class="text-blue-600 hover:text-blue-800">
+					← Back to Contact Requests
+				</a>
+			</div>
+
+			<!-- Header -->
+			<div class="flex justify-between items-start mb-6">
+				<div class="flex-1">
+					<h1 class="admin-text-primary admin-text-2xl admin-font-bold mb-4">
+						{ contact.FirstName } { contact.LastName }
+					</h1>
+					<div class="flex gap-4">
+						<!-- Status Dropdown -->
+						<form method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/status") } class="inline-block">
+							<select
+								name="status"
+								onchange="this.form.submit()"
+								class="px-3 py-2 bg-slate-700 border border-slate-600 text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+							>
+								<option value="new" selected?={ contact.Status.String == "new" }>New</option>
+								<option value="in_progress" selected?={ contact.Status.String == "in_progress" }>In Progress</option>
+								<option value="responded" selected?={ contact.Status.String == "responded" }>Responded</option>
+								<option value="resolved" selected?={ contact.Status.String == "resolved" }>Resolved</option>
+								<option value="spam" selected?={ contact.Status.String == "spam" }>Spam</option>
+							</select>
+						</form>
+						<!-- Priority Dropdown -->
+						<form method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/priority") } class="inline-block">
+							<select
+								name="priority"
+								onchange="this.form.submit()"
+								class="px-3 py-2 bg-slate-700 border border-slate-600 text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+							>
+								<option value="low" selected?={ contact.Priority.String == "low" }>Low</option>
+								<option value="normal" selected?={ contact.Priority.String == "normal" }>Normal</option>
+								<option value="high" selected?={ contact.Priority.String == "high" }>High</option>
+								<option value="urgent" selected?={ contact.Priority.String == "urgent" }>Urgent</option>
+							</select>
+						</form>
+					</div>
+				</div>
+				<div class="text-sm admin-text-muted">
+					Request ID: { contact.ID }
+				</div>
+			</div>
+
+			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<!-- Main Content - Left Column (2/3) -->
+				<div class="lg:col-span-2 space-y-6">
+					<!-- Contact Information -->
+					<div class="admin-card">
+						<div class="admin-card-header">
+							<h2 class="admin-card-title">Contact Information</h2>
+						</div>
+						<div class="p-6 space-y-3">
+							if contact.Email.Valid {
+								<div>
+									<span class="text-sm text-gray-500">Email:</span>
+									<div class="flex items-center gap-2">
+										<a href={ templ.URL("mailto:" + contact.Email.String) } class="text-blue-600 hover:text-blue-800">
+											{ contact.Email.String }
+										</a>
+										<button
+											id="copy-email-btn"
+											type="button"
+											onclick={ templ.ComponentScript{Call: fmt.Sprintf("copyToClipboard('email', '%s')", contact.Email.String)} }
+											class="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+											title="Copy email"
+										>
+											<svg id="copy-email-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+											</svg>
+											<svg id="check-email-icon" class="w-4 h-4 hidden text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+											</svg>
+										</button>
+									</div>
+								</div>
+							}
+							if contact.Phone.Valid {
+								<div>
+									<span class="text-sm text-gray-500">Phone:</span>
+									<div class="flex items-center gap-2">
+										<span class="text-gray-200">{ contact.Phone.String }</span>
+										<button
+											id="copy-phone-btn"
+											type="button"
+											onclick={ templ.ComponentScript{Call: fmt.Sprintf("copyToClipboard('phone', '%s')", contact.Phone.String)} }
+											class="p-1 text-gray-400 hover:text-gray-200 transition-colors"
+											title="Copy phone"
+										>
+											<svg id="copy-phone-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+											</svg>
+											<svg id="check-phone-icon" class="w-4 h-4 hidden text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+											</svg>
+										</button>
+									</div>
+								</div>
+							}
+							if contact.NewsletterSubscribe.Bool {
+								<div class="flex items-center gap-2 text-green-500">
+									<span>📧</span>
+									<span class="text-sm">Subscribed to newsletter</span>
+								</div>
+							}
+						</div>
+					</div>
+
+					<!-- Message -->
+					<div class="admin-card">
+						<div class="admin-card-header">
+							<h2 class="admin-card-title">Message</h2>
+						</div>
+						<div class="p-6">
+							<p class="whitespace-pre-wrap text-gray-200">{ contact.Message }</p>
+						</div>
+					</div>
+
+					<!-- Response Notes -->
+					<div class="admin-card">
+						<div class="admin-card-header">
+							<h2 class="admin-card-title">Internal Notes</h2>
+						</div>
+						<div class="p-6">
+							if contact.ResponseNotes.Valid && contact.ResponseNotes.String != "" {
+								<div id="notes-display" class="relative bg-slate-700 p-4 rounded border border-slate-600 group">
+									<p class="whitespace-pre-wrap text-gray-200 pr-16">{ contact.ResponseNotes.String }</p>
+									<div class="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+										<button
+											type="button"
+											onclick="showEditNotes()"
+											class="p-2 bg-slate-600 hover:bg-slate-500 rounded text-gray-200 transition-colors"
+											title="Edit notes"
+										>
+											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+											</svg>
+										</button>
+										<form method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/notes/delete") } class="inline" onsubmit="return confirm('Are you sure you want to delete these notes? This cannot be undone.');">
+											<button
+												type="submit"
+												class="p-2 bg-red-600 hover:bg-red-500 rounded text-white transition-colors"
+												title="Delete notes"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+												</svg>
+											</button>
+										</form>
+									</div>
+								</div>
+								<form id="notes-edit-form" method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/notes") } class="hidden">
+									<textarea
+										name="notes"
+										rows="4"
+										class="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+										placeholder="Edit internal notes..."
+									>{ contact.ResponseNotes.String }</textarea>
+									<div class="flex gap-2 mt-2">
+										<button
+											type="submit"
+											class="admin-btn admin-btn-primary"
+										>
+											Save Changes
+										</button>
+										<button
+											type="button"
+											onclick="hideEditNotes()"
+											class="admin-btn admin-btn-secondary"
+										>
+											Cancel
+										</button>
+									</div>
+								</form>
+							}
+							<form id="notes-add-form" method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/notes") } class={ templ.KV("mt-4", contact.ResponseNotes.Valid && contact.ResponseNotes.String != "") }>
+								<textarea
+									name="notes"
+									rows="4"
+									class="w-full px-3 py-2 bg-slate-700 border border-slate-600 text-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-500"
+									placeholder="Add internal notes..."
+								></textarea>
+								<button
+									type="submit"
+									class="admin-btn admin-btn-primary mt-2"
+								>
+									Add Note
+								</button>
+							</form>
+						</div>
+					</div>
+
+					<script>
+						function showEditNotes() {
+							document.getElementById('notes-display').classList.add('hidden');
+							document.getElementById('notes-edit-form').classList.remove('hidden');
+						}
+
+						function hideEditNotes() {
+							document.getElementById('notes-display').classList.remove('hidden');
+							document.getElementById('notes-edit-form').classList.add('hidden');
+						}
+
+						function copyToClipboard(type, text) {
+							navigator.clipboard.writeText(text).then(() => {
+								// Hide copy icon, show check icon
+								document.getElementById(`copy-${type}-icon`).classList.add('hidden');
+								document.getElementById(`check-${type}-icon`).classList.remove('hidden');
+
+								// Fade back to copy icon after 2 seconds
+								setTimeout(() => {
+									document.getElementById(`check-${type}-icon`).classList.add('hidden');
+									document.getElementById(`copy-${type}-icon`).classList.remove('hidden');
+								}, 2000);
+							}).catch(err => {
+								console.error('Failed to copy:', err);
+							});
+						}
+					</script>
+				</div>
+
+				<!-- Sidebar - Right Column (1/3) -->
+				<div class="space-y-6">
+					<!-- Metadata -->
+					<div class="admin-card">
+						<div class="admin-card-header">
+							<h2 class="admin-card-title">Request Details</h2>
+						</div>
+						<div class="p-6 space-y-3 text-sm">
+							<div>
+								<span class="text-gray-500">Subject:</span>
+								<div class="text-gray-200 font-medium">{ formatSubject(contact.Subject) }</div>
+							</div>
+							<div>
+								<span class="text-gray-500">Submitted:</span>
+								<div class="text-gray-200">
+									if contact.CreatedAt.Valid {
+										{ formatTime(contact.CreatedAt.Time) }
+									}
+								</div>
+							</div>
+							if contact.IpAddress.Valid {
+								<div>
+									<span class="text-gray-500">IP Address:</span>
+									<div class="font-mono text-xs text-gray-300">{ contact.IpAddress.String }</div>
+								</div>
+							}
+							if contact.UserAgent.Valid {
+								<div>
+									<span class="text-gray-500">User Agent:</span>
+									<div class="text-xs text-gray-400 break-words">{ contact.UserAgent.String }</div>
+								</div>
+							}
+							if contact.Referrer.Valid && contact.Referrer.String != "" {
+								<div>
+									<span class="text-gray-500">Referrer:</span>
+									<div class="text-xs text-gray-400 break-words">{ contact.Referrer.String }</div>
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+		}
+	}
+}
+
+func formatTime(t time.Time) string {
+	if t.IsZero() {
+		return "Never"
+	}
+
+	now := time.Now()
+	diff := now.Sub(t)
+
+	if diff < time.Minute {
+		return "Just now"
+	} else if diff < time.Hour {
+		mins := int(diff.Minutes())
+		if mins == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", mins)
+	} else if diff < 24*time.Hour {
+		hours := int(diff.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	} else if diff < 7*24*time.Hour {
+		days := int(diff.Hours() / 24)
+		if days == 1 {
+			return "1 day ago"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	}
+
+	return t.Format("Jan 2, 2006")
+}

@@ -188,3 +188,38 @@ const adminOrderContentTemplate = `
     </p>
 </div>
 `
+
+// contactRequestContentTemplate is the content section for contact request notification emails
+const contactRequestContentTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <span style="display: inline-block; background-color: #3B82F6; color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 14px; margin-bottom: 10px;">NEW CONTACT REQUEST</span>
+    <h1 style="color: #3B82F6; margin: 10px 0; font-size: 28px;">Contact Form Submission</h1>
+    <p style="font-size: 16px; color: #666; margin: 10px 0;">New message from your website</p>
+</div>
+
+<div style="background-color: #EFF6FF; padding: 20px; border-left: 4px solid #3B82F6; margin-bottom: 25px;">
+    <p style="margin: 8px 0;"><strong style="color: #1E40AF; min-width: 150px; display: inline-block;">Request ID:</strong> #{{.ID}}</p>
+    <p style="margin: 8px 0;"><strong style="color: #1E40AF; min-width: 150px; display: inline-block;">Submitted:</strong> {{.SubmittedAt}}</p>
+    <p style="margin: 8px 0;"><strong style="color: #1E40AF; min-width: 150px; display: inline-block;">Subject:</strong> {{.Subject}}</p>
+</div>
+
+<div style="background-color: #F0FDF4; padding: 20px; border-radius: 8px; border-left: 4px solid #10B981; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #065F46; font-size: 16px;">Contact Information</h3>
+    <p style="margin: 5px 0;"><strong>Name:</strong> {{.FirstName}} {{.LastName}}</p>
+    {{if .Email}}
+    <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:{{.Email}}" style="color: #10B981; text-decoration: none;">{{.Email}}</a></p>
+    {{end}}
+    {{if .Phone}}
+    <p style="margin: 5px 0;"><strong>Phone:</strong> <a href="tel:{{.Phone}}" style="color: #10B981; text-decoration: none;">{{.Phone}}</a></p>
+    {{end}}
+    {{if .NewsletterSubscribe}}
+    <p style="margin: 5px 0;"><strong>Newsletter:</strong> <span style="color: #10B981;">✓ Subscribed</span></p>
+    {{end}}
+</div>
+
+<div style="background-color: #F9FAFB; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #374151; font-size: 16px;">Message</h3>
+    <p style="margin: 5px 0; white-space: pre-wrap; line-height: 1.6;">{{.Message}}</p>
+</div>
+`
+

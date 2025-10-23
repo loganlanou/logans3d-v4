@@ -10,6 +10,7 @@ require (
 	github.com/labstack/echo/v4 v4.13.3
 	github.com/lmittmann/tint v1.0.7
 	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/oklog/ulid/v2 v2.1.1
 	github.com/pressly/goose/v3 v3.26.0
 	github.com/stripe/stripe-go/v80 v80.2.1
 	modernc.org/sqlite v1.38.2

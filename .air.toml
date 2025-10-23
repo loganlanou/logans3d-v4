@@ -1,3 +1,4 @@
+#:schema https://json.schemastore.org/any.json
 root = "."
 testdata_dir = "testdata"
 tmp_dir = "tmp"
@@ -14,7 +15,7 @@ tmp_dir = "tmp"
   follow_symlink = false
   full_bin = "./bin/logans3d"
   include_dir = []
-  include_ext = ["go", "tpl", "tmpl", "html", "templ", "css"]
+  include_ext = ["go", "tpl", "tmpl", "html", "templ", "css", "sql"]
   include_file = []
   kill_delay = "0s"
   log = "build-errors.log"

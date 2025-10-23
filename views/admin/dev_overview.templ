@@ -29,101 +29,94 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				</div>
 			</div>
 
-			<!-- Status Cards -->
-			<div class="admin-stats-grid mb-8">
-				<!-- Application Status -->
-				<div class="admin-stat-card">
-					<div class="mb-4">
-						<div class="flex items-center justify-center mb-2">
-							<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-12 h-12 rounded-lg"/>
-						</div>
-						<h3 class="admin-text-primary admin-font-semibold text-center mb-2">Logan's 3D v4</h3>
-						<div class="flex items-center justify-center">
-							<div class="inline-flex items-center px-3 py-1 rounded-full bg-green-900/30 border border-green-500/30">
-								<span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-								<span class="text-green-400 text-sm font-medium">Running</span>
-							</div>
+			<!-- Application Status Banner -->
+			<div class="admin-card mb-6">
+				<div class="flex items-center justify-between p-6">
+					<div class="flex items-center space-x-4">
+						<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-12 h-12 rounded-lg"/>
+						<div>
+							<h2 class="admin-text-primary text-xl font-semibold">Logan's 3D v4</h2>
+							<p class="admin-text-muted text-sm">Process ID: { fmt.Sprintf("%d", sysInfo.PID) }</p>
 						</div>
 					</div>
-					<div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-700">
-						<div class="text-center">
-							<div class="admin-stat-number text-xl">{ sysInfo.Uptime }</div>
-							<div class="admin-stat-label">Uptime</div>
+					<div class="flex items-center space-x-6">
+						<div class="text-right">
+							<p class="admin-text-muted text-sm">Uptime</p>
+							<p class="admin-text-primary text-lg font-semibold">{ sysInfo.Uptime }</p>
 						</div>
-						<div class="text-center">
-							<div class="admin-stat-number text-xl">{ fmt.Sprintf("%d", sysInfo.PID) }</div>
-							<div class="admin-stat-label">Process ID</div>
+						<div class="inline-flex items-center px-4 py-2 rounded-full bg-green-900/30 border border-green-500/30">
+							<span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+							<span class="text-green-400 text-sm font-medium">Running</span>
 						</div>
 					</div>
 				</div>
+			</div>
 
-				<!-- System Information -->
-				<div class="admin-stat-card">
-					<div class="mb-4 text-center">
-						<div class="text-4xl mb-2">💻</div>
-						<h3 class="admin-text-primary admin-font-semibold">System Info</h3>
-					</div>
-					<div class="space-y-3">
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ sysInfo.GoVersion }</div>
-							<div class="admin-text-muted text-xs">Go Version</div>
-						</div>
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ sysInfo.OS }</div>
-							<div class="admin-text-muted text-xs">Operating System</div>
-						</div>
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ sysInfo.Architecture }</div>
-							<div class="admin-text-muted text-xs">Architecture</div>
-						</div>
+			<!-- Metrics Grid -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+				<!-- Go Version -->
+				<div class="admin-card hover:shadow-lg transition-shadow duration-300">
+					<div class="p-6">
+						<h3 class="text-sm font-medium admin-text-muted mb-2">Go Version</h3>
+						<p class="text-3xl font-bold admin-text-primary mb-1">{ sysInfo.GoVersion }</p>
+						<p class="text-xs admin-text-muted">{ sysInfo.Architecture }</p>
 					</div>
 				</div>
 
-				<!-- Memory Usage -->
-				<div class="admin-stat-card">
-					<div class="mb-4 text-center">
-						<div class="text-4xl mb-2">🧠</div>
-						<h3 class="admin-text-primary admin-font-semibold">Memory Usage</h3>
-					</div>
-					<div class="grid grid-cols-2 gap-3">
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ fmt.Sprintf("%.1f", memStats.AllocMB) }</div>
-							<div class="admin-text-muted text-xs">Alloc (MB)</div>
-						</div>
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ fmt.Sprintf("%.1f", memStats.SysMB) }</div>
-							<div class="admin-text-muted text-xs">System (MB)</div>
-						</div>
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ fmt.Sprintf("%d", memStats.Goroutines) }</div>
-							<div class="admin-text-muted text-xs">Goroutines</div>
-						</div>
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ fmt.Sprintf("%d", memStats.NumGC) }</div>
-							<div class="admin-text-muted text-xs">GC Cycles</div>
-						</div>
+				<!-- Operating System -->
+				<div class="admin-card hover:shadow-lg transition-shadow duration-300">
+					<div class="p-6">
+						<h3 class="text-sm font-medium admin-text-muted mb-2">Operating System</h3>
+						<p class="text-3xl font-bold admin-text-primary mb-1">{ sysInfo.OS }</p>
+						<p class="text-xs admin-text-muted">{ sysInfo.Architecture } architecture</p>
 					</div>
 				</div>
 
-				<!-- Database Stats -->
-				<div class="admin-stat-card">
-					<div class="mb-4 text-center">
-						<div class="text-4xl mb-2">🗄️</div>
-						<h3 class="admin-text-primary admin-font-semibold">Database</h3>
+				<!-- Memory Allocated -->
+				<div class="admin-card hover:shadow-lg transition-shadow duration-300">
+					<div class="p-6">
+						<h3 class="text-sm font-medium admin-text-muted mb-2">Memory Allocated</h3>
+						<p class="text-3xl font-bold text-blue-400 mb-1">{ fmt.Sprintf("%.1f", memStats.AllocMB) } MB</p>
+						<p class="text-xs admin-text-muted">{ fmt.Sprintf("%.1f MB system", memStats.SysMB) }</p>
 					</div>
-					<div class="grid grid-cols-3 gap-3">
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ fmt.Sprintf("%d", dbStats.ProductCount) }</div>
-							<div class="admin-text-muted text-xs">Products</div>
-						</div>
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ fmt.Sprintf("%d", dbStats.CategoryCount) }</div>
-							<div class="admin-text-muted text-xs">Categories</div>
-						</div>
-						<div class="text-center">
-							<div class="admin-text-primary admin-font-medium">{ dbStats.DatabaseSize }</div>
-							<div class="admin-text-muted text-xs">DB Size</div>
-						</div>
+				</div>
+
+				<!-- Goroutines -->
+				<div class="admin-card hover:shadow-lg transition-shadow duration-300">
+					<div class="p-6">
+						<h3 class="text-sm font-medium admin-text-muted mb-2">Active Goroutines</h3>
+						<p class="text-3xl font-bold text-purple-400 mb-1">{ fmt.Sprintf("%d", memStats.Goroutines) }</p>
+						<p class="text-xs admin-text-muted">{ fmt.Sprintf("%d GC cycles", memStats.NumGC) }</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- Database Stats -->
+			<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+				<!-- Products -->
+				<div class="admin-card hover:shadow-lg transition-shadow duration-300">
+					<div class="p-6">
+						<h3 class="text-sm font-medium admin-text-muted mb-2">Products</h3>
+						<p class="text-3xl font-bold text-green-400 mb-1">{ fmt.Sprintf("%d", dbStats.ProductCount) }</p>
+						<p class="text-xs admin-text-muted">Total products in catalog</p>
+					</div>
+				</div>
+
+				<!-- Categories -->
+				<div class="admin-card hover:shadow-lg transition-shadow duration-300">
+					<div class="p-6">
+						<h3 class="text-sm font-medium admin-text-muted mb-2">Categories</h3>
+						<p class="text-3xl font-bold text-orange-400 mb-1">{ fmt.Sprintf("%d", dbStats.CategoryCount) }</p>
+						<p class="text-xs admin-text-muted">Active categories</p>
+					</div>
+				</div>
+
+				<!-- Database Size -->
+				<div class="admin-card hover:shadow-lg transition-shadow duration-300">
+					<div class="p-6">
+						<h3 class="text-sm font-medium admin-text-muted mb-2">Database Size</h3>
+						<p class="text-3xl font-bold text-cyan-400 mb-1">{ dbStats.DatabaseSize }</p>
+						<p class="text-xs admin-text-muted">SQLite database</p>
 					</div>
 				</div>
 			</div>

@@ -8,11 +8,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/a-h/templ"
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/oklog/ulid/v2"
 	"github.com/stripe/stripe-go/v80"
 	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
@@ -114,6 +117,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	withAuth.GET("/about", s.handleAbout)
 	withAuth.GET("/events", s.handleEvents)
 	withAuth.GET("/contact", s.handleContact)
+	withAuth.POST("/contact/submit", s.handleContactSubmit)
 	withAuth.GET("/portfolio", s.handlePortfolio)
 	withAuth.GET("/innovation", s.handleInnovation)
 	withAuth.GET("/innovation/manufacturing", s.handleManufacturing)
@@ -215,6 +219,15 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/events/edit", adminHandler.HandleEventForm)
 	admin.POST("/events/:id", adminHandler.HandleUpdateEvent)
 	admin.POST("/events/:id/delete", adminHandler.HandleDeleteEvent)
+
+	// Contact requests management routes
+	admin.GET("/contacts", adminHandler.HandleContactsList)
+	admin.GET("/contacts/table", adminHandler.HandleContactsTable)
+	admin.GET("/contacts/:id", adminHandler.HandleContactDetail)
+	admin.POST("/contacts/:id/status", adminHandler.HandleUpdateContactStatus)
+	admin.POST("/contacts/:id/priority", adminHandler.HandleUpdateContactPriority)
+	admin.POST("/contacts/:id/notes", adminHandler.HandleAddContactNotes)
+	admin.POST("/contacts/:id/notes/delete", adminHandler.HandleDeleteContactNotes)
 
 	// Shipping management routes
 	admin.GET("/shipping/boxes", adminHandler.HandleShippingTab)
@@ -1211,6 +1224,90 @@ func (s *Service) handleEvents(c echo.Context) error {
 
 func (s *Service) handleContact(c echo.Context) error {
 	return Render(c, contact.Index(c))
+}
+
+func (s *Service) handleContactSubmit(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	firstName := c.FormValue("first_name")
+	lastName := c.FormValue("last_name")
+	emailAddr := c.FormValue("email")
+	phone := c.FormValue("phone")
+	subject := c.FormValue("subject")
+	message := c.FormValue("message")
+	newsletter := c.FormValue("newsletter") == "true"
+
+	if strings.TrimSpace(firstName) == "" || strings.TrimSpace(lastName) == "" {
+		return c.HTML(http.StatusBadRequest, `<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">First and last name are required.</div>`)
+	}
+
+	if strings.TrimSpace(emailAddr) == "" && strings.TrimSpace(phone) == "" {
+		return c.HTML(http.StatusBadRequest, `<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">Please provide at least an email address or phone number.</div>`)
+	}
+
+	if strings.TrimSpace(subject) == "" || strings.TrimSpace(message) == "" {
+		return c.HTML(http.StatusBadRequest, `<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">Subject and message are required.</div>`)
+	}
+
+	id := ulid.Make().String()
+
+	ipAddress := c.RealIP()
+	userAgent := c.Request().UserAgent()
+	referrer := c.Request().Referer()
+
+	emailNull := sql.NullString{}
+	if strings.TrimSpace(emailAddr) != "" {
+		emailNull = sql.NullString{String: emailAddr, Valid: true}
+	}
+
+	phoneNull := sql.NullString{}
+	if strings.TrimSpace(phone) != "" {
+		phoneNull = sql.NullString{String: phone, Valid: true}
+	}
+
+	_, err := s.storage.Queries.CreateContactRequest(ctx, db.CreateContactRequestParams{
+		ID:                  id,
+		FirstName:           firstName,
+		LastName:            lastName,
+		Email:               emailNull,
+		Phone:               phoneNull,
+		Subject:             subject,
+		Message:             message,
+		NewsletterSubscribe: sql.NullBool{Bool: newsletter, Valid: true},
+		IpAddress:           sql.NullString{String: ipAddress, Valid: true},
+		UserAgent:           sql.NullString{String: userAgent, Valid: true},
+		Referrer:            sql.NullString{String: referrer, Valid: true},
+		Status:              sql.NullString{String: "new", Valid: true},
+		Priority:            sql.NullString{String: "normal", Valid: true},
+	})
+
+	if err != nil {
+		slog.Error("failed to create contact request", "error", err)
+		return c.HTML(http.StatusInternalServerError, `<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">Failed to submit contact request. Please try again.</div>`)
+	}
+
+	go func() {
+		emailData := &email.ContactRequestData{
+			ID:                  id,
+			FirstName:           firstName,
+			LastName:            lastName,
+			Email:               emailAddr,
+			Phone:               phone,
+			Subject:             subject,
+			Message:             message,
+			NewsletterSubscribe: newsletter,
+			IPAddress:           ipAddress,
+			UserAgent:           userAgent,
+			Referrer:            referrer,
+			SubmittedAt:         time.Now().Format("January 2, 2006 at 3:04 PM MST"),
+		}
+
+		if err := s.emailService.SendContactRequestNotification(emailData); err != nil {
+			slog.Error("failed to send contact request notification", "error", err, "contact_id", id)
+		}
+	}()
+
+	return c.HTML(http.StatusOK, `<div class="mb-4 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-emerald-300 text-sm">Thank you for your message! We'll get back to you soon.</div>`)
 }
 
 func (s *Service) handlePortfolio(c echo.Context) error {

@@ -52,6 +52,9 @@ templ AdminBase(c echo.Context, title string) {
 				crossorigin="anonymous"
 			></script>
 
+			<!-- HTMX for dynamic updates -->
+			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -178,6 +181,13 @@ templ AdminSidebar(c echo.Context) {
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
 					</svg>
 					<span x-show="sidebarOpen" class="admin-sidebar-text">Events</span>
+				</a>
+
+				<a href="/admin/contacts" class="admin-sidebar-item" title="Contact Requests">
+					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+					</svg>
+					<span x-show="sidebarOpen" class="admin-sidebar-text">Contacts</span>
 				</a>
 
 				<a href="/admin/email-preview" class="admin-sidebar-item" title="Email Preview">
@@ -390,6 +400,13 @@ templ AdminSidebar(c echo.Context) {
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
 					</svg>
 					<span class="admin-sidebar-text">Events</span>
+				</a>
+
+				<a href="/admin/contacts" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
+					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+					</svg>
+					<span class="admin-sidebar-text">Contacts</span>
 				</a>
 
 				<a href="/admin/email-preview" class="admin-sidebar-item" @click="mobileSidebarOpen = false">

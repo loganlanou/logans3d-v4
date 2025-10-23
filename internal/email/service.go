@@ -41,6 +41,7 @@ type Email struct {
 	Subject string
 	Body    string
 	IsHTML  bool
+	ReplyTo string
 }
 
 // Send sends an email via Brevo SMTP
@@ -54,6 +55,9 @@ func (s *Service) Send(email *Email) error {
 	var msg bytes.Buffer
 	msg.WriteString(fmt.Sprintf("From: %s\r\n", s.from))
 	msg.WriteString(fmt.Sprintf("To: %s\r\n", email.To[0]))
+	if email.ReplyTo != "" {
+		msg.WriteString(fmt.Sprintf("Reply-To: %s\r\n", email.ReplyTo))
+	}
 	msg.WriteString(fmt.Sprintf("Subject: %s\r\n", email.Subject))
 
 	if email.IsHTML {
@@ -193,5 +197,60 @@ func RenderAdminOrderEmail(data *OrderData) (string, error) {
 
 	// Wrap in base template
 	subject := fmt.Sprintf("New Order Received - Order #%s", data.OrderID)
+	return WrapEmailContent(content.String(), subject)
+}
+
+// ContactRequestData contains all data for contact request emails
+type ContactRequestData struct {
+	ID                  string
+	FirstName           string
+	LastName            string
+	Email               string
+	Phone               string
+	Subject             string
+	Message             string
+	NewsletterSubscribe bool
+	IPAddress           string
+	UserAgent           string
+	Referrer            string
+	SubmittedAt         string
+}
+
+// SendContactRequestNotification sends a contact request notification to admin
+func (s *Service) SendContactRequestNotification(data *ContactRequestData) error {
+	html, err := RenderContactRequestEmail(data)
+	if err != nil {
+		return err
+	}
+
+	internalEmail := os.Getenv("EMAIL_TO_INTERNAL")
+	if internalEmail == "" {
+		internalEmail = "prints@logans3dcreations.com"
+	}
+
+	email := &Email{
+		To:      []string{internalEmail},
+		Subject: fmt.Sprintf("New Contact Request - %s", data.Subject),
+		Body:    html,
+		IsHTML:  true,
+	}
+
+	if data.Email != "" {
+		email.ReplyTo = data.Email
+	}
+
+	return s.Send(email)
+}
+
+// RenderContactRequestEmail renders the contact request email template
+func RenderContactRequestEmail(data *ContactRequestData) (string, error) {
+	tmpl := template.Must(template.New("contact").Parse(contactRequestContentTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render contact request email content: %w", err)
+	}
+
+	subject := fmt.Sprintf("New Contact Request - %s", data.Subject)
 	return WrapEmailContent(content.String(), subject)
 }

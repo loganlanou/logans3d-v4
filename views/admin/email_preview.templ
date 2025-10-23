@@ -5,7 +5,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ EmailPreview(c echo.Context, customerHTML string, adminHTML string) {
+templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contactHTML string) {
 	@layout.AdminBase(c, "Email Preview") {
 		@layout.AdminContainer() {
 			<!-- Header -->
@@ -15,32 +15,39 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string) {
 
 			<div class="admin-card">
 				<div class="admin-card-header">
-					<h2 class="admin-card-title">Order Email Templates</h2>
+					<h2 class="admin-card-title">Email Templates</h2>
 				</div>
 
 				<div class="p-6">
 					<p class="text-gray-600 mb-6">
-						Preview the email templates that are sent to customers and internal staff when an order is placed.
-						These emails use sample order data for demonstration.
+						Preview the email templates that are sent to customers and internal staff.
+						These emails use sample data for demonstration.
 					</p>
 
 					<!-- Email Type Selector and Test Button -->
 					<div class="space-y-4 mb-6">
 						<div class="flex justify-between items-center">
-							<div class="flex space-x-4">
+							<div class="flex flex-wrap gap-2">
 								<button
 									onclick="showEmail('customer')"
 									id="btn-customer"
 									class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
 								>
-									Customer Confirmation Email
+									Customer Order Email
 								</button>
 								<button
 									onclick="showEmail('admin')"
 									id="btn-admin"
 									class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
 								>
-									Admin Notification Email
+									Admin Order Email
+								</button>
+								<button
+									onclick="showEmail('contact')"
+									id="btn-contact"
+									class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+								>
+									Contact Request Email
 								</button>
 							</div>
 							<button
@@ -88,6 +95,23 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string) {
 								title="Admin Email Preview"
 							></iframe>
 						</div>
+
+						<div id="email-contact" class="email-preview hidden">
+							<div class="bg-gray-100 px-4 py-2 border-b">
+								<div class="text-sm text-gray-600">
+									<strong>To:</strong> prints@logans3dcreations.com<br/>
+									<strong>From:</strong> prints@logans3dcreations.com<br/>
+									<strong>Reply-To:</strong> customer@example.com<br/>
+									<strong>Subject:</strong> New Contact Request - General Inquiry
+								</div>
+							</div>
+							<iframe
+								srcdoc={ contactHTML }
+								class="w-full"
+								style="height: 800px; border: none;"
+								title="Contact Request Email Preview"
+							></iframe>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -119,8 +143,9 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string) {
 									id="testEmailType"
 									class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								>
-									<option value="customer">Customer Confirmation</option>
-									<option value="admin">Admin Notification</option>
+									<option value="customer">Customer Order Confirmation</option>
+									<option value="admin">Admin Order Notification</option>
+									<option value="contact">Contact Request Notification</option>
 								</select>
 							</div>
 						</div>

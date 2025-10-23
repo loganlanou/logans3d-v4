@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -1853,7 +1854,14 @@ func (h *AdminHandler) HandleEmailPreview(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to render admin email template: "+err.Error())
 	}
 
-	return Render(c, admin.EmailPreview(c, customerHTML, adminHTML))
+	// Create sample contact request data
+	contactData := createSampleContactRequestData()
+	contactHTML, err := email.RenderContactRequestEmail(contactData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render contact request email template: "+err.Error())
+	}
+
+	return Render(c, admin.EmailPreview(c, customerHTML, adminHTML, contactHTML))
 }
 
 func (h *AdminHandler) HandleEmailPreviewCustomer(c echo.Context) error {
@@ -1931,6 +1939,24 @@ func createSampleOrderData() *email.OrderData {
 	}
 }
 
+// createSampleContactRequestData creates sample contact request data for email preview
+func createSampleContactRequestData() *email.ContactRequestData {
+	return &email.ContactRequestData{
+		ID:                  "01SAMPLE1234567890",
+		FirstName:           "Jane",
+		LastName:            "Smith",
+		Email:               "jane.smith@example.com",
+		Phone:               "(555) 123-4567",
+		Subject:             "General Inquiry",
+		Message:             "Hello, I'm interested in learning more about your custom 3D printing services. I have a unique project in mind and would love to discuss the possibilities with your team. Can you provide information about pricing and turnaround times? Thank you!",
+		NewsletterSubscribe: true,
+		IPAddress:           "192.168.1.100",
+		UserAgent:           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+		Referrer:            "https://www.google.com",
+		SubmittedAt:         "October 23, 2025 at 1:30 AM",
+	}
+}
+
 func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 	var request struct {
 		Email string `json:"email"`
@@ -1949,22 +1975,29 @@ func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 		})
 	}
 
-	if request.Type != "customer" && request.Type != "admin" {
+	if request.Type != "customer" && request.Type != "admin" && request.Type != "contact" {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid email type",
 		})
 	}
 
-	// Create sample data
-	sampleData := createSampleOrderData()
-	sampleData.CustomerEmail = request.Email
-
 	// Send the appropriate email
 	var err error
-	if request.Type == "customer" {
-		err = h.emailService.SendOrderConfirmation(sampleData)
+	if request.Type == "contact" {
+		// Create sample contact request data
+		contactData := createSampleContactRequestData()
+		contactData.Email = request.Email
+		err = h.emailService.SendContactRequestNotification(contactData)
 	} else {
-		err = h.emailService.SendOrderNotificationToAdmin(sampleData)
+		// Create sample order data
+		sampleData := createSampleOrderData()
+		sampleData.CustomerEmail = request.Email
+
+		if request.Type == "customer" {
+			err = h.emailService.SendOrderConfirmation(sampleData)
+		} else {
+			err = h.emailService.SendOrderNotificationToAdmin(sampleData)
+		}
 	}
 
 	if err != nil {
@@ -1976,4 +2009,246 @@ func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{
 		"message": fmt.Sprintf("Test email sent successfully to %s", request.Email),
 	})
+}
+// HandleContactsList displays all contact requests
+func (h *AdminHandler) HandleContactsList(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Get filter parameters
+	status := c.QueryParam("status")
+	priority := c.QueryParam("priority")
+	subject := c.QueryParam("subject")
+	search := c.QueryParam("search")
+
+	// Check if "show_all" parameter is set (used when clearing filters)
+	showAll := c.QueryParam("show_all")
+
+	var contacts []db.ContactRequest
+	var err error
+
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		contacts, err = h.storage.Queries.SearchContactRequests(ctx, db.SearchContactRequestsParams{
+			FirstName: searchPattern,
+			LastName:  searchPattern,
+			Email:     sql.NullString{String: searchPattern, Valid: true},
+			Message:   searchPattern,
+			Limit:     100,
+			Offset:    0,
+		})
+	} else if status != "" || priority != "" || subject != "" {
+		var statusParam, priorityParam, subjectParam interface{}
+		if status != "" {
+			statusParam = status
+		}
+		if priority != "" {
+			priorityParam = priority
+		}
+		if subject != "" {
+			subjectParam = subject
+		}
+
+		contacts, err = h.storage.Queries.FilterContactRequests(ctx, db.FilterContactRequestsParams{
+			Status:     statusParam,
+			Priority:   priorityParam,
+			Subject:    subjectParam,
+			AssignedTo: nil,
+			Offset:     0,
+			Limit:      100,
+		})
+	} else if showAll == "true" {
+		// Explicitly show all contacts (used when clearing filters)
+		contacts, err = h.storage.Queries.ListContactRequests(ctx, db.ListContactRequestsParams{
+			Limit:  100,
+			Offset: 0,
+		})
+	} else {
+		// Default: show only active requests (exclude resolved and spam)
+		contacts, err = h.storage.Queries.ListActiveContactRequests(ctx, db.ListActiveContactRequestsParams{
+			Limit:  100,
+			Offset: 0,
+		})
+	}
+
+	if err != nil {
+		slog.Error("failed to fetch contact requests", "error", err)
+		return c.String(http.StatusInternalServerError, "Failed to load contact requests")
+	}
+
+	// Get stats
+	stats, err := h.storage.Queries.GetContactRequestStats(ctx)
+	if err != nil {
+		slog.Error("failed to fetch contact stats", "error", err)
+	}
+
+	return Render(c, admin.ContactsList(c, contacts, stats, status, priority, subject, search))
+}
+
+// HandleContactsTable returns just the contacts table for HTMX updates
+func (h *AdminHandler) HandleContactsTable(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Get filter parameters
+	status := c.QueryParam("status")
+	priority := c.QueryParam("priority")
+	subject := c.QueryParam("subject")
+	search := c.QueryParam("search")
+
+	// Check if "show_all" parameter is set (used when clearing filters)
+	showAll := c.QueryParam("show_all")
+
+	var contacts []db.ContactRequest
+	var err error
+
+	if search != "" {
+		searchPattern := "%" + search + "%"
+		contacts, err = h.storage.Queries.SearchContactRequests(ctx, db.SearchContactRequestsParams{
+			FirstName: searchPattern,
+			LastName:  searchPattern,
+			Email:     sql.NullString{String: searchPattern, Valid: true},
+			Message:   searchPattern,
+			Limit:     100,
+			Offset:    0,
+		})
+	} else if status != "" || priority != "" || subject != "" {
+		var statusParam, priorityParam, subjectParam interface{}
+		if status != "" {
+			statusParam = status
+		}
+		if priority != "" {
+			priorityParam = priority
+		}
+		if subject != "" {
+			subjectParam = subject
+		}
+
+		contacts, err = h.storage.Queries.FilterContactRequests(ctx, db.FilterContactRequestsParams{
+			Status:     statusParam,
+			Priority:   priorityParam,
+			Subject:    subjectParam,
+			AssignedTo: nil,
+			Offset:     0,
+			Limit:      100,
+		})
+	} else if showAll == "true" {
+		// Explicitly show all contacts (used when clearing filters)
+		contacts, err = h.storage.Queries.ListContactRequests(ctx, db.ListContactRequestsParams{
+			Limit:  100,
+			Offset: 0,
+		})
+	} else {
+		// Default: show only active requests (exclude resolved and spam)
+		contacts, err = h.storage.Queries.ListActiveContactRequests(ctx, db.ListActiveContactRequestsParams{
+			Limit:  100,
+			Offset: 0,
+		})
+	}
+
+	if err != nil {
+		slog.Error("failed to fetch contact requests", "error", err)
+		return c.String(http.StatusInternalServerError, "Failed to load contact requests")
+	}
+
+	return Render(c, admin.ContactsTable(contacts))
+}
+
+// HandleContactDetail displays a single contact request
+func (h *AdminHandler) HandleContactDetail(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+
+	contact, err := h.storage.Queries.GetContactRequest(ctx, id)
+	if err != nil {
+		slog.Error("failed to fetch contact request", "error", err, "id", id)
+		return c.String(http.StatusNotFound, "Contact request not found")
+	}
+
+	return Render(c, admin.ContactDetail(c, contact))
+}
+
+// HandleUpdateContactStatus updates the status of a contact request
+func (h *AdminHandler) HandleUpdateContactStatus(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+	status := c.FormValue("status")
+
+	if status == "" {
+		return c.String(http.StatusBadRequest, "Status is required")
+	}
+
+	err := h.storage.Queries.UpdateContactRequestStatus(ctx, db.UpdateContactRequestStatusParams{
+		Status: sql.NullString{String: status, Valid: true},
+		ID:     id,
+	})
+
+	if err != nil {
+		slog.Error("failed to update contact status", "error", err, "id", id)
+		return c.String(http.StatusInternalServerError, "Failed to update status")
+	}
+
+	// Return updated contact or redirect
+	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
+}
+
+// HandleUpdateContactPriority updates the priority of a contact request
+func (h *AdminHandler) HandleUpdateContactPriority(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+	priority := c.FormValue("priority")
+
+	if priority == "" {
+		return c.String(http.StatusBadRequest, "Priority is required")
+	}
+
+	err := h.storage.Queries.UpdateContactRequestPriority(ctx, db.UpdateContactRequestPriorityParams{
+		Priority: sql.NullString{String: priority, Valid: true},
+		ID:       id,
+	})
+
+	if err != nil {
+		slog.Error("failed to update contact priority", "error", err, "id", id)
+		return c.String(http.StatusInternalServerError, "Failed to update priority")
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
+}
+
+// HandleAddContactNotes adds notes to a contact request
+func (h *AdminHandler) HandleAddContactNotes(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+	notes := c.FormValue("notes")
+
+	if notes == "" {
+		return c.String(http.StatusBadRequest, "Notes are required")
+	}
+
+	err := h.storage.Queries.AddContactRequestResponse(ctx, db.AddContactRequestResponseParams{
+		ResponseNotes: sql.NullString{String: notes, Valid: true},
+		ID:            id,
+	})
+
+	if err != nil {
+		slog.Error("failed to add contact notes", "error", err, "id", id)
+		return c.String(http.StatusInternalServerError, "Failed to add notes")
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
+}
+
+func (h *AdminHandler) HandleDeleteContactNotes(c echo.Context) error {
+	ctx := c.Request().Context()
+	id := c.Param("id")
+
+	err := h.storage.Queries.AddContactRequestResponse(ctx, db.AddContactRequestResponseParams{
+		ResponseNotes: sql.NullString{String: "", Valid: false},
+		ID:            id,
+	})
+
+	if err != nil {
+		slog.Error("failed to delete contact notes", "error", err, "id", id)
+		return c.String(http.StatusInternalServerError, "Failed to delete notes")
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
 }

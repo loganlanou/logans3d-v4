@@ -185,3 +185,207 @@ To make environment changes:
 ### File System Location
 - Product images are stored at: `./public/images/products/`
 - Served at URL: `http://localhost:8000/public/images/products/filename.jpg`
+
+## Admin Dashboard Styling
+
+**CRITICAL: All admin dashboard pages MUST use the standard admin CSS classes.**
+
+The admin dashboard has a predefined styling system that ensures consistency across all pages. When creating or modifying admin pages, you MUST use these classes instead of creating custom styles.
+
+### Required CSS Classes
+
+#### Card Components
+- `admin-card` - Card container with proper background, border, and shadow
+- `admin-card-header` - Card header section with border-bottom
+- `admin-card-title` - Card title styling (use `<h2>` element)
+
+#### Tables
+- `admin-table` - Table with proper borders, spacing, and hover effects
+- Tables must be wrapped in `<div class="overflow-x-auto">` for responsive scrolling
+- Table headers use `<th>` without additional classes (styling is automatic)
+- Table rows automatically get hover states
+
+#### Typography
+- `admin-text-primary` - Primary text color (dark)
+- `admin-text-muted` - Muted/secondary text color (gray)
+- `admin-text-disabled` - Disabled text color (light gray)
+- `admin-text-warning` - Warning text color (yellow/orange)
+- `admin-font-bold` - Bold font weight
+- `admin-font-medium` - Medium font weight
+- `admin-text-2xl` - 2xl text size
+
+#### Buttons
+- `admin-btn` - Base button class (required for all buttons)
+- `admin-btn-primary` - Primary action button (blue)
+- `admin-btn-secondary` - Secondary action button (gray)
+- `admin-btn-danger` - Destructive action button (red)
+- `admin-btn-warning` - Warning action button (orange)
+- `admin-btn-sm` - Small button variant
+
+### Standard Page Structure
+
+```templ
+templ MyAdminPage(c echo.Context, data []MyData) {
+    @layout.AdminBase(c, "Page Title") {
+        @layout.AdminContainer() {
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="admin-text-primary admin-text-2xl admin-font-bold">Page Title</h1>
+                <a href="/admin/action" class="admin-btn admin-btn-primary">
+                    + Add Item
+                </a>
+            </div>
+
+            <!-- Filters (if needed) -->
+            <div class="mb-6 space-y-4">
+                <input
+                    type="text"
+                    placeholder="Search..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onkeyup="debounceSearch(this.value)"
+                />
+                <div class="flex gap-4 flex-wrap">
+                    <select
+                        name="filter"
+                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        onchange="window.location.href = updateQueryParam('filter', this.value)"
+                    >
+                        <option value="">All Items</option>
+                        <option value="active">Active</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h2 class="admin-card-title">Items ({ fmt.Sprintf("%d", len(data)) })</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Column 1</th>
+                                <th>Column 2</th>
+                                <th>Column 3</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            for _, item := range data {
+                                <tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/items/%s'", item.ID)} } style="cursor: pointer;">
+                                    <td>
+                                        <span class="admin-text-primary admin-font-medium">{ item.Name }</span>
+                                    </td>
+                                    <td>{ item.Value }</td>
+                                    <td>
+                                        <span class="admin-text-muted">{ item.Status }</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+}
+```
+
+### Filter/Navigation Pattern
+
+Filters MUST use JavaScript navigation (NOT HTMX):
+
+```javascript
+<script>
+    function updateQueryParam(key, value) {
+        const url = new URL(window.location);
+        if (value) {
+            url.searchParams.set(key, value);
+        } else {
+            url.searchParams.delete(key);
+        }
+        return url.toString();
+    }
+
+    let searchTimeout;
+    function debounceSearch(value) {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            window.location.href = updateQueryParam('search', value);
+        }, 500);
+    }
+</script>
+
+<select onchange="window.location.href = updateQueryParam('status', this.value)">
+```
+
+### Clickable Table Rows
+
+Table rows should be clickable for navigation to detail pages:
+
+```templ
+<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/items/%s'", item.ID)} } style="cursor: pointer;">
+    <td>Content</td>
+</tr>
+```
+
+For links within clickable rows (like email links), stop propagation:
+
+```templ
+<a href="mailto:email@example.com" onclick="event.stopPropagation()">
+    email@example.com
+</a>
+```
+
+### Detail Page Pattern
+
+```templ
+templ ItemDetail(c echo.Context, item MyItem) {
+    @layout.AdminBase(c, "Item Details") {
+        @layout.AdminContainer() {
+            <!-- Back Button -->
+            <div class="mb-6">
+                <a href="/admin/items" class="text-blue-600 hover:text-blue-800">
+                    ← Back to Items
+                </a>
+            </div>
+
+            <!-- Header -->
+            <div class="flex justify-between items-start mb-6">
+                <h1 class="admin-text-primary admin-text-2xl admin-font-bold">
+                    { item.Name }
+                </h1>
+                <div class="text-sm admin-text-muted">
+                    ID: { item.ID }
+                </div>
+            </div>
+
+            <!-- Content Cards -->
+            <div class="admin-card">
+                <div class="admin-card-header">
+                    <h2 class="admin-card-title">Information</h2>
+                </div>
+                <div class="p-6">
+                    <p class="admin-text-primary">{ item.Description }</p>
+                </div>
+            </div>
+        }
+    }
+}
+```
+
+### Common Mistakes to Avoid
+
+1. **DON'T create custom card styling** - Use `admin-card`, `admin-card-header`, `admin-card-title`
+2. **DON'T use raw Tailwind classes for tables** - Use `admin-table`
+3. **DON'T use raw color classes for text** - Use `admin-text-primary`, `admin-text-muted`, etc.
+4. **DON'T use HTMX for filters** - Use JavaScript `onchange` navigation
+5. **DON'T create a "View" or "Actions" column** - Make the entire row clickable
+6. **DON'T use inline styles except for `cursor: pointer`** on clickable rows
+
+### Reference Implementation
+
+See these files for correct implementation:
+- Table listing: `views/admin/dashboard.templ` (Products table)
+- Detail page: `views/admin/contacts.templ` (ContactDetail template)
+- Filters: `views/admin/dashboard.templ` (Product filters)
