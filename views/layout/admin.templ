@@ -62,9 +62,6 @@ templ AdminBase(c echo.Context, title string) {
 
 			<!-- Main Content Area -->
 			<div class="admin-content-wrapper" :class="{ 'admin-content-expanded': !sidebarOpen }">
-				<!-- Top Bar -->
-				@AdminTopBar(c)
-
 				<!-- Page Content -->
 				<div class="admin-main">
 					{ children... }
@@ -110,6 +107,17 @@ templ AdminSidebar(c echo.Context) {
 			<!-- Sidebar Header -->
 			<div class="admin-sidebar-header">
 				<div class="flex items-center justify-between">
+					<!-- Mobile Menu Button -->
+					<button
+						@click="mobileSidebarOpen = true"
+						class="lg:hidden text-slate-400 hover:text-slate-200 p-2"
+						title="Open Menu"
+					>
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+						</svg>
+					</button>
+
 					<div class="flex items-center space-x-3" x-show="sidebarOpen">
 						<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-8 h-8 rounded-lg"/>
 						<span class="admin-text-primary admin-text-lg admin-font-semibold">Admin</span>
@@ -124,15 +132,24 @@ templ AdminSidebar(c echo.Context) {
 						</svg>
 					</button>
 				</div>
+				<!-- Visit Site Button -->
+				<div class="mt-3" x-show="sidebarOpen">
+					<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary flex items-center justify-center space-x-2 w-full" title="View Public Site">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+						</svg>
+						<span>View Site</span>
+					</a>
+				</div>
 			</div>
 
 			<!-- Navigation -->
 			<nav class="admin-sidebar-nav">
-				<a href="/admin" class="admin-sidebar-item" title="Dashboard">
+				<a href="/admin" class="admin-sidebar-item" title="Products">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Dashboard</span>
+					<span x-show="sidebarOpen" class="admin-sidebar-text">Products</span>
 				</a>
 
 				<a href="/admin/categories" class="admin-sidebar-item" title="Categories">
@@ -327,15 +344,24 @@ templ AdminSidebar(c echo.Context) {
 						</svg>
 					</button>
 				</div>
+				<!-- Visit Site Button -->
+				<div class="mt-3">
+					<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary flex items-center justify-center space-x-2 w-full" title="View Public Site">
+						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+						</svg>
+						<span>View Site</span>
+					</a>
+				</div>
 			</div>
 
 			<!-- Mobile Navigation -->
 			<nav class="admin-sidebar-nav">
 				<a href="/admin" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
 					</svg>
-					<span class="admin-sidebar-text">Dashboard</span>
+					<span class="admin-sidebar-text">Products</span>
 				</a>
 
 				<a href="/admin/categories" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
@@ -475,43 +501,6 @@ templ AdminSidebar(c echo.Context) {
 			</div>
 		</div>
 	</aside>
-}
-
-templ AdminTopBar(c echo.Context) {
-	<header class="admin-topbar">
-		<div class="flex items-center justify-between">
-			<!-- Mobile Menu Button -->
-			<button
-				@click="mobileSidebarOpen = true"
-				class="lg:hidden text-slate-400 hover:text-slate-200 p-2"
-				title="Open Menu"
-			>
-				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-				</svg>
-			</button>
-
-			<!-- Breadcrumb or Page Title (optional, for future use) -->
-			<div class="flex-1"></div>
-
-			<!-- Right Side: Logo and Actions -->
-			<div class="flex items-center space-x-4">
-				<!-- View Site Button -->
-				<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary flex items-center space-x-2" title="View Public Site">
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-					</svg>
-					<span class="hidden sm:inline">View Site</span>
-				</a>
-
-				<!-- Logo (Links to Home) -->
-				<a href="/" class="flex items-center space-x-2 group" title="Go to Homepage">
-					<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-8 h-8 rounded-lg group-hover:scale-110 transition-transform"/>
-					<span class="hidden md:inline admin-text-primary admin-font-semibold group-hover:text-blue-400 transition-colors">Logan's 3D</span>
-				</a>
-			</div>
-		</div>
-	</header>
 }
 
 templ AdminContainer() {

@@ -94,7 +94,7 @@ templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig) {
 				<div class="admin-card">
 					<div class="admin-card-header">
 						<h2 class="admin-card-title">Packing Materials</h2>
-						<p class="text-sm text-slate-400 mt-1">Weight overhead for packing materials (in ounces)</p>
+						<p class="text-sm text-slate-400 mt-1">Weight overhead for packing materials (in ounces) and handling costs</p>
 					</div>
 					<div class="admin-card-body">
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,6 +143,19 @@ templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig) {
 									step="0.01"
 									name="air_pillows_per_box_oz"
 									value={ fmt.Sprintf("%.2f", config.Packing.PackingMaterials.AirPillowsPerBoxOz) }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div class="md:col-span-2">
+								<label class="block text-sm font-medium text-slate-200 mb-1">
+									Handling Fee per Box (USD)
+									<span class="text-xs text-slate-400 ml-2">(covers materials + labor, added to customer shipping cost)</span>
+								</label>
+								<input
+									type="number"
+									step="0.01"
+									name="handling_fee_per_box_usd"
+									value={ fmt.Sprintf("%.2f", config.Packing.PackingMaterials.HandlingFeePerBoxUSD) }
 									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
 								/>
 							</div>

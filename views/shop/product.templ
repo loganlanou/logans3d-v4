@@ -7,7 +7,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Product(c echo.Context, product db.Product, category db.Category, images []db.ProductImage) {
+templ Product(c echo.Context, product db.Product, category db.Category, images []db.ProductImage, relatedProducts []ProductWithImage) {
 	@layout.Base(c, layout.Meta{
 		Title:       fmt.Sprintf("%s - Logan's 3D Creations", product.Name),
 		Description: product.Description.String,
@@ -22,7 +22,7 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 			</div>
 			<div class="relative z-10">
 				<!-- Breadcrumb -->
-				<nav class="pt-32 pb-8 px-8 sm:px-12 lg:px-16" aria-label="Breadcrumb">
+				<nav class="pt-6 pb-3 px-8 sm:px-12 lg:px-16" aria-label="Breadcrumb">
 					<div class="max-w-7xl mx-auto">
 						<ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm">
 							<li class="inline-flex items-center">
@@ -55,19 +55,19 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 						</ol>
 					</div>
 				</nav>
-				<div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-16 py-12">
-					<div class="grid md:grid-cols-2 gap-16">
+				<div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-16 py-4">
+					<div class="grid md:grid-cols-2 gap-6">
 						<!-- Product Images -->
-						<div class="space-y-4">
+						<div class="space-y-3">
 							if len(images) > 0 {
-								<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl overflow-hidden group hover:border-emerald-500/30 transition-all duration-500">
-									<img src={ fmt.Sprintf("/public%s", images[0].ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+								<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl overflow-hidden group hover:border-emerald-500/30 transition-all duration-500">
+									<img src={ fmt.Sprintf("/public/images/products/%s", images[0].ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
 								</div>
 								if len(images) > 1 {
-									<div class="grid grid-cols-4 gap-3">
+									<div class="grid grid-cols-4 gap-2">
 										for _, image := range images[1:] {
 											<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl border border-slate-700/50 backdrop-blur-sm overflow-hidden cursor-pointer hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 group">
-												<img src={ fmt.Sprintf("/public%s", image.ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
+												<img src={ fmt.Sprintf("/public/images/products/%s", image.ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
 											</div>
 										}
 									</div>
@@ -84,16 +84,16 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 							}
 						</div>
 						<!-- Product Info -->
-						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-10">
-							<h1 class="text-4xl font-bold text-white mb-6 bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">{ product.Name }</h1>
+						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-5">
+							<h1 class="text-2xl font-bold text-white mb-3 bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">{ product.Name }</h1>
 							<!-- Price -->
-							<div class="mb-8">
-								<div class="text-5xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+							<div class="mb-3">
+								<div class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
 									${ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
 								</div>
 							</div>
 							<!-- Stock Status -->
-							<div class="mb-8">
+							<div class="mb-3">
 								if product.StockQuantity.Valid && product.StockQuantity.Int64 > 0 {
 									<span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-green-400/10 text-green-400 border border-green-400/20 backdrop-blur-sm">
 										<svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -111,29 +111,29 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 								}
 							</div>
 							<!-- Category -->
-							<div class="mb-8">
-								<span class="text-slate-400">Category: </span>
+							<div class="mb-3">
+								<span class="text-slate-400 text-xs">Category: </span>
 								<a
 									href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) }
-									class="text-blue-400 hover:text-emerald-400 font-semibold transition-colors duration-200 hover:underline"
+									class="text-blue-400 hover:text-emerald-400 font-semibold text-xs transition-colors duration-200 hover:underline"
 								>
 									{ category.Name }
 								</a>
 							</div>
 							<!-- Description -->
 							if product.Description.Valid {
-								<div class="mb-10">
-									<h3 class="text-xl font-bold text-white mb-4">Description</h3>
-									<p class="text-slate-300 leading-relaxed text-lg">{ product.Description.String }</p>
+								<div class="mb-4">
+									<h3 class="text-base font-bold text-white mb-1.5">Description</h3>
+									<p class="text-slate-300 leading-relaxed text-xs">{ product.Description.String }</p>
 								</div>
 							}
 							<!-- Cart and Buy Options -->
-							<div class="space-y-6">
+							<div class="space-y-2.5">
 								if product.StockQuantity.Valid && product.StockQuantity.Int64 > 0 {
 									<!-- Quantity Selector -->
-									<div class="flex items-center justify-center space-x-4">
-										<label for="product-quantity" class="text-white font-semibold">Quantity:</label>
-										<select id="product-quantity" class="bg-slate-700/50 border border-slate-600/50 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+									<div class="flex items-center justify-center space-x-3">
+										<label for="product-quantity" class="text-white font-semibold text-sm">Quantity:</label>
+										<select id="product-quantity" class="bg-slate-700/50 border border-slate-600/50 text-white rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
 											if product.StockQuantity.Int64 < 10 {
 												for i := 1; i <= int(product.StockQuantity.Int64); i++ {
 													<option value={ fmt.Sprintf("%d", i) }>{ fmt.Sprintf("%d", i) }</option>
@@ -149,7 +149,7 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 									<!-- Add to Cart Button -->
 									<button
 										type="button"
-										class="add-to-cart-btn w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-4 px-8 rounded-2xl font-bold text-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
+										class="add-to-cart-btn w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 px-5 rounded-lg font-bold text-sm hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
 										data-product-id={ product.ID }
 										data-product-name={ product.Name }
 										data-product-price={ fmt.Sprintf("%d", product.PriceCents) }
@@ -165,7 +165,7 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 									<!-- Buy Now Button -->
 									<button
 										type="button"
-										class="buy-now-btn w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-4 px-8 rounded-2xl font-bold text-lg hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
+										class="buy-now-btn w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-2.5 px-5 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
 										data-product-id={ product.ID }
 										data-product-name={ product.Name }
 										data-product-price={ fmt.Sprintf("%d", product.PriceCents) }
@@ -178,28 +178,28 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 										Buy Now - ${ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
 									</button>
 								} else {
-									<button class="w-full bg-slate-700/50 text-slate-400 py-5 px-8 rounded-2xl font-bold text-lg cursor-not-allowed border border-slate-600/50 backdrop-blur-sm" disabled>
+									<button class="w-full bg-slate-700/50 text-slate-400 py-2.5 px-5 rounded-lg font-bold text-sm cursor-not-allowed border border-slate-600/50 backdrop-blur-sm" disabled>
 										Out of Stock
 									</button>
 								}
-								<a href="/custom" class="block w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-4 px-8 rounded-2xl font-semibold text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm group">
+								<a href="/custom" class="block w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-2 px-5 rounded-lg font-medium text-xs text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm group">
 									<span class="group-hover:scale-105 transition-transform duration-200">Need a Custom Version?</span>
 								</a>
 							</div>
 							<!-- Product Details -->
-							<div class="mt-10 border-t border-slate-700/50 pt-8">
-								<h3 class="text-xl font-bold text-white mb-6">Product Details</h3>
-								<dl class="space-y-4">
+							<div class="mt-4 border-t border-slate-700/50 pt-3">
+								<h3 class="text-sm font-bold text-white mb-2">Product Details</h3>
+								<dl class="space-y-1.5 text-xs">
 									if product.LeadTimeDays.Valid {
 										<div class="flex justify-between items-center">
-											<dt class="text-slate-400 font-medium">Lead Time:</dt>
+											<dt class="text-slate-400">Lead Time:</dt>
 											<dd class="text-white font-semibold">{ fmt.Sprintf("%d days", product.LeadTimeDays.Int64) }</dd>
 										</div>
 									}
 									if product.Sku.Valid {
 										<div class="flex justify-between items-center">
-											<dt class="text-slate-400 font-medium">SKU:</dt>
-											<dd class="text-white font-semibold font-mono bg-slate-700/30 px-3 py-1 rounded-lg border border-slate-600/50">{ product.Sku.String }</dd>
+											<dt class="text-slate-400">SKU:</dt>
+											<dd class="text-white font-semibold font-mono bg-slate-700/30 px-2 py-0.5 rounded text-xs border border-slate-600/50">{ product.Sku.String }</dd>
 										</div>
 									}
 								</dl>
@@ -207,10 +207,24 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 						</div>
 					</div>
 				</div>
+				<!-- Related Products Section -->
+				if len(relatedProducts) > 0 {
+					<div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-16 py-4">
+						<div class="mb-4 text-center">
+							<h2 class="text-xl font-bold text-white mb-1 bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">You Might Also Like</h2>
+							<p class="text-slate-400 text-xs">More great products from our { category.Name } collection</p>
+						</div>
+						<div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+							for _, relatedProduct := range relatedProducts {
+								@CompactProductCard(relatedProduct)
+							}
+						</div>
+					</div>
+				}
 				<!-- Back to Shop -->
-				<div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-16 py-12 text-center">
-					<a href="/shop" class="inline-flex items-center text-blue-400 hover:text-emerald-400 font-semibold text-lg group transition-colors duration-200">
-						<svg class="w-6 h-6 mr-3 group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-16 py-4 text-center">
+					<a href="/shop" class="inline-flex items-center text-blue-400 hover:text-emerald-400 text-sm font-semibold group transition-colors duration-200">
+						<svg class="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
 						</svg>
 						<span class="group-hover:underline">Back to Shop</span>
@@ -219,4 +233,72 @@ templ Product(c echo.Context, product db.Product, category db.Category, images [
 			</div>
 		</div>
 	}
+}
+
+templ CompactProductCard(product ProductWithImage) {
+	<div class="group relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl overflow-hidden border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/50 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-500 hover:-translate-y-1 cursor-pointer h-full flex flex-col">
+		<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) } class="aspect-square bg-gradient-to-br from-slate-700 to-slate-800 overflow-hidden block cursor-pointer relative">
+			<div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent z-10"></div>
+			if product.ImageURL != "" {
+				<img src={ product.ImageURL } alt={ product.Product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"/>
+			} else {
+				<div class="w-full h-full flex items-center justify-center">
+					<div class="w-16 h-16 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
+						<svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+						</svg>
+					</div>
+				</div>
+			}
+		</a>
+		<div class="p-4 flex flex-col flex-grow">
+			<h3 class="text-sm font-bold text-white mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-emerald-400 transition-colors duration-300">{ product.Product.Name }</h3>
+			<div class="flex items-center justify-between mb-3">
+				<div class="text-lg font-bold text-transparent bg-gradient-to-br from-blue-400 to-emerald-400 bg-clip-text">
+					${ fmt.Sprintf("%.2f", float64(product.Product.PriceCents)/100) }
+				</div>
+				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
+					<span class="text-green-400 text-xs font-medium px-2 py-1 bg-green-400/10 rounded-full border border-green-400/20">
+						<svg class="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+						</svg>
+					</span>
+				} else {
+					<span class="text-red-400 text-xs font-medium px-2 py-1 bg-red-400/10 rounded-full border border-red-400/20">
+						<svg class="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20">
+							<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+						</svg>
+					</span>
+				}
+			</div>
+			<div class="mt-auto space-y-2">
+				<a
+					href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Product.Slug)) }
+					class="block w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white text-center px-3 py-2 rounded-lg text-xs font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-0.5"
+				>
+					<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+					</svg>
+					View
+				</a>
+				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
+					<button
+						type="button"
+						class="add-to-cart-btn w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-0.5"
+						data-product-id={ product.Product.ID }
+						data-product-name={ product.Product.Name }
+						data-product-price={ fmt.Sprintf("%d", product.Product.PriceCents) }
+						data-product-image={ product.ImageURL }
+						data-quantity="1"
+					>
+						<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+						</svg>
+						Add
+					</button>
+				}
+			</div>
+		</div>
+	</div>
 }

@@ -173,8 +173,11 @@ class ShippingManager {
     getLoadingHTML() {
         return `
             <div class="shipping-loading text-center py-8">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                <p class="text-slate-300">Getting shipping rates...</p>
+                <div class="flex justify-center items-center mb-4">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-slate-600 border-t-blue-500"></div>
+                </div>
+                <p class="text-lg font-semibold text-white">Getting shipping rates...</p>
+                <p class="text-sm text-slate-400 mt-2">Please wait...</p>
             </div>
         `;
     }
@@ -186,7 +189,15 @@ class ShippingManager {
 
         return `
             <div class="shipping-rates">
-                <h3 class="text-lg font-semibold text-white mb-4">Select Shipping Method</h3>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-white">Select Shipping Method</h3>
+                    <button
+                        onclick="window.shippingManager.showAddressForm()"
+                        class="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                        Change ZIP Code
+                    </button>
+                </div>
                 <div class="space-y-3">
                     ${this.shippingRates.map(rate => `
                         <div class="shipping-option bg-slate-700/30 rounded-xl p-4 border border-slate-600/50 hover:border-blue-500/50 transition-all duration-200 cursor-pointer" data-rate-id="${rate.rate_id}">
@@ -200,9 +211,6 @@ class ShippingManager {
                                         <div class="text-sm text-slate-300">
                                             ${rate.delivery_days ? `${rate.delivery_days} business days` : 'Standard delivery'}
                                             ${rate.estimated_date ? ` • Arrives by ${new Date(rate.estimated_date).toLocaleDateString()}` : ''}
-                                        </div>
-                                        <div class="text-xs text-slate-400">
-                                            Box: ${rate.box_sku} (+$${rate.box_cost.toFixed(2)})
                                         </div>
                                     </div>
                                 </div>
@@ -260,12 +268,6 @@ class ShippingManager {
                             Get Rates
                         </button>
                     </div>
-                    <button
-                        onclick="window.shippingManager.showAddressForm()"
-                        class="mt-3 text-sm text-slate-400 hover:text-slate-300 transition-colors"
-                    >
-                        Enter full address instead
-                    </button>
                 </div>
             </div>
         `;
@@ -281,6 +283,8 @@ class ShippingManager {
             showToast('Please enter a ZIP code', 'error');
             return;
         }
+
+        this.updateShippingUI('loading');
 
         try {
             const rates = await this.getEstimatedRates(zipCode);
@@ -301,9 +305,11 @@ class ShippingManager {
 
     // Show address form
     showAddressForm() {
-        // This will be implemented when we add the address form modal
-        console.log('Address form functionality to be implemented');
-        // For now, we'll use the simplified checkout flow
+        // Reset shipping state and show the ZIP code input form again
+        this.shippingRates = [];
+        this.selectedShippingOption = null;
+        this.shippingAddress = {};
+        this.updateShippingUI('address-required');
     }
 
     // Attach event listeners to shipping options
@@ -369,10 +375,11 @@ document.addEventListener('DOMContentLoaded', function() {
         window.shippingManager.updateShippingUI('address-required');
     }
 
-    // Add global event listener for Enter key on ZIP input
-    document.addEventListener('keypress', function(e) {
+    // Add global event listener for Enter key on ZIP input (using keydown for better compatibility)
+    document.addEventListener('keydown', function(e) {
         if (e.target.id === 'shipping-zip-input' && e.key === 'Enter') {
             e.preventDefault();
+            e.stopPropagation();
             window.shippingManager.getQuickRates();
         }
     });

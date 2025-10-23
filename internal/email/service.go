@@ -29,7 +29,7 @@ func NewService() *Service {
 	return &Service{
 		host:     os.Getenv("BREVO_SMTP_HOST"),
 		port:     port,
-		username: os.Getenv("BREVO_SMTP_HOST"), // Brevo uses SMTP host as username
+		username: os.Getenv("BREVO_SMTP_LOGIN"),
 		password: os.Getenv("BREVO_SMTP_KEY"),
 		from:     os.Getenv("EMAIL_FROM"),
 	}
@@ -98,6 +98,7 @@ type OrderData struct {
 // OrderItem represents a single item in an order
 type OrderItem struct {
 	ProductName  string
+	ProductImage string
 	Quantity     int64
 	PriceCents   int64
 	TotalCents   int64

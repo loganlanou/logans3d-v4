@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/loganlanou/logans3d-v4/service"
 	"github.com/loganlanou/logans3d-v4/storage"
+	"github.com/loganlanou/logans3d-v4/views/errors"
 )
 
 func main() {
@@ -38,6 +40,9 @@ func main() {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
+
+	// Custom error handler for 404 and other errors
+	e.HTTPErrorHandler = customHTTPErrorHandler
 
 	// Middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -98,6 +103,35 @@ func main() {
 	if err := e.Start(addr); err != nil {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)
+	}
+}
+
+func customHTTPErrorHandler(err error, c echo.Context) {
+	code := http.StatusInternalServerError
+	if he, ok := err.(*echo.HTTPError); ok {
+		code = he.Code
+	}
+
+	if code == http.StatusNotFound {
+		// Render custom 404 page
+		path := c.Request().URL.Path
+		slog.Info("404 not found", "path", path)
+		c.Response().Status = http.StatusNotFound
+		if renderErr := errors.NotFound(c, path).Render(c.Request().Context(), c.Response()); renderErr != nil {
+			slog.Error("failed to render 404 page", "error", renderErr)
+			c.String(http.StatusNotFound, "Page not found")
+		}
+		return
+	}
+
+	// For other errors, use Echo's default error handler
+	c.Logger().Error(err)
+	if !c.Response().Committed {
+		if c.Request().Method == http.MethodHead {
+			c.NoContent(code)
+		} else {
+			c.String(code, http.StatusText(code))
+		}
 	}
 }
 

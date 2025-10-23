@@ -183,6 +183,13 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/product/edit", adminHandler.HandleProductForm)
 	admin.POST("/product/:id", adminHandler.HandleUpdateProduct)
 	admin.POST("/product/:id/delete", adminHandler.HandleDeleteProduct)
+	admin.POST("/product/:id/toggle-featured", adminHandler.HandleToggleProductFeatured)
+	admin.POST("/product/:id/toggle-premium", adminHandler.HandleToggleProductPremium)
+	admin.POST("/product/:id/toggle-active", adminHandler.HandleToggleProductActive)
+	admin.POST("/product/:id/toggle-new", adminHandler.HandleToggleProductNew)
+	admin.POST("/product/image/:imageId/delete", adminHandler.HandleDeleteProductImage)
+	admin.POST("/product/image/:imageId/set-primary", adminHandler.HandleSetPrimaryProductImage)
+	admin.GET("/product/search", adminHandler.HandleProductSearch)
 	
 	// Category management routes
 	admin.GET("/category/new", adminHandler.HandleCategoryForm)
@@ -248,8 +255,52 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 // Basic handler implementations
 func (s *Service) handleHome(c echo.Context) error {
+	ctx := c.Request().Context()
 	slog.Info("Home page requested", "ip", c.RealIP())
-	return Render(c, home.Index(c))
+
+	// Get featured products
+	featuredProducts, err := s.storage.Queries.ListFeaturedProducts(ctx)
+	if err != nil {
+		slog.Error("failed to fetch featured products", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load featured products")
+	}
+	slog.Debug("fetched featured products", "count", len(featuredProducts))
+
+	// Combine with images
+	productsWithImages := make([]home.ProductWithImage, 0, len(featuredProducts))
+	for _, product := range featuredProducts {
+		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
+		if err != nil {
+			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
+			continue
+		}
+
+		imageURL := ""
+		if len(images) > 0 {
+			// Get the primary image or the first one
+			rawImageURL := ""
+			for _, img := range images {
+				if img.IsPrimary.Valid && img.IsPrimary.Bool {
+					rawImageURL = img.ImageUrl
+					break
+				}
+			}
+			if rawImageURL == "" {
+				rawImageURL = images[0].ImageUrl
+			}
+
+			if rawImageURL != "" {
+				imageURL = "/public/images/products/" + rawImageURL
+			}
+		}
+
+		productsWithImages = append(productsWithImages, home.ProductWithImage{
+			Product:  product,
+			ImageURL: imageURL,
+		})
+	}
+
+	return Render(c, home.Index(c, productsWithImages))
 }
 
 func (s *Service) handleAbout(c echo.Context) error {
@@ -532,21 +583,22 @@ func (s *Service) handlePremium(c echo.Context) error {
 func (s *Service) handleProduct(c echo.Context) error {
 	slug := c.Param("slug")
 	ctx := c.Request().Context()
-	
-	// Get product by slug
+
+	// Get product by slug (only active products)
 	product, err := s.storage.Queries.GetProductBySlug(ctx, slug)
 	if err != nil {
-		slog.Error("failed to fetch product", "slug", slug, "error", err)
-		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+		// Product not found or inactive - show shopping-specific 404
+		slog.Info("product not found or inactive", "slug", slug)
+		return s.handleProductNotFound(c, slug)
 	}
-	
+
 	// Get product images
 	images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
 	if err != nil {
 		slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load product images")
 	}
-	
+
 	// Get category
 	var category db.Category
 	if product.CategoryID.Valid {
@@ -560,7 +612,92 @@ func (s *Service) handleProduct(c echo.Context) error {
 		category = db.Category{Name: "Uncategorized", Slug: "uncategorized"}
 	}
 
-	return Render(c, shop.Product(c, product, category, images))
+	// Get related products from the same category
+	var relatedProducts []shop.ProductWithImage
+	if product.CategoryID.Valid {
+		relatedProductsList, err := s.storage.Queries.ListRelatedProducts(ctx, db.ListRelatedProductsParams{
+			CategoryID: product.CategoryID,
+			ID:         product.ID,
+			Limit:      4,
+		})
+		if err != nil {
+			slog.Warn("failed to fetch related products", "product_id", product.ID, "error", err)
+			relatedProductsList = []db.Product{}
+		}
+
+		// Build ProductWithImage for each related product
+		for _, relatedProduct := range relatedProductsList {
+			primaryImage, err := s.storage.Queries.GetPrimaryProductImage(ctx, relatedProduct.ID)
+			imageURL := ""
+			if err == nil {
+				imageURL = fmt.Sprintf("/public/images/products/%s", primaryImage.ImageUrl)
+			}
+
+			relatedProducts = append(relatedProducts, shop.ProductWithImage{
+				Product:  relatedProduct,
+				ImageURL: imageURL,
+			})
+		}
+	}
+
+	return Render(c, shop.Product(c, product, category, images, relatedProducts))
+}
+
+func (s *Service) handleProductNotFound(c echo.Context, slug string) error {
+	ctx := c.Request().Context()
+
+	// Get all categories for browsing
+	categories, err := s.storage.Queries.ListCategories(ctx)
+	if err != nil {
+		slog.Error("failed to fetch categories", "error", err)
+		categories = []db.Category{}
+	}
+
+	// Try to find the product regardless of active status to get its category
+	var relatedProducts []shop.ProductWithImage
+
+	// Get a few featured products as suggestions
+	featuredProducts, err := s.storage.Queries.ListFeaturedProducts(ctx)
+	if err == nil && len(featuredProducts) > 0 {
+		// Limit to 4 products
+		limit := 4
+		if len(featuredProducts) < limit {
+			limit = len(featuredProducts)
+		}
+
+		for i := 0; i < limit; i++ {
+			product := featuredProducts[i]
+			images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
+			if err != nil {
+				continue
+			}
+
+			imageURL := ""
+			if len(images) > 0 {
+				rawImageURL := ""
+				for _, img := range images {
+					if img.IsPrimary.Valid && img.IsPrimary.Bool {
+						rawImageURL = img.ImageUrl
+						break
+					}
+				}
+				if rawImageURL == "" {
+					rawImageURL = images[0].ImageUrl
+				}
+				if rawImageURL != "" {
+					imageURL = "/public/images/products/" + rawImageURL
+				}
+			}
+
+			relatedProducts = append(relatedProducts, shop.ProductWithImage{
+				Product:  product,
+				ImageURL: imageURL,
+			})
+		}
+	}
+
+	c.Response().Status = http.StatusNotFound
+	return Render(c, shop.ProductNotFound(c, slug, categories, relatedProducts))
 }
 
 func (s *Service) handleCategory(c echo.Context) error {
@@ -783,6 +920,46 @@ func (s *Service) handleAccount(c echo.Context) error {
 
 	// Render account page
 	return Render(c, account.Index(c, user, orders))
+}
+
+func (s *Service) handleAccountOrderDetail(c echo.Context) error {
+	// Check authentication
+	if !auth.IsAuthenticated(c) {
+		return c.Redirect(http.StatusFound, "/login?redirect_url=/account")
+	}
+
+	// Get user from context
+	user, ok := auth.GetDBUser(c)
+	if !ok {
+		slog.Error("authenticated user not found in context")
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not found")
+	}
+
+	ctx := c.Request().Context()
+	orderID := c.Param("id")
+
+	// Fetch the order
+	order, err := s.storage.Queries.GetOrder(ctx, orderID)
+	if err != nil {
+		slog.Error("failed to fetch order", "error", err, "order_id", orderID)
+		return echo.NewHTTPError(http.StatusNotFound, "Order not found")
+	}
+
+	// Verify the order belongs to the user
+	if !order.UserID.Valid || order.UserID.String != user.ID {
+		slog.Error("user attempted to access order they don't own", "user_id", user.ID, "order_id", orderID)
+		return echo.NewHTTPError(http.StatusForbidden, "Access denied")
+	}
+
+	// Fetch order items
+	orderItems, err := s.storage.Queries.GetOrderItems(ctx, orderID)
+	if err != nil {
+		slog.Error("failed to fetch order items", "error", err, "order_id", orderID)
+		orderItems = []db.OrderItem{}
+	}
+
+	// Render order detail page
+	return Render(c, account.OrderDetail(c, order, orderItems))
 }
 
 // handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)

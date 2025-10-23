@@ -153,8 +153,8 @@
 
 /* Main Content Area */
 .admin-main {
-  padding: 2rem;
-  min-height: calc(100vh - 4rem);
+  padding: 1.5rem 2rem;
+  min-height: 100vh;
 }
 
 /* Sidebar Header */

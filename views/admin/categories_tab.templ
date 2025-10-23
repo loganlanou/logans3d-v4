@@ -215,3 +215,22 @@ func countEmptyCategories(products []types.ProductWithImage, categories []db.Cat
 	}
 	return count
 }
+
+func getCategoryName(categories []db.Category, categoryID string) string {
+	for _, c := range categories {
+		if c.ID == categoryID {
+			return c.Name
+		}
+	}
+	return "Unknown"
+}
+
+func countProductsInCategory(products []types.ProductWithImage, categoryID string) int {
+	count := 0
+	for _, p := range products {
+		if p.Product.CategoryID.Valid && p.Product.CategoryID.String == categoryID {
+			count++
+		}
+	}
+	return count
+}

@@ -1,0 +1,68 @@
+; SOA Record (must be first for DNSimple import)
+logans3dcreations.com. 3600 IN SOA ns1.dnsimple.com. admin.dnsimple.com. 1761193065 86400 7200 604800 300
+
+$ORIGIN logans3dcreations.com.
+$TTL 1h
+
+; Nameservers (DNSimple)
+logans3dcreations.com. 3600 IN NS ns1.dnsimple.com.
+logans3dcreations.com. 3600 IN NS ns2.dnsimple-edge.net.
+logans3dcreations.com. 3600 IN NS ns3.dnsimple.com.
+logans3dcreations.com. 3600 IN NS ns4.dnsimple-edge.org.
+
+; ============================================================================
+; A Records - Main Site (convert to ALIAS after import: jarvis.lanou.com)
+; ============================================================================
+@                               3600 IN A       68.183.103.122
+www                             3600 IN A       68.183.103.122
+
+; ============================================================================
+; TXT Records - Verification and Authentication
+; ============================================================================
+; Google Site Verification
+@                               3600 IN TXT     "google-site-verification=4hN30ZRAlwou7ULhGC4Y2-bYMjuNNZwhIlMjwcbHCps"
+
+; Brevo Domain Authentication
+@                               3600 IN TXT     "brevo-code:8f0294a3cee0175fb5c2dde996b8d7cb"
+
+; Brevo DMARC Policy
+_dmarc                          3600 IN TXT     "v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com"
+
+; ============================================================================
+; CNAME Records - Brevo Email Service
+; ============================================================================
+brevo1._domainkey               3600 IN CNAME   b1.logans3dcreations-com.dkim.brevo.com.
+brevo2._domainkey               3600 IN CNAME   b2.logans3dcreations-com.dkim.brevo.com.
+
+; ============================================================================
+; CNAME Records - Clerk Authentication
+; ============================================================================
+clerk                           3600 IN CNAME   frontend-api.clerk.services.
+accounts                        3600 IN CNAME   accounts.clerk.services.
+clkmail                         3600 IN CNAME   mail.l0ywbfl1ppo6.clerk.services.
+clk._domainkey                  3600 IN CNAME   dkim1.l0ywbfl1ppo6.clerk.services.
+clk2._domainkey                 3600 IN CNAME   dkim2.l0ywbfl1ppo6.clerk.services.
+
+; ============================================================================
+; URL Redirect
+; ============================================================================
+; Note: This must be configured via DNSimple UI, not zone file
+; mail -> http://mail.google.com/a/lanou.com (HTTP 302)
+
+; ============================================================================
+; MX Records - Google Workspace
+; ============================================================================
+@                               3600 IN MX 1    aspmx.l.google.com.
+@                               3600 IN MX 5    alt1.aspmx.l.google.com.
+@                               3600 IN MX 5    alt2.aspmx.l.google.com.
+@                               3600 IN MX 10   alt3.aspmx.l.google.com.
+@                               3600 IN MX 10   alt4.aspmx.l.google.com.
+
+; ============================================================================
+; Notes
+; ============================================================================
+; 1. ALIAS records are DNSimple-specific and automatically resolve to the
+;    current IP address of jarvis.lanou.com
+; 2. When jarvis.lanou.com IP changes, this domain automatically follows
+; 3. The wildcard (*) ALIAS catches all subdomains not explicitly defined
+; 4. The mail subdomain redirect must be configured via DNSimple UI

@@ -18,6 +18,7 @@ type ShippingOption struct {
 	EstimatedDate   string  `json:"estimated_date,omitempty"`
 	BoxSKU          string  `json:"box_sku"`
 	BoxCost         float64 `json:"box_cost"`
+	HandlingCost    float64 `json:"handling_cost"`
 	TotalCost       float64 `json:"total_cost"`
 	PackingSolution *PackingSolution `json:"packing_solution,omitempty"`
 }
@@ -109,7 +110,7 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 		}
 
 		for _, rate := range rates {
-			totalCost := rate.ShippingAmount.Amount + boxSelection.BoxCost
+			totalCost := rate.ShippingAmount.Amount + boxSelection.BoxCost + boxSelection.PackingMaterialsCost
 
 			option := ShippingOption{
 				RateID:          rate.RateID,
@@ -122,6 +123,7 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 				EstimatedDate:   rate.EstimatedDate,
 				BoxSKU:          boxSelection.Box.SKU,
 				BoxCost:         boxSelection.BoxCost,
+				HandlingCost:    boxSelection.PackingMaterialsCost,
 				TotalCost:       totalCost,
 				PackingSolution: packingSolution,
 			}

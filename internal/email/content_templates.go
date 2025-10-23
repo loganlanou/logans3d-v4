@@ -26,7 +26,14 @@ const customerOrderContentTemplate = `
     <tbody>
         {{range .Items}}
         <tr style="border-bottom: 1px solid #ddd;">
-            <td style="padding: 12px;">{{.ProductName}}</td>
+            <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    {{if .ProductImage}}
+                    <img src="https://www.logans3dcreations.com/public/images/products/{{.ProductImage}}" alt="{{.ProductName}}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                    {{end}}
+                    <span>{{.ProductName}}</span>
+                </div>
+            </td>
             <td style="padding: 12px; text-align: center;">{{.Quantity}}</td>
             <td style="padding: 12px; text-align: right;">{{FormatCents .PriceCents}}</td>
             <td style="padding: 12px; text-align: right;">{{FormatCents .TotalCents}}</td>
@@ -108,7 +115,14 @@ const adminOrderContentTemplate = `
     <tbody>
         {{range .Items}}
         <tr style="border-bottom: 1px solid #ddd;">
-            <td style="padding: 12px;"><strong>{{.ProductName}}</strong></td>
+            <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    {{if .ProductImage}}
+                    <img src="https://www.logans3dcreations.com/public/images/products/{{.ProductImage}}" alt="{{.ProductName}}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                    {{end}}
+                    <strong>{{.ProductName}}</strong>
+                </div>
+            </td>
             <td style="padding: 12px; text-align: center;">{{.Quantity}}</td>
             <td style="padding: 12px; text-align: right;">{{FormatCents .PriceCents}}</td>
             <td style="padding: 12px; text-align: right;">{{FormatCents .TotalCents}}</td>
@@ -158,8 +172,7 @@ const adminOrderContentTemplate = `
 </div>
 
 <div style="text-align: center; margin: 30px 0;">
-    <a href="https://www.logans3dcreations.com/admin/orders" style="display: inline-block; padding: 12px 30px; background-color: #FF9800; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; margin: 0 10px;">View Order</a>
-    <a href="https://www.logans3dcreations.com/admin/orders" style="display: inline-block; padding: 12px 30px; background-color: #FF9800; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; margin: 0 10px;">Process Order</a>
+    <a href="https://www.logans3dcreations.com/admin/orders/{{.OrderID}}" style="display: inline-block; padding: 12px 30px; background-color: #FF9800; color: white; text-decoration: none; border-radius: 5px; font-weight: 600;">View Order</a>
 </div>
 
 <div style="margin-top: 30px; padding: 20px; background-color: #f9f9f9; border-radius: 8px;">

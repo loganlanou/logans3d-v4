@@ -60,7 +60,7 @@ templ Index(c echo.Context, user *db.User, orders []db.Order) {
 								if user.Username.Valid && user.Username.String != "" {
 									<div>
 										<label class="text-sm text-slate-400 uppercase tracking-wider">Username</label>
-										<p class="text-white font-medium mt-1">@{ user.Username.String }</p>
+										<p class="text-white font-medium mt-1">{ "@" + user.Username.String }</p>
 									</div>
 								}
 

@@ -8,12 +8,12 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Dashboard(c echo.Context, products []types.ProductWithImage) {
-	@layout.AdminBase(c, "Dashboard") {
+templ Dashboard(c echo.Context, products []types.ProductWithImage, categories []db.Category, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter, sortBy, sortOrder string) {
+	@layout.AdminBase(c, "Products") {
 		@layout.AdminContainer() {
 			<!-- Header -->
-			<div class="flex justify-between items-center mb-8">
-				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Dashboard</h1>
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Products</h1>
 				<div class="flex space-x-3">
 					<a href="/admin/categories" class="admin-btn admin-btn-secondary">
 						Manage Categories
@@ -24,40 +24,202 @@ templ Dashboard(c echo.Context, products []types.ProductWithImage) {
 				</div>
 			</div>
 
-			<!-- Stats Cards -->
-			<div class="admin-stats-grid">
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(products)) }</div>
-					<div class="admin-stat-label">Total Products</div>
+			<!-- Search and Filter Bar -->
+			<div class="mb-6 space-y-4">
+				<!-- Type-ahead Search -->
+				<div class="relative" x-data="{
+					search: '',
+					results: [],
+					showResults: false,
+					loading: false,
+					async searchProducts() {
+						if (this.search.length < 2) {
+							this.results = [];
+							this.showResults = false;
+							return;
+						}
+						this.loading = true;
+						try {
+							const response = await fetch(`/admin/product/search?q=${encodeURIComponent(this.search)}`);
+							this.results = await response.json();
+							this.showResults = true;
+						} catch (error) {
+							console.error('Search error:', error);
+						} finally {
+							this.loading = false;
+						}
+					}
+				}">
+					<input
+						type="text"
+						x-model="search"
+						@input.debounce.300ms="searchProducts()"
+						@focus="if(results.length > 0) showResults = true"
+						@click.outside="showResults = false"
+						placeholder="Search products by name..."
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					/>
+					<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+						<template x-for="result in results" :key="result.id">
+							<a
+								:href="`/admin/product/edit?id=${result.id}`"
+								class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+								@click="showResults = false"
+							>
+								<img
+									:src="result.image || '/public/images/placeholder.png'"
+									:alt="result.name"
+									class="w-12 h-12 object-cover rounded"
+								/>
+								<div class="flex-1">
+									<div class="font-medium text-gray-900" x-text="result.name"></div>
+									<div class="text-sm text-gray-500" x-text="`$${result.price.toFixed(2)}`"></div>
+								</div>
+							</a>
+						</template>
+					</div>
 				</div>
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", countNewItems(products)) }</div>
-					<div class="admin-stat-label">New Items (60 days)</div>
-				</div>
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", countDiscontinuedItems(products)) }</div>
-					<div class="admin-stat-label">Discontinued Items</div>
-				</div>
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", countLowStock(products)) }</div>
-					<div class="admin-stat-label">Low Stock Items</div>
+
+				<!-- Filters -->
+				<div class="flex gap-4 flex-wrap items-center">
+					<select
+						name="category"
+						class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						onchange="window.location.href = updateQueryParam('category', this.value)"
+					>
+						<option value="">All Categories</option>
+						for _, cat := range categories {
+							if categoryFilter == cat.ID {
+								<option value={ cat.ID } selected>{ cat.Name }</option>
+							} else {
+								<option value={ cat.ID }>{ cat.Name }</option>
+							}
+						}
+					</select>
+
+					<label class="flex items-center gap-2 cursor-pointer px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+						<input
+							type="checkbox"
+							checked?={ newFilter == "true" }
+							onchange="window.location.href = updateQueryParam('new', this.checked ? 'true' : '')"
+							class="w-4 h-4 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500 focus:ring-2"
+						/>
+						<span class="text-sm font-medium text-gray-700">New</span>
+					</label>
+
+					<label class="flex items-center gap-2 cursor-pointer px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+						<input
+							type="checkbox"
+							checked?={ featuredFilter == "true" }
+							onchange="window.location.href = updateQueryParam('featured', this.checked ? 'true' : '')"
+							class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+						/>
+						<span class="text-sm font-medium text-gray-700">Featured</span>
+					</label>
+
+					<label class="flex items-center gap-2 cursor-pointer px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+						<input
+							type="checkbox"
+							checked?={ premiumFilter == "true" }
+							onchange="window.location.href = updateQueryParam('premium', this.checked ? 'true' : '')"
+							class="w-4 h-4 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500 focus:ring-2"
+						/>
+						<span class="text-sm font-medium text-gray-700">Premium</span>
+					</label>
+
+					<label class="flex items-center gap-2 cursor-pointer px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+						<input
+							type="checkbox"
+							checked?={ statusFilter == "inactive" }
+							onchange="window.location.href = updateQueryParam('status', this.checked ? 'inactive' : '')"
+							class="w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 focus:ring-2"
+						/>
+						<span class="text-sm font-medium text-gray-700">Inactive</span>
+					</label>
+
+					if categoryFilter != "" || featuredFilter != "" || premiumFilter != "" || newFilter != "" || statusFilter != "" || sortBy != "" {
+						<a href="/admin" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50">
+							Clear Filters
+						</a>
+					}
 				</div>
 			</div>
 
+			<script>
+				function updateQueryParam(key, value) {
+					const url = new URL(window.location);
+					if (value) {
+						url.searchParams.set(key, value);
+					} else {
+						url.searchParams.delete(key);
+					}
+					return url.toString();
+				}
+			</script>
+
 			<!-- Products Table -->
-			<div class="admin-card mt-8">
+			<div class="admin-card">
 				<div class="admin-card-header">
-					<h2 class="admin-card-title">Products</h2>
+					<h2 class="admin-card-title">Products ({ fmt.Sprintf("%d", len(products)) })</h2>
 				</div>
 				<div class="overflow-x-auto">
 					<table class="admin-table">
 						<thead>
 							<tr>
 								<th>Image</th>
-								<th>Name</th>
+								<th>
+									<a
+										href={ templ.SafeURL(getSortURL("name", sortBy, sortOrder)) }
+										class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+										title="Click to sort by name"
+									>
+										Name
+										if sortBy == "name" {
+											if sortOrder == "asc" {
+												<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+												</svg>
+											} else {
+												<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+												</svg>
+											}
+										} else {
+											<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+											</svg>
+										}
+									</a>
+								</th>
 								<th>SKU</th>
-								<th>Price</th>
+								<th>
+									<a
+										href={ templ.SafeURL(getSortURL("price", sortBy, sortOrder)) }
+										class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+										title="Click to sort by price"
+									>
+										Price
+										if sortBy == "price" {
+											if sortOrder == "asc" {
+												<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+												</svg>
+											} else {
+												<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+												</svg>
+											}
+										} else {
+											<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+											</svg>
+										}
+									</a>
+								</th>
 								<th>Stock</th>
+								<th>New</th>
+								<th>Featured</th>
+								<th>Premium</th>
 								<th>Status</th>
 								<th>Actions</th>
 							</tr>
@@ -66,25 +228,20 @@ templ Dashboard(c echo.Context, products []types.ProductWithImage) {
 							for _, product := range products {
 								<tr>
 									<td>
-										if product.ImageURL != "" {
-											<img src={ product.ImageURL } alt={ product.Product.Name } class="w-12 h-12 object-cover rounded-lg" />
-										} else {
-											<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-												<span class="admin-text-muted text-xs">No Image</span>
-											</div>
-										}
+										<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) } class="block">
+											if product.ImageURL != "" {
+												<img src={ product.ImageURL } alt={ product.Product.Name } class="w-12 h-12 object-cover rounded-lg hover:opacity-80 transition-opacity" />
+											} else {
+												<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors">
+													<span class="admin-text-muted text-xs">No Image</span>
+												</div>
+											}
+										</a>
 									</td>
 									<td>
-										<div class="flex items-center gap-2">
-											<div>
-												<div class="admin-text-primary admin-font-medium">{ product.Product.Name }</div>
-											</div>
-											if product.IsNew {
-												<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-													NEW
-												</span>
-											}
-										</div>
+										<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) } class="admin-text-primary admin-font-medium hover:text-blue-600">
+											{ product.Product.Name }
+										</a>
 									</td>
 									<td>
 										if product.Product.Sku.Valid {
@@ -108,24 +265,131 @@ templ Dashboard(c echo.Context, products []types.ProductWithImage) {
 										}
 									</td>
 									<td>
-										<div class="flex flex-wrap gap-1">
-											if product.Product.IsActive.Valid && product.Product.IsActive.Bool {
-												<div class="admin-status admin-status-active">
-													<div class="admin-status-dot"></div>
-													Active
-												</div>
-											} else {
-												<div class="admin-status admin-status-inactive">
-													<div class="admin-status-dot"></div>
-													Discontinued (Hidden from site)
-												</div>
-											}
-											if product.Product.IsFeatured.Valid && product.Product.IsFeatured.Bool {
-												<div class="admin-status admin-status-featured">
-													<div class="admin-status-dot"></div>
-													Premium Collection
-												</div>
-											}
+										<div
+											x-data={ fmt.Sprintf("{ isNew: %t, productId: '%s' }", product.IsNew, product.Product.ID) }
+											@click="
+												isNew = !isNew;
+												fetch(`/admin/product/${productId}/toggle-new`, {
+													method: 'POST',
+													headers: {
+														'Content-Type': 'application/json',
+													},
+												})
+												.then(response => response.json())
+												.then(data => {
+													if (data.success) {
+														isNew = data.is_new;
+													} else {
+														isNew = !isNew;
+														alert('Failed to update new status');
+													}
+												})
+												.catch(error => {
+													isNew = !isNew;
+													console.error('Error:', error);
+													alert('Failed to update new status');
+												});
+											"
+											class="relative inline-flex items-center cursor-pointer"
+										>
+											<input type="checkbox" :checked="isNew" class="sr-only peer"/>
+											<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+										</div>
+									</td>
+									<td>
+										<div
+											x-data={ fmt.Sprintf("{ featured: %t, productId: '%s' }", product.Product.IsFeatured.Valid && product.Product.IsFeatured.Bool, product.Product.ID) }
+											@click="
+												featured = !featured;
+												fetch(`/admin/product/${productId}/toggle-featured`, {
+													method: 'POST',
+													headers: {
+														'Content-Type': 'application/json',
+													},
+												})
+												.then(response => response.json())
+												.then(data => {
+													if (data.success) {
+														featured = data.is_featured;
+													} else {
+														featured = !featured;
+														alert('Failed to update featured status');
+													}
+												})
+												.catch(error => {
+													featured = !featured;
+													console.error('Error:', error);
+													alert('Failed to update featured status');
+												});
+											"
+											class="relative inline-flex items-center cursor-pointer"
+										>
+											<input type="checkbox" :checked="featured" class="sr-only peer"/>
+											<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+										</div>
+									</td>
+									<td>
+										<div
+											x-data={ fmt.Sprintf("{ premium: %t, productId: '%s' }", product.Product.IsPremium.Valid && product.Product.IsPremium.Bool, product.Product.ID) }
+											@click="
+												premium = !premium;
+												fetch(`/admin/product/${productId}/toggle-premium`, {
+													method: 'POST',
+													headers: {
+														'Content-Type': 'application/json',
+													},
+												})
+												.then(response => response.json())
+												.then(data => {
+													if (data.success) {
+														premium = data.is_premium;
+													} else {
+														premium = !premium;
+														alert('Failed to update premium status');
+													}
+												})
+												.catch(error => {
+													premium = !premium;
+													console.error('Error:', error);
+													alert('Failed to update premium status');
+												});
+											"
+											class="relative inline-flex items-center cursor-pointer"
+										>
+											<input type="checkbox" :checked="premium" class="sr-only peer"/>
+											<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
+										</div>
+									</td>
+									<td>
+										<div
+											x-data={ fmt.Sprintf("{ active: %t, productId: '%s' }", product.Product.IsActive.Valid && product.Product.IsActive.Bool, product.Product.ID) }
+											@click="
+												active = !active;
+												fetch(`/admin/product/${productId}/toggle-active`, {
+													method: 'POST',
+													headers: {
+														'Content-Type': 'application/json',
+													},
+												})
+												.then(response => response.json())
+												.then(data => {
+													if (data.success) {
+														active = data.is_active;
+													} else {
+														active = !active;
+														alert('Failed to update active status');
+													}
+												})
+												.catch(error => {
+													active = !active;
+													console.error('Error:', error);
+													alert('Failed to update active status');
+												});
+											"
+											class="relative inline-flex items-center cursor-pointer"
+										>
+											<input type="checkbox" :checked="active" class="sr-only peer"/>
+											<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
 										</div>
 									</td>
 									<td>
@@ -152,51 +416,17 @@ templ Dashboard(c echo.Context, products []types.ProductWithImage) {
 	}
 }
 
-func countLowStock(products []types.ProductWithImage) int {
-	count := 0
-	for _, p := range products {
-		if p.Product.StockQuantity.Valid && p.Product.StockQuantity.Int64 <= 5 {
-			count++
-		}
-	}
-	return count
-}
+func getSortURL(field, currentSort, currentOrder string) string {
+	order := "asc"
 
-func getCategoryName(categories []db.Category, categoryID string) string {
-	for _, c := range categories {
-		if c.ID == categoryID {
-			return c.Name
+	// If clicking the same field, toggle the order
+	if currentSort == field {
+		if currentOrder == "asc" {
+			order = "desc"
+		} else {
+			order = "asc"
 		}
 	}
-	return "Unknown"
-}
 
-func countProductsInCategory(products []types.ProductWithImage, categoryID string) int {
-	count := 0
-	for _, p := range products {
-		if p.Product.CategoryID.Valid && p.Product.CategoryID.String == categoryID {
-			count++
-		}
-	}
-	return count
-}
-
-func countNewItems(products []types.ProductWithImage) int {
-	count := 0
-	for _, p := range products {
-		if p.IsNew {
-			count++
-		}
-	}
-	return count
-}
-
-func countDiscontinuedItems(products []types.ProductWithImage) int {
-	count := 0
-	for _, p := range products {
-		if p.IsDiscontinued {
-			count++
-		}
-	}
-	return count
+	return fmt.Sprintf("?sort=%s&order=%s", field, order)
 }

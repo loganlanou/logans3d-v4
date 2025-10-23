@@ -41,14 +41,151 @@ func NewAdminHandler(storage *storage.Storage, shippingService *shipping.Shippin
 }
 
 func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
-	products, err := h.storage.Queries.ListProducts(c.Request().Context())
+	// Get query parameters for filtering and sorting
+	categoryFilter := c.QueryParam("category")
+	featuredFilter := c.QueryParam("featured")
+	premiumFilter := c.QueryParam("premium")
+	newFilter := c.QueryParam("new")
+	statusFilter := c.QueryParam("status")
+	sortBy := c.QueryParam("sort")
+	sortOrder := c.QueryParam("order")
+
+	// Default sort by name ascending if no sort specified
+	if sortBy == "" {
+		sortBy = "name"
+		sortOrder = "asc"
+	}
+
+	// Get all products (admin needs to see inactive products too)
+	products, err := h.storage.Queries.ListAllProducts(c.Request().Context())
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to fetch products")
 	}
 
 	productsWithImages := h.buildProductsWithImages(c.Request().Context(), products)
 
-	return Render(c, admin.Dashboard(c, productsWithImages))
+	// Apply filters
+	filteredProducts := filterProducts(productsWithImages, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter)
+
+	// Apply sorting
+	sortedProducts := sortProducts(filteredProducts, sortBy, sortOrder)
+
+	// Get all categories for filter dropdown
+	categories, err := h.storage.Queries.ListCategories(c.Request().Context())
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
+	}
+
+	return Render(c, admin.Dashboard(c, sortedProducts, categories, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter, sortBy, sortOrder))
+}
+
+func filterProducts(products []types.ProductWithImage, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter string) []types.ProductWithImage {
+	filtered := make([]types.ProductWithImage, 0, len(products))
+
+	for _, p := range products {
+		// Category filter
+		if categoryFilter != "" && categoryFilter != "all" {
+			if !p.Product.CategoryID.Valid || p.Product.CategoryID.String != categoryFilter {
+				continue
+			}
+		}
+
+		// New filter
+		if newFilter == "true" {
+			if !p.IsNew {
+				continue
+			}
+		}
+
+		// Featured filter
+		if featuredFilter == "true" {
+			isFeatured := p.Product.IsFeatured.Valid && p.Product.IsFeatured.Bool
+			if !isFeatured {
+				continue
+			}
+		}
+
+		// Premium filter
+		if premiumFilter == "true" {
+			isPremium := p.Product.IsPremium.Valid && p.Product.IsPremium.Bool
+			if !isPremium {
+				continue
+			}
+		}
+
+		// Status filter - only filter when checkbox is checked
+		if statusFilter == "inactive" {
+			isActive := p.Product.IsActive.Valid && p.Product.IsActive.Bool
+			if isActive {
+				continue
+			}
+		}
+
+		filtered = append(filtered, p)
+	}
+
+	return filtered
+}
+
+func sortProducts(products []types.ProductWithImage, sortBy, sortOrder string) []types.ProductWithImage {
+	if sortBy == "" {
+		return products
+	}
+
+	// Create a copy to avoid modifying the original slice
+	sorted := make([]types.ProductWithImage, len(products))
+	copy(sorted, products)
+
+	// Default to ascending if not specified
+	if sortOrder == "" {
+		sortOrder = "asc"
+	}
+
+	// Sort based on the field
+	switch sortBy {
+	case "name":
+		if sortOrder == "asc" {
+			// Sort by name ascending
+			for i := 0; i < len(sorted); i++ {
+				for j := i + 1; j < len(sorted); j++ {
+					if sorted[i].Product.Name > sorted[j].Product.Name {
+						sorted[i], sorted[j] = sorted[j], sorted[i]
+					}
+				}
+			}
+		} else {
+			// Sort by name descending
+			for i := 0; i < len(sorted); i++ {
+				for j := i + 1; j < len(sorted); j++ {
+					if sorted[i].Product.Name < sorted[j].Product.Name {
+						sorted[i], sorted[j] = sorted[j], sorted[i]
+					}
+				}
+			}
+		}
+	case "price":
+		if sortOrder == "asc" {
+			// Sort by price ascending
+			for i := 0; i < len(sorted); i++ {
+				for j := i + 1; j < len(sorted); j++ {
+					if sorted[i].Product.PriceCents > sorted[j].Product.PriceCents {
+						sorted[i], sorted[j] = sorted[j], sorted[i]
+					}
+				}
+			}
+		} else {
+			// Sort by price descending
+			for i := 0; i < len(sorted); i++ {
+				for j := i + 1; j < len(sorted); j++ {
+					if sorted[i].Product.PriceCents < sorted[j].Product.PriceCents {
+						sorted[i], sorted[j] = sorted[j], sorted[i]
+					}
+				}
+			}
+		}
+	}
+
+	return sorted
 }
 
 func (h *AdminHandler) HandleCategoriesTab(c echo.Context) error {
@@ -114,21 +251,18 @@ func (h *AdminHandler) HandleCategoriesTab(c echo.Context) error {
 
 
 func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []db.Product) []types.ProductWithImage {
-	// Calculate cutoff date for "new" items (60 days ago)
-	newItemCutoff := time.Now().AddDate(0, 0, -60)
-
 	// Get products with their primary images
 	productsWithImages := make([]types.ProductWithImage, 0, len(products))
 	for _, product := range products {
 		images, err := h.storage.Queries.GetProductImages(ctx, product.ID)
 		if err != nil {
 			// Continue without image if there's an error
-			// Check if product is new (within last 60 days)
-			isNew := product.CreatedAt.Valid && product.CreatedAt.Time.After(newItemCutoff)
-			
+			// Use database is_new column
+			isNew := product.IsNew.Valid && product.IsNew.Bool
+
 			// Check if product is discontinued (inactive)
 			isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
-			
+
 			productsWithImages = append(productsWithImages, types.ProductWithImage{
 				Product:       product,
 				ImageURL:      "",
@@ -152,7 +286,7 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 			if rawImageURL == "" {
 				rawImageURL = images[0].ImageUrl
 			}
-			
+
 			// Build the full path from the filename
 			if rawImageURL != "" {
 				// Database should only contain filenames
@@ -161,9 +295,9 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 			}
 		}
 
-		// Check if product is new (within last 60 days)
-		isNew := product.CreatedAt.Valid && product.CreatedAt.Time.After(newItemCutoff)
-		
+		// Use database is_new column
+		isNew := product.IsNew.Valid && product.IsNew.Bool
+
 		// Check if product is discontinued (inactive)
 		isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
 
@@ -181,6 +315,7 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 func (h *AdminHandler) HandleProductForm(c echo.Context) error {
 	productID := c.QueryParam("id")
 	var product *db.Product
+	var productImages []db.ProductImage
 
 	if productID != "" {
 		p, err := h.storage.Queries.GetProduct(c.Request().Context(), productID)
@@ -189,6 +324,13 @@ func (h *AdminHandler) HandleProductForm(c echo.Context) error {
 		}
 		if err == nil {
 			product = &p
+
+			// Get product images
+			productImages, err = h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+			if err != nil {
+				// Log error but don't fail
+				fmt.Printf("Failed to fetch product images: %v\n", err)
+			}
 		}
 	}
 
@@ -197,7 +339,7 @@ func (h *AdminHandler) HandleProductForm(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
 	}
 
-	return Render(c, admin.ProductForm(c, product, categories))
+	return Render(c, admin.ProductForm(c, product, categories, productImages))
 }
 
 func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
@@ -240,7 +382,8 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Valid: false},
 		IsActive:         sql.NullBool{Bool: true, Valid: true},
-		IsFeatured:       sql.NullBool{Bool: isPremiumCollection, Valid: true},
+		IsFeatured:       sql.NullBool{Bool: false, Valid: true},
+		IsPremium:        sql.NullBool{Bool: isPremiumCollection, Valid: true},
 	}
 
 	_, err = h.storage.Queries.CreateProduct(c.Request().Context(), params)
@@ -255,10 +398,10 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 		if err == nil {
 			defer src.Close()
 
-			// Create uploads directory if it doesn't exist
-			uploadDir := "public/uploads/products"
+			// Create images directory if it doesn't exist
+			uploadDir := "public/images/products"
 			if err := os.MkdirAll(uploadDir, 0755); err != nil {
-				return c.String(http.StatusInternalServerError, "Failed to create upload directory")
+				return c.String(http.StatusInternalServerError, "Failed to create images directory")
 			}
 
 			// Generate unique filename
@@ -281,8 +424,22 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 			// Save only the filename to database
 			// The view layer will build the full path
 			imageFilename := filename
-			// TODO: Save to database using CreateProductImage
-			_ = imageFilename
+
+			// Save to database - this will be the primary image
+			imageParams := db.CreateProductImageParams{
+				ID:           uuid.New().String(),
+				ProductID:    productID,
+				ImageUrl:     imageFilename,
+				AltText:      sql.NullString{String: name, Valid: true},
+				DisplayOrder: sql.NullInt64{Int64: 0, Valid: true},
+				IsPrimary:    sql.NullBool{Bool: true, Valid: true},
+			}
+
+			_, err = h.storage.Queries.CreateProductImage(c.Request().Context(), imageParams)
+			if err != nil {
+				// Log error but don't fail the product creation
+				fmt.Printf("Failed to save product image to database: %v\n", err)
+			}
 		}
 	}
 
@@ -320,6 +477,12 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 
+	// Get current product to preserve is_featured
+	currentProduct, err := h.storage.Queries.GetProduct(c.Request().Context(), productID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to get product")
+	}
+
 	params := db.UpdateProductParams{
 		ID:               productID,
 		Name:             name,
@@ -333,7 +496,8 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Valid: false},
 		IsActive:         sql.NullBool{Bool: isActive, Valid: true},
-		IsFeatured:       sql.NullBool{Bool: isPremiumCollection, Valid: true},
+		IsFeatured:       currentProduct.IsFeatured,
+		IsPremium:        sql.NullBool{Bool: isPremiumCollection, Valid: true},
 	}
 
 	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)
@@ -348,9 +512,9 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		if err == nil {
 			defer src.Close()
 
-			uploadDir := "public/uploads/products"
+			uploadDir := "public/images/products"
 			if err := os.MkdirAll(uploadDir, 0755); err != nil {
-				return c.String(http.StatusInternalServerError, "Failed to create upload directory")
+				return c.String(http.StatusInternalServerError, "Failed to create images directory")
 			}
 
 			ext := filepath.Ext(file.Filename)
@@ -370,8 +534,29 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 			// Save only the filename to database
 			// The view layer will build the full path
 			imageFilename := filename
-			// TODO: Save to database using UpdateProductImage
-			_ = imageFilename
+
+			// Check if there are existing images
+			existingImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+			isPrimary := len(existingImages) == 0 // First image is primary
+
+			// Get next display order
+			displayOrder := int64(len(existingImages))
+
+			// Save new image to database
+			imageParams := db.CreateProductImageParams{
+				ID:           uuid.New().String(),
+				ProductID:    productID,
+				ImageUrl:     imageFilename,
+				AltText:      sql.NullString{String: name, Valid: true},
+				DisplayOrder: sql.NullInt64{Int64: displayOrder, Valid: true},
+				IsPrimary:    sql.NullBool{Bool: isPrimary, Valid: true},
+			}
+
+			_, err = h.storage.Queries.CreateProductImage(c.Request().Context(), imageParams)
+			if err != nil {
+				// Log error but don't fail the product update
+				fmt.Printf("Failed to save product image to database: %v\n", err)
+			}
 		}
 	}
 
@@ -380,13 +565,172 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 
 func (h *AdminHandler) HandleDeleteProduct(c echo.Context) error {
 	productID := c.Param("id")
-	
+
 	err := h.storage.Queries.DeleteProduct(c.Request().Context(), productID)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to delete product")
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/admin")
+}
+
+func (h *AdminHandler) HandleDeleteProductImage(c echo.Context) error {
+	imageID := c.Param("imageId")
+	productID := c.QueryParam("product_id")
+
+	// Get the image before deleting to remove file
+	image, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+	if err == nil {
+		// Find and delete the file
+		for _, img := range image {
+			if img.ID == imageID {
+				uploadDir := "public/images/products"
+				filepath := filepath.Join(uploadDir, img.ImageUrl)
+				os.Remove(filepath)
+				break
+			}
+		}
+	}
+
+	err = h.storage.Queries.DeleteProductImage(c.Request().Context(), imageID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to delete image")
+	}
+
+	if productID != "" {
+		return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID)
+	}
+	return c.Redirect(http.StatusSeeOther, "/admin")
+}
+
+func (h *AdminHandler) HandleSetPrimaryProductImage(c echo.Context) error {
+	imageID := c.Param("imageId")
+	productID := c.QueryParam("product_id")
+
+	err := h.storage.Queries.SetPrimaryProductImage(c.Request().Context(), db.SetPrimaryProductImageParams{
+		ID:        imageID,
+		ProductID: productID,
+	})
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to set primary image")
+	}
+
+	if productID != "" {
+		return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID)
+	}
+	return c.Redirect(http.StatusSeeOther, "/admin")
+}
+
+func (h *AdminHandler) HandleToggleProductFeatured(c echo.Context) error {
+	productID := c.Param("id")
+
+	product, err := h.storage.Queries.ToggleProductFeatured(c.Request().Context(), productID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to toggle featured status",
+		})
+	}
+
+	isFeatured := product.IsFeatured.Valid && product.IsFeatured.Bool
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"is_featured": isFeatured,
+	})
+}
+
+func (h *AdminHandler) HandleToggleProductPremium(c echo.Context) error {
+	productID := c.Param("id")
+
+	product, err := h.storage.Queries.ToggleProductPremium(c.Request().Context(), productID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to toggle premium status",
+		})
+	}
+
+	isPremium := product.IsPremium.Valid && product.IsPremium.Bool
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"is_premium": isPremium,
+	})
+}
+
+func (h *AdminHandler) HandleToggleProductActive(c echo.Context) error {
+	productID := c.Param("id")
+
+	product, err := h.storage.Queries.ToggleProductActive(c.Request().Context(), productID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to toggle active status",
+		})
+	}
+
+	isActive := product.IsActive.Valid && product.IsActive.Bool
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"is_active": isActive,
+	})
+}
+
+func (h *AdminHandler) HandleToggleProductNew(c echo.Context) error {
+	productID := c.Param("id")
+
+	product, err := h.storage.Queries.ToggleProductNew(c.Request().Context(), productID)
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to toggle new status",
+		})
+	}
+
+	isNew := product.IsNew.Valid && product.IsNew.Bool
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success": true,
+		"is_new": isNew,
+	})
+}
+
+func (h *AdminHandler) HandleProductSearch(c echo.Context) error {
+	query := c.QueryParam("q")
+	if query == "" {
+		return c.JSON(http.StatusOK, []map[string]interface{}{})
+	}
+
+	// Get all products and filter by query
+	products, err := h.storage.Queries.ListAllProducts(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to search products",
+		})
+	}
+
+	productsWithImages := h.buildProductsWithImages(c.Request().Context(), products)
+
+	// Filter products by name (case insensitive)
+	var results []map[string]interface{}
+	queryLower := strings.ToLower(query)
+
+	for _, p := range productsWithImages {
+		if strings.Contains(strings.ToLower(p.Product.Name), queryLower) {
+			results = append(results, map[string]interface{}{
+				"id":    p.Product.ID,
+				"name":  p.Product.Name,
+				"slug":  p.Product.Slug,
+				"price": float64(p.Product.PriceCents) / 100,
+				"image": p.ImageURL,
+			})
+
+			// Limit to 10 results
+			if len(results) >= 10 {
+				break
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, results)
 }
 
 // Category Management Functions
@@ -1385,6 +1729,7 @@ func (h *AdminHandler) HandleSaveShippingConfig(c echo.Context) error {
 	config.Packing.PackingMaterials.PackingPaperPerBoxOz, _ = strconv.ParseFloat(c.FormValue("packing_paper_per_box_oz"), 64)
 	config.Packing.PackingMaterials.TapeAndLabelsPerBoxOz, _ = strconv.ParseFloat(c.FormValue("tape_and_labels_per_box_oz"), 64)
 	config.Packing.PackingMaterials.AirPillowsPerBoxOz, _ = strconv.ParseFloat(c.FormValue("air_pillows_per_box_oz"), 64)
+	config.Packing.PackingMaterials.HandlingFeePerBoxUSD, _ = strconv.ParseFloat(c.FormValue("handling_fee_per_box_usd"), 64)
 
 	// Parse dimension guards
 	for _, size := range sizes {
@@ -1546,13 +1891,15 @@ func createSampleOrderData() *email.OrderData {
 		OrderDate:     "October 22, 2025 at 9:30 PM",
 		Items: []email.OrderItem{
 			{
-				ProductName:  "Tyrannosaurus Rex",
+				ProductName:  "Pachycephalosaurus",
+				ProductImage: "pachycephalosaurus.jpg",
 				Quantity:     2,
 				PriceCents:   2999, // $29.99
 				TotalCents:   5998, // $59.98
 			},
 			{
-				ProductName:  "Velociraptor",
+				ProductName:  "Crystal Dragon with Wings",
+				ProductImage: "crystal_dragon_with_wings.jpeg",
 				Quantity:     1,
 				PriceCents:   1999, // $19.99
 				TotalCents:   1999, // $19.99

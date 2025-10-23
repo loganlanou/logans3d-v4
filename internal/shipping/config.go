@@ -27,6 +27,7 @@ type PackingMaterials struct {
 	PackingPaperPerBoxOz  float64 `json:"packing_paper_per_box_oz"`
 	TapeAndLabelsPerBoxOz float64 `json:"tape_and_labels_per_box_oz"`
 	AirPillowsPerBoxOz    float64 `json:"air_pillows_per_box_oz"`
+	HandlingFeePerBoxUSD  float64 `json:"handling_fee_per_box_usd"`
 }
 
 type PackingConfig struct {
@@ -221,10 +222,11 @@ func CreateDefaultConfig() *ShippingConfig {
 				},
 			},
 			PackingMaterials: PackingMaterials{
-				BubbleWrapPerItemOz:   0.2, // Small amount of bubble wrap per item
-				PackingPaperPerBoxOz:  1.0, // Base packing paper per box
-				TapeAndLabelsPerBoxOz: 0.5, // Tape and shipping labels
-				AirPillowsPerBoxOz:    0.8, // Air pillows for void fill
+				BubbleWrapPerItemOz:   0.2,  // Small amount of bubble wrap per item
+				PackingPaperPerBoxOz:  1.0,  // Base packing paper per box
+				TapeAndLabelsPerBoxOz: 0.5,  // Tape and shipping labels
+				AirPillowsPerBoxOz:    0.8,  // Air pillows for void fill
+				HandlingFeePerBoxUSD:  1.50, // Flat handling fee per box (covers materials + labor)
 			},
 		},
 		Boxes: []Box{

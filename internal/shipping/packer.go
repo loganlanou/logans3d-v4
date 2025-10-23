@@ -23,12 +23,13 @@ type PackingSolution struct {
 }
 
 type BoxSelection struct {
-	Box         Box        `json:"box"`
-	Quantity    int        `json:"quantity"`
-	SmallUnits  int        `json:"small_units"`
-	Weight      float64    `json:"weight"`
-	BoxCost     float64    `json:"box_cost"`
-	ItemCounts  ItemCounts `json:"item_counts"` // Track what items are in this box
+	Box                  Box        `json:"box"`
+	Quantity             int        `json:"quantity"`
+	SmallUnits           int        `json:"small_units"`
+	Weight               float64    `json:"weight"`
+	BoxCost              float64    `json:"box_cost"`
+	PackingMaterialsCost float64    `json:"packing_materials_cost"`
+	ItemCounts           ItemCounts `json:"item_counts"` // Track what items are in this box
 }
 
 type Packer struct {
@@ -214,30 +215,36 @@ func (p *Packer) PackSingleBox(counts ItemCounts) *PackingSolution {
 	for _, box := range candidates {
 		weight := p.EstimateWeight(box, counts)
 		boxCost := box.UnitCostUSD
+		materialsCost := p.config.Packing.PackingMaterials.HandlingFeePerBoxUSD
 
 		selection := BoxSelection{
-			Box:        box,
-			Quantity:   1,
-			SmallUnits: smallUnits,
-			Weight:     weight,
-			BoxCost:    boxCost,
-			ItemCounts: counts,
+			Box:                  box,
+			Quantity:             1,
+			SmallUnits:           smallUnits,
+			Weight:               weight,
+			BoxCost:              boxCost,
+			PackingMaterialsCost: materialsCost,
+			ItemCounts:           counts,
 		}
+
+		totalCost := boxCost + materialsCost
 
 		solution := &PackingSolution{
 			Boxes:      []BoxSelection{selection},
-			TotalCost:  boxCost,
+			TotalCost:  totalCost,
 			TotalBoxes: 1,
 			Valid:      true,
 		}
 
-		if boxCost < bestCost {
+		if totalCost < bestCost {
 			slog.Debug("PackSingleBox: New best candidate",
 				"box_sku", box.SKU,
 				"box_cost_usd", boxCost,
+				"materials_cost_usd", materialsCost,
+				"total_cost_usd", totalCost,
 				"weight_oz", weight,
 				"previous_best_cost", bestCost)
-			bestCost = boxCost
+			bestCost = totalCost
 			bestSolution = solution
 		}
 	}
@@ -293,14 +300,16 @@ func (p *Packer) packRecursively(counts ItemCounts, depth int) *PackingSolution 
 		}
 
 		weight := p.EstimateWeight(box, boxCounts)
+		materialsCost := p.config.Packing.PackingMaterials.HandlingFeePerBoxUSD
 
 		selection := BoxSelection{
-			Box:        box,
-			Quantity:   1,
-			SmallUnits: p.SmallUnits(boxCounts),
-			Weight:     weight,
-			BoxCost:    box.UnitCostUSD,
-			ItemCounts: boxCounts,
+			Box:                  box,
+			Quantity:             1,
+			SmallUnits:           p.SmallUnits(boxCounts),
+			Weight:               weight,
+			BoxCost:              box.UnitCostUSD,
+			PackingMaterialsCost: materialsCost,
+			ItemCounts:           boxCounts,
 		}
 
 		// Recursively pack the remaining items
@@ -311,7 +320,7 @@ func (p *Packer) packRecursively(counts ItemCounts, depth int) *PackingSolution 
 
 		// Combine solutions
 		allBoxes := append([]BoxSelection{selection}, remainingSolution.Boxes...)
-		totalCost := box.UnitCostUSD + remainingSolution.TotalCost
+		totalCost := box.UnitCostUSD + materialsCost + remainingSolution.TotalCost
 
 		return &PackingSolution{
 			Boxes:      allBoxes,
