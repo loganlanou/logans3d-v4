@@ -1,6 +1,45 @@
 # Environment variables for Logan's 3D Production
 # Port 8007 - production environment
+
+# Application settings
 PORT=8007
+ENVIRONMENT=production
+BASE_URL=https://www.logans3dcreations.com
+
+# Database
 DB_PATH=/home/apprunner/sites/logans3d/data/database.db
-ENV=production
+
+# Logging
 LOG_LEVEL=info
+LOG_FILE_PATH=/var/log/logans3d/logans3d.log
+
+# Clerk Authentication (REPLACE WITH PRODUCTION KEYS)
+CLERK_PUBLISHABLE_KEY=pk_live_YOUR_PRODUCTION_KEY_HERE
+CLERK_SECRET_KEY=sk_live_YOUR_PRODUCTION_KEY_HERE
+
+# JWT Security (REPLACE WITH PRODUCTION SECRET - generate with: openssl rand -base64 32)
+JWT_SECRET=YOUR_PRODUCTION_JWT_SECRET_HERE
+
+# Stripe Payment Processing (REPLACE WITH PRODUCTION KEYS)
+STRIPE_PUBLISHABLE_KEY=pk_live_YOUR_PRODUCTION_KEY_HERE
+STRIPE_SECRET_KEY=sk_live_YOUR_PRODUCTION_KEY_HERE
+STRIPE_WEBHOOK_SECRET=whsec_YOUR_PRODUCTION_WEBHOOK_SECRET_HERE
+
+# Email (Transactional)
+EMAIL_FROM=noreply@logans3dcreations.com
+EMAIL_PROVIDER=sendgrid
+EMAIL_API_KEY=
+
+# ShipStation API (if used)
+SHIPSTATION_API_KEY=
+SHIPSTATION_API_SECRET=
+SHIPSTATION_BASE_URL=https://ssapi.shipstation.com
+
+# File Uploads
+UPLOAD_MAX_SIZE=104857600
+UPLOAD_DIR=/home/apprunner/sites/logans3d/public/uploads
+
+# Backup with Litestream (optional)
+LITESTREAM_ACCESS_KEY_ID=
+LITESTREAM_SECRET_ACCESS_KEY=
+LITESTREAM_BUCKET=
