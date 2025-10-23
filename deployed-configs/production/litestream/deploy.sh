@@ -46,8 +46,8 @@ echo ""
 echo "Paste this content (with your actual keys):"
 echo "---"
 cat <<'ENVEOF'
-LITESTREAM_ACCESS_KEY_ID=DO8016Q3ZQ68C4K9FJP6
-LITESTREAM_SECRET_ACCESS_KEY=KDQJsIEV3/FwspYTIf1sEM23+Cd1sx1qAwU1Iw9Yy6s
+LITESTREAM_ACCESS_KEY_ID=your_access_key_here
+LITESTREAM_SECRET_ACCESS_KEY=your_secret_key_here
 DIGITALOCEAN_SPACES_ENDPOINT=nyc3.digitaloceanspaces.com
 DIGITALOCEAN_SPACES_REGION=nyc3
 ENVEOF
