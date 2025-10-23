@@ -2,6 +2,7 @@ package shipping
 
 import (
 	"fmt"
+	"log/slog"
 	"math"
 	"sort"
 )
@@ -55,19 +56,55 @@ func (p *Packer) EstimateWeight(box Box, counts ItemCounts) float64 {
 	// Start with box weight
 	totalWeight := box.BoxWeightOz
 
+	slog.Debug("EstimateWeight: Evaluating candidate box",
+		"box_sku", box.SKU,
+		"box_name", box.Name,
+		"box_weight_oz", box.BoxWeightOz)
+
 	// Add item weights based on actual categories and counts
 	itemWeights := p.config.Packing.ItemWeights
-	if weight, exists := itemWeights["small"]; exists {
-		totalWeight += weight.AvgOz * float64(counts.Small)
+	var itemWeightBreakdown []interface{}
+	totalItemWeight := 0.0
+
+	if weight, exists := itemWeights["small"]; exists && counts.Small > 0 {
+		smallWeight := weight.AvgOz * float64(counts.Small)
+		totalWeight += smallWeight
+		totalItemWeight += smallWeight
+		itemWeightBreakdown = append(itemWeightBreakdown,
+			"small_items", counts.Small,
+			"small_avg_oz", weight.AvgOz,
+			"small_total_oz", smallWeight)
 	}
-	if weight, exists := itemWeights["medium"]; exists {
-		totalWeight += weight.AvgOz * float64(counts.Medium)
+	if weight, exists := itemWeights["medium"]; exists && counts.Medium > 0 {
+		mediumWeight := weight.AvgOz * float64(counts.Medium)
+		totalWeight += mediumWeight
+		totalItemWeight += mediumWeight
+		itemWeightBreakdown = append(itemWeightBreakdown,
+			"medium_items", counts.Medium,
+			"medium_avg_oz", weight.AvgOz,
+			"medium_total_oz", mediumWeight)
 	}
-	if weight, exists := itemWeights["large"]; exists {
-		totalWeight += weight.AvgOz * float64(counts.Large)
+	if weight, exists := itemWeights["large"]; exists && counts.Large > 0 {
+		largeWeight := weight.AvgOz * float64(counts.Large)
+		totalWeight += largeWeight
+		totalItemWeight += largeWeight
+		itemWeightBreakdown = append(itemWeightBreakdown,
+			"large_items", counts.Large,
+			"large_avg_oz", weight.AvgOz,
+			"large_total_oz", largeWeight)
 	}
-	if weight, exists := itemWeights["xlarge"]; exists {
-		totalWeight += weight.AvgOz * float64(counts.XL)
+	if weight, exists := itemWeights["xlarge"]; exists && counts.XL > 0 {
+		xlWeight := weight.AvgOz * float64(counts.XL)
+		totalWeight += xlWeight
+		totalItemWeight += xlWeight
+		itemWeightBreakdown = append(itemWeightBreakdown,
+			"xl_items", counts.XL,
+			"xl_avg_oz", weight.AvgOz,
+			"xl_total_oz", xlWeight)
+	}
+
+	if len(itemWeightBreakdown) > 0 {
+		slog.Debug("EstimateWeight: Item weights", itemWeightBreakdown...)
 	}
 
 	// Add packing materials
@@ -75,12 +112,35 @@ func (p *Packer) EstimateWeight(box Box, counts ItemCounts) float64 {
 	totalItems := counts.Small + counts.Medium + counts.Large + counts.XL
 
 	// Bubble wrap per item
-	totalWeight += materials.BubbleWrapPerItemOz * float64(totalItems)
+	bubbleWrapWeight := materials.BubbleWrapPerItemOz * float64(totalItems)
+	totalWeight += bubbleWrapWeight
 
 	// Base packing materials per box
-	totalWeight += materials.PackingPaperPerBoxOz
-	totalWeight += materials.TapeAndLabelsPerBoxOz
-	totalWeight += materials.AirPillowsPerBoxOz
+	packingPaperWeight := materials.PackingPaperPerBoxOz
+	tapeLabelsWeight := materials.TapeAndLabelsPerBoxOz
+	airPillowsWeight := materials.AirPillowsPerBoxOz
+
+	totalWeight += packingPaperWeight
+	totalWeight += tapeLabelsWeight
+	totalWeight += airPillowsWeight
+
+	totalPackingMaterials := bubbleWrapWeight + packingPaperWeight + tapeLabelsWeight + airPillowsWeight
+
+	slog.Debug("EstimateWeight: Packing materials",
+		"total_items", totalItems,
+		"bubble_wrap_oz", bubbleWrapWeight,
+		"packing_paper_oz", packingPaperWeight,
+		"tape_labels_oz", tapeLabelsWeight,
+		"air_pillows_oz", airPillowsWeight,
+		"total_packing_materials_oz", totalPackingMaterials)
+
+	slog.Debug("EstimateWeight: Final weight breakdown",
+		"box_sku", box.SKU,
+		"box_weight_oz", box.BoxWeightOz,
+		"items_weight_oz", totalItemWeight,
+		"packing_materials_oz", totalPackingMaterials,
+		"total_weight_oz", totalWeight,
+		"total_weight_lbs", totalWeight/16.0)
 
 	return totalWeight
 }
@@ -143,6 +203,10 @@ func (p *Packer) PackSingleBox(counts ItemCounts) *PackingSolution {
 		}
 	}
 
+	slog.Debug("PackSingleBox: Evaluating candidate boxes",
+		"num_candidates", len(candidates),
+		"evaluating_for_single_box", true)
+
 	smallUnits := p.SmallUnits(counts)
 	var bestSolution *PackingSolution
 	bestCost := math.Inf(1)
@@ -168,6 +232,11 @@ func (p *Packer) PackSingleBox(counts ItemCounts) *PackingSolution {
 		}
 
 		if boxCost < bestCost {
+			slog.Debug("PackSingleBox: New best candidate",
+				"box_sku", box.SKU,
+				"box_cost_usd", boxCost,
+				"weight_oz", weight,
+				"previous_best_cost", bestCost)
 			bestCost = boxCost
 			bestSolution = solution
 		}
@@ -310,7 +379,16 @@ func (p *Packer) distributeItemsToBox(counts ItemCounts, capacity int) (boxCount
 }
 
 func (p *Packer) Pack(counts ItemCounts) *PackingSolution {
-	if p.SmallUnits(counts) == 0 {
+	totalSmallUnits := p.SmallUnits(counts)
+
+	slog.Debug("Pack: Starting packing calculation",
+		"small", counts.Small,
+		"medium", counts.Medium,
+		"large", counts.Large,
+		"xl", counts.XL,
+		"total_small_units", totalSmallUnits)
+
+	if totalSmallUnits == 0 {
 		return &PackingSolution{
 			Valid: false,
 			Error: "no items to pack",
@@ -319,10 +397,36 @@ func (p *Packer) Pack(counts ItemCounts) *PackingSolution {
 
 	singleBoxSolution := p.PackSingleBox(counts)
 	if singleBoxSolution.Valid {
+		slog.Debug("Pack: Single box solution found",
+			"box_sku", singleBoxSolution.Boxes[0].Box.SKU,
+			"box_name", singleBoxSolution.Boxes[0].Box.Name,
+			"weight_oz", singleBoxSolution.Boxes[0].Weight,
+			"box_cost", singleBoxSolution.TotalCost)
 		return singleBoxSolution
 	}
 
+	slog.Debug("Pack: Single box solution not possible, trying multi-box")
 	multiBoxSolution := p.PackMultipleBoxes(counts)
+
+	if multiBoxSolution.Valid {
+		slog.Debug("Pack: Multi-box solution found",
+			"num_boxes", multiBoxSolution.TotalBoxes,
+			"total_cost", multiBoxSolution.TotalCost)
+		for i, box := range multiBoxSolution.Boxes {
+			slog.Debug("Pack: Multi-box solution - box details",
+				"box_index", i,
+				"box_sku", box.Box.SKU,
+				"box_name", box.Box.Name,
+				"weight_oz", box.Weight,
+				"items_small", box.ItemCounts.Small,
+				"items_medium", box.ItemCounts.Medium,
+				"items_large", box.ItemCounts.Large,
+				"items_xl", box.ItemCounts.XL)
+		}
+	} else {
+		slog.Debug("Pack: No valid packing solution found", "error", multiBoxSolution.Error)
+	}
+
 	return multiBoxSolution
 }
 

@@ -1,0 +1,137 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ ShippingTab(c echo.Context, boxes []db.BoxCatalog) {
+	@layout.AdminBase(c, "Shipping") {
+		@layout.AdminContainer() {
+			<!-- Header Controls -->
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold text-gray-900">Box Catalog</h1>
+				<div class="flex space-x-3">
+					<a href="/admin/shipping/boxes/new" class="admin-btn admin-btn-primary">
+						+ Add Box
+					</a>
+				</div>
+			</div>
+			<!-- Box Stats -->
+			<div class="admin-stats-grid mb-6">
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(boxes)) }</div>
+					<div class="admin-stat-label">Total Boxes</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", countActiveBoxes(boxes)) }</div>
+					<div class="admin-stat-label">Active Boxes</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(boxes) - countActiveBoxes(boxes)) }</div>
+					<div class="admin-stat-label">Inactive Boxes</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("$%.2f", calculateAverageBoxCost(boxes)) }</div>
+					<div class="admin-stat-label">Avg Box Cost</div>
+				</div>
+			</div>
+			<!-- Boxes Table -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Box Catalog</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th class="admin-table-th">SKU</th>
+								<th class="admin-table-th">Name</th>
+								<th class="admin-table-th">Dimensions (L×W×H)</th>
+								<th class="admin-table-th">Weight (oz)</th>
+								<th class="admin-table-th">Cost (USD)</th>
+								<th class="admin-table-th">Volume (in³)</th>
+								<th class="admin-table-th">Status</th>
+								<th class="admin-table-th text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							if len(boxes) == 0 {
+								<tr>
+									<td colspan="8" class="px-6 py-12 text-center text-gray-500">
+										No boxes configured. Add your first box to get started.
+									</td>
+								</tr>
+							} else {
+								for _, box := range boxes {
+									<tr class="admin-table-tr">
+										<td class="admin-table-td">
+											<span class="font-medium text-gray-900">{ box.Sku }</span>
+										</td>
+										<td class="admin-table-td">{ box.Name }</td>
+										<td class="admin-table-td">
+											<span class="font-mono text-sm">
+												{ fmt.Sprintf("%.1f × %.1f × %.1f in", box.LengthInches, box.WidthInches, box.HeightInches) }
+											</span>
+										</td>
+										<td class="admin-table-td">
+											{ fmt.Sprintf("%.1f oz", box.BoxWeightOz) }
+										</td>
+										<td class="admin-table-td">
+											<span class="font-medium">${ fmt.Sprintf("%.2f", box.UnitCostUsd) }</span>
+										</td>
+										<td class="admin-table-td">
+											{ fmt.Sprintf("%.0f in³", box.LengthInches * box.WidthInches * box.HeightInches) }
+										</td>
+										<td class="admin-table-td">
+											if box.IsActive.Valid && box.IsActive.Bool {
+												<span class="admin-badge admin-badge-success">Active</span>
+											} else {
+												<span class="admin-badge admin-badge-secondary">Inactive</span>
+											}
+										</td>
+										<td class="admin-table-td text-right">
+											<div class="flex justify-end space-x-2">
+												<a href={ templ.URL(fmt.Sprintf("/admin/shipping/boxes/edit/%s", box.Sku)) } class="admin-btn admin-btn-sm admin-btn-secondary">
+													Edit
+												</a>
+												<form method="POST" action={ templ.URL(fmt.Sprintf("/admin/shipping/boxes/delete/%s", box.Sku)) } class="inline">
+													<button type="submit" class="admin-btn admin-btn-sm admin-btn-danger" onclick="return confirm('Are you sure you want to deactivate this box?')">
+														Delete
+													</button>
+												</form>
+											</div>
+										</td>
+									</tr>
+								}
+							}
+						</tbody>
+					</table>
+				</div>
+			</div>
+		}
+	}
+}
+
+func countActiveBoxes(boxes []db.BoxCatalog) int {
+	count := 0
+	for _, box := range boxes {
+		if box.IsActive.Valid && box.IsActive.Bool {
+			count++
+		}
+	}
+	return count
+}
+
+func calculateAverageBoxCost(boxes []db.BoxCatalog) float64 {
+	if len(boxes) == 0 {
+		return 0.0
+	}
+	total := 0.0
+	for _, box := range boxes {
+		total += box.UnitCostUsd
+	}
+	return total / float64(len(boxes))
+}

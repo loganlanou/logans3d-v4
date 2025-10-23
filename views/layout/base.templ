@@ -124,11 +124,13 @@ templ Header(c echo.Context) {
 									x-transition:leave="transition ease-in duration-75"
 									x-transition:leave-start="transform opacity-100 scale-100"
 									x-transition:leave-end="transform opacity-0 scale-95"
-									class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 border border-gray-200">
-									<a href="/account" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">My Account</a>
-									<a href="/admin" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Admin Dashboard</a>
-									<hr class="my-1"/>
-									<a href="/logout" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Sign Out</a>
+									class="absolute right-0 mt-2 w-48 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl py-1 z-50 border border-gray-700">
+									<a href="/account" class="block px-4 py-2 text-sm text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150">My Account</a>
+									if auth.IsAdmin(c) {
+										<a href="/admin" class="block px-4 py-2 text-sm text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150">Admin Dashboard</a>
+									}
+									<hr class="my-1 border-gray-700"/>
+									<a href="/logout" class="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors duration-150">Sign Out</a>
 								</div>
 							</div>
 						</div>
@@ -185,25 +187,27 @@ templ MobileMenu(c echo.Context) {
 		x-transition:leave="transition ease-in duration-150"
 		x-transition:leave-start="opacity-100 transform translate-y-0"
 		x-transition:leave-end="opacity-0 transform -translate-y-4"
-		class="md:hidden bg-white shadow-xl border-t border-gray-100"
+		class="md:hidden bg-gradient-to-b from-gray-800 to-gray-900 shadow-xl border-t border-gray-700"
 	>
 		<nav class="container-responsive py-4">
 			<ul class="space-y-1">
-				<li><a href="/shop" class="mobile-nav-link" @click="open = false">Shop</a></li>
-				<li><a href="/custom" class="mobile-nav-link" @click="open = false">Custom Orders</a></li>
-				<li><a href="/events" class="mobile-nav-link" @click="open = false">Events</a></li>
-				<li><a href="/portfolio" class="mobile-nav-link" @click="open = false">Portfolio</a></li>
-				<li><a href="/about" class="mobile-nav-link" @click="open = false">About</a></li>
-				<li><a href="/contact" class="mobile-nav-link" @click="open = false">Contact</a></li>
-				<li><button class="cart-preview-btn mobile-nav-link text-left w-full" @click="open = false">View Cart</button></li>
-				<li class="border-t border-gray-200 pt-2 mt-2">
+				<li><a href="/shop" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Shop</a></li>
+				<li><a href="/custom" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Custom Orders</a></li>
+				<li><a href="/events" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Events</a></li>
+				<li><a href="/portfolio" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Portfolio</a></li>
+				<li><a href="/about" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">About</a></li>
+				<li><a href="/contact" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Contact</a></li>
+				<li><button class="cart-preview-btn block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded text-left w-full" @click="open = false">View Cart</button></li>
+				<li class="border-t border-gray-700 pt-2 mt-2">
 					if _, ok := auth.GetDBUser(c); ok {
-						<a href="/account" class="mobile-nav-link" @click="open = false">My Account</a>
-						<a href="/admin" class="mobile-nav-link" @click="open = false">Admin Dashboard</a>
-						<a href="/logout" class="mobile-nav-link text-left w-full text-red-600" @click="open = false">Sign Out</a>
+						<a href="/account" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">My Account</a>
+						if auth.IsAdmin(c) {
+							<a href="/admin" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Admin Dashboard</a>
+						}
+						<a href="/logout" class="block px-4 py-2 text-red-400 hover:bg-gray-700 hover:text-red-300 transition-colors duration-150 rounded text-left w-full" @click="open = false">Sign Out</a>
 					} else {
-						<a href="/login" class="mobile-nav-link" @click="open = false">Sign In</a>
-						<a href="/sign-up" class="mobile-nav-link bg-gradient-to-r from-blue-600 to-purple-600 text-white" @click="open = false">Sign Up</a>
+						<a href="/login" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Sign In</a>
+						<a href="/sign-up" class="block px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 transition-all duration-150 rounded" @click="open = false">Sign Up</a>
 					}
 				</li>
 			</ul>

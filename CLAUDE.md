@@ -121,6 +121,33 @@ When creating a new migration:
 - **Tested**: Always test both up and down before committing
 - **No direct schema changes**: Never use `ALTER TABLE` or similar commands outside of migrations
 
+## Configuration Management
+
+**CRITICAL: ALL application configuration MUST be stored in the database.**
+
+- **NEVER use local JSON/YAML config files** for application settings
+- Configuration files like `config/shipping.json` should NOT be used
+- All configuration must be stored in database tables and loaded at runtime
+- Use migrations to add new configuration tables/columns as needed
+
+### Why Database-Only Configuration
+
+1. **Single Source of Truth**: Database is the only source of configuration
+2. **Admin UI**: Configuration can be managed through admin interface
+3. **No File Sync Issues**: Eliminates configuration drift between environments
+4. **Version Control**: Database migrations track configuration schema changes
+5. **Runtime Updates**: Configuration can be updated without redeploying code
+
+### Configuration Loading Pattern
+
+```go
+// CORRECT: Load from database
+config, err := queries.GetShippingConfig(ctx)
+
+// WRONG: Never do this
+config := loadConfigFromJSONFile("config/shipping.json")
+```
+
 ## Environment Management
 
 This project uses **direnv** to manage environment variables:
@@ -128,6 +155,7 @@ This project uses **direnv** to manage environment variables:
 - Environment variables are configured in `.envrc`
 - After making changes to `.envrc`, run `direnv allow` to activate them
 - The environment is automatically loaded when entering the directory (if direnv is installed)
+- **Environment variables are for secrets and environment-specific settings only**, NOT for application configuration
 
 To make environment changes:
 1. Update `.envrc`

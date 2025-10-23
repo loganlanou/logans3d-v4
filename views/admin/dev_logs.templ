@@ -1,0 +1,285 @@
+package admin
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/types"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
+	@layout.AdminBase(c, "Application Logs") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Application Logs</h1>
+				<div class="flex space-x-3">
+					<button id="load-initial-btn" class="admin-btn admin-btn-secondary">
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+						</svg>
+						Load Last 100
+					</button>
+					<button id="start-stream-btn" class="admin-btn admin-btn-primary">
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+						</svg>
+						Start Live
+					</button>
+					<button id="stop-stream-btn" class="admin-btn admin-btn-danger" style="display: none;">
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
+						</svg>
+						Stop
+					</button>
+					<button id="clear-logs-btn" class="admin-btn admin-btn-secondary">
+						<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+						</svg>
+						Clear Display
+					</button>
+				</div>
+			</div>
+
+			<!-- Controls -->
+			<div class="admin-card mb-6">
+				<div class="p-4 flex items-center justify-between">
+					<div class="flex items-center space-x-6">
+						<!-- Auto-scroll Toggle -->
+						<label class="flex items-center space-x-2 cursor-pointer">
+							<input type="checkbox" id="auto-scroll" class="admin-checkbox" checked/>
+							<span class="admin-text-primary text-sm">Auto-scroll</span>
+						</label>
+
+						<!-- Log Level Filter -->
+						<div class="flex items-center space-x-2">
+							<span class="admin-text-primary text-sm">Filter:</span>
+							<select id="log-level-filter" class="admin-form-select admin-form-input text-sm py-1 px-2">
+								<option value="all">All Levels</option>
+								<option value="INF">INFO</option>
+								<option value="DBG">DEBUG</option>
+								<option value="WRN">WARN</option>
+								<option value="ERR">ERROR</option>
+							</select>
+						</div>
+
+						<!-- Status Indicator -->
+						<div id="stream-status" class="flex items-center space-x-2">
+							<div id="status-dot" class="w-2 h-2 bg-gray-500 rounded-full"></div>
+							<span id="status-text" class="text-sm text-slate-400">Disconnected</span>
+						</div>
+					</div>
+
+					<div class="flex items-center space-x-4">
+						<span id="log-count" class="text-sm text-slate-400">0 lines</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Log Viewer -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title flex items-center">
+						<span class="text-2xl mr-3">📋</span>
+						Live Log Viewer
+					</h2>
+				</div>
+				<div class="p-4">
+					<div id="log-viewer" class="bg-slate-950 rounded-lg p-4 font-mono text-xs overflow-y-auto max-h-[600px] space-y-1">
+						<div class="text-slate-500 italic">Click "Start Live" to begin streaming logs, or "Load Last 100" to view recent logs...</div>
+					</div>
+				</div>
+			</div>
+		}
+
+		<!-- JavaScript for Live Log Streaming -->
+		<script>
+			let eventSource = null;
+			let autoScroll = true;
+			let logCount = 0;
+			let currentFilter = 'all';
+
+			const logViewer = document.getElementById('log-viewer');
+			const startBtn = document.getElementById('start-stream-btn');
+			const stopBtn = document.getElementById('stop-stream-btn');
+			const clearBtn = document.getElementById('clear-logs-btn');
+			const loadBtn = document.getElementById('load-initial-btn');
+			const autoScrollCheckbox = document.getElementById('auto-scroll');
+			const logLevelFilter = document.getElementById('log-level-filter');
+			const statusDot = document.getElementById('status-dot');
+			const statusText = document.getElementById('status-text');
+			const logCountElement = document.getElementById('log-count');
+
+			// Auto-scroll toggle
+			autoScrollCheckbox.addEventListener('change', (e) => {
+				autoScroll = e.target.checked;
+				if (autoScroll) scrollToBottom();
+			});
+
+			// Log level filter
+			logLevelFilter.addEventListener('change', (e) => {
+				currentFilter = e.target.value;
+			});
+
+			// Format and colorize log line
+			function formatLogLine(line) {
+				if (!line || line.trim() === '') return null;
+
+				// Check filter
+				if (currentFilter !== 'all') {
+					if (!line.includes(`[${currentFilter}]`)) {
+						return null;
+					}
+				}
+
+				const div = document.createElement('div');
+				div.className = 'flex items-start space-x-2 text-slate-300 hover:bg-slate-900 px-2 py-1 rounded';
+
+				// Determine log level and color
+				let levelClass = 'text-slate-400';
+				let levelBg = 'bg-slate-800';
+
+				if (line.includes('[INF]') || line.includes('INFO')) {
+					levelClass = 'text-blue-400';
+					levelBg = 'bg-blue-900/30';
+				} else if (line.includes('[DBG]') || line.includes('DEBUG')) {
+					levelClass = 'text-purple-400';
+					levelBg = 'bg-purple-900/30';
+				} else if (line.includes('[WRN]') || line.includes('WARN')) {
+					levelClass = 'text-yellow-400';
+					levelBg = 'bg-yellow-900/30';
+				} else if (line.includes('[ERR]') || line.includes('ERROR')) {
+					levelClass = 'text-red-400';
+					levelBg = 'bg-red-900/30';
+				}
+
+				div.className += ` ${levelBg}`;
+				div.innerHTML = `<span class="${levelClass} whitespace-pre-wrap break-all">${escapeHtml(line)}</span>`;
+
+				return div;
+			}
+
+			function escapeHtml(text) {
+				const div = document.createElement('div');
+				div.textContent = text;
+				return div.innerHTML;
+			}
+
+			function scrollToBottom() {
+				if (autoScroll) {
+					logViewer.scrollTop = logViewer.scrollHeight;
+				}
+			}
+
+			function updateStatus(connected) {
+				if (connected) {
+					statusDot.className = 'w-2 h-2 bg-green-500 rounded-full animate-pulse';
+					statusText.textContent = 'Live';
+					statusText.className = 'text-sm text-green-400';
+				} else {
+					statusDot.className = 'w-2 h-2 bg-gray-500 rounded-full';
+					statusText.textContent = 'Disconnected';
+					statusText.className = 'text-sm text-slate-400';
+				}
+			}
+
+			function updateLogCount() {
+				const visibleLogs = logViewer.querySelectorAll('div').length;
+				logCountElement.textContent = `${visibleLogs} lines`;
+			}
+
+			// Start streaming
+			startBtn.addEventListener('click', () => {
+				if (eventSource) return;
+
+				logViewer.innerHTML = '<div class="text-green-400 italic">Connecting to log stream...</div>';
+
+				eventSource = new EventSource('/dev/logs/stream');
+
+				eventSource.onopen = () => {
+					updateStatus(true);
+					startBtn.style.display = 'none';
+					stopBtn.style.display = 'inline-flex';
+					logViewer.innerHTML = '<div class="text-green-400 italic mb-2">Connected. Waiting for logs...</div>';
+				};
+
+				eventSource.onmessage = (event) => {
+					const line = event.data;
+					const logElement = formatLogLine(line);
+
+					if (logElement) {
+						// Remove initial message if it exists
+						const initialMsg = logViewer.querySelector('.italic');
+						if (initialMsg) initialMsg.remove();
+
+						logViewer.appendChild(logElement);
+						logCount++;
+						updateLogCount();
+						scrollToBottom();
+					}
+				};
+
+				eventSource.onerror = () => {
+					console.error('EventSource error');
+					stopStreaming();
+					updateStatus(false);
+				};
+			});
+
+			// Stop streaming
+			function stopStreaming() {
+				if (eventSource) {
+					eventSource.close();
+					eventSource = null;
+				}
+				updateStatus(false);
+				startBtn.style.display = 'inline-flex';
+				stopBtn.style.display = 'none';
+			}
+
+			stopBtn.addEventListener('click', stopStreaming);
+
+			// Clear logs
+			clearBtn.addEventListener('click', () => {
+				logViewer.innerHTML = '<div class="text-slate-500 italic">Logs cleared. Click "Start Live" to resume streaming...</div>';
+				logCount = 0;
+				updateLogCount();
+			});
+
+			// Load initial logs
+			loadBtn.addEventListener('click', async () => {
+				try {
+					const response = await fetch('/dev/logs/tail?lines=100');
+					const data = await response.json();
+
+					logViewer.innerHTML = '';
+
+					if (data.lines && data.lines.length > 0) {
+						data.lines.forEach(line => {
+							const logElement = formatLogLine(line);
+							if (logElement) {
+								logViewer.appendChild(logElement);
+							}
+						});
+						logCount = data.lines.length;
+						updateLogCount();
+						scrollToBottom();
+					} else {
+						logViewer.innerHTML = '<div class="text-slate-500 italic">No logs found.</div>';
+					}
+				} catch (error) {
+					console.error('Error loading logs:', error);
+					logViewer.innerHTML = '<div class="text-red-400">Error loading logs: ' + error.message + '</div>';
+				}
+			});
+
+			// Cleanup on page unload
+			window.addEventListener('beforeunload', () => {
+				if (eventSource) {
+					eventSource.close();
+				}
+			});
+		</script>
+	}
+}

@@ -62,6 +62,14 @@ func GetClerkID(c echo.Context) (string, bool) {
 	return "", false
 }
 
+// IsAdmin checks if the current user is an admin
+func IsAdmin(c echo.Context) bool {
+	if dbUser, ok := GetDBUser(c); ok {
+		return dbUser.IsAdmin
+	}
+	return false
+}
+
 // RequireAuth is a helper that checks auth and returns error if not authenticated
 // Use this in handlers that need auth
 func RequireAuth(c echo.Context) error {

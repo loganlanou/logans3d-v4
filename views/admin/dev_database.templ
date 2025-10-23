@@ -1,0 +1,118 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/types"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ DevDatabase(c echo.Context, sysInfo types.SystemInfo, dbStats types.DatabaseStats) {
+	@layout.AdminBase(c, "Database Management") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Database Management</h1>
+				<button onclick="updateDatabaseStats()" class="admin-btn admin-btn-primary">
+					<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+					</svg>
+					Refresh Stats
+				</button>
+			</div>
+
+			<!-- Database Location Alert -->
+			<div class="admin-alert admin-alert-info mb-6">
+				<strong>Database Location:</strong> <code class="ml-2">{ sysInfo.DBPath }</code>
+			</div>
+
+			<!-- Database Overview Card -->
+			<div class="admin-card" id="database-stats">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title flex items-center">
+						<span class="text-2xl mr-3">🗃️</span>
+						Database Overview
+					</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<thead>
+							<tr>
+								<th>Table</th>
+								<th>Record Count</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td class="admin-font-semibold">Products</td>
+								<td>{ fmt.Sprintf("%d", dbStats.ProductCount) }</td>
+								<td>
+									<div class="admin-status admin-status-active">
+										<div class="admin-status-dot"></div>
+										Active
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td class="admin-font-semibold">Categories</td>
+								<td>{ fmt.Sprintf("%d", dbStats.CategoryCount) }</td>
+								<td>
+									<div class="admin-status admin-status-active">
+										<div class="admin-status-dot"></div>
+										Active
+									</div>
+								</td>
+							</tr>
+							<tr>
+								<td class="admin-font-semibold">Users</td>
+								<td>{ fmt.Sprintf("%d", dbStats.UserCount) }</td>
+								<td>
+									<div class="admin-status admin-status-active">
+										<div class="admin-status-dot"></div>
+										Active
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Database Size Stats -->
+			<div class="admin-stats-grid mt-8">
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ dbStats.DatabaseSize }</div>
+					<div class="admin-stat-label">Total Database Size</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", dbStats.ProductCount) }</div>
+					<div class="admin-stat-label">Total Products</div>
+				</div>
+				<div class="admin-stat-card">
+					<div class="admin-stat-number">{ fmt.Sprintf("%d", dbStats.CategoryCount) }</div>
+					<div class="admin-stat-label">Total Categories</div>
+				</div>
+			</div>
+		}
+
+		<!-- JavaScript for Database Stats -->
+		<script>
+			async function updateDatabaseStats() {
+				try {
+					const response = await fetch('/dev/database');
+					const data = await response.json();
+
+					const dbStats = document.getElementById('database-stats');
+					if (dbStats) {
+						// Just reload the page for now - could be more sophisticated
+						window.location.reload();
+					}
+				} catch (error) {
+					console.error('Error updating database stats:', error);
+					alert('Error updating database statistics');
+				}
+			}
+		</script>
+	}
+}

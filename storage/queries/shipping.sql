@@ -20,8 +20,15 @@ SELECT * FROM box_catalog
 WHERE is_active = TRUE
 ORDER BY unit_cost_usd;
 
+-- name: ListAllBoxCatalog :many
+SELECT * FROM box_catalog
+ORDER BY unit_cost_usd;
+
 -- name: GetBoxBySKU :one
 SELECT * FROM box_catalog WHERE sku = ? AND is_active = TRUE;
+
+-- name: GetBoxByID :one
+SELECT * FROM box_catalog WHERE id = ?;
 
 -- name: CreateBoxCatalogItem :one
 INSERT INTO box_catalog (

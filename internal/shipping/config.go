@@ -1,9 +1,12 @@
 package shipping
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/loganlanou/logans3d-v4/storage/db"
 )
 
 type DimensionGuard struct {
@@ -100,6 +103,47 @@ func LoadShippingConfig(configPath string) (*ShippingConfig, error) {
 
 	if err := validateConfig(&config); err != nil {
 		return nil, fmt.Errorf("invalid shipping config: %w", err)
+	}
+
+	return &config, nil
+}
+
+// LoadShippingConfigFromDB loads shipping configuration from the database
+func LoadShippingConfigFromDB(ctx context.Context, queries *db.Queries) (*ShippingConfig, error) {
+	// Get shipping config JSON from database
+	configRow, err := queries.GetShippingConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get shipping config from database: %w", err)
+	}
+
+	// Parse the JSON config
+	var config ShippingConfig
+	if err := json.Unmarshal([]byte(configRow.ConfigJson), &config); err != nil {
+		return nil, fmt.Errorf("failed to parse shipping config JSON: %w", err)
+	}
+
+	// Load active boxes from box_catalog
+	boxes, err := queries.ListBoxCatalog(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load box catalog: %w", err)
+	}
+
+	// Convert database boxes to config boxes
+	config.Boxes = make([]Box, len(boxes))
+	for i, dbBox := range boxes {
+		config.Boxes[i] = Box{
+			SKU:          dbBox.Sku,
+			Name:         dbBox.Name,
+			L:            dbBox.LengthInches,
+			W:            dbBox.WidthInches,
+			H:            dbBox.HeightInches,
+			BoxWeightOz:  dbBox.BoxWeightOz,
+			UnitCostUSD:  dbBox.UnitCostUsd,
+		}
+	}
+
+	if err := validateConfig(&config); err != nil {
+		return nil, fmt.Errorf("invalid shipping config from database: %w", err)
 	}
 
 	return &config, nil

@@ -1,0 +1,249 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/shipping"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig) {
+	@layout.AdminBase(c, "Shipping Configuration") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Shipping Configuration</h1>
+				<button
+					type="submit"
+					form="config-form"
+					class="admin-btn admin-btn-primary"
+				>
+					Save Changes
+				</button>
+			</div>
+
+			<form id="config-form" method="POST" action="/admin/shipping/config" class="space-y-6">
+				<!-- Item Weights Section -->
+				<div class="admin-card">
+					<div class="admin-card-header">
+						<h2 class="admin-card-title">Item Weights</h2>
+						<p class="text-sm text-slate-400 mt-1">Configure weight ranges for each product size category</p>
+					</div>
+					<div class="admin-card-body">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+							for size, weights := range config.Packing.ItemWeights {
+								<div class="border border-slate-600 rounded-lg p-4 bg-slate-700/50">
+									<h3 class="text-lg font-semibold text-white mb-4 capitalize">{ size }</h3>
+									<div class="space-y-3">
+										<div>
+											<label class="block text-sm font-medium text-slate-200 mb-1">
+												Min Grams
+											</label>
+											<input
+												type="number"
+												step="0.1"
+												name={ fmt.Sprintf("item_weights_%s_min_grams", size) }
+												value={ fmt.Sprintf("%.1f", weights.MinGrams) }
+												class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-slate-200 mb-1">
+												Max Grams
+											</label>
+											<input
+												type="number"
+												step="0.1"
+												name={ fmt.Sprintf("item_weights_%s_max_grams", size) }
+												value={ fmt.Sprintf("%.1f", weights.MaxGrams) }
+												class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-slate-200 mb-1">
+												Avg Grams
+											</label>
+											<input
+												type="number"
+												step="0.1"
+												name={ fmt.Sprintf("item_weights_%s_avg_grams", size) }
+												value={ fmt.Sprintf("%.1f", weights.AvgGrams) }
+												class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-slate-200 mb-1">
+												Avg Oz
+											</label>
+											<input
+												type="number"
+												step="0.01"
+												name={ fmt.Sprintf("item_weights_%s_avg_oz", size) }
+												value={ fmt.Sprintf("%.2f", weights.AvgOz) }
+												class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+									</div>
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+
+				<!-- Packing Materials Section -->
+				<div class="admin-card">
+					<div class="admin-card-header">
+						<h2 class="admin-card-title">Packing Materials</h2>
+						<p class="text-sm text-slate-400 mt-1">Weight overhead for packing materials (in ounces)</p>
+					</div>
+					<div class="admin-card-body">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">
+									Bubble Wrap per Item (oz)
+								</label>
+								<input
+									type="number"
+									step="0.01"
+									name="bubble_wrap_per_item_oz"
+									value={ fmt.Sprintf("%.2f", config.Packing.PackingMaterials.BubbleWrapPerItemOz) }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">
+									Packing Paper per Box (oz)
+								</label>
+								<input
+									type="number"
+									step="0.01"
+									name="packing_paper_per_box_oz"
+									value={ fmt.Sprintf("%.2f", config.Packing.PackingMaterials.PackingPaperPerBoxOz) }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">
+									Tape and Labels per Box (oz)
+								</label>
+								<input
+									type="number"
+									step="0.01"
+									name="tape_and_labels_per_box_oz"
+									value={ fmt.Sprintf("%.2f", config.Packing.PackingMaterials.TapeAndLabelsPerBoxOz) }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">
+									Air Pillows per Box (oz)
+								</label>
+								<input
+									type="number"
+									step="0.01"
+									name="air_pillows_per_box_oz"
+									value={ fmt.Sprintf("%.2f", config.Packing.PackingMaterials.AirPillowsPerBoxOz) }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Dimension Guards Section -->
+				<div class="admin-card">
+					<div class="admin-card-header">
+						<h2 class="admin-card-title">Dimension Guards</h2>
+						<p class="text-sm text-slate-400 mt-1">Maximum dimensions (in inches) for each size category</p>
+					</div>
+					<div class="admin-card-body">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+							for size, dims := range config.Packing.DimensionGuard {
+								<div class="border border-slate-600 rounded-lg p-4 bg-slate-700/50">
+									<h3 class="text-lg font-semibold text-white mb-4 capitalize">{ size }</h3>
+									<div class="grid grid-cols-3 gap-3">
+										<div>
+											<label class="block text-sm font-medium text-slate-200 mb-1">
+												Length (in)
+											</label>
+											<input
+												type="number"
+												step="0.1"
+												name={ fmt.Sprintf("dimension_guard_%s_L", size) }
+												value={ fmt.Sprintf("%.1f", dims.L) }
+												class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-slate-200 mb-1">
+												Width (in)
+											</label>
+											<input
+												type="number"
+												step="0.1"
+												name={ fmt.Sprintf("dimension_guard_%s_W", size) }
+												value={ fmt.Sprintf("%.1f", dims.W) }
+												class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+										<div>
+											<label class="block text-sm font-medium text-slate-200 mb-1">
+												Height (in)
+											</label>
+											<input
+												type="number"
+												step="0.1"
+												name={ fmt.Sprintf("dimension_guard_%s_H", size) }
+												value={ fmt.Sprintf("%.1f", dims.H) }
+												class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+											/>
+										</div>
+									</div>
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+
+				<!-- Other Settings Section -->
+				<div class="admin-card">
+					<div class="admin-card-header">
+						<h2 class="admin-card-title">Other Settings</h2>
+					</div>
+					<div class="admin-card-body">
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">
+									Unit Volume (in³)
+								</label>
+								<input
+									type="number"
+									step="0.1"
+									name="unit_volume_in3"
+									value={ fmt.Sprintf("%.1f", config.Packing.UnitVolumeIn3) }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+								<p class="text-xs text-slate-400 mt-1">Base unit volume for packing calculations</p>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">
+									Fill Ratio
+								</label>
+								<input
+									type="number"
+									step="0.01"
+									min="0"
+									max="1"
+									name="fill_ratio"
+									value={ fmt.Sprintf("%.2f", config.Packing.FillRatio) }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+								<p class="text-xs text-slate-400 mt-1">Box fill efficiency (0.0 - 1.0)</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</form>
+		}
+	}
+}

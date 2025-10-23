@@ -261,3 +261,26 @@ func RequireClerkAuth() echo.MiddlewareFunc {
 		}
 	}
 }
+
+// RequireAdmin middleware requires admin authentication and returns 401 if not admin
+func RequireAdmin() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			isAuth, _ := c.Get(IsAuthenticatedKey).(bool)
+			if !isAuth {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Authentication required")
+			}
+
+			dbUser, ok := c.Get(DBUserKey).(*db.User)
+			if !ok || dbUser == nil {
+				return echo.NewHTTPError(http.StatusUnauthorized, "User not found")
+			}
+
+			if !dbUser.IsAdmin {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Admin access required")
+			}
+
+			return next(c)
+		}
+	}
+}

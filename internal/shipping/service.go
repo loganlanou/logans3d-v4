@@ -2,7 +2,9 @@ package shipping
 
 import (
 	"fmt"
+	"log/slog"
 	"sort"
+	"strings"
 )
 
 type ShippingOption struct {
@@ -32,14 +34,14 @@ type ShippingQuoteResponse struct {
 
 type ShippingService struct {
 	config       *ShippingConfig
-	client       *ShipStationClient
+	client       *EasyPostClient
 	packer       *Packer
 	carrierIDs   []string
 	carrierMap   map[string]Carrier // Maps carrier ID to carrier info
 }
 
 func NewShippingService(config *ShippingConfig) (*ShippingService, error) {
-	client := NewShipStationClient()
+	client := NewEasyPostClient()
 	packer := NewPacker(config)
 
 	service := &ShippingService{
@@ -51,7 +53,7 @@ func NewShippingService(config *ShippingConfig) (*ShippingService, error) {
 	if err := service.loadCarrierIDs(); err != nil {
 		// In development mode without API credentials, use mock data
 		if client.IsUsingMockData() {
-			service.carrierIDs = []string{"mock-usps", "mock-ups", "mock-fedex"}
+			service.carrierIDs = []string{"usps", "ups", "fedex"}
 			return service, nil
 		}
 		return nil, fmt.Errorf("failed to load carrier IDs: %w", err)
@@ -77,12 +79,25 @@ func (s *ShippingService) loadCarrierIDs() error {
 }
 
 func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*ShippingQuoteResponse, error) {
+	slog.Debug("GetShippingQuote: Starting shipping quote calculation",
+		"small_count", req.ItemCounts.Small,
+		"medium_count", req.ItemCounts.Medium,
+		"large_count", req.ItemCounts.Large,
+		"xl_count", req.ItemCounts.XL,
+		"ship_to_postal_code", req.ShipTo.PostalCode,
+		"ship_to_state", req.ShipTo.StateProvince)
+
 	packingSolution := s.packer.Pack(req.ItemCounts)
 	if !packingSolution.Valid {
+		slog.Debug("GetShippingQuote: Packing failed", "error", packingSolution.Error)
 		return &ShippingQuoteResponse{
 			Error: fmt.Sprintf("Unable to pack items: %s", packingSolution.Error),
 		}, nil
 	}
+
+	slog.Debug("GetShippingQuote: Packing successful",
+		"total_boxes", packingSolution.TotalBoxes,
+		"total_cost", packingSolution.TotalCost)
 
 	var allOptions []ShippingOption
 
@@ -121,6 +136,13 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 
 	sortedOptions := s.sortShippingOptions(allOptions)
 	topN := s.config.Shipping.RatePreferences.PresentTopN
+
+	slog.Debug("GetShippingQuote: Rate preferences",
+		"configured_present_top_n", s.config.Shipping.RatePreferences.PresentTopN,
+		"sort_order", s.config.Shipping.RatePreferences.Sort,
+		"total_options_available", len(sortedOptions),
+		"will_return_top_n", topN)
+
 	if topN > len(sortedOptions) {
 		topN = len(sortedOptions)
 	}
@@ -189,52 +211,100 @@ func (s *ShippingService) separateCarriersByType() (usps []string, other []strin
 func (s *ShippingService) isUSPSCarrier(carrierID string) bool {
 	carrier, exists := s.carrierMap[carrierID]
 	if !exists {
-		return false
+		// Simple check if not in map
+		return carrierID == "usps" || carrierID == "USPS"
 	}
 
 	// Check carrier code and nickname for USPS identifiers
 	code := carrier.CarrierCode
 	nickname := carrier.CarrierNickname
 
-	// ShipStation uses "stamps_com" for USPS, and nickname typically contains "USPS"
-	return code == "stamps_com" || code == "usps" ||
-		nickname == "USPS" || nickname == "Stamps.com"
+	// EasyPost uses "USPS" for USPS carrier
+	return code == "USPS" || code == "usps" ||
+		nickname == "USPS"
 }
 
 // getRatesForCarriers gets rates for specific carriers from a specific origin
 func (s *ShippingService) getRatesForCarriers(carrierIDs []string, boxSelection BoxSelection, shipTo Address, shipFrom Address) ([]Rate, error) {
-	rateReq := &RateRequest{
-		RateOptions: RateOptions{
-			CarrierIDs: carrierIDs,
+	slog.Debug("getRatesForCarriers: Requesting rates",
+		"box_sku", boxSelection.Box.SKU,
+		"box_name", boxSelection.Box.Name,
+		"box_dimensions_LxWxH", fmt.Sprintf("%.1fx%.1fx%.1f in", boxSelection.Box.L, boxSelection.Box.W, boxSelection.Box.H),
+		"package_weight_oz", boxSelection.Weight,
+		"box_weight_oz", boxSelection.Box.BoxWeightOz,
+		"small_units", boxSelection.SmallUnits,
+		"items_small", boxSelection.ItemCounts.Small,
+		"items_medium", boxSelection.ItemCounts.Medium,
+		"items_large", boxSelection.ItemCounts.Large,
+		"items_xl", boxSelection.ItemCounts.XL,
+		"ship_from_postal", shipFrom.PostalCode,
+		"ship_to_postal", shipTo.PostalCode,
+		"carriers", fmt.Sprintf("%v", carrierIDs))
+
+	// Create package for EasyPost
+	pkg := Package{
+		PackageCode: "package",
+		Weight: Weight{
+			Value: boxSelection.Weight,
+			Unit:  "ounce",
 		},
-		Shipment: Shipment{
-			ValidateAddress: "no_validation",
-			ShipFrom:        shipFrom,
-			ShipTo:          shipTo,
-			Packages: []Package{
-				{
-					PackageCode: "package",
-					Weight: Weight{
-						Value: boxSelection.Weight,
-						Unit:  "ounce",
-					},
-					Dimensions: Dimensions{
-						Length: boxSelection.Box.L,
-						Width:  boxSelection.Box.W,
-						Height: boxSelection.Box.H,
-						Unit:   "inch",
-					},
-				},
-			},
+		Dimensions: Dimensions{
+			Length: boxSelection.Box.L,
+			Width:  boxSelection.Box.W,
+			Height: boxSelection.Box.H,
+			Unit:   "inch",
 		},
 	}
 
-	rateResp, err := s.client.GetRates(rateReq)
+	// Get rates from EasyPost
+	rates, err := s.client.GetRates(shipFrom, shipTo, pkg)
 	if err != nil {
+		slog.Debug("getRatesForCarriers: Failed to get rates", "error", err)
 		return nil, fmt.Errorf("failed to get rates: %w", err)
 	}
 
-	return rateResp.Rates, nil
+	// Filter rates by requested carriers if not using mock data
+	if !s.client.IsUsingMockData() && len(carrierIDs) > 0 {
+		var filteredRates []Rate
+		carrierSet := make(map[string]bool)
+		for _, id := range carrierIDs {
+			carrierSet[id] = true
+			// Also add uppercase version for case-insensitive matching
+			carrierSet[strings.ToUpper(id)] = true
+		}
+
+		for _, rate := range rates {
+			slog.Debug("getRatesForCarriers: Checking rate for filtering",
+				"carrier_code", rate.CarrierCode,
+				"carrier_id", rate.CarrierID,
+				"carrier_nickname", rate.CarrierNickname,
+				"requested_carriers", carrierIDs)
+
+			if carrierSet[rate.CarrierCode] || carrierSet[rate.CarrierID] ||
+			   carrierSet[strings.ToUpper(rate.CarrierCode)] || carrierSet[strings.ToUpper(rate.CarrierID)] {
+				filteredRates = append(filteredRates, rate)
+				slog.Debug("getRatesForCarriers: Rate PASSED filter", "carrier", rate.CarrierCode)
+			} else {
+				slog.Debug("getRatesForCarriers: Rate FILTERED OUT", "carrier", rate.CarrierCode)
+			}
+		}
+		rates = filteredRates
+	}
+
+	slog.Debug("getRatesForCarriers: Received rates",
+		"rate_count", len(rates),
+		"box_sku", boxSelection.Box.SKU)
+
+	for i, rate := range rates {
+		slog.Debug("getRatesForCarriers: Rate option",
+			"index", i,
+			"carrier", rate.CarrierNickname,
+			"service", rate.ServiceType,
+			"price", rate.ShippingAmount.Amount,
+			"delivery_days", rate.DeliveryDays)
+	}
+
+	return rates, nil
 }
 
 func (s *ShippingService) getMockRates(boxSelection BoxSelection, shipTo Address) []Rate {
@@ -254,6 +324,17 @@ func (s *ShippingService) getMockRates(boxSelection BoxSelection, shipTo Address
 			EstimatedDate:   "",
 		},
 		{
+			RateID:          "mock-rate-usps-priority",
+			CarrierID:       "mock-usps",
+			CarrierCode:     "stamps_com",
+			CarrierNickname: "USPS",
+			ServiceCode:     "usps_priority_mail",
+			ServiceType:     "USPS Priority Mail",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 4.50},
+			DeliveryDays:    2,
+			EstimatedDate:   "",
+		},
+		{
 			RateID:          "mock-rate-ups-ground",
 			CarrierID:       "mock-ups",
 			CarrierCode:     "ups",
@@ -265,6 +346,17 @@ func (s *ShippingService) getMockRates(boxSelection BoxSelection, shipTo Address
 			EstimatedDate:   "",
 		},
 		{
+			RateID:          "mock-rate-ups-3day",
+			CarrierID:       "mock-ups",
+			CarrierCode:     "ups",
+			CarrierNickname: "UPS",
+			ServiceCode:     "ups_3_day_select",
+			ServiceType:     "UPS 3 Day Select",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 6.00},
+			DeliveryDays:    3,
+			EstimatedDate:   "",
+		},
+		{
 			RateID:          "mock-rate-fedex-ground",
 			CarrierID:       "mock-fedex",
 			CarrierCode:     "fedex",
@@ -273,6 +365,39 @@ func (s *ShippingService) getMockRates(boxSelection BoxSelection, shipTo Address
 			ServiceType:     "FedEx Ground",
 			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 3.00},
 			DeliveryDays:    3,
+			EstimatedDate:   "",
+		},
+		{
+			RateID:          "mock-rate-fedex-2day",
+			CarrierID:       "mock-fedex",
+			CarrierCode:     "fedex",
+			CarrierNickname: "FedEx",
+			ServiceCode:     "fedex_2day",
+			ServiceType:     "FedEx 2Day",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 8.00},
+			DeliveryDays:    2,
+			EstimatedDate:   "",
+		},
+		{
+			RateID:          "mock-rate-usps-express",
+			CarrierID:       "mock-usps",
+			CarrierCode:     "stamps_com",
+			CarrierNickname: "USPS",
+			ServiceCode:     "usps_priority_mail_express",
+			ServiceType:     "USPS Priority Mail Express",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 12.00},
+			DeliveryDays:    1,
+			EstimatedDate:   "",
+		},
+		{
+			RateID:          "mock-rate-fedex-overnight",
+			CarrierID:       "mock-fedex",
+			CarrierCode:     "fedex",
+			CarrierNickname: "FedEx",
+			ServiceCode:     "fedex_standard_overnight",
+			ServiceType:     "FedEx Standard Overnight",
+			ShippingAmount:  Amount{Currency: "usd", Amount: basePrice + 15.00},
+			DeliveryDays:    1,
 			EstimatedDate:   "",
 		},
 	}
@@ -361,20 +486,29 @@ func (s *ShippingService) sortShippingOptions(options []ShippingOption) []Shippi
 }
 
 func (s *ShippingService) CreateLabel(rateID string) (*Label, error) {
-	labelResp, err := s.client.CreateLabel(rateID)
+	// NOTE: EasyPost requires both shipment ID and rate ID
+	// For now, we'll try to use the client method, but this may need refactoring
+	// to store and pass shipment IDs through the checkout flow
+	label, err := s.client.CreateLabel(rateID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create label: %w", err)
 	}
 
-	if len(labelResp.Errors) > 0 {
-		return nil, fmt.Errorf("ShipStation API error: %s", labelResp.Errors[0].Message)
-	}
-
-	return &labelResp.Label, nil
+	return label, nil
 }
 
-func (s *ShippingService) VoidLabel(labelID string) error {
-	voidResp, err := s.client.VoidLabel(labelID)
+// CreateLabelFromShipment creates a label using shipment ID and rate ID
+func (s *ShippingService) CreateLabelFromShipment(shipmentID, rateID string) (*Label, error) {
+	label, err := s.client.BuyShipment(shipmentID, rateID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to buy shipment: %w", err)
+	}
+
+	return label, nil
+}
+
+func (s *ShippingService) VoidLabel(shipmentID string) error {
+	voidResp, err := s.client.VoidLabel(shipmentID)
 	if err != nil {
 		return fmt.Errorf("failed to void label: %w", err)
 	}
@@ -395,21 +529,24 @@ func (s *ShippingService) RefreshCarriers() error {
 }
 
 func (s *ShippingService) ValidateAddress(addr Address) error {
-	rateReq := &RateRequest{
-		Shipment: Shipment{
-			ValidateAddress: "validate_only",
-			ShipFrom:        s.addressFromConfig(),
-			ShipTo:          addr,
-			Packages: []Package{
-				{
-					PackageCode: "package",
-					Weight:      Weight{Value: 1, Unit: "ounce"},
-					Dimensions:  Dimensions{Length: 1, Width: 1, Height: 1, Unit: "inch"},
-				},
-			},
-		},
+	// EasyPost validates addresses during rate retrieval
+	// We'll do a simple rate check with minimal package to validate
+	pkg := Package{
+		PackageCode: "package",
+		Weight:      Weight{Value: 1, Unit: "ounce"},
+		Dimensions:  Dimensions{Length: 1, Width: 1, Height: 1, Unit: "inch"},
 	}
 
-	_, err := s.client.GetRates(rateReq)
+	_, err := s.client.GetRates(s.addressFromConfig(), addr, pkg)
 	return err
+}
+
+// UpdateConfig updates the shipping service configuration and recreates the packer
+func (s *ShippingService) UpdateConfig(config *ShippingConfig) {
+	slog.Info("ShippingService: Configuration reloaded",
+		"present_top_n", config.Shipping.RatePreferences.PresentTopN,
+		"sort_order", config.Shipping.RatePreferences.Sort,
+		"num_boxes", len(config.Boxes))
+	s.config = config
+	s.packer = NewPacker(config)
 }

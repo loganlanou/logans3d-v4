@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log/slog"
@@ -36,15 +37,19 @@ type Service struct {
 	config          *Config
 	paymentHandler  *handlers.PaymentHandler
 	shippingHandler *handlers.ShippingHandler
+	shippingService *shipping.ShippingService
 	authHandler     *handlers.AuthHandler
 }
 
 func New(storage *storage.Storage, config *Config) *Service {
-	// Initialize shipping service
-	shippingConfig, err := shipping.LoadShippingConfig(config.Shipping.ConfigPath)
+	// Initialize shipping service - load from database instead of file
+	ctx := context.Background()
+	shippingConfig, err := shipping.LoadShippingConfigFromDB(ctx, storage.Queries)
 	if err != nil {
-		slog.Warn("failed to load shipping config, using defaults", "error", err, "config_path", config.Shipping.ConfigPath)
+		slog.Warn("failed to load shipping config from database, using defaults", "error", err)
 		shippingConfig = shipping.CreateDefaultConfig()
+	} else {
+		slog.Info("loaded shipping configuration from database", "num_boxes", len(shippingConfig.Boxes))
 	}
 
 	shippingService, err := shipping.NewShippingService(shippingConfig)
@@ -64,6 +69,7 @@ func New(storage *storage.Storage, config *Config) *Service {
 		config:          config,
 		paymentHandler:  handlers.NewPaymentHandler(),
 		shippingHandler: shippingHandler,
+		shippingService: shippingService,
 		authHandler:     handlers.NewAuthHandler(),
 	}
 }
@@ -155,9 +161,9 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 		api.POST("/shipping/validate-address", s.shippingHandler.ValidateAddress)
 	}
 	
-	// Admin routes - protected with RequireClerkAuth middleware
-	adminHandler := handlers.NewAdminHandler(s.storage)
-	admin := withAuth.Group("/admin", auth.RequireClerkAuth())
+	// Admin routes - protected with RequireAdmin middleware
+	adminHandler := handlers.NewAdminHandler(s.storage, s.shippingService)
+	admin := withAuth.Group("/admin", auth.RequireAdmin())
 	admin.GET("", adminHandler.HandleAdminDashboard)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
 	admin.GET("/product/new", adminHandler.HandleProductForm)
@@ -192,20 +198,31 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/events/:id/delete", adminHandler.HandleDeleteEvent)
 
 	// Shipping management routes
-	if s.shippingHandler != nil {
-		admin.GET("/shipping", s.handleShippingAdmin)
-		admin.POST("/shipping/config", s.handleShippingConfigUpdate)
-		admin.GET("/shipping/test", s.handleShippingTest)
-	}
+	admin.GET("/shipping/boxes", adminHandler.HandleShippingTab)
+	admin.GET("/shipping/boxes/new", adminHandler.HandleBoxForm)
+	admin.POST("/shipping/boxes", adminHandler.HandleCreateBox)
+	admin.GET("/shipping/boxes/edit/:sku", adminHandler.HandleBoxForm)
+	admin.POST("/shipping/boxes/:sku", adminHandler.HandleUpdateBox)
+	admin.POST("/shipping/boxes/delete/:sku", adminHandler.HandleDeleteBox)
+	admin.GET("/shipping/config", adminHandler.HandleShippingConfig)
+	admin.POST("/shipping/config", adminHandler.HandleSaveShippingConfig)
+	admin.GET("/shipping/settings", adminHandler.HandleShippingSettings)
+	admin.POST("/shipping/settings", adminHandler.HandleSaveShippingSettings)
 	
-	// Developer routes - protected with RequireClerkAuth middleware
-	dev := withAuth.Group("/dev", auth.RequireClerkAuth())
+	// Developer routes - protected with RequireAdmin middleware
+	dev := withAuth.Group("/dev", auth.RequireAdmin())
+	// Page routes
 	dev.GET("", adminHandler.HandleDeveloperDashboard)
-	dev.GET("/system", adminHandler.HandleSystemInfo)
-	dev.GET("/memory", adminHandler.HandleMemoryStats)
-	dev.GET("/database", adminHandler.HandleDatabaseInfo)
-	dev.GET("/config", adminHandler.HandleConfigInfo)
+	dev.GET("/system", adminHandler.HandleDevSystem)
+	dev.GET("/database", adminHandler.HandleDevDatabase)
+	dev.GET("/memory", adminHandler.HandleDevMemory)
+	dev.GET("/logs", adminHandler.HandleDevLogs)
+	dev.GET("/config", adminHandler.HandleDevConfig)
+	// API routes
 	dev.POST("/gc", adminHandler.HandleGarbageCollect)
+	dev.GET("/logs/stream", adminHandler.HandleLogStream)
+	dev.GET("/logs/tail", adminHandler.HandleLogTail)
+	dev.POST("/logs/clear", adminHandler.HandleLogClear)
 	
 	// Health check - no auth
 	e.GET("/health", s.handleHealth)

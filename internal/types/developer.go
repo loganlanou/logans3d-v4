@@ -11,6 +11,7 @@ type SystemInfo struct {
 	GoVersion      string    `json:"go_version"`
 	Architecture   string    `json:"architecture"`
 	OS             string    `json:"os"`
+	CPUCount       string    `json:"cpu_count"`
 	PID            int       `json:"pid"`
 	DBPath         string    `json:"db_path"`
 	Port           string    `json:"port"`
@@ -28,7 +29,13 @@ type MemoryStats struct {
 	Alloc        uint64  `json:"alloc"`
 	TotalAlloc   uint64  `json:"total_alloc"`
 	Sys          uint64  `json:"sys"`
+	HeapAlloc    uint64  `json:"heap_alloc"`
+	HeapSys      uint64  `json:"heap_sys"`
+	HeapIdle     uint64  `json:"heap_idle"`
+	HeapInuse    uint64  `json:"heap_inuse"`
+	HeapReleased uint64  `json:"heap_released"`
 	NumGC        uint32  `json:"num_gc"`
+	LastGC       string  `json:"last_gc"`
 	Goroutines   int     `json:"goroutines"`
 	AllocMB      float64 `json:"alloc_mb"`
 	SysMB        float64 `json:"sys_mb"`

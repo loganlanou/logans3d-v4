@@ -1,0 +1,111 @@
+package admin
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/types"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ DevConfig(c echo.Context, sysInfo types.SystemInfo) {
+	@layout.AdminBase(c, "Configuration") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-8">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Configuration</h1>
+			</div>
+
+			<!-- Environment Variables Card -->
+			<div class="admin-card mb-6">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title flex items-center">
+						<span class="text-2xl mr-3">🔧</span>
+						Environment Variables
+					</h2>
+				</div>
+				<div class="p-4">
+					<pre class="bg-slate-900 p-4 rounded-lg overflow-x-auto"><code class="text-sm text-slate-300 font-mono">DB_PATH={ sysInfo.DBPath }
+PORT={ sysInfo.Port }
+ENVIRONMENT={ sysInfo.Environment }
+GO_VERSION={ sysInfo.GoVersion }
+APP_NAME={ sysInfo.AppName }
+VERSION={ sysInfo.Version }</code></pre>
+				</div>
+			</div>
+
+			<!-- Configuration Details Card -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title flex items-center">
+						<span class="text-2xl mr-3">⚙️</span>
+						Configuration Details
+					</h2>
+				</div>
+				<div class="overflow-x-auto">
+					<table class="admin-table">
+						<tbody>
+							<tr>
+								<td class="admin-font-semibold">Application Name</td>
+								<td>{ sysInfo.AppName }</td>
+							</tr>
+							<tr>
+								<td class="admin-font-semibold">Version</td>
+								<td>{ sysInfo.Version }</td>
+							</tr>
+							<tr>
+								<td class="admin-font-semibold">Environment</td>
+								<td>
+									if sysInfo.Environment != "" {
+										<span class="admin-status admin-status-active">{ sysInfo.Environment }</span>
+									} else {
+										<span class="admin-status admin-status-pending">Not Set</span>
+									}
+								</td>
+							</tr>
+							<tr>
+								<td class="admin-font-semibold">Server Port</td>
+								<td>{ sysInfo.Port }</td>
+							</tr>
+							<tr>
+								<td class="admin-font-semibold">Database Path</td>
+								<td><code class="px-2 py-1 bg-slate-900 rounded text-sm">{ sysInfo.DBPath }</code></td>
+							</tr>
+							<tr>
+								<td class="admin-font-semibold">Process ID</td>
+								<td>{ sysInfo.PID }</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Configuration Tips -->
+			<div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+				<div class="admin-card">
+					<h3 class="admin-text-primary admin-font-semibold mb-3 flex items-center">
+						<span class="text-xl mr-2">💡</span>
+						Environment Configuration
+					</h3>
+					<p class="admin-text-muted text-sm mb-3">
+						Environment variables are loaded from <code class="px-2 py-1 bg-slate-800 rounded">.envrc</code> using direnv.
+					</p>
+					<p class="admin-text-muted text-sm">
+						After making changes to <code class="px-2 py-1 bg-slate-800 rounded">.envrc</code>, run <code class="px-2 py-1 bg-slate-800 rounded">direnv allow</code> to activate them.
+					</p>
+				</div>
+
+				<div class="admin-card">
+					<h3 class="admin-text-primary admin-font-semibold mb-3 flex items-center">
+						<span class="text-xl mr-2">📝</span>
+						Development Mode
+					</h3>
+					<p class="admin-text-muted text-sm mb-3">
+						The development server runs with hot-reloading via Air, automatically rebuilding on file changes.
+					</p>
+					<p class="admin-text-muted text-sm">
+						Logs are available in <code class="px-2 py-1 bg-slate-800 rounded">./tmp/air-combined.log</code>
+					</p>
+				</div>
+			</div>
+		}
+	}
+}
