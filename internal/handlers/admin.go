@@ -17,6 +17,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/internal/types"
 	"github.com/loganlanou/logans3d-v4/storage"
@@ -28,12 +29,14 @@ import (
 type AdminHandler struct {
 	storage         *storage.Storage
 	shippingService *shipping.ShippingService
+	emailService    *email.Service
 }
 
-func NewAdminHandler(storage *storage.Storage, shippingService *shipping.ShippingService) *AdminHandler {
+func NewAdminHandler(storage *storage.Storage, shippingService *shipping.ShippingService, emailService *email.Service) *AdminHandler {
 	return &AdminHandler{
 		storage:         storage,
 		shippingService: shippingService,
+		emailService:    emailService,
 	}
 }
 
@@ -1486,4 +1489,144 @@ func (h *AdminHandler) HandleSaveShippingSettings(c echo.Context) error {
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/admin/shipping/settings")
+}
+
+// Email Preview Handlers
+
+func (h *AdminHandler) HandleEmailPreview(c echo.Context) error {
+	// Create sample order data
+	sampleData := createSampleOrderData()
+
+	// Render both email templates
+	customerHTML, err := email.RenderCustomerOrderEmail(sampleData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render customer email template: "+err.Error())
+	}
+
+	adminHTML, err := email.RenderAdminOrderEmail(sampleData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render admin email template: "+err.Error())
+	}
+
+	return Render(c, admin.EmailPreview(c, customerHTML, adminHTML))
+}
+
+func (h *AdminHandler) HandleEmailPreviewCustomer(c echo.Context) error {
+	// Create sample order data
+	sampleData := createSampleOrderData()
+
+	// Render the customer email template
+	html, err := email.RenderCustomerOrderEmail(sampleData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render email template: "+err.Error())
+	}
+
+	return c.HTML(http.StatusOK, html)
+}
+
+func (h *AdminHandler) HandleEmailPreviewAdmin(c echo.Context) error {
+	// Create sample order data
+	sampleData := createSampleOrderData()
+
+	// Render the admin email template
+	html, err := email.RenderAdminOrderEmail(sampleData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render email template: "+err.Error())
+	}
+
+	return c.HTML(http.StatusOK, html)
+}
+
+// createSampleOrderData creates sample order data for email preview
+func createSampleOrderData() *email.OrderData {
+	return &email.OrderData{
+		OrderID:       "SAMPLE-12345",
+		CustomerName:  "John Doe",
+		CustomerEmail: "john.doe@example.com",
+		OrderDate:     "October 22, 2025 at 9:30 PM",
+		Items: []email.OrderItem{
+			{
+				ProductName:  "Tyrannosaurus Rex",
+				Quantity:     2,
+				PriceCents:   2999, // $29.99
+				TotalCents:   5998, // $59.98
+			},
+			{
+				ProductName:  "Velociraptor",
+				Quantity:     1,
+				PriceCents:   1999, // $19.99
+				TotalCents:   1999, // $19.99
+			},
+		},
+		SubtotalCents: 7997,  // $79.97
+		TaxCents:      547,   // $5.47
+		ShippingCents: 750,   // $7.50
+		TotalCents:    9294,  // $92.94
+		ShippingAddress: email.Address{
+			Name:       "John Doe",
+			Line1:      "123 Main Street",
+			Line2:      "Apt 4B",
+			City:       "Springfield",
+			State:      "IL",
+			PostalCode: "62701",
+			Country:    "US",
+		},
+		BillingAddress: email.Address{
+			Name:       "John Doe",
+			Line1:      "123 Main Street",
+			Line2:      "Apt 4B",
+			City:       "Springfield",
+			State:      "IL",
+			PostalCode: "62701",
+			Country:    "US",
+		},
+		PaymentIntentID: "pi_1234567890abcdef",
+	}
+}
+
+func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
+	var request struct {
+		Email string `json:"email"`
+		Type  string `json:"type"`
+	}
+
+	if err := c.Bind(&request); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid request body",
+		})
+	}
+
+	if request.Email == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Email address is required",
+		})
+	}
+
+	if request.Type != "customer" && request.Type != "admin" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid email type",
+		})
+	}
+
+	// Create sample data
+	sampleData := createSampleOrderData()
+	sampleData.CustomerEmail = request.Email
+
+	// Send the appropriate email
+	var err error
+	if request.Type == "customer" {
+		err = h.emailService.SendOrderConfirmation(sampleData)
+	} else {
+		err = h.emailService.SendOrderNotificationToAdmin(sampleData)
+	}
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("Failed to send test email: %v", err),
+		})
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": fmt.Sprintf("Test email sent successfully to %s", request.Email),
+	})
 }

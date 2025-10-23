@@ -122,19 +122,16 @@ func FormatCents(cents int64) string {
 
 // SendOrderConfirmation sends an order confirmation email to the customer
 func (s *Service) SendOrderConfirmation(data *OrderData) error {
-	tmpl := template.Must(template.New("customer").Funcs(template.FuncMap{
-		"FormatCents": FormatCents,
-	}).Parse(customerOrderTemplate))
-
-	var body bytes.Buffer
-	if err := tmpl.Execute(&body, data); err != nil {
-		return fmt.Errorf("failed to render customer email template: %w", err)
+	// Render the full email (content + base template)
+	html, err := RenderCustomerOrderEmail(data)
+	if err != nil {
+		return err
 	}
 
 	email := &Email{
 		To:      []string{data.CustomerEmail},
 		Subject: fmt.Sprintf("Order Confirmation - Order #%s", data.OrderID),
-		Body:    body.String(),
+		Body:    html,
 		IsHTML:  true,
 	}
 
@@ -143,13 +140,10 @@ func (s *Service) SendOrderConfirmation(data *OrderData) error {
 
 // SendOrderNotificationToAdmin sends an order notification to the admin/internal email
 func (s *Service) SendOrderNotificationToAdmin(data *OrderData) error {
-	tmpl := template.Must(template.New("admin").Funcs(template.FuncMap{
-		"FormatCents": FormatCents,
-	}).Parse(adminOrderTemplate))
-
-	var body bytes.Buffer
-	if err := tmpl.Execute(&body, data); err != nil {
-		return fmt.Errorf("failed to render admin email template: %w", err)
+	// Render the full email (content + base template)
+	html, err := RenderAdminOrderEmail(data)
+	if err != nil {
+		return err
 	}
 
 	internalEmail := os.Getenv("EMAIL_TO_INTERNAL")
@@ -160,7 +154,7 @@ func (s *Service) SendOrderNotificationToAdmin(data *OrderData) error {
 	email := &Email{
 		To:      []string{internalEmail},
 		Subject: fmt.Sprintf("New Order Received - Order #%s", data.OrderID),
-		Body:    body.String(),
+		Body:    html,
 		IsHTML:  true,
 	}
 
@@ -169,28 +163,34 @@ func (s *Service) SendOrderNotificationToAdmin(data *OrderData) error {
 
 // RenderCustomerOrderEmail renders the customer order email template for preview
 func RenderCustomerOrderEmail(data *OrderData) (string, error) {
+	// Render the content section
 	tmpl := template.Must(template.New("customer").Funcs(template.FuncMap{
 		"FormatCents": FormatCents,
-	}).Parse(customerOrderTemplate))
+	}).Parse(customerOrderContentTemplate))
 
-	var body bytes.Buffer
-	if err := tmpl.Execute(&body, data); err != nil {
-		return "", fmt.Errorf("failed to render customer email template: %w", err)
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render customer email content: %w", err)
 	}
 
-	return body.String(), nil
+	// Wrap in base template
+	subject := fmt.Sprintf("Order Confirmation - Order #%s", data.OrderID)
+	return WrapEmailContent(content.String(), subject)
 }
 
 // RenderAdminOrderEmail renders the admin order email template for preview
 func RenderAdminOrderEmail(data *OrderData) (string, error) {
+	// Render the content section
 	tmpl := template.Must(template.New("admin").Funcs(template.FuncMap{
 		"FormatCents": FormatCents,
-	}).Parse(adminOrderTemplate))
+	}).Parse(adminOrderContentTemplate))
 
-	var body bytes.Buffer
-	if err := tmpl.Execute(&body, data); err != nil {
-		return "", fmt.Errorf("failed to render admin email template: %w", err)
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render admin email content: %w", err)
 	}
 
-	return body.String(), nil
+	// Wrap in base template
+	subject := fmt.Sprintf("New Order Received - Order #%s", data.OrderID)
+	return WrapEmailContent(content.String(), subject)
 }

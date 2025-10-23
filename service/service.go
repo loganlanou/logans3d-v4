@@ -22,6 +22,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/about"
+	"github.com/loganlanou/logans3d-v4/views/account"
 	"github.com/loganlanou/logans3d-v4/views/contact"
 	"github.com/loganlanou/logans3d-v4/views/custom"
 	"github.com/loganlanou/logans3d-v4/views/events"
@@ -39,6 +40,7 @@ type Service struct {
 	paymentHandler  *handlers.PaymentHandler
 	shippingHandler *handlers.ShippingHandler
 	shippingService *shipping.ShippingService
+	emailService    *email.Service
 	authHandler     *handlers.AuthHandler
 }
 
@@ -74,6 +76,7 @@ func New(storage *storage.Storage, config *Config) *Service {
 		paymentHandler:  handlers.NewPaymentHandler(storage.Queries, emailService),
 		shippingHandler: shippingHandler,
 		shippingService: shippingService,
+		emailService:    emailService,
 		authHandler:     handlers.NewAuthHandler(),
 	}
 }
@@ -131,6 +134,10 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Cart routes
 	withAuth.GET("/cart", s.handleCart)
 
+	// Account routes
+	withAuth.GET("/account", s.handleAccount)
+	withAuth.GET("/account/orders/:id", s.handleAccountOrderDetail)
+
 	// Cart API - all routes public for now
 	withAuth.GET("/api/cart", s.handleGetCart)
 	withAuth.POST("/api/cart/add", s.handleAddToCart)
@@ -166,7 +173,8 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	}
 	
 	// Admin routes - protected with RequireAdmin middleware
-	adminHandler := handlers.NewAdminHandler(s.storage, s.shippingService)
+	// Initialize admin handler with all required services
+	adminHandler := handlers.NewAdminHandler(s.storage, s.shippingService, s.emailService)
 	admin := withAuth.Group("/admin", auth.RequireAdmin())
 	admin.GET("", adminHandler.HandleAdminDashboard)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
@@ -212,7 +220,13 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/shipping/config", adminHandler.HandleSaveShippingConfig)
 	admin.GET("/shipping/settings", adminHandler.HandleShippingSettings)
 	admin.POST("/shipping/settings", adminHandler.HandleSaveShippingSettings)
-	
+
+	// Email preview routes
+	admin.GET("/email-preview", adminHandler.HandleEmailPreview)
+	admin.GET("/email-preview/customer", adminHandler.HandleEmailPreviewCustomer)
+	admin.GET("/email-preview/admin", adminHandler.HandleEmailPreviewAdmin)
+	admin.POST("/email-preview/send-test", adminHandler.HandleSendTestEmail)
+
 	// Developer routes - protected with RequireAdmin middleware
 	dev := withAuth.Group("/dev", auth.RequireAdmin())
 	// Page routes
@@ -737,6 +751,38 @@ func (s *Service) handleCheckoutSuccess(c echo.Context) error {
 // handleCart renders the shopping cart page
 func (s *Service) handleCart(c echo.Context) error {
 	return Render(c, shop.Cart(c))
+}
+
+// handleAccount renders the account page with profile and order history
+func (s *Service) handleAccount(c echo.Context) error {
+	// Check authentication
+	if !auth.IsAuthenticated(c) {
+		// Redirect to login with return URL
+		return c.Redirect(http.StatusFound, "/login?redirect_url=/account")
+	}
+
+	// Get user from context
+	user, ok := auth.GetDBUser(c)
+	if !ok {
+		slog.Error("authenticated user not found in context")
+		return echo.NewHTTPError(http.StatusUnauthorized, "User not found")
+	}
+
+	ctx := c.Request().Context()
+
+	// Fetch user's orders
+	orders, err := s.storage.Queries.ListOrdersByUser(ctx, sql.NullString{
+		String: user.ID,
+		Valid:  true,
+	})
+	if err != nil {
+		slog.Error("failed to fetch user orders", "error", err, "user_id", user.ID)
+		// Don't fail - just show empty orders
+		orders = []db.Order{}
+	}
+
+	// Render account page
+	return Render(c, account.Index(c, user, orders))
 }
 
 // handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)

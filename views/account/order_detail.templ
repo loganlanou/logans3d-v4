@@ -1,0 +1,184 @@
+package account
+
+import (
+	"fmt"
+	"time"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem) {
+	@layout.Base(c, layout.Meta{
+		Title:       fmt.Sprintf("Order #%s - Logan's 3D Creations", order.ID[:8]),
+		Description: "View order details and tracking information",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
+			<!-- Animated background orbs -->
+			<div class="fixed inset-0 overflow-hidden pointer-events-none">
+				<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+				<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+			</div>
+
+			<div class="relative max-w-5xl mx-auto">
+				<!-- Back button -->
+				<div class="mb-6">
+					<a href="/account" class="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors">
+						<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+						</svg>
+						Back to Account
+					</a>
+				</div>
+
+				<!-- Order Header -->
+				<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl mb-8">
+					<div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+						<div>
+							<h1 class="text-3xl font-bold text-white mb-2">Order #{ order.ID[:8] }</h1>
+							<p class="text-slate-400">Placed on { formatOrderDate(order.CreatedAt.Time) }</p>
+						</div>
+						<div class="flex items-center gap-3">
+							@OrderStatusBadge(order.Status.String)
+						</div>
+					</div>
+
+					<!-- Order Summary -->
+					<div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-700/50">
+						<div>
+							<p class="text-sm text-slate-400 mb-1">Payment Status</p>
+							@PaymentStatusBadge(order.PaymentStatus.String)
+						</div>
+						<div>
+							<p class="text-sm text-slate-400 mb-1">Fulfillment Status</p>
+							@FulfillmentStatusBadge(order.FulfillmentStatus.String)
+						</div>
+						<div>
+							<p class="text-sm text-slate-400 mb-1">Order Total</p>
+							<p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
+								${ formatCents(order.TotalCents) }
+							</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+					<!-- Shipping Address -->
+					<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 shadow-xl">
+						<h2 class="text-xl font-bold text-white mb-4 flex items-center">
+							<svg class="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+							</svg>
+							Shipping Address
+						</h2>
+						<div class="text-slate-300 space-y-1">
+							<p class="font-semibold">{ order.CustomerName }</p>
+							<p>{ order.ShippingAddressLine1 }</p>
+							if order.ShippingAddressLine2.Valid && order.ShippingAddressLine2.String != "" {
+								<p>{ order.ShippingAddressLine2.String }</p>
+							}
+							<p>{ order.ShippingCity }, { order.ShippingState } { order.ShippingPostalCode }</p>
+							<p>{ order.ShippingCountry }</p>
+							if order.CustomerPhone.Valid && order.CustomerPhone.String != "" {
+								<p class="pt-2 text-slate-400">Phone: { order.CustomerPhone.String }</p>
+							}
+						</div>
+					</div>
+
+					<!-- Billing Address -->
+					<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 shadow-xl">
+						<h2 class="text-xl font-bold text-white mb-4 flex items-center">
+							<svg class="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+							</svg>
+							Billing Address
+						</h2>
+						<div class="text-slate-300 space-y-1">
+							<p class="font-semibold">{ order.CustomerName }</p>
+							<p>{ order.BillingAddressLine1 }</p>
+							if order.BillingAddressLine2.Valid && order.BillingAddressLine2.String != "" {
+								<p>{ order.BillingAddressLine2.String }</p>
+							}
+							<p>{ order.BillingCity }, { order.BillingState } { order.BillingPostalCode }</p>
+							<p>{ order.BillingCountry }</p>
+							<p class="pt-2 text-slate-400">Email: { order.CustomerEmail }</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Order Items -->
+				<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl mb-8">
+					<h2 class="text-2xl font-bold text-white mb-6">Order Items</h2>
+
+					if len(orderItems) == 0 {
+						<p class="text-slate-400 text-center py-8">No items found for this order.</p>
+					} else {
+						<div class="space-y-4">
+							for _, item := range orderItems {
+								@OrderItemCard(item)
+							}
+						</div>
+
+						<!-- Order Totals -->
+						<div class="mt-8 pt-6 border-t border-slate-700/50">
+							<div class="space-y-2 max-w-sm ml-auto">
+								<div class="flex justify-between text-slate-300">
+									<span>Subtotal:</span>
+									<span>${ formatCents(order.SubtotalCents) }</span>
+								</div>
+								if order.TaxCents > 0 {
+									<div class="flex justify-between text-slate-300">
+										<span>Tax:</span>
+										<span>${ formatCents(order.TaxCents) }</span>
+									</div>
+								}
+								if order.ShippingCents > 0 {
+									<div class="flex justify-between text-slate-300">
+										<span>Shipping:</span>
+										<span>${ formatCents(order.ShippingCents) }</span>
+									</div>
+								}
+								<div class="flex justify-between text-xl font-bold text-white pt-2 border-t border-slate-700/50">
+									<span>Total:</span>
+									<span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
+										${ formatCents(order.TotalCents) }
+									</span>
+								</div>
+							</div>
+						</div>
+					}
+				</div>
+
+				<!-- Order Notes -->
+				if order.Notes.Valid && order.Notes.String != "" {
+					<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 shadow-xl">
+						<h2 class="text-xl font-bold text-white mb-4">Order Notes</h2>
+						<p class="text-slate-300">{ order.Notes.String }</p>
+					</div>
+				}
+			</div>
+		</div>
+	}
+}
+
+templ OrderItemCard(item db.OrderItem) {
+	<div class="flex items-center gap-4 bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+		<div class="flex-1">
+			<h3 class="text-lg font-semibold text-white">{ item.ProductName }</h3>
+			if item.ProductSku.Valid && item.ProductSku.String != "" {
+				<p class="text-sm text-slate-400">SKU: { item.ProductSku.String }</p>
+			}
+		</div>
+		<div class="text-right">
+			<p class="text-slate-400 text-sm">Quantity: { fmt.Sprintf("%d", item.Quantity) }</p>
+			<p class="text-white font-semibold">${ formatCents(item.UnitPriceCents) } each</p>
+		</div>
+		<div class="text-right min-w-[100px]">
+			<p class="text-sm text-slate-400">Total</p>
+			<p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+				${ formatCents(item.TotalPriceCents) }
+			</p>
+		</div>
+	</div>
+}

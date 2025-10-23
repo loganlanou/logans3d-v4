@@ -1,0 +1,318 @@
+package account
+
+import (
+	"fmt"
+	"time"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ Index(c echo.Context, user *db.User, orders []db.Order) {
+	@layout.Base(c, layout.Meta{
+		Title:       "My Account - Logan's 3D Creations",
+		Description: "Manage your account and view order history",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
+			<!-- Animated background orbs -->
+			<div class="fixed inset-0 overflow-hidden pointer-events-none">
+				<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+				<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+			</div>
+
+			<div class="relative max-w-7xl mx-auto">
+				<!-- Header -->
+				<div class="mb-8">
+					<h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+						My Account
+					</h1>
+					<p class="mt-2 text-slate-400">Manage your profile and view order history</p>
+				</div>
+
+				<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+					<!-- Profile Section -->
+					<div class="lg:col-span-1">
+						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl">
+							<h2 class="text-2xl font-bold text-white mb-6">Profile</h2>
+
+							<!-- Avatar -->
+							<div class="flex justify-center mb-6">
+								if user.ProfileImageUrl.Valid && user.ProfileImageUrl.String != "" {
+									<img
+										src={ user.ProfileImageUrl.String }
+										alt="Profile"
+										class="w-24 h-24 rounded-full border-4 border-blue-500/50 shadow-lg"
+									/>
+								} else {
+									<div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold border-4 border-blue-500/50 shadow-lg">
+										{ getInitials(user) }
+									</div>
+								}
+							</div>
+
+							<!-- User Info -->
+							<div class="space-y-4">
+								<div>
+									<label class="text-sm text-slate-400 uppercase tracking-wider">Full Name</label>
+									<p class="text-white font-medium mt-1">{ getFullName(user) }</p>
+								</div>
+
+								if user.Username.Valid && user.Username.String != "" {
+									<div>
+										<label class="text-sm text-slate-400 uppercase tracking-wider">Username</label>
+										<p class="text-white font-medium mt-1">@{ user.Username.String }</p>
+									</div>
+								}
+
+								<div>
+									<label class="text-sm text-slate-400 uppercase tracking-wider">Email</label>
+									<p class="text-white font-medium mt-1 break-all">{ user.Email }</p>
+								</div>
+
+								if user.CreatedAt.Valid {
+									<div>
+										<label class="text-sm text-slate-400 uppercase tracking-wider">Member Since</label>
+										<p class="text-white font-medium mt-1">{ formatMemberSince(user.CreatedAt.Time) }</p>
+									</div>
+								}
+							</div>
+
+							<!-- Quick Stats -->
+							<div class="mt-8 pt-6 border-t border-slate-700/50">
+								<div class="grid grid-cols-2 gap-4 text-center">
+									<div class="bg-slate-900/50 rounded-lg p-4">
+										<p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+											{ fmt.Sprintf("%d", len(orders)) }
+										</p>
+										<p class="text-xs text-slate-400 mt-1">Total Orders</p>
+									</div>
+									<div class="bg-slate-900/50 rounded-lg p-4">
+										<p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
+											${ calculateTotalSpent(orders) }
+										</p>
+										<p class="text-xs text-slate-400 mt-1">Total Spent</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Order History Section -->
+					<div class="lg:col-span-2">
+						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl">
+							<h2 class="text-2xl font-bold text-white mb-6">Order History</h2>
+
+							if len(orders) == 0 {
+								<!-- Empty State -->
+								<div class="text-center py-16">
+									<div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-800/50 mb-6">
+										<svg class="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+										</svg>
+									</div>
+									<h3 class="text-xl font-semibold text-white mb-2">No Orders Yet</h3>
+									<p class="text-slate-400 mb-6">You haven't placed any orders yet. Start shopping to see your orders here!</p>
+									<a
+										href="/shop"
+										class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+									>
+										Browse Shop
+										<svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+										</svg>
+									</a>
+								</div>
+							} else {
+								<!-- Orders List -->
+								<div class="space-y-4">
+									for _, order := range orders {
+										@OrderCard(order)
+									}
+								</div>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}
+
+templ OrderCard(order db.Order) {
+	<div class="bg-slate-900/50 rounded-xl border border-slate-700/50 p-6 hover:border-slate-600/50 transition-all duration-200">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<!-- Order Info -->
+			<div class="flex-1">
+				<div class="flex items-center gap-3 mb-2">
+					<h3 class="text-lg font-semibold text-white">Order #{ order.ID[:8] }</h3>
+					@OrderStatusBadge(order.Status.String)
+				</div>
+				<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+					<div>
+						<span class="text-slate-400">Placed:</span>
+						<span class="text-white ml-2">{ formatOrderDate(order.CreatedAt.Time) }</span>
+					</div>
+					<div>
+						<span class="text-slate-400">Total:</span>
+						<span class="text-white font-semibold ml-2">${ formatCents(order.TotalCents) }</span>
+					</div>
+					<div>
+						<span class="text-slate-400">Payment:</span>
+						<span class="ml-2">
+							@PaymentStatusBadge(order.PaymentStatus.String)
+						</span>
+					</div>
+					<div>
+						<span class="text-slate-400">Fulfillment:</span>
+						<span class="ml-2">
+							@FulfillmentStatusBadge(order.FulfillmentStatus.String)
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<!-- Actions -->
+			<div class="flex items-center gap-3">
+				<a
+					href={ templ.SafeURL(fmt.Sprintf("/account/orders/%s", order.ID)) }
+					class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200"
+				>
+					View Details
+					<svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+					</svg>
+				</a>
+			</div>
+		</div>
+	</div>
+}
+
+templ OrderStatusBadge(status string) {
+	<span class={
+		"inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold",
+		templ.KV("bg-yellow-900/50 text-yellow-400 border border-yellow-700/50", status == "pending"),
+		templ.KV("bg-blue-900/50 text-blue-400 border border-blue-700/50", status == "processing"),
+		templ.KV("bg-purple-900/50 text-purple-400 border border-purple-700/50", status == "shipped"),
+		templ.KV("bg-green-900/50 text-green-400 border border-green-700/50", status == "delivered"),
+		templ.KV("bg-red-900/50 text-red-400 border border-red-700/50", status == "cancelled"),
+		templ.KV("bg-slate-900/50 text-slate-400 border border-slate-700/50", status != "pending" && status != "processing" && status != "shipped" && status != "delivered" && status != "cancelled"),
+	}>
+		{ capitalizeStatus(status) }
+	</span>
+}
+
+templ PaymentStatusBadge(status string) {
+	<span class={
+		"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+		templ.KV("bg-green-900/50 text-green-400", status == "paid"),
+		templ.KV("bg-yellow-900/50 text-yellow-400", status == "unpaid" || status == "partially_paid"),
+		templ.KV("bg-red-900/50 text-red-400", status == "refunded"),
+		templ.KV("bg-slate-900/50 text-slate-400", status != "paid" && status != "unpaid" && status != "partially_paid" && status != "refunded"),
+	}>
+		{ capitalizeStatus(status) }
+	</span>
+}
+
+templ FulfillmentStatusBadge(status string) {
+	<span class={
+		"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
+		templ.KV("bg-green-900/50 text-green-400", status == "fulfilled"),
+		templ.KV("bg-yellow-900/50 text-yellow-400", status == "partial"),
+		templ.KV("bg-slate-900/50 text-slate-400", status == "unfulfilled" || (status != "fulfilled" && status != "partial")),
+	}>
+		{ capitalizeStatus(status) }
+	</span>
+}
+
+// Helper functions
+func getFullName(user *db.User) string {
+	if user.FullName != "" {
+		return user.FullName
+	}
+	if user.FirstName.Valid && user.LastName.Valid {
+		return user.FirstName.String + " " + user.LastName.String
+	}
+	if user.FirstName.Valid {
+		return user.FirstName.String
+	}
+	return "User"
+}
+
+func getInitials(user *db.User) string {
+	fullName := getFullName(user)
+	if len(fullName) == 0 {
+		return "U"
+	}
+
+	parts := splitName(fullName)
+	if len(parts) >= 2 {
+		return string(parts[0][0]) + string(parts[1][0])
+	}
+	return string(fullName[0])
+}
+
+func splitName(name string) []string {
+	var parts []string
+	current := ""
+	for _, r := range name {
+		if r == ' ' {
+			if current != "" {
+				parts = append(parts, current)
+				current = ""
+			}
+		} else {
+			current += string(r)
+		}
+	}
+	if current != "" {
+		parts = append(parts, current)
+	}
+	return parts
+}
+
+func formatMemberSince(t time.Time) string {
+	return t.Format("January 2006")
+}
+
+func formatOrderDate(t time.Time) string {
+	return t.Format("Jan 2, 2006")
+}
+
+func formatCents(cents int64) string {
+	dollars := float64(cents) / 100.0
+	return fmt.Sprintf("%.2f", dollars)
+}
+
+func calculateTotalSpent(orders []db.Order) string {
+	var total int64
+	for _, order := range orders {
+		total += order.TotalCents
+	}
+	return formatCents(total)
+}
+
+func capitalizeStatus(s string) string {
+	if s == "" {
+		return "Unknown"
+	}
+
+	// Replace underscores with spaces
+	result := ""
+	for i, r := range s {
+		if r == '_' {
+			result += " "
+		} else if i == 0 {
+			result += string(toUpper(r))
+		} else {
+			result += string(r)
+		}
+	}
+	return result
+}
+
+func toUpper(r rune) rune {
+	if r >= 'a' && r <= 'z' {
+		return r - 32
+	}
+	return r
+}

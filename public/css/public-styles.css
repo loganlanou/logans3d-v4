@@ -9,6 +9,7 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-red-50: oklch(97.1% 0.013 17.38);
+    --color-red-100: oklch(93.6% 0.032 17.717);
     --color-red-200: oklch(88.5% 0.062 18.334);
     --color-red-300: oklch(80.8% 0.114 19.571);
     --color-red-400: oklch(70.4% 0.191 22.216);
@@ -33,10 +34,12 @@
     --color-yellow-900: oklch(42.1% 0.095 57.708);
     --color-green-50: oklch(98.2% 0.018 155.826);
     --color-green-100: oklch(96.2% 0.044 156.743);
+    --color-green-200: oklch(92.5% 0.084 155.995);
     --color-green-300: oklch(87.1% 0.15 154.449);
     --color-green-400: oklch(79.2% 0.209 151.711);
     --color-green-500: oklch(72.3% 0.219 149.579);
     --color-green-600: oklch(62.7% 0.194 149.214);
+    --color-green-700: oklch(52.7% 0.154 150.069);
     --color-green-800: oklch(44.8% 0.119 151.328);
     --color-green-900: oklch(39.3% 0.095 152.535);
     --color-emerald-200: oklch(90.5% 0.093 164.15);
@@ -455,6 +458,9 @@
   .mx-2 {
     margin-inline: calc(var(--spacing) * 2);
   }
+  .mx-4 {
+    margin-inline: calc(var(--spacing) * 4);
+  }
   .mx-auto {
     margin-inline: auto;
   }
@@ -784,6 +790,9 @@
   }
   .flex-1 {
     flex: 1;
+  }
+  .flex-shrink {
+    flex-shrink: 1;
   }
   .flex-shrink-0 {
     flex-shrink: 0;
@@ -1130,6 +1139,9 @@
   .border-gray-700 {
     border-color: var(--color-gray-700);
   }
+  .border-green-200 {
+    border-color: var(--color-green-200);
+  }
   .border-green-400\/20 {
     border-color: color-mix(in srgb, oklch(79.2% 0.209 151.711) 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -1147,6 +1159,9 @@
     @supports (color: color-mix(in lab, red, red)) {
       border-color: color-mix(in oklab, var(--color-orange-500) 30%, transparent);
     }
+  }
+  .border-red-200 {
+    border-color: var(--color-red-200);
   }
   .border-red-300\/20 {
     border-color: color-mix(in srgb, oklch(80.8% 0.114 19.571) 20%, transparent);
@@ -1336,6 +1351,9 @@
   }
   .bg-red-50 {
     background-color: var(--color-red-50);
+  }
+  .bg-red-100 {
+    background-color: var(--color-red-100);
   }
   .bg-red-400\/10 {
     background-color: color-mix(in srgb, oklch(70.4% 0.191 22.216) 10%, transparent);
@@ -3393,6 +3411,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-gray-700);
+      }
+    }
+  }
+  .hover\:bg-green-700 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-green-700);
       }
     }
   }

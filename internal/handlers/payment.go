@@ -184,7 +184,7 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 	}
 
 	// Create order
-	_, err = h.queries.CreateOrder(ctx, db.CreateOrderParams{
+	_, createErr := h.queries.CreateOrder(ctx, db.CreateOrderParams{
 		ID:                    orderID,
 		UserID:                sql.NullString{}, // Optional - may be guest checkout
 		CustomerEmail:         customerEmail,
@@ -213,8 +213,8 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 		PaymentStatus:         sql.NullString{String: "paid", Valid: true},
 		Notes:                 sql.NullString{},
 	})
-	if err != nil {
-		return fmt.Errorf("failed to create order: %w", err)
+	if createErr != nil {
+		return fmt.Errorf("failed to create order: %w", createErr)
 	}
 
 	slog.Info("order created successfully", "order_id", orderID)
@@ -231,17 +231,19 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 			})
 
 			// Create order item in database
-			_, err := h.queries.CreateOrderItem(ctx, db.CreateOrderItemParams{
-				ID:          uuid.New().String(),
-				OrderID:     orderID,
-				ProductID:   sql.NullString{}, // May need to parse from metadata
-				ProductName: item.Description,
-				Quantity:    item.Quantity,
-				PriceCents:  item.Price.UnitAmount,
-				TotalCents:  item.AmountTotal,
+			_, itemErr := h.queries.CreateOrderItem(ctx, db.CreateOrderItemParams{
+				ID:               uuid.New().String(),
+				OrderID:          orderID,
+				ProductID:        "", // May need to parse from metadata
+				ProductVariantID: sql.NullString{},
+				Quantity:         item.Quantity,
+				UnitPriceCents:   item.Price.UnitAmount,
+				TotalPriceCents:  item.AmountTotal,
+				ProductName:      item.Description,
+				ProductSku:       sql.NullString{},
 			})
-			if err != nil {
-				slog.Error("failed to create order item", "error", err)
+			if itemErr != nil {
+				slog.Error("failed to create order item", "error", itemErr)
 			}
 		}
 	}
