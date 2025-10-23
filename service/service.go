@@ -16,6 +16,7 @@ import (
 	"github.com/stripe/stripe-go/v80"
 	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/storage"
@@ -64,10 +65,13 @@ func New(storage *storage.Storage, config *Config) *Service {
 		shippingHandler = handlers.NewShippingHandler(storage.Queries, shippingService)
 	}
 
+	// Initialize email service
+	emailService := email.NewService()
+
 	return &Service{
 		storage:         storage,
 		config:          config,
-		paymentHandler:  handlers.NewPaymentHandler(),
+		paymentHandler:  handlers.NewPaymentHandler(storage.Queries, emailService),
 		shippingHandler: shippingHandler,
 		shippingService: shippingService,
 		authHandler:     handlers.NewAuthHandler(),
@@ -686,7 +690,10 @@ func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
 	if imageURL != "" {
 		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
 	}
-	
+
+	// Expand line_items for webhook processing
+	params.AddExpand("line_items")
+
 	session, err := checkoutsession.New(params)
 	if err != nil {
 		slog.Error("failed to create stripe checkout session", "error", err)
@@ -803,7 +810,10 @@ func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error 
 	if imageURL != "" {
 		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
 	}
-	
+
+	// Expand line_items for webhook processing
+	params.AddExpand("line_items")
+
 	session, err := checkoutsession.New(params)
 	if err != nil {
 		slog.Error("failed to create stripe checkout session", "error", err)
@@ -888,7 +898,10 @@ func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
 		CancelURL:        stripe.String(fmt.Sprintf("%s://%s/cart", c.Scheme(), c.Request().Host)),
 		CustomerCreation: stripe.String("always"),
 	}
-	
+
+	// Expand line_items for webhook processing
+	params.AddExpand("line_items")
+
 	session, err := checkoutsession.New(params)
 	if err != nil {
 		slog.Error("failed to create stripe checkout session", "error", err)
@@ -956,7 +969,10 @@ func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 		CancelURL:        stripe.String(fmt.Sprintf("%s://%s/cart", c.Scheme(), c.Request().Host)),
 		CustomerCreation: stripe.String("always"),
 	}
-	
+
+	// Expand line_items for webhook processing
+	params.AddExpand("line_items")
+
 	session, err := checkoutsession.New(params)
 	if err != nil {
 		slog.Error("failed to create stripe checkout session", "error", err)

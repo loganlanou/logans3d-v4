@@ -67,6 +67,7 @@ type RateRequest struct {
 
 type Rate struct {
 	RateID           string  `json:"rate_id"`
+	ShipmentID       string  `json:"shipment_id,omitempty"` // EasyPost shipment ID for label purchase
 	CarrierID        string  `json:"carrier_id"`
 	CarrierCode      string  `json:"carrier_code"`
 	CarrierNickname  string  `json:"carrier_nickname"`

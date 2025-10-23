@@ -9,6 +9,7 @@ import (
 
 type ShippingOption struct {
 	RateID          string  `json:"rate_id"`
+	ShipmentID      string  `json:"shipment_id"`      // EasyPost shipment ID for label purchase
 	CarrierName     string  `json:"carrier_name"`
 	ServiceName     string  `json:"service_name"`
 	Price           float64 `json:"price"`
@@ -112,6 +113,7 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 
 			option := ShippingOption{
 				RateID:          rate.RateID,
+				ShipmentID:      rate.ShipmentID,
 				CarrierName:     rate.CarrierNickname,
 				ServiceName:     rate.ServiceType,
 				Price:           rate.ShippingAmount.Amount,

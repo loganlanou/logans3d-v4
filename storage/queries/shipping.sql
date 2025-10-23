@@ -51,8 +51,8 @@ UPDATE box_catalog SET is_active = FALSE WHERE sku = ?;
 INSERT INTO order_shipping_selection (
     id, order_id, candidate_box_sku, rate_id, carrier_id, service_code, service_name,
     quoted_shipping_amount_cents, quoted_box_cost_cents, quoted_total_cents,
-    delivery_days, estimated_delivery_date, packing_solution_json
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    delivery_days, estimated_delivery_date, packing_solution_json, shipment_id
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetOrderShippingSelection :one
@@ -62,7 +62,7 @@ SELECT * FROM order_shipping_selection WHERE order_id = ?;
 UPDATE order_shipping_selection
 SET candidate_box_sku = ?, rate_id = ?, carrier_id = ?, service_code = ?, service_name = ?,
     quoted_shipping_amount_cents = ?, quoted_box_cost_cents = ?, quoted_total_cents = ?,
-    delivery_days = ?, estimated_delivery_date = ?, packing_solution_json = ?
+    delivery_days = ?, estimated_delivery_date = ?, packing_solution_json = ?, shipment_id = ?
 WHERE order_id = ?
 RETURNING *;
 

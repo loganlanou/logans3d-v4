@@ -166,6 +166,7 @@ func (c *EasyPostClient) GetRates(fromAddr Address, toAddr Address, pkg Package)
 
 		rate := Rate{
 			RateID:          epRate.ID,
+			ShipmentID:      createdShipment.ID, // Store shipment ID for label purchase
 			CarrierID:       epRate.CarrierAccountID,
 			CarrierCode:     epRate.Carrier,
 			CarrierNickname: epRate.Carrier,
