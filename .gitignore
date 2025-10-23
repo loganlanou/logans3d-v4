@@ -30,6 +30,11 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 
+# Litestream backup files
+data/.database.db-litestream/
+data/*.backup-*
+*.db-litestream/
+
 # Environment and secrets
 .envrc
 .env
