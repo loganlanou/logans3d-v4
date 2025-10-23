@@ -31,33 +31,33 @@ type PackingMaterials struct {
 }
 
 type PackingConfig struct {
-	UnitVolumeIn3     float64                    `json:"unit_volume_in3"`
-	UnitWeightOz      float64                    `json:"unit_weight_oz"` // Deprecated, use ItemWeights instead
-	Equivalences      map[string]int             `json:"equivalences"`
-	FillRatio         float64                    `json:"fill_ratio"`
-	DimensionGuard    map[string]DimensionGuard  `json:"dimension_guard_in"`
-	ItemWeights       map[string]ItemWeights     `json:"item_weights"`
-	PackingMaterials  PackingMaterials           `json:"packing_materials"`
+	UnitVolumeIn3    float64                   `json:"unit_volume_in3"`
+	UnitWeightOz     float64                   `json:"unit_weight_oz"` // Deprecated, use ItemWeights instead
+	Equivalences     map[string]int            `json:"equivalences"`
+	FillRatio        float64                   `json:"fill_ratio"`
+	DimensionGuard   map[string]DimensionGuard `json:"dimension_guard_in"`
+	ItemWeights      map[string]ItemWeights    `json:"item_weights"`
+	PackingMaterials PackingMaterials          `json:"packing_materials"`
 }
 
 type Box struct {
-	SKU           string  `json:"sku"`
-	Name          string  `json:"name"`
-	L             float64 `json:"L"`
-	W             float64 `json:"W"`
-	H             float64 `json:"H"`
-	BoxWeightOz   float64 `json:"box_weight_oz"`
-	UnitCostUSD   float64 `json:"unit_cost_usd"`
+	SKU         string  `json:"sku"`
+	Name        string  `json:"name"`
+	L           float64 `json:"L"`
+	W           float64 `json:"W"`
+	H           float64 `json:"H"`
+	BoxWeightOz float64 `json:"box_weight_oz"`
+	UnitCostUSD float64 `json:"unit_cost_usd"`
 }
 
 type ShipFromAddress struct {
-	Name                       string `json:"name"`
-	Phone                      string `json:"phone"`
-	AddressLine1               string `json:"address_line1"`
-	CityLocality               string `json:"city_locality"`
-	StateProvince              string `json:"state_province"`
-	PostalCode                 string `json:"postal_code"`
-	CountryCode                string `json:"country_code"`
+	Name                        string `json:"name"`
+	Phone                       string `json:"phone"`
+	AddressLine1                string `json:"address_line1"`
+	CityLocality                string `json:"city_locality"`
+	StateProvince               string `json:"state_province"`
+	PostalCode                  string `json:"postal_code"`
+	CountryCode                 string `json:"country_code"`
 	AddressResidentialIndicator string `json:"address_residential_indicator"`
 }
 
@@ -71,14 +71,14 @@ type LabelsConfig struct {
 }
 
 type ShippingAPIConfig struct {
-	ShipStationAPIVersion  string                     `json:"shipstation_api_version"`
-	APIKeySecretStorage    string                     `json:"api_key_secret_storage"`
-	ShipFrom               ShipFromAddress            `json:"ship_from"`      // Default/fallback address
-	ShipFromUSPS           ShipFromAddress            `json:"ship_from_usps"` // USPS origin (Cadott, WI 54727)
-	ShipFromOther          ShipFromAddress            `json:"ship_from_other"` // Non-USPS origin (Eau Claire, WI 54701)
-	DimDivisors            map[string]int             `json:"dim_divisors"`
-	RatePreferences        RatePreferences            `json:"rate_preferences"`
-	Labels                 LabelsConfig               `json:"labels"`
+	ShipStationAPIVersion string          `json:"shipstation_api_version"`
+	APIKeySecretStorage   string          `json:"api_key_secret_storage"`
+	ShipFrom              ShipFromAddress `json:"ship_from"`       // Default/fallback address
+	ShipFromUSPS          ShipFromAddress `json:"ship_from_usps"`  // USPS origin (Cadott, WI 54727)
+	ShipFromOther         ShipFromAddress `json:"ship_from_other"` // Non-USPS origin (Eau Claire, WI 54701)
+	DimDivisors           map[string]int  `json:"dim_divisors"`
+	RatePreferences       RatePreferences `json:"rate_preferences"`
+	Labels                LabelsConfig    `json:"labels"`
 }
 
 type ShippingConfig struct {
@@ -133,13 +133,13 @@ func LoadShippingConfigFromDB(ctx context.Context, queries *db.Queries) (*Shippi
 	config.Boxes = make([]Box, len(boxes))
 	for i, dbBox := range boxes {
 		config.Boxes[i] = Box{
-			SKU:          dbBox.Sku,
-			Name:         dbBox.Name,
-			L:            dbBox.LengthInches,
-			W:            dbBox.WidthInches,
-			H:            dbBox.HeightInches,
-			BoxWeightOz:  dbBox.BoxWeightOz,
-			UnitCostUSD:  dbBox.UnitCostUsd,
+			SKU:         dbBox.Sku,
+			Name:        dbBox.Name,
+			L:           dbBox.LengthInches,
+			W:           dbBox.WidthInches,
+			H:           dbBox.HeightInches,
+			BoxWeightOz: dbBox.BoxWeightOz,
+			UnitCostUSD: dbBox.UnitCostUsd,
 		}
 	}
 
@@ -239,13 +239,13 @@ func CreateDefaultConfig() *ShippingConfig {
 			ShipStationAPIVersion: "v2",
 			APIKeySecretStorage:   "env",
 			ShipFrom: ShipFromAddress{
-				Name:                       "Creswood Corners",
-				Phone:                      "715-XXX-XXXX",
-				AddressLine1:               "YOUR ADDRESS",
-				CityLocality:               "Cadott",
-				StateProvince:              "WI",
-				PostalCode:                 "54727",
-				CountryCode:                "US",
+				Name:                        "Creswood Corners",
+				Phone:                       "715-703-3768",
+				AddressLine1:                "25580 County Highway S",
+				CityLocality:                "Cadott",
+				StateProvince:               "WI",
+				PostalCode:                  "54727",
+				CountryCode:                 "US",
 				AddressResidentialIndicator: "no",
 			},
 			DimDivisors: map[string]int{

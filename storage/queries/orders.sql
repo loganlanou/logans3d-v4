@@ -24,20 +24,24 @@ WHERE status = ?
 ORDER BY created_at DESC;
 
 -- name: ListOrdersByUser :many
-SELECT * FROM orders 
-WHERE user_id = ? 
+SELECT * FROM orders
+WHERE user_id = ?
 ORDER BY created_at DESC;
+
+-- name: GetOrderByStripeSessionID :one
+SELECT * FROM orders
+WHERE stripe_checkout_session_id = ?
+LIMIT 1;
 
 -- name: CreateOrder :one
 INSERT INTO orders (
     id, user_id, customer_email, customer_name, customer_phone,
-    billing_address_line1, billing_address_line2, billing_city, billing_state, 
-    billing_postal_code, billing_country,
-    shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, 
+    shipping_address_line1, shipping_address_line2, shipping_city, shipping_state,
     shipping_postal_code, shipping_country,
     subtotal_cents, tax_cents, shipping_cents, total_cents,
-    stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id,
+    easypost_shipment_id, status, notes
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateOrderStatus :one
@@ -46,15 +50,15 @@ SET status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
--- name: UpdateOrderFulfillmentStatus :one
-UPDATE orders 
-SET fulfillment_status = ?, updated_at = CURRENT_TIMESTAMP
+-- name: UpdateOrderTracking :one
+UPDATE orders
+SET tracking_number = ?, tracking_url = ?, carrier = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
--- name: UpdateOrderPaymentStatus :one
-UPDATE orders 
-SET payment_status = ?, updated_at = CURRENT_TIMESTAMP
+-- name: UpdateOrderLabel :one
+UPDATE orders
+SET easypost_label_url = ?, tracking_number = ?, carrier = ?, status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
@@ -78,10 +82,10 @@ INSERT INTO order_items (
 RETURNING *;
 
 -- name: GetOrderStats :one
-SELECT 
+SELECT
     COUNT(*) as total_orders,
-    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
-    COUNT(CASE WHEN status = 'processing' THEN 1 END) as processing_orders,
+    COUNT(CASE WHEN status = 'received' THEN 1 END) as received_orders,
+    COUNT(CASE WHEN status = 'in_production' THEN 1 END) as in_production_orders,
     COUNT(CASE WHEN status = 'shipped' THEN 1 END) as shipped_orders,
     COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered_orders,
     COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,

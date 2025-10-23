@@ -124,6 +124,32 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 		return
 	}
 
+	if code == http.StatusUnauthorized {
+		// Render custom 401 page with auto-refresh capability
+		attemptedPath := "/"
+		if path, ok := c.Get("attempted_path").(string); ok && path != "" {
+			attemptedPath = path
+		} else {
+			attemptedPath = c.Request().URL.Path
+			if c.Request().URL.RawQuery != "" {
+				attemptedPath += "?" + c.Request().URL.RawQuery
+			}
+		}
+
+		hasClientCookie := false
+		if val, ok := c.Get("has_client_cookie").(bool); ok {
+			hasClientCookie = val
+		}
+
+		slog.Info("401 unauthorized", "path", attemptedPath, "has_client_cookie", hasClientCookie)
+		c.Response().Status = http.StatusUnauthorized
+		if renderErr := errors.Unauthorized(c, hasClientCookie, attemptedPath).Render(c.Request().Context(), c.Response()); renderErr != nil {
+			slog.Error("failed to render 401 page", "error", renderErr)
+			c.String(http.StatusUnauthorized, "Unauthorized")
+		}
+		return
+	}
+
 	// For other errors, use Echo's default error handler
 	c.Logger().Error(err)
 	if !c.Response().Committed {

@@ -29,7 +29,7 @@ WHERE ci.session_id = ?
 ORDER BY ci.created_at DESC;
 
 -- name: GetCartByUser :many
-SELECT 
+SELECT
     ci.id,
     ci.quantity,
     ci.product_id,
@@ -39,7 +39,7 @@ SELECT
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
 LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
-WHERE ci.user_id = ?
+WHERE ci.user_id = sqlc.arg(user_id)
 ORDER BY ci.created_at DESC;
 
 -- name: GetCartTotal :one
@@ -50,3 +50,8 @@ WHERE (ci.session_id = ? OR ci.user_id = ?);
 
 -- name: ClearCart :exec
 DELETE FROM cart_items WHERE session_id = ? OR user_id = ?;
+
+-- name: TransferCartToUser :exec
+UPDATE cart_items
+SET user_id = sqlc.arg(user_id), session_id = NULL, updated_at = CURRENT_TIMESTAMP
+WHERE session_id = sqlc.arg(session_id) AND user_id IS NULL;

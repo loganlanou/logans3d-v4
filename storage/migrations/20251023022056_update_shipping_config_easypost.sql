@@ -27,9 +27,9 @@ UPDATE shipping_config
 SET config_json = json_set(
     json_remove(config_json, '$.shipping.provider'),
     '$.shipping.shipstation_api_version', 'v2',
-    '$.shipping.ship_from.phone', '715-XXX-XXXX',
-    '$.shipping.ship_from_usps.phone', '715-XXX-XXXX',
-    '$.shipping.ship_from_other.phone', '715-XXX-XXXX'
+    '$.shipping.ship_from.phone', '715-703-3768',
+    '$.shipping.ship_from_usps.phone', '715-703-3768',
+    '$.shipping.ship_from_other.phone', '715-703-3768'
 ),
 updated_at = CURRENT_TIMESTAMP
 WHERE id = 1;

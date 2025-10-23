@@ -1,0 +1,172 @@
+package errors
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ Unauthorized(c echo.Context, hasClientCookie bool, attemptedPath string) {
+	@layout.Base(c, layout.Meta{
+		Title:       "Authentication Required - Logan's 3D Creations",
+		Description: "Please sign in to access this page.",
+		Keywords:    "3D printing, custom creations",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden flex items-center justify-center">
+			<!-- Animated Background Elements -->
+			<div class="absolute inset-0 opacity-10">
+				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
+			</div>
+			<div class="relative z-10 text-center px-8 max-w-4xl mx-auto">
+				<!-- Refreshing State (shown when client cookie exists) -->
+				if hasClientCookie {
+					<div id="refreshing-state">
+						<!-- Illustration -->
+						<div class="mb-12">
+							<div class="inline-flex items-center justify-center w-40 h-40 bg-gradient-to-br from-blue-500/20 to-emerald-500/20 rounded-full backdrop-blur-sm border border-blue-500/30">
+								<div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-400"></div>
+							</div>
+						</div>
+						<!-- Message -->
+						<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-blue-400 via-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+							Refreshing Your Session
+						</h1>
+						<p class="text-xl text-slate-300 mb-4 max-w-2xl mx-auto">
+							Please wait while we verify your authentication...
+						</p>
+						<p class="text-sm text-slate-400 mb-12">
+							This should only take a moment
+						</p>
+					</div>
+					<!-- Error State (hidden by default, shown if refresh fails) -->
+					<div id="error-state" class="hidden">
+						<!-- Illustration -->
+						<div class="mb-12">
+							<div class="inline-flex items-center justify-center w-40 h-40 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full backdrop-blur-sm border border-orange-500/30">
+								<svg class="w-20 h-20 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+								</svg>
+							</div>
+						</div>
+						<!-- Message -->
+						<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent">
+							Session Expired
+						</h1>
+						<p class="text-xl text-slate-300 mb-4 max-w-2xl mx-auto">
+							Your session has expired. Please sign in again to continue.
+						</p>
+						<div class="mb-12"></div>
+						<!-- Actions -->
+						<div class="flex flex-wrap justify-center gap-4">
+							<a href={ templ.URL("/login?redirect_url=" + attemptedPath) } class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-500 to-emerald-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+								</svg>
+								Sign In
+							</a>
+							<a href="/" class="inline-flex items-center px-8 py-3 bg-slate-700/50 text-white font-semibold rounded-lg hover:bg-slate-700 transition-all duration-300 backdrop-blur-sm border border-slate-600">
+								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+								</svg>
+								Go Home
+							</a>
+						</div>
+					</div>
+				} else {
+					<!-- No Client Cookie - Show sign in immediately -->
+					<div>
+						<!-- Illustration -->
+						<div class="mb-12">
+							<div class="inline-flex items-center justify-center w-40 h-40 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full backdrop-blur-sm border border-orange-500/30">
+								<svg class="w-20 h-20 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+								</svg>
+							</div>
+						</div>
+						<!-- Message -->
+						<h1 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-to-r from-orange-400 via-red-400 to-pink-400 bg-clip-text text-transparent">
+							Authentication Required
+						</h1>
+						<p class="text-xl text-slate-300 mb-4 max-w-2xl mx-auto">
+							You need to be signed in to access this page.
+						</p>
+						if attemptedPath != "" && attemptedPath != "/" {
+							<p class="text-sm text-slate-400 mb-12 font-mono">
+								Requested: { attemptedPath }
+							</p>
+						} else {
+							<div class="mb-12"></div>
+						}
+						<!-- Actions -->
+						<div class="flex flex-wrap justify-center gap-4">
+							<a href={ templ.URL("/login?redirect_url=" + attemptedPath) } class="inline-flex items-center px-8 py-3 bg-gradient-to-r from-blue-500 to-emerald-500 text-white font-semibold rounded-lg hover:from-blue-600 hover:to-emerald-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+								</svg>
+								Sign In
+							</a>
+							<a href="/" class="inline-flex items-center px-8 py-3 bg-slate-700/50 text-white font-semibold rounded-lg hover:bg-slate-700 transition-all duration-300 backdrop-blur-sm border border-slate-600">
+								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+								</svg>
+								Go Home
+							</a>
+						</div>
+					</div>
+				}
+				<!-- Helpful Links -->
+				<div class="mt-16 pt-8 border-t border-slate-700">
+					<p class="text-slate-400 mb-4">Need help?</p>
+					<div class="flex flex-wrap justify-center gap-4 text-sm">
+						<a href="/about" class="text-blue-400 hover:text-blue-300 transition-colors">About Us</a>
+						<span class="text-slate-600">•</span>
+						<a href="/contact" class="text-blue-400 hover:text-blue-300 transition-colors">Contact Support</a>
+						<span class="text-slate-600">•</span>
+						<a href="/shop" class="text-blue-400 hover:text-blue-300 transition-colors">Browse Shop</a>
+					</div>
+				</div>
+			</div>
+			<!-- Auto-refresh logic (only if client cookie exists) -->
+			if hasClientCookie {
+				<script>
+					const attemptedPath = { attemptedPath };
+
+					window.addEventListener('load', async function() {
+						try {
+							console.log('401 Page: Loading Clerk for session refresh...');
+							await window.Clerk.load();
+
+							// Check if user is signed in
+							if (window.Clerk.user) {
+								console.log('401 Page: User is signed in, getting fresh token...');
+
+								// Force a fresh token (triggers handshake if needed)
+								const token = await window.Clerk.session.getToken({ skipCache: true });
+
+								if (token) {
+									console.log('401 Page: Token refreshed successfully, redirecting...');
+									// Wait a moment for cookie to be set, then redirect
+									setTimeout(() => {
+										window.location.href = attemptedPath || '/';
+									}, 500);
+								} else {
+									throw new Error('Failed to get token');
+								}
+							} else {
+								console.log('401 Page: User is not signed in');
+								throw new Error('Not authenticated');
+							}
+						} catch (err) {
+							console.error('401 Page: Session refresh failed:', err);
+
+							// Show error state
+							document.getElementById('refreshing-state').classList.add('hidden');
+							document.getElementById('error-state').classList.remove('hidden');
+						}
+					});
+				</script>
+			}
+		</div>
+	}
+}

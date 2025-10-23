@@ -233,9 +233,7 @@ export EMAIL_API_KEY=""                 # Email notifications
 ## 📚 Documentation
 
 - [Project Requirements](./REQUIREMENTS.md) - Detailed feature specifications
-- [Implementation Plan](./PLAN.md) - Development roadmap and phases
 - [Stack & Architecture](./STACK_AND_STRUCTURE.md) - Technical deep dive
-- [Domain Transfer](./docs/DOMAIN_TRANSFER.md) - DNS migration guide
 
 ## 🔄 Development Workflow
 

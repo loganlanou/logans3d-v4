@@ -71,7 +71,10 @@ const customerOrderContentTemplate = `
 </div>
 
 <div style="text-align: center; margin: 30px 0;">
-    <a href="https://www.logans3dcreations.com" style="display: inline-block; padding: 12px 30px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 600;">Visit Our Store</a>
+    <p style="color: #555; margin-bottom: 15px;">Track your order status and view details:</p>
+    <a href="https://www.logans3dcreations.com/account/orders/{{.OrderID}}" style="display: inline-block; padding: 14px 35px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 16px; margin-bottom: 10px;">View Order Status</a>
+    <br>
+    <a href="https://www.logans3dcreations.com" style="display: inline-block; padding: 10px 25px; background-color: transparent; color: #E85D5D; text-decoration: none; border: 2px solid #E85D5D; border-radius: 5px; font-weight: 600; margin-top: 10px;">Continue Shopping</a>
 </div>
 
 <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">

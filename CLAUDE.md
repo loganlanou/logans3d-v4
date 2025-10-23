@@ -90,28 +90,39 @@ When creating a new migration:
    - The `Down` section MUST correctly reverse the change
    - For SQLite, remember that `DROP COLUMN` is not supported - you must recreate the table
 
-3. **ALWAYS test migrations before committing**:
+3. **CRITICAL: ONLY TEST THE MIGRATION YOU JUST CREATED**:
    ```bash
-   # Delete local database (safe pre-launch)
+   # WRONG - NEVER DO THIS - DESTROYS ALL DATA
    rm -f ./data/database.db*
-
-   # Test up
-   goose -dir storage/migrations sqlite3 ./data/database.db up
-
-   # Test down (reset runs all down migrations)
    goose -dir storage/migrations sqlite3 ./data/database.db reset
 
-   # Test up again
-   goose -dir storage/migrations sqlite3 ./data/database.db up
+   # CORRECT - Test only your new migration
+   # First, ensure you're on the version BEFORE your migration
+   goose -dir storage/migrations sqlite3 ./data/database.db status
+
+   # Test UP for your specific migration
+   goose -dir storage/migrations sqlite3 ./data/database.db up-by-one
+
+   # Test DOWN for your specific migration
+   goose -dir storage/migrations sqlite3 ./data/database.db down
+
+   # Test UP again
+   goose -dir storage/migrations sqlite3 ./data/database.db up-by-one
    ```
 
-4. **SQLite-specific considerations**:
+4. **NEVER use `goose reset` or delete the database unless**:
+   - You have explicitly confirmed there is NO production data
+   - You have a verified backup
+   - The user has explicitly requested it
+   - **When in doubt, ASK THE USER FIRST**
+
+5. **SQLite-specific considerations**:
    - SQLite doesn't support `DROP COLUMN` - you must recreate the table
    - When recreating tables in Down migrations, use the exact schema from the previous migration state
    - Drop indexes BEFORE attempting table recreation
    - Recreate all indexes that existed before your migration
 
-5. **Never commit untested migrations** - broken Down migrations will cause issues for other developers
+6. **Never commit untested migrations** - broken Down migrations will cause issues for other developers
 
 ### Migration Best Practices
 

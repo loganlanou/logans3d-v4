@@ -311,6 +311,132 @@ func (c *EasyPostClient) DownloadLabelPDF(label *Label) ([]byte, error) {
 	return nil, fmt.Errorf("use LabelDownload.Hrefs.PDF URL directly: %s", label.LabelDownload.Hrefs.PDF)
 }
 
+// GetShipment retrieves an existing shipment by ID
+func (c *EasyPostClient) GetShipment(shipmentID string) (*easypost.Shipment, error) {
+	if c.IsUsingMockData() {
+		return nil, fmt.Errorf("mock mode: shipment retrieval not available")
+	}
+
+	shipment, err := c.client.GetShipment(shipmentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get shipment: %w", err)
+	}
+
+	return shipment, nil
+}
+
+// GetShipmentTracking retrieves tracking info for a shipment
+// This works for both purchased and unpurchased shipments
+func (c *EasyPostClient) GetShipmentTracking(shipmentID string) (*ShipmentTracking, error) {
+	if c.IsUsingMockData() {
+		return &ShipmentTracking{
+			TrackingNumber: "MOCK1234567890",
+			Carrier:        "USPS",
+			TrackingURL:    "https://tools.usps.com/go/TrackConfirmAction?tLabels=MOCK1234567890",
+		}, nil
+	}
+
+	shipment, err := c.GetShipment(shipmentID)
+	if err != nil {
+		return nil, err
+	}
+
+	tracking := &ShipmentTracking{
+		TrackingNumber: shipment.TrackingCode,
+		Carrier:        "",
+		TrackingURL:    "",
+	}
+
+	// If label has been purchased, get carrier and tracking from selected rate
+	if shipment.SelectedRate != nil {
+		tracking.Carrier = shipment.SelectedRate.Carrier
+	}
+
+	// If postage label exists, use its tracking URL
+	if shipment.PostageLabel != nil && shipment.PostageLabel.LabelURL != "" {
+		tracking.TrackingURL = shipment.PostageLabel.LabelURL
+	}
+
+	// Build tracking URL if we have carrier and tracking number
+	if tracking.TrackingNumber != "" && tracking.TrackingURL == "" {
+		tracking.TrackingURL = buildTrackingURL(tracking.Carrier, tracking.TrackingNumber)
+	}
+
+	return tracking, nil
+}
+
+// buildTrackingURL constructs a tracking URL based on carrier and tracking number
+func buildTrackingURL(carrier, trackingNumber string) string {
+	switch carrier {
+	case "USPS":
+		return fmt.Sprintf("https://tools.usps.com/go/TrackConfirmAction?tLabels=%s", trackingNumber)
+	case "UPS":
+		return fmt.Sprintf("https://www.ups.com/track?tracknum=%s", trackingNumber)
+	case "FedEx":
+		return fmt.Sprintf("https://www.fedex.com/fedextrack/?trknbr=%s", trackingNumber)
+	default:
+		return ""
+	}
+}
+
+// RefreshShipmentRates gets updated rates for an existing shipment
+func (c *EasyPostClient) RefreshShipmentRates(shipmentID string) ([]Rate, error) {
+	if c.IsUsingMockData() {
+		return c.getMockRates(Package{
+			Weight:     Weight{Value: 16, Unit: "ounce"},
+			Dimensions: Dimensions{Length: 12, Width: 9, Height: 6, Unit: "inch"},
+		}), nil
+	}
+
+	// Regenerate rates for the shipment using RerateShipment
+	epRates, err := c.client.RerateShipment(shipmentID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh rates: %w", err)
+	}
+
+	// Convert EasyPost rates to our Rate type
+	var rates []Rate
+	for _, epRate := range epRates {
+		rateAmount := 0.0
+		if epRate.Rate != "" {
+			if parsed, err := strconv.ParseFloat(epRate.Rate, 64); err == nil {
+				rateAmount = parsed
+			}
+		}
+
+		deliveryDateStr := ""
+		if epRate.DeliveryDate != nil {
+			deliveryDateStr = epRate.DeliveryDate.String()
+		}
+
+		rate := Rate{
+			RateID:          epRate.ID,
+			ShipmentID:      shipmentID,
+			CarrierID:       epRate.CarrierAccountID,
+			CarrierCode:     epRate.Carrier,
+			CarrierNickname: epRate.Carrier,
+			ServiceCode:     epRate.Service,
+			ServiceType:     epRate.Service,
+			ShippingAmount: Amount{
+				Currency: epRate.Currency,
+				Amount:   rateAmount,
+			},
+			DeliveryDays:  epRate.DeliveryDays,
+			EstimatedDate: deliveryDateStr,
+		}
+		rates = append(rates, rate)
+	}
+
+	return rates, nil
+}
+
+// ShipmentTracking contains tracking information for a shipment
+type ShipmentTracking struct {
+	TrackingNumber string
+	Carrier        string
+	TrackingURL    string
+}
+
 // Mock data functions for development without API key
 
 func (c *EasyPostClient) getMockRates(pkg Package) []Rate {

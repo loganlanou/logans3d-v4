@@ -8,6 +8,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             const cart = await response.json();
             renderCart(cart);
+
+            // Load saved shipping selection after cart renders
+            if (cart.items && cart.items.length > 0 && window.shippingManager) {
+                await window.shippingManager.loadSavedShipping();
+            }
         } catch (error) {
             console.error('Error fetching cart:', error);
             renderCart({ items: [] });

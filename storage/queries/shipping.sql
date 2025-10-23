@@ -50,9 +50,9 @@ UPDATE box_catalog SET is_active = FALSE WHERE sku = ?;
 -- name: CreateOrderShippingSelection :one
 INSERT INTO order_shipping_selection (
     id, order_id, candidate_box_sku, rate_id, carrier_id, service_code, service_name,
-    quoted_shipping_amount_cents, quoted_box_cost_cents, quoted_total_cents,
+    quoted_shipping_amount_cents, quoted_box_cost_cents, quoted_handling_cost_cents, quoted_total_cents,
     delivery_days, estimated_delivery_date, packing_solution_json, shipment_id
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetOrderShippingSelection :one
@@ -159,3 +159,35 @@ UPDATE products
 SET shipping_category = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
+
+-- Session Shipping Selection Queries
+
+-- name: CreateSessionShippingSelection :one
+INSERT INTO session_shipping_selection (
+    id, session_id, rate_id, shipment_id, carrier_name, service_name,
+    price_cents, shipping_amount_cents, box_cost_cents, handling_cost_cents, box_sku,
+    delivery_days, estimated_date,
+    cart_snapshot_json, shipping_address_json, is_valid
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: GetSessionShippingSelection :one
+SELECT * FROM session_shipping_selection WHERE session_id = ? LIMIT 1;
+
+-- name: UpdateSessionShippingSelection :one
+UPDATE session_shipping_selection
+SET rate_id = ?, shipment_id = ?, carrier_name = ?, service_name = ?,
+    price_cents = ?, shipping_amount_cents = ?, box_cost_cents = ?, handling_cost_cents = ?, box_sku = ?,
+    delivery_days = ?, estimated_date = ?,
+    cart_snapshot_json = ?, shipping_address_json = ?, is_valid = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE session_id = ?
+RETURNING *;
+
+-- name: InvalidateSessionShipping :exec
+UPDATE session_shipping_selection
+SET is_valid = FALSE, updated_at = CURRENT_TIMESTAMP
+WHERE session_id = ?;
+
+-- name: DeleteSessionShippingSelection :exec
+DELETE FROM session_shipping_selection WHERE session_id = ?;

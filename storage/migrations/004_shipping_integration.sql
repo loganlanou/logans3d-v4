@@ -140,8 +140,8 @@ INSERT INTO shipping_config (id, config_json) VALUES (1, '{
     "api_key_secret_storage": "env",
     "ship_from": {
       "name": "Creswood Corners",
-      "phone": "715-XXX-XXXX",
-      "address_line1": "YOUR ADDRESS",
+      "phone": "715-703-3768",
+      "address_line1": "25580 County Highway S",
       "city_locality": "Cadott",
       "state_province": "WI",
       "postal_code": "54727",
@@ -154,7 +154,7 @@ INSERT INTO shipping_config (id, config_json) VALUES (1, '{
       "fedex": 139
     },
     "rate_preferences": {
-      "present_top_n": 3,
+      "present_top_n": 6,
       "sort": "price_then_days"
     },
     "labels": {

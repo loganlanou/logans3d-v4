@@ -15,6 +15,17 @@ templ-update:
 templ-fmt:
 	templ fmt .
 
+.PHONY: reset
+reset:
+	# first, ask if they want to reset the database, it's highly destructive
+	@read -p "Are you sure you want to reset the database? This will delete all data and cannot be undone. (y/N): " confirm && [ "$$confirm" = "y" ] || (echo "Database reset cancelled." && exit 1)
+	# remove the database
+	rm ./data/database.db
+	# run the migrations
+	make migrate
+	# seed the database
+	make seed
+
 .PHONY: generate
 generate:
 	go generate ./...
@@ -69,6 +80,10 @@ sqlc-generate:
 .PHONY: seed
 seed:
 	go run scripts/seed-products/main.go -db ./data/database.db
+
+.PHONY: admins
+admins:
+	go run scripts/make-lanou-admins/main.go -db ./data/database.db
 
 .PHONY: css
 css:

@@ -13,44 +13,37 @@ import (
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (
     id, user_id, customer_email, customer_name, customer_phone,
-    billing_address_line1, billing_address_line2, billing_city, billing_state, 
-    billing_postal_code, billing_country,
-    shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, 
+    shipping_address_line1, shipping_address_line2, shipping_city, shipping_state,
     shipping_postal_code, shipping_country,
     subtotal_cents, tax_cents, shipping_cents, total_cents,
-    stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at
+    stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id,
+    easypost_shipment_id, status, notes
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
 `
 
 type CreateOrderParams struct {
-	ID                    string         `db:"id" json:"id"`
-	UserID                sql.NullString `db:"user_id" json:"user_id"`
-	CustomerEmail         string         `db:"customer_email" json:"customer_email"`
-	CustomerName          string         `db:"customer_name" json:"customer_name"`
-	CustomerPhone         sql.NullString `db:"customer_phone" json:"customer_phone"`
-	BillingAddressLine1   string         `db:"billing_address_line1" json:"billing_address_line1"`
-	BillingAddressLine2   sql.NullString `db:"billing_address_line2" json:"billing_address_line2"`
-	BillingCity           string         `db:"billing_city" json:"billing_city"`
-	BillingState          string         `db:"billing_state" json:"billing_state"`
-	BillingPostalCode     string         `db:"billing_postal_code" json:"billing_postal_code"`
-	BillingCountry        string         `db:"billing_country" json:"billing_country"`
-	ShippingAddressLine1  string         `db:"shipping_address_line1" json:"shipping_address_line1"`
-	ShippingAddressLine2  sql.NullString `db:"shipping_address_line2" json:"shipping_address_line2"`
-	ShippingCity          string         `db:"shipping_city" json:"shipping_city"`
-	ShippingState         string         `db:"shipping_state" json:"shipping_state"`
-	ShippingPostalCode    string         `db:"shipping_postal_code" json:"shipping_postal_code"`
-	ShippingCountry       string         `db:"shipping_country" json:"shipping_country"`
-	SubtotalCents         int64          `db:"subtotal_cents" json:"subtotal_cents"`
-	TaxCents              int64          `db:"tax_cents" json:"tax_cents"`
-	ShippingCents         int64          `db:"shipping_cents" json:"shipping_cents"`
-	TotalCents            int64          `db:"total_cents" json:"total_cents"`
-	StripePaymentIntentID sql.NullString `db:"stripe_payment_intent_id" json:"stripe_payment_intent_id"`
-	StripeCustomerID      sql.NullString `db:"stripe_customer_id" json:"stripe_customer_id"`
-	Status                sql.NullString `db:"status" json:"status"`
-	FulfillmentStatus     sql.NullString `db:"fulfillment_status" json:"fulfillment_status"`
-	PaymentStatus         sql.NullString `db:"payment_status" json:"payment_status"`
-	Notes                 sql.NullString `db:"notes" json:"notes"`
+	ID                      string         `db:"id" json:"id"`
+	UserID                  string         `db:"user_id" json:"user_id"`
+	CustomerEmail           string         `db:"customer_email" json:"customer_email"`
+	CustomerName            string         `db:"customer_name" json:"customer_name"`
+	CustomerPhone           sql.NullString `db:"customer_phone" json:"customer_phone"`
+	ShippingAddressLine1    string         `db:"shipping_address_line1" json:"shipping_address_line1"`
+	ShippingAddressLine2    sql.NullString `db:"shipping_address_line2" json:"shipping_address_line2"`
+	ShippingCity            string         `db:"shipping_city" json:"shipping_city"`
+	ShippingState           string         `db:"shipping_state" json:"shipping_state"`
+	ShippingPostalCode      string         `db:"shipping_postal_code" json:"shipping_postal_code"`
+	ShippingCountry         string         `db:"shipping_country" json:"shipping_country"`
+	SubtotalCents           int64          `db:"subtotal_cents" json:"subtotal_cents"`
+	TaxCents                int64          `db:"tax_cents" json:"tax_cents"`
+	ShippingCents           int64          `db:"shipping_cents" json:"shipping_cents"`
+	TotalCents              int64          `db:"total_cents" json:"total_cents"`
+	StripePaymentIntentID   sql.NullString `db:"stripe_payment_intent_id" json:"stripe_payment_intent_id"`
+	StripeCustomerID        sql.NullString `db:"stripe_customer_id" json:"stripe_customer_id"`
+	StripeCheckoutSessionID sql.NullString `db:"stripe_checkout_session_id" json:"stripe_checkout_session_id"`
+	EasypostShipmentID      sql.NullString `db:"easypost_shipment_id" json:"easypost_shipment_id"`
+	Status                  sql.NullString `db:"status" json:"status"`
+	Notes                   sql.NullString `db:"notes" json:"notes"`
 }
 
 func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order, error) {
@@ -60,12 +53,6 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.CustomerEmail,
 		arg.CustomerName,
 		arg.CustomerPhone,
-		arg.BillingAddressLine1,
-		arg.BillingAddressLine2,
-		arg.BillingCity,
-		arg.BillingState,
-		arg.BillingPostalCode,
-		arg.BillingCountry,
 		arg.ShippingAddressLine1,
 		arg.ShippingAddressLine2,
 		arg.ShippingCity,
@@ -78,24 +65,18 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.TotalCents,
 		arg.StripePaymentIntentID,
 		arg.StripeCustomerID,
+		arg.StripeCheckoutSessionID,
+		arg.EasypostShipmentID,
 		arg.Status,
-		arg.FulfillmentStatus,
-		arg.PaymentStatus,
 		arg.Notes,
 	)
 	var i Order
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CustomerEmail,
 		&i.CustomerName,
+		&i.CustomerEmail,
 		&i.CustomerPhone,
-		&i.BillingAddressLine1,
-		&i.BillingAddressLine2,
-		&i.BillingCity,
-		&i.BillingState,
-		&i.BillingPostalCode,
-		&i.BillingCountry,
 		&i.ShippingAddressLine1,
 		&i.ShippingAddressLine2,
 		&i.ShippingCity,
@@ -106,14 +87,18 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.TaxCents,
 		&i.ShippingCents,
 		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
 		&i.StripePaymentIntentID,
 		&i.StripeCustomerID,
-		&i.Status,
-		&i.FulfillmentStatus,
-		&i.PaymentStatus,
-		&i.Notes,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
 	)
 	return i, err
 }
@@ -176,7 +161,7 @@ func (q *Queries) DeleteOrder(ctx context.Context, id string) error {
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at FROM orders WHERE id = ?
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders WHERE id = ?
 `
 
 func (q *Queries) GetOrder(ctx context.Context, id string) (Order, error) {
@@ -185,15 +170,9 @@ func (q *Queries) GetOrder(ctx context.Context, id string) (Order, error) {
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CustomerEmail,
 		&i.CustomerName,
+		&i.CustomerEmail,
 		&i.CustomerPhone,
-		&i.BillingAddressLine1,
-		&i.BillingAddressLine2,
-		&i.BillingCity,
-		&i.BillingState,
-		&i.BillingPostalCode,
-		&i.BillingCountry,
 		&i.ShippingAddressLine1,
 		&i.ShippingAddressLine2,
 		&i.ShippingCity,
@@ -204,14 +183,59 @@ func (q *Queries) GetOrder(ctx context.Context, id string) (Order, error) {
 		&i.TaxCents,
 		&i.ShippingCents,
 		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
 		&i.StripePaymentIntentID,
 		&i.StripeCustomerID,
-		&i.Status,
-		&i.FulfillmentStatus,
-		&i.PaymentStatus,
-		&i.Notes,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
+	)
+	return i, err
+}
+
+const getOrderByStripeSessionID = `-- name: GetOrderByStripeSessionID :one
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders
+WHERE stripe_checkout_session_id = ?
+LIMIT 1
+`
+
+func (q *Queries) GetOrderByStripeSessionID(ctx context.Context, stripeCheckoutSessionID sql.NullString) (Order, error) {
+	row := q.db.QueryRowContext(ctx, getOrderByStripeSessionID, stripeCheckoutSessionID)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CustomerName,
+		&i.CustomerEmail,
+		&i.CustomerPhone,
+		&i.ShippingAddressLine1,
+		&i.ShippingAddressLine2,
+		&i.ShippingCity,
+		&i.ShippingState,
+		&i.ShippingPostalCode,
+		&i.ShippingCountry,
+		&i.SubtotalCents,
+		&i.TaxCents,
+		&i.ShippingCents,
+		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
+		&i.StripePaymentIntentID,
+		&i.StripeCustomerID,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
 	)
 	return i, err
 }
@@ -255,10 +279,10 @@ func (q *Queries) GetOrderItems(ctx context.Context, orderID string) ([]OrderIte
 }
 
 const getOrderStats = `-- name: GetOrderStats :one
-SELECT 
+SELECT
     COUNT(*) as total_orders,
-    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
-    COUNT(CASE WHEN status = 'processing' THEN 1 END) as processing_orders,
+    COUNT(CASE WHEN status = 'received' THEN 1 END) as received_orders,
+    COUNT(CASE WHEN status = 'in_production' THEN 1 END) as in_production_orders,
     COUNT(CASE WHEN status = 'shipped' THEN 1 END) as shipped_orders,
     COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered_orders,
     COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,
@@ -269,8 +293,8 @@ FROM orders
 
 type GetOrderStatsRow struct {
 	TotalOrders            int64           `db:"total_orders" json:"total_orders"`
-	PendingOrders          int64           `db:"pending_orders" json:"pending_orders"`
-	ProcessingOrders       int64           `db:"processing_orders" json:"processing_orders"`
+	ReceivedOrders         int64           `db:"received_orders" json:"received_orders"`
+	InProductionOrders     int64           `db:"in_production_orders" json:"in_production_orders"`
 	ShippedOrders          int64           `db:"shipped_orders" json:"shipped_orders"`
 	DeliveredOrders        int64           `db:"delivered_orders" json:"delivered_orders"`
 	CancelledOrders        int64           `db:"cancelled_orders" json:"cancelled_orders"`
@@ -283,8 +307,8 @@ func (q *Queries) GetOrderStats(ctx context.Context) (GetOrderStatsRow, error) {
 	var i GetOrderStatsRow
 	err := row.Scan(
 		&i.TotalOrders,
-		&i.PendingOrders,
-		&i.ProcessingOrders,
+		&i.ReceivedOrders,
+		&i.InProductionOrders,
 		&i.ShippedOrders,
 		&i.DeliveredOrders,
 		&i.CancelledOrders,
@@ -296,7 +320,7 @@ func (q *Queries) GetOrderStats(ctx context.Context) (GetOrderStatsRow, error) {
 
 const getOrderWithItems = `-- name: GetOrderWithItems :one
 SELECT 
-    o.id, o.user_id, o.customer_email, o.customer_name, o.customer_phone, o.billing_address_line1, o.billing_address_line2, o.billing_city, o.billing_state, o.billing_postal_code, o.billing_country, o.shipping_address_line1, o.shipping_address_line2, o.shipping_city, o.shipping_state, o.shipping_postal_code, o.shipping_country, o.subtotal_cents, o.tax_cents, o.shipping_cents, o.total_cents, o.stripe_payment_intent_id, o.stripe_customer_id, o.status, o.fulfillment_status, o.payment_status, o.notes, o.created_at, o.updated_at,
+    o.id, o.user_id, o.customer_name, o.customer_email, o.customer_phone, o.shipping_address_line1, o.shipping_address_line2, o.shipping_city, o.shipping_state, o.shipping_postal_code, o.shipping_country, o.subtotal_cents, o.tax_cents, o.shipping_cents, o.total_cents, o.status, o.notes, o.stripe_payment_intent_id, o.stripe_customer_id, o.stripe_checkout_session_id, o.tracking_number, o.tracking_url, o.carrier, o.created_at, o.updated_at, o.easypost_shipment_id, o.easypost_label_url,
     GROUP_CONCAT(
         oi.id || ',' || oi.product_id || ',' || oi.quantity || ',' || 
         oi.unit_price_cents || ',' || oi.total_price_cents || ',' || 
@@ -309,36 +333,34 @@ GROUP BY o.id
 `
 
 type GetOrderWithItemsRow struct {
-	ID                    string         `db:"id" json:"id"`
-	UserID                sql.NullString `db:"user_id" json:"user_id"`
-	CustomerEmail         string         `db:"customer_email" json:"customer_email"`
-	CustomerName          string         `db:"customer_name" json:"customer_name"`
-	CustomerPhone         sql.NullString `db:"customer_phone" json:"customer_phone"`
-	BillingAddressLine1   string         `db:"billing_address_line1" json:"billing_address_line1"`
-	BillingAddressLine2   sql.NullString `db:"billing_address_line2" json:"billing_address_line2"`
-	BillingCity           string         `db:"billing_city" json:"billing_city"`
-	BillingState          string         `db:"billing_state" json:"billing_state"`
-	BillingPostalCode     string         `db:"billing_postal_code" json:"billing_postal_code"`
-	BillingCountry        string         `db:"billing_country" json:"billing_country"`
-	ShippingAddressLine1  string         `db:"shipping_address_line1" json:"shipping_address_line1"`
-	ShippingAddressLine2  sql.NullString `db:"shipping_address_line2" json:"shipping_address_line2"`
-	ShippingCity          string         `db:"shipping_city" json:"shipping_city"`
-	ShippingState         string         `db:"shipping_state" json:"shipping_state"`
-	ShippingPostalCode    string         `db:"shipping_postal_code" json:"shipping_postal_code"`
-	ShippingCountry       string         `db:"shipping_country" json:"shipping_country"`
-	SubtotalCents         int64          `db:"subtotal_cents" json:"subtotal_cents"`
-	TaxCents              int64          `db:"tax_cents" json:"tax_cents"`
-	ShippingCents         int64          `db:"shipping_cents" json:"shipping_cents"`
-	TotalCents            int64          `db:"total_cents" json:"total_cents"`
-	StripePaymentIntentID sql.NullString `db:"stripe_payment_intent_id" json:"stripe_payment_intent_id"`
-	StripeCustomerID      sql.NullString `db:"stripe_customer_id" json:"stripe_customer_id"`
-	Status                sql.NullString `db:"status" json:"status"`
-	FulfillmentStatus     sql.NullString `db:"fulfillment_status" json:"fulfillment_status"`
-	PaymentStatus         sql.NullString `db:"payment_status" json:"payment_status"`
-	Notes                 sql.NullString `db:"notes" json:"notes"`
-	CreatedAt             sql.NullTime   `db:"created_at" json:"created_at"`
-	UpdatedAt             sql.NullTime   `db:"updated_at" json:"updated_at"`
-	OrderItems            string         `db:"order_items" json:"order_items"`
+	ID                      string         `db:"id" json:"id"`
+	UserID                  string         `db:"user_id" json:"user_id"`
+	CustomerName            string         `db:"customer_name" json:"customer_name"`
+	CustomerEmail           string         `db:"customer_email" json:"customer_email"`
+	CustomerPhone           sql.NullString `db:"customer_phone" json:"customer_phone"`
+	ShippingAddressLine1    string         `db:"shipping_address_line1" json:"shipping_address_line1"`
+	ShippingAddressLine2    sql.NullString `db:"shipping_address_line2" json:"shipping_address_line2"`
+	ShippingCity            string         `db:"shipping_city" json:"shipping_city"`
+	ShippingState           string         `db:"shipping_state" json:"shipping_state"`
+	ShippingPostalCode      string         `db:"shipping_postal_code" json:"shipping_postal_code"`
+	ShippingCountry         string         `db:"shipping_country" json:"shipping_country"`
+	SubtotalCents           int64          `db:"subtotal_cents" json:"subtotal_cents"`
+	TaxCents                int64          `db:"tax_cents" json:"tax_cents"`
+	ShippingCents           int64          `db:"shipping_cents" json:"shipping_cents"`
+	TotalCents              int64          `db:"total_cents" json:"total_cents"`
+	Status                  sql.NullString `db:"status" json:"status"`
+	Notes                   sql.NullString `db:"notes" json:"notes"`
+	StripePaymentIntentID   sql.NullString `db:"stripe_payment_intent_id" json:"stripe_payment_intent_id"`
+	StripeCustomerID        sql.NullString `db:"stripe_customer_id" json:"stripe_customer_id"`
+	StripeCheckoutSessionID sql.NullString `db:"stripe_checkout_session_id" json:"stripe_checkout_session_id"`
+	TrackingNumber          sql.NullString `db:"tracking_number" json:"tracking_number"`
+	TrackingUrl             sql.NullString `db:"tracking_url" json:"tracking_url"`
+	Carrier                 sql.NullString `db:"carrier" json:"carrier"`
+	CreatedAt               sql.NullTime   `db:"created_at" json:"created_at"`
+	UpdatedAt               sql.NullTime   `db:"updated_at" json:"updated_at"`
+	EasypostShipmentID      sql.NullString `db:"easypost_shipment_id" json:"easypost_shipment_id"`
+	EasypostLabelUrl        sql.NullString `db:"easypost_label_url" json:"easypost_label_url"`
+	OrderItems              string         `db:"order_items" json:"order_items"`
 }
 
 func (q *Queries) GetOrderWithItems(ctx context.Context, id string) (GetOrderWithItemsRow, error) {
@@ -347,15 +369,9 @@ func (q *Queries) GetOrderWithItems(ctx context.Context, id string) (GetOrderWit
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CustomerEmail,
 		&i.CustomerName,
+		&i.CustomerEmail,
 		&i.CustomerPhone,
-		&i.BillingAddressLine1,
-		&i.BillingAddressLine2,
-		&i.BillingCity,
-		&i.BillingState,
-		&i.BillingPostalCode,
-		&i.BillingCountry,
 		&i.ShippingAddressLine1,
 		&i.ShippingAddressLine2,
 		&i.ShippingCity,
@@ -366,21 +382,25 @@ func (q *Queries) GetOrderWithItems(ctx context.Context, id string) (GetOrderWit
 		&i.TaxCents,
 		&i.ShippingCents,
 		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
 		&i.StripePaymentIntentID,
 		&i.StripeCustomerID,
-		&i.Status,
-		&i.FulfillmentStatus,
-		&i.PaymentStatus,
-		&i.Notes,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
 		&i.OrderItems,
 	)
 	return i, err
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at FROM orders 
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders 
 ORDER BY created_at DESC
 `
 
@@ -396,15 +416,9 @@ func (q *Queries) ListOrders(ctx context.Context) ([]Order, error) {
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.CustomerEmail,
 			&i.CustomerName,
+			&i.CustomerEmail,
 			&i.CustomerPhone,
-			&i.BillingAddressLine1,
-			&i.BillingAddressLine2,
-			&i.BillingCity,
-			&i.BillingState,
-			&i.BillingPostalCode,
-			&i.BillingCountry,
 			&i.ShippingAddressLine1,
 			&i.ShippingAddressLine2,
 			&i.ShippingCity,
@@ -415,14 +429,18 @@ func (q *Queries) ListOrders(ctx context.Context) ([]Order, error) {
 			&i.TaxCents,
 			&i.ShippingCents,
 			&i.TotalCents,
+			&i.Status,
+			&i.Notes,
 			&i.StripePaymentIntentID,
 			&i.StripeCustomerID,
-			&i.Status,
-			&i.FulfillmentStatus,
-			&i.PaymentStatus,
-			&i.Notes,
+			&i.StripeCheckoutSessionID,
+			&i.TrackingNumber,
+			&i.TrackingUrl,
+			&i.Carrier,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EasypostShipmentID,
+			&i.EasypostLabelUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -438,7 +456,7 @@ func (q *Queries) ListOrders(ctx context.Context) ([]Order, error) {
 }
 
 const listOrdersByStatus = `-- name: ListOrdersByStatus :many
-SELECT id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at FROM orders 
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders 
 WHERE status = ? 
 ORDER BY created_at DESC
 `
@@ -455,15 +473,9 @@ func (q *Queries) ListOrdersByStatus(ctx context.Context, status sql.NullString)
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.CustomerEmail,
 			&i.CustomerName,
+			&i.CustomerEmail,
 			&i.CustomerPhone,
-			&i.BillingAddressLine1,
-			&i.BillingAddressLine2,
-			&i.BillingCity,
-			&i.BillingState,
-			&i.BillingPostalCode,
-			&i.BillingCountry,
 			&i.ShippingAddressLine1,
 			&i.ShippingAddressLine2,
 			&i.ShippingCity,
@@ -474,14 +486,18 @@ func (q *Queries) ListOrdersByStatus(ctx context.Context, status sql.NullString)
 			&i.TaxCents,
 			&i.ShippingCents,
 			&i.TotalCents,
+			&i.Status,
+			&i.Notes,
 			&i.StripePaymentIntentID,
 			&i.StripeCustomerID,
-			&i.Status,
-			&i.FulfillmentStatus,
-			&i.PaymentStatus,
-			&i.Notes,
+			&i.StripeCheckoutSessionID,
+			&i.TrackingNumber,
+			&i.TrackingUrl,
+			&i.Carrier,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EasypostShipmentID,
+			&i.EasypostLabelUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -497,12 +513,12 @@ func (q *Queries) ListOrdersByStatus(ctx context.Context, status sql.NullString)
 }
 
 const listOrdersByUser = `-- name: ListOrdersByUser :many
-SELECT id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at FROM orders 
-WHERE user_id = ? 
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders
+WHERE user_id = ?
 ORDER BY created_at DESC
 `
 
-func (q *Queries) ListOrdersByUser(ctx context.Context, userID sql.NullString) ([]Order, error) {
+func (q *Queries) ListOrdersByUser(ctx context.Context, userID string) ([]Order, error) {
 	rows, err := q.db.QueryContext(ctx, listOrdersByUser, userID)
 	if err != nil {
 		return nil, err
@@ -514,15 +530,9 @@ func (q *Queries) ListOrdersByUser(ctx context.Context, userID sql.NullString) (
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.CustomerEmail,
 			&i.CustomerName,
+			&i.CustomerEmail,
 			&i.CustomerPhone,
-			&i.BillingAddressLine1,
-			&i.BillingAddressLine2,
-			&i.BillingCity,
-			&i.BillingState,
-			&i.BillingPostalCode,
-			&i.BillingCountry,
 			&i.ShippingAddressLine1,
 			&i.ShippingAddressLine2,
 			&i.ShippingCity,
@@ -533,14 +543,18 @@ func (q *Queries) ListOrdersByUser(ctx context.Context, userID sql.NullString) (
 			&i.TaxCents,
 			&i.ShippingCents,
 			&i.TotalCents,
+			&i.Status,
+			&i.Notes,
 			&i.StripePaymentIntentID,
 			&i.StripeCustomerID,
-			&i.Status,
-			&i.FulfillmentStatus,
-			&i.PaymentStatus,
-			&i.Notes,
+			&i.StripeCheckoutSessionID,
+			&i.TrackingNumber,
+			&i.TrackingUrl,
+			&i.Carrier,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.EasypostShipmentID,
+			&i.EasypostLabelUrl,
 		); err != nil {
 			return nil, err
 		}
@@ -555,33 +569,36 @@ func (q *Queries) ListOrdersByUser(ctx context.Context, userID sql.NullString) (
 	return items, nil
 }
 
-const updateOrderFulfillmentStatus = `-- name: UpdateOrderFulfillmentStatus :one
-UPDATE orders 
-SET fulfillment_status = ?, updated_at = CURRENT_TIMESTAMP
+const updateOrderLabel = `-- name: UpdateOrderLabel :one
+UPDATE orders
+SET easypost_label_url = ?, tracking_number = ?, carrier = ?, status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
 `
 
-type UpdateOrderFulfillmentStatusParams struct {
-	FulfillmentStatus sql.NullString `db:"fulfillment_status" json:"fulfillment_status"`
-	ID                string         `db:"id" json:"id"`
+type UpdateOrderLabelParams struct {
+	EasypostLabelUrl sql.NullString `db:"easypost_label_url" json:"easypost_label_url"`
+	TrackingNumber   sql.NullString `db:"tracking_number" json:"tracking_number"`
+	Carrier          sql.NullString `db:"carrier" json:"carrier"`
+	Status           sql.NullString `db:"status" json:"status"`
+	ID               string         `db:"id" json:"id"`
 }
 
-func (q *Queries) UpdateOrderFulfillmentStatus(ctx context.Context, arg UpdateOrderFulfillmentStatusParams) (Order, error) {
-	row := q.db.QueryRowContext(ctx, updateOrderFulfillmentStatus, arg.FulfillmentStatus, arg.ID)
+func (q *Queries) UpdateOrderLabel(ctx context.Context, arg UpdateOrderLabelParams) (Order, error) {
+	row := q.db.QueryRowContext(ctx, updateOrderLabel,
+		arg.EasypostLabelUrl,
+		arg.TrackingNumber,
+		arg.Carrier,
+		arg.Status,
+		arg.ID,
+	)
 	var i Order
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CustomerEmail,
 		&i.CustomerName,
+		&i.CustomerEmail,
 		&i.CustomerPhone,
-		&i.BillingAddressLine1,
-		&i.BillingAddressLine2,
-		&i.BillingCity,
-		&i.BillingState,
-		&i.BillingPostalCode,
-		&i.BillingCountry,
 		&i.ShippingAddressLine1,
 		&i.ShippingAddressLine2,
 		&i.ShippingCity,
@@ -592,14 +609,18 @@ func (q *Queries) UpdateOrderFulfillmentStatus(ctx context.Context, arg UpdateOr
 		&i.TaxCents,
 		&i.ShippingCents,
 		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
 		&i.StripePaymentIntentID,
 		&i.StripeCustomerID,
-		&i.Status,
-		&i.FulfillmentStatus,
-		&i.PaymentStatus,
-		&i.Notes,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
 	)
 	return i, err
 }
@@ -608,7 +629,7 @@ const updateOrderNotes = `-- name: UpdateOrderNotes :one
 UPDATE orders 
 SET notes = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
 `
 
 type UpdateOrderNotesParams struct {
@@ -622,15 +643,9 @@ func (q *Queries) UpdateOrderNotes(ctx context.Context, arg UpdateOrderNotesPara
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CustomerEmail,
 		&i.CustomerName,
+		&i.CustomerEmail,
 		&i.CustomerPhone,
-		&i.BillingAddressLine1,
-		&i.BillingAddressLine2,
-		&i.BillingCity,
-		&i.BillingState,
-		&i.BillingPostalCode,
-		&i.BillingCountry,
 		&i.ShippingAddressLine1,
 		&i.ShippingAddressLine2,
 		&i.ShippingCity,
@@ -641,63 +656,18 @@ func (q *Queries) UpdateOrderNotes(ctx context.Context, arg UpdateOrderNotesPara
 		&i.TaxCents,
 		&i.ShippingCents,
 		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
 		&i.StripePaymentIntentID,
 		&i.StripeCustomerID,
-		&i.Status,
-		&i.FulfillmentStatus,
-		&i.PaymentStatus,
-		&i.Notes,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-	)
-	return i, err
-}
-
-const updateOrderPaymentStatus = `-- name: UpdateOrderPaymentStatus :one
-UPDATE orders 
-SET payment_status = ?, updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
-RETURNING id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at
-`
-
-type UpdateOrderPaymentStatusParams struct {
-	PaymentStatus sql.NullString `db:"payment_status" json:"payment_status"`
-	ID            string         `db:"id" json:"id"`
-}
-
-func (q *Queries) UpdateOrderPaymentStatus(ctx context.Context, arg UpdateOrderPaymentStatusParams) (Order, error) {
-	row := q.db.QueryRowContext(ctx, updateOrderPaymentStatus, arg.PaymentStatus, arg.ID)
-	var i Order
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.CustomerEmail,
-		&i.CustomerName,
-		&i.CustomerPhone,
-		&i.BillingAddressLine1,
-		&i.BillingAddressLine2,
-		&i.BillingCity,
-		&i.BillingState,
-		&i.BillingPostalCode,
-		&i.BillingCountry,
-		&i.ShippingAddressLine1,
-		&i.ShippingAddressLine2,
-		&i.ShippingCity,
-		&i.ShippingState,
-		&i.ShippingPostalCode,
-		&i.ShippingCountry,
-		&i.SubtotalCents,
-		&i.TaxCents,
-		&i.ShippingCents,
-		&i.TotalCents,
-		&i.StripePaymentIntentID,
-		&i.StripeCustomerID,
-		&i.Status,
-		&i.FulfillmentStatus,
-		&i.PaymentStatus,
-		&i.Notes,
-		&i.CreatedAt,
-		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
 	)
 	return i, err
 }
@@ -706,7 +676,7 @@ const updateOrderStatus = `-- name: UpdateOrderStatus :one
 UPDATE orders 
 SET status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, customer_email, customer_name, customer_phone, billing_address_line1, billing_address_line2, billing_city, billing_state, billing_postal_code, billing_country, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, stripe_payment_intent_id, stripe_customer_id, status, fulfillment_status, payment_status, notes, created_at, updated_at
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
 `
 
 type UpdateOrderStatusParams struct {
@@ -720,15 +690,9 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.CustomerEmail,
 		&i.CustomerName,
+		&i.CustomerEmail,
 		&i.CustomerPhone,
-		&i.BillingAddressLine1,
-		&i.BillingAddressLine2,
-		&i.BillingCity,
-		&i.BillingState,
-		&i.BillingPostalCode,
-		&i.BillingCountry,
 		&i.ShippingAddressLine1,
 		&i.ShippingAddressLine2,
 		&i.ShippingCity,
@@ -739,14 +703,72 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.TaxCents,
 		&i.ShippingCents,
 		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
 		&i.StripePaymentIntentID,
 		&i.StripeCustomerID,
-		&i.Status,
-		&i.FulfillmentStatus,
-		&i.PaymentStatus,
-		&i.Notes,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
+	)
+	return i, err
+}
+
+const updateOrderTracking = `-- name: UpdateOrderTracking :one
+UPDATE orders
+SET tracking_number = ?, tracking_url = ?, carrier = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
+`
+
+type UpdateOrderTrackingParams struct {
+	TrackingNumber sql.NullString `db:"tracking_number" json:"tracking_number"`
+	TrackingUrl    sql.NullString `db:"tracking_url" json:"tracking_url"`
+	Carrier        sql.NullString `db:"carrier" json:"carrier"`
+	ID             string         `db:"id" json:"id"`
+}
+
+func (q *Queries) UpdateOrderTracking(ctx context.Context, arg UpdateOrderTrackingParams) (Order, error) {
+	row := q.db.QueryRowContext(ctx, updateOrderTracking,
+		arg.TrackingNumber,
+		arg.TrackingUrl,
+		arg.Carrier,
+		arg.ID,
+	)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CustomerName,
+		&i.CustomerEmail,
+		&i.CustomerPhone,
+		&i.ShippingAddressLine1,
+		&i.ShippingAddressLine2,
+		&i.ShippingCity,
+		&i.ShippingState,
+		&i.ShippingPostalCode,
+		&i.ShippingCountry,
+		&i.SubtotalCents,
+		&i.TaxCents,
+		&i.ShippingCents,
+		&i.TotalCents,
+		&i.Status,
+		&i.Notes,
+		&i.StripePaymentIntentID,
+		&i.StripeCustomerID,
+		&i.StripeCheckoutSessionID,
+		&i.TrackingNumber,
+		&i.TrackingUrl,
+		&i.Carrier,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.EasypostShipmentID,
+		&i.EasypostLabelUrl,
 	)
 	return i, err
 }

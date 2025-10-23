@@ -1248,45 +1248,283 @@ func (h *AdminHandler) HandleOrdersList(c echo.Context) error {
 	}
 
 	if err != nil {
+		slog.Error("failed to fetch orders", "error", err, "status_filter", status)
 		return c.String(http.StatusInternalServerError, "Failed to fetch orders")
 	}
 
 	return Render(c, admin.OrdersList(c, orders))
 }
 
+func (h *AdminHandler) HandleOrderSearch(c echo.Context) error {
+	query := c.QueryParam("q")
+	if query == "" {
+		return c.JSON(http.StatusOK, []map[string]interface{}{})
+	}
+
+	// Get all orders
+	orders, err := h.storage.Queries.ListOrders(c.Request().Context())
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to search orders",
+		})
+	}
+
+	// Filter orders by customer name (case insensitive)
+	var results []map[string]interface{}
+	queryLower := strings.ToLower(query)
+
+	for _, order := range orders {
+		if strings.Contains(strings.ToLower(order.CustomerName), queryLower) {
+			// Get item count for this order
+			orderItems, _ := h.storage.Queries.GetOrderItems(c.Request().Context(), order.ID)
+			itemCount := len(orderItems)
+
+			// Format date
+			var dateStr string
+			if order.CreatedAt.Valid {
+				dateStr = order.CreatedAt.Time.Format("Jan 2, 2006")
+			}
+
+			results = append(results, map[string]interface{}{
+				"id":             order.ID,
+				"order_number":   order.ID[:8],
+				"customer_name":  order.CustomerName,
+				"customer_email": order.CustomerEmail,
+				"total_cents":    order.TotalCents,
+				"status":         order.Status.String,
+				"created_at":     dateStr,
+				"item_count":     itemCount,
+			})
+
+			// Limit to 10 results
+			if len(results) >= 10 {
+				break
+			}
+		}
+	}
+
+	return c.JSON(http.StatusOK, results)
+}
+
 func (h *AdminHandler) HandleOrderDetail(c echo.Context) error {
 	orderID := c.Param("id")
-	
-	_, err := h.storage.Queries.GetOrder(c.Request().Context(), orderID)
+	ctx := c.Request().Context()
+
+	order, err := h.storage.Queries.GetOrder(ctx, orderID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return c.String(http.StatusNotFound, "Order not found")
 		}
 		return c.String(http.StatusInternalServerError, "Failed to fetch order")
 	}
-	
-	// For now, just redirect back to orders list
-	// In the future, implement order detail view
-	return c.Redirect(http.StatusSeeOther, "/admin/orders")
+
+	orderItems, err := h.storage.Queries.GetOrderItems(ctx, orderID)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch order items")
+	}
+
+	shippingSelection, err := h.storage.Queries.GetOrderShippingSelection(ctx, orderID)
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("failed to fetch shipping selection", "error", err, "order_id", orderID)
+	}
+
+	return Render(c, admin.OrderDetail(c, order, orderItems, shippingSelection))
 }
 
 func (h *AdminHandler) HandleUpdateOrderStatus(c echo.Context) error {
 	orderID := c.Param("id")
-	status := c.FormValue("status")
-	
+
+	// Try to read from JSON body first (for AJAX requests)
+	var requestBody struct {
+		Status         string `json:"status"`
+		Carrier        string `json:"carrier"`
+		TrackingNumber string `json:"tracking_number"`
+		TrackingURL    string `json:"tracking_url"`
+	}
+
+	var status string
+	if err := c.Bind(&requestBody); err == nil && requestBody.Status != "" {
+		status = requestBody.Status
+	} else {
+		// Fallback to form value (for form submissions)
+		status = c.FormValue("status")
+	}
+
 	if status == "" {
 		return c.String(http.StatusBadRequest, "Status is required")
 	}
-	
-	_, err := h.storage.Queries.UpdateOrderStatus(c.Request().Context(), db.UpdateOrderStatusParams{
+
+	ctx := c.Request().Context()
+
+	// Update order status
+	_, err := h.storage.Queries.UpdateOrderStatus(ctx, db.UpdateOrderStatusParams{
 		ID:     orderID,
 		Status: sql.NullString{String: status, Valid: true},
 	})
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to update order status")
 	}
-	
+
+	// If changing to shipped and tracking info provided, update tracking
+	if status == "shipped" && requestBody.TrackingNumber != "" {
+		_, err := h.storage.Queries.UpdateOrderTracking(ctx, db.UpdateOrderTrackingParams{
+			ID:             orderID,
+			TrackingNumber: sql.NullString{String: requestBody.TrackingNumber, Valid: true},
+			TrackingUrl:    sql.NullString{String: requestBody.TrackingURL, Valid: requestBody.TrackingURL != ""},
+			Carrier:        sql.NullString{String: requestBody.Carrier, Valid: requestBody.Carrier != ""},
+		})
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to update tracking information")
+		}
+	}
+
+	// Return JSON for AJAX requests
+	if c.Request().Header.Get("Content-Type") == "application/json" {
+		return c.JSON(http.StatusOK, map[string]string{"status": "success"})
+	}
+
 	return c.Redirect(http.StatusSeeOther, "/admin/orders")
+}
+
+// HandleGetOrderTrackingLookup retrieves tracking info from EasyPost for an order
+func (h *AdminHandler) HandleGetOrderTrackingLookup(c echo.Context) error {
+	orderID := c.Param("id")
+	ctx := c.Request().Context()
+
+	// Get order
+	order, err := h.storage.Queries.GetOrder(ctx, orderID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Order not found"})
+	}
+
+	// Check if order has EasyPost shipment ID
+	if !order.EasypostShipmentID.Valid || order.EasypostShipmentID.String == "" {
+		return c.JSON(http.StatusOK, map[string]interface{}{
+			"has_shipment": false,
+			"message":      "No EasyPost shipment linked to this order",
+		})
+	}
+
+	// Get tracking info from EasyPost
+	tracking, err := h.shippingService.GetShipmentTracking(order.EasypostShipmentID.String)
+	if err != nil {
+		slog.Error("failed to get tracking from EasyPost", "error", err, "shipment_id", order.EasypostShipmentID.String)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to retrieve tracking information"})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"has_shipment":    true,
+		"shipment_id":     order.EasypostShipmentID.String,
+		"tracking_number": tracking.TrackingNumber,
+		"carrier":         tracking.Carrier,
+		"tracking_url":    tracking.TrackingURL,
+	})
+}
+
+// HandleGetOrderShippingRates retrieves current shipping rates for an order's EasyPost shipment
+func (h *AdminHandler) HandleGetOrderShippingRates(c echo.Context) error {
+	orderID := c.Param("id")
+	ctx := c.Request().Context()
+
+	// Get order
+	order, err := h.storage.Queries.GetOrder(ctx, orderID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Order not found"})
+	}
+
+	// Check if order has EasyPost shipment ID
+	if !order.EasypostShipmentID.Valid || order.EasypostShipmentID.String == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "No EasyPost shipment linked to this order"})
+	}
+
+	// Get refreshed rates from EasyPost
+	rates, err := h.shippingService.RefreshShipmentRates(order.EasypostShipmentID.String)
+	if err != nil {
+		slog.Error("failed to refresh rates from EasyPost", "error", err, "shipment_id", order.EasypostShipmentID.String)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to retrieve shipping rates"})
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"shipment_id": order.EasypostShipmentID.String,
+		"rates":       rates,
+	})
+}
+
+// HandleBuyShippingLabel purchases a shipping label from EasyPost
+func (h *AdminHandler) HandleBuyShippingLabel(c echo.Context) error {
+	orderID := c.Param("id")
+	ctx := c.Request().Context()
+
+	// Parse request body
+	var req struct {
+		RateID string `json:"rate_id"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	}
+
+	if req.RateID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Rate ID is required"})
+	}
+
+	// Get order
+	order, err := h.storage.Queries.GetOrder(ctx, orderID)
+	if err != nil {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Order not found"})
+	}
+
+	// Check if order has EasyPost shipment ID
+	if !order.EasypostShipmentID.Valid || order.EasypostShipmentID.String == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "No EasyPost shipment linked to this order"})
+	}
+
+	// Check if label already purchased
+	if order.EasypostLabelUrl.Valid && order.EasypostLabelUrl.String != "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error":     "Label already purchased for this order",
+			"label_url": order.EasypostLabelUrl.String,
+		})
+	}
+
+	// Buy shipping label from EasyPost
+	label, err := h.shippingService.CreateLabelFromShipment(order.EasypostShipmentID.String, req.RateID)
+	if err != nil {
+		slog.Error("failed to buy label from EasyPost", "error", err,
+			"shipment_id", order.EasypostShipmentID.String,
+			"rate_id", req.RateID)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to purchase shipping label"})
+	}
+
+	// Update order with label URL, tracking info, and set status to shipped
+	carrier := label.ServiceCode
+	if label.CarrierID != "" {
+		carrier = label.CarrierID
+	}
+
+	_, updateErr := h.storage.Queries.UpdateOrderLabel(ctx, db.UpdateOrderLabelParams{
+		ID:                orderID,
+		EasypostLabelUrl:  sql.NullString{String: label.LabelDownload.Hrefs.PDF, Valid: true},
+		TrackingNumber:    sql.NullString{String: label.TrackingNumber, Valid: true},
+		Carrier:           sql.NullString{String: carrier, Valid: true},
+		Status:            sql.NullString{String: "shipped", Valid: true},
+	})
+	if updateErr != nil {
+		slog.Error("failed to update order with label info", "error", updateErr, "order_id", orderID)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Label purchased but failed to update order"})
+	}
+
+	slog.Info("shipping label purchased and order updated",
+		"order_id", orderID,
+		"tracking_number", label.TrackingNumber,
+		"carrier", carrier)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success":         true,
+		"label_url":       label.LabelDownload.Hrefs.PDF,
+		"tracking_number": label.TrackingNumber,
+		"carrier":         carrier,
+		"status":          "shipped",
+	})
 }
 
 // Quotes Management Functions

@@ -43,14 +43,10 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem) {
 					</div>
 
 					<!-- Order Summary -->
-					<div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-700/50">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-700/50">
 						<div>
-							<p class="text-sm text-slate-400 mb-1">Payment Status</p>
-							@PaymentStatusBadge(order.PaymentStatus.String)
-						</div>
-						<div>
-							<p class="text-sm text-slate-400 mb-1">Fulfillment Status</p>
-							@FulfillmentStatusBadge(order.FulfillmentStatus.String)
+							<p class="text-sm text-slate-400 mb-1">Order Date</p>
+							<p class="text-lg font-semibold text-white">{ formatOrderDate(order.CreatedAt.Time) }</p>
 						</div>
 						<div>
 							<p class="text-sm text-slate-400 mb-1">Order Total</p>
@@ -59,49 +55,66 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem) {
 							</p>
 						</div>
 					</div>
+					<!-- Tracking Information -->
+					if order.TrackingNumber.Valid && order.TrackingNumber.String != "" {
+						<div class="mt-6 pt-6 border-t border-slate-700/50">
+							<h3 class="text-lg font-semibold text-white mb-4 flex items-center">
+								<svg class="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+								</svg>
+								Tracking Information
+							</h3>
+							<div class="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
+								if order.Carrier.Valid && order.Carrier.String != "" {
+									<div>
+										<span class="text-sm text-slate-400">Carrier:</span>
+										<span class="text-white font-medium ml-2">{ order.Carrier.String }</span>
+									</div>
+								}
+								<div>
+									<span class="text-sm text-slate-400">Tracking #:</span>
+									<span class="text-white font-medium ml-2">{ order.TrackingNumber.String }</span>
+								</div>
+								if order.TrackingUrl.Valid && order.TrackingUrl.String != "" {
+									<a
+										href={ templ.SafeURL(order.TrackingUrl.String) }
+										target="_blank"
+										rel="noopener noreferrer"
+										class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+									>
+										Track Package
+										<svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+										</svg>
+									</a>
+								}
+							</div>
+						</div>
+					}
 				</div>
 
-				<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-					<!-- Shipping Address -->
-					<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 shadow-xl">
-						<h2 class="text-xl font-bold text-white mb-4 flex items-center">
-							<svg class="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-							</svg>
-							Shipping Address
-						</h2>
-						<div class="text-slate-300 space-y-1">
-							<p class="font-semibold">{ order.CustomerName }</p>
+				<!-- Shipping Address -->
+				<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 shadow-xl mb-8">
+					<h2 class="text-xl font-bold text-white mb-4 flex items-center">
+						<svg class="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+						</svg>
+						Shipping Address
+					</h2>
+					<div class="text-slate-300 space-y-1">
+						<p class="font-semibold">{ order.CustomerName }</p>
+						<p class="text-slate-400">{ order.CustomerEmail }</p>
+						if order.CustomerPhone.Valid && order.CustomerPhone.String != "" {
+							<p class="text-slate-400">Phone: { order.CustomerPhone.String }</p>
+						}
+						<div class="pt-4">
 							<p>{ order.ShippingAddressLine1 }</p>
 							if order.ShippingAddressLine2.Valid && order.ShippingAddressLine2.String != "" {
 								<p>{ order.ShippingAddressLine2.String }</p>
 							}
 							<p>{ order.ShippingCity }, { order.ShippingState } { order.ShippingPostalCode }</p>
 							<p>{ order.ShippingCountry }</p>
-							if order.CustomerPhone.Valid && order.CustomerPhone.String != "" {
-								<p class="pt-2 text-slate-400">Phone: { order.CustomerPhone.String }</p>
-							}
-						</div>
-					</div>
-
-					<!-- Billing Address -->
-					<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-6 shadow-xl">
-						<h2 class="text-xl font-bold text-white mb-4 flex items-center">
-							<svg class="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-							</svg>
-							Billing Address
-						</h2>
-						<div class="text-slate-300 space-y-1">
-							<p class="font-semibold">{ order.CustomerName }</p>
-							<p>{ order.BillingAddressLine1 }</p>
-							if order.BillingAddressLine2.Valid && order.BillingAddressLine2.String != "" {
-								<p>{ order.BillingAddressLine2.String }</p>
-							}
-							<p>{ order.BillingCity }, { order.BillingState } { order.BillingPostalCode }</p>
-							<p>{ order.BillingCountry }</p>
-							<p class="pt-2 text-slate-400">Email: { order.CustomerEmail }</p>
 						</div>
 					</div>
 				</div>

@@ -554,3 +554,13 @@ func (s *ShippingService) UpdateConfig(config *ShippingConfig) {
 	s.config = config
 	s.packer = NewPacker(config)
 }
+
+// GetShipmentTracking retrieves tracking info for a shipment from EasyPost
+func (s *ShippingService) GetShipmentTracking(shipmentID string) (*ShipmentTracking, error) {
+	return s.client.GetShipmentTracking(shipmentID)
+}
+
+// RefreshShipmentRates gets updated rates for an existing EasyPost shipment
+func (s *ShippingService) RefreshShipmentRates(shipmentID string) ([]Rate, error) {
+	return s.client.RefreshShipmentRates(shipmentID)
+}

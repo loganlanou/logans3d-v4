@@ -1,3 +1,40 @@
+// Validate cart session on page load - clears cart if checkout was completed
+async function validateCartSession() {
+    try {
+        const response = await fetch('/api/cart/validate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.should_clear) {
+                // Clear localStorage cart
+                localStorage.removeItem('stripe_cart');
+
+                // Update cart count display
+                const cartCount = document.getElementById('cart-count');
+                if (cartCount) {
+                    cartCount.textContent = '0';
+                    cartCount.classList.add('hidden');
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error validating cart session:', error);
+        // Silently fail - don't disrupt user experience
+    }
+}
+
+// Run validation when page loads
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', validateCartSession);
+} else {
+    validateCartSession();
+}
+
 // Buy Now functionality - goes directly to Stripe checkout
 async function buyNow(productId, productName, productPrice, quantity = 1) {
     try {
@@ -175,11 +212,15 @@ async function updateCartCount() {
 
 async function proceedToCheckout() {
     try {
-        // Check if shipping is required and selected
-        if (window.shippingManager && !window.shippingManager.selectedShippingOption) {
-            // For now, we'll proceed without shipping and handle it in the new checkout flow
-            // In the future, we might want to prompt for shipping selection first
-            showToast('Please complete your order by providing shipping information in the next step.', 'info');
+        // Check if shipping is selected
+        if (!window.shippingManager || !window.shippingManager.selectedShippingOption) {
+            showToast('Please select a shipping method before checkout', 'error');
+            // Scroll to shipping section
+            const shippingSection = document.getElementById('cart-shipping');
+            if (shippingSection) {
+                shippingSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
         }
 
         const response = await fetch('/checkout/create-session-cart', {

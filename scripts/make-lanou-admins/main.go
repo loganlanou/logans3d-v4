@@ -2,35 +2,52 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
-	"os"
+	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	_ "modernc.org/sqlite"
 )
 
 func main() {
-	// Get database path from environment or use default
-	dbPath := os.Getenv("DB_PATH")
-	if dbPath == "" {
-		dbPath = "./data/database.db"
-	}
+	// Parse command line flags
+	dbPath := flag.String("db", "./data/database.db", "Path to the database file")
+	flag.Parse()
 
-	// Open database connection
-	db, err := sql.Open("sqlite3", dbPath)
+	// Open database connection with same settings as main app
+	db, err := sql.Open("sqlite", *dbPath+"?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)&_pragma=busy_timeout(10000)")
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	defer db.Close()
 
-	// Update all @lanou.com users to be admins
-	result, err := db.Exec(`
-		UPDATE users
-		SET is_admin = TRUE
-		WHERE email LIKE '%@lanou.com'
-	`)
-	if err != nil {
-		log.Fatalf("Failed to update users: %v", err)
+	// Ensure connection is actually established
+	log.Println("Testing database connection...")
+	if err := db.Ping(); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	log.Println("Database connection successful")
+
+	// Update all @lanou.com users to be admins with retry logic
+	var result sql.Result
+	maxRetries := 5
+	for i := 0; i < maxRetries; i++ {
+		var err error
+		result, err = db.Exec(`
+			UPDATE users
+			SET is_admin = TRUE
+			WHERE email LIKE '%@lanou.com'
+		`)
+		if err == nil {
+			break
+		}
+		if i == maxRetries-1 {
+			log.Fatalf("Failed to update users after %d retries: %v", maxRetries, err)
+		}
+		waitTime := time.Duration(i+1) * 200 * time.Millisecond
+		log.Printf("Database busy, retrying in %v... (attempt %d/%d)", waitTime, i+1, maxRetries)
+		time.Sleep(waitTime)
 	}
 
 	rowsAffected, err := result.RowsAffected()

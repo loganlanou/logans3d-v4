@@ -71,21 +71,26 @@ class ShippingManager {
                 },
                 body: JSON.stringify({
                     rate_id: option.rate_id,
-                    carrier_code: option.carrier_code,
-                    service_code: option.service_code,
-                    package_type: option.package_type,
-                    ship_date: option.ship_date,
-                    rate: {
-                        currency: option.shipping_amount.currency,
-                        amount: option.shipping_amount.amount
-                    },
-                    ship_to: this.shippingAddress
+                    shipment_id: option.shipment_id,
+                    carrier_name: option.carrier_name,
+                    service_name: option.service_name,
+                    price_cents: Math.round(option.total_cost * 100),
+                    shipping_amount_cents: Math.round(option.price * 100),
+                    box_cost_cents: Math.round(option.box_cost * 100),
+                    handling_cost_cents: Math.round(option.handling_cost * 100),
+                    box_sku: option.box_sku || 'UNKNOWN',
+                    delivery_days: option.delivery_days || 0,
+                    estimated_date: option.estimated_date || '',
+                    shipping_address: this.shippingAddress
                 })
             });
 
             if (!response.ok) {
                 throw new Error('Failed to save shipping selection');
             }
+
+            // Enable checkout button after successful save
+            this.enableCheckoutButton();
 
             return await response.json();
         } catch (error) {
@@ -362,6 +367,141 @@ class ShippingManager {
             console.error('Error getting estimated rates:', error);
         }
         return [];
+    }
+
+    // Load saved shipping selection from database
+    async loadSavedShipping() {
+        try {
+            const response = await fetch('/api/shipping/selection');
+            if (!response.ok) {
+                // No saved shipping
+                this.disableCheckoutButton();
+                return null;
+            }
+
+            const data = await response.json();
+
+            if (!data.selection) {
+                // Pre-fill address if available
+                if (data.shipping_address && data.shipping_address.postal_code) {
+                    this.shippingAddress = data.shipping_address;
+                    // Need to wait for UI to render before pre-filling
+                    setTimeout(() => {
+                        this.prefillZipCode(data.shipping_address.postal_code);
+                    }, 100);
+                }
+                this.disableCheckoutButton();
+                return null;
+            }
+
+            if (!data.selection.is_valid) {
+                // Cart changed - show message and pre-fill ZIP
+                this.showCartChangedMessage();
+                if (data.shipping_address && data.shipping_address.postal_code) {
+                    this.shippingAddress = data.shipping_address;
+                    // Need to wait for UI to render before pre-filling
+                    setTimeout(() => {
+                        this.prefillZipCode(data.shipping_address.postal_code);
+                    }, 100);
+                }
+                this.disableCheckoutButton();
+                return null;
+            }
+
+            // Valid shipping selection exists
+            this.selectedShippingOption = data.selection;
+            this.updateCartTotalWithShipping();
+            this.enableCheckoutButton();
+            this.showSelectedShippingInfo();
+
+            return data.selection;
+        } catch (error) {
+            console.error('Error loading saved shipping:', error);
+            this.disableCheckoutButton();
+            return null;
+        }
+    }
+
+    prefillZipCode(zipCode) {
+        const zipInput = document.getElementById('shipping-zip-input');
+        if (zipInput) {
+            zipInput.value = zipCode;
+        }
+    }
+
+    showCartChangedMessage() {
+        const container = document.getElementById('shipping-options-container');
+        if (container) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-4 mb-4';
+            messageDiv.innerHTML = `
+                <div class="flex items-start">
+                    <svg class="w-5 h-5 text-yellow-400 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <div>
+                        <p class="text-yellow-300 font-semibold">Cart has changed</p>
+                        <p class="text-yellow-200 text-sm mt-1">Please select shipping again to continue.</p>
+                    </div>
+                </div>
+            `;
+            container.insertBefore(messageDiv, container.firstChild);
+        }
+    }
+
+    showSelectedShippingInfo() {
+        const container = document.getElementById('shipping-options-container');
+        if (container && this.selectedShippingOption) {
+            container.innerHTML = `
+                <div class="bg-green-500/20 border border-green-500/50 rounded-xl p-6">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-green-400 mt-1 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <div>
+                                <p class="text-green-300 font-semibold text-lg">Shipping Selected</p>
+                                <p class="text-white font-medium mt-2">${this.selectedShippingOption.carrier_name} ${this.selectedShippingOption.service_name}</p>
+                                <p class="text-green-200 text-sm mt-1">
+                                    ${this.selectedShippingOption.delivery_days} business days •
+                                    $${(this.selectedShippingOption.price_cents / 100).toFixed(2)}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onclick="window.shippingManager.changeShipping()"
+                            class="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                        >
+                            Change
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    changeShipping() {
+        this.selectedShippingOption = null;
+        this.disableCheckoutButton();
+        this.updateShippingUI('address-required');
+    }
+
+    enableCheckoutButton() {
+        const checkoutBtn = document.querySelector('.proceed-checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.disabled = false;
+            checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            checkoutBtn.title = '';
+        }
+    }
+
+    disableCheckoutButton() {
+        const checkoutBtn = document.querySelector('.proceed-checkout-btn');
+        if (checkoutBtn) {
+            checkoutBtn.disabled = true;
+            checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            checkoutBtn.title = 'Please select shipping to continue';
+        }
     }
 }
 

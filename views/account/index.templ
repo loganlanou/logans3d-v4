@@ -77,22 +77,16 @@ templ Index(c echo.Context, user *db.User, orders []db.Order) {
 								}
 							</div>
 
-							<!-- Quick Stats -->
+							<!-- Manage Account Button -->
 							<div class="mt-8 pt-6 border-t border-slate-700/50">
-								<div class="grid grid-cols-2 gap-4 text-center">
-									<div class="bg-slate-900/50 rounded-lg p-4">
-										<p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-											{ fmt.Sprintf("%d", len(orders)) }
-										</p>
-										<p class="text-xs text-slate-400 mt-1">Total Orders</p>
-									</div>
-									<div class="bg-slate-900/50 rounded-lg p-4">
-										<p class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400">
-											${ calculateTotalSpent(orders) }
-										</p>
-										<p class="text-xs text-slate-400 mt-1">Total Spent</p>
-									</div>
-								</div>
+								<a
+									href={ templ.SafeURL(fmt.Sprintf("https://accounts.logans3dcreations.com/user")) }
+									target="_blank"
+									rel="noopener noreferrer"
+									class="block w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-center font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
+								>
+									Manage Account
+								</a>
 							</div>
 						</div>
 					</div>
@@ -156,18 +150,6 @@ templ OrderCard(order db.Order) {
 						<span class="text-slate-400">Total:</span>
 						<span class="text-white font-semibold ml-2">${ formatCents(order.TotalCents) }</span>
 					</div>
-					<div>
-						<span class="text-slate-400">Payment:</span>
-						<span class="ml-2">
-							@PaymentStatusBadge(order.PaymentStatus.String)
-						</span>
-					</div>
-					<div>
-						<span class="text-slate-400">Fulfillment:</span>
-						<span class="ml-2">
-							@FulfillmentStatusBadge(order.FulfillmentStatus.String)
-						</span>
-					</div>
 				</div>
 			</div>
 
@@ -188,52 +170,20 @@ templ OrderCard(order db.Order) {
 }
 
 templ OrderStatusBadge(status string) {
-	<span class={
-		"inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold",
-		templ.KV("bg-yellow-900/50 text-yellow-400 border border-yellow-700/50", status == "pending"),
-		templ.KV("bg-blue-900/50 text-blue-400 border border-blue-700/50", status == "processing"),
-		templ.KV("bg-purple-900/50 text-purple-400 border border-purple-700/50", status == "shipped"),
-		templ.KV("bg-green-900/50 text-green-400 border border-green-700/50", status == "delivered"),
-		templ.KV("bg-red-900/50 text-red-400 border border-red-700/50", status == "cancelled"),
-		templ.KV("bg-slate-900/50 text-slate-400 border border-slate-700/50", status != "pending" && status != "processing" && status != "shipped" && status != "delivered" && status != "cancelled"),
-	}>
+	<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-900/50 text-slate-400 border border-slate-700/50">
 		{ capitalizeStatus(status) }
 	</span>
 }
 
-templ PaymentStatusBadge(status string) {
-	<span class={
-		"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-		templ.KV("bg-green-900/50 text-green-400", status == "paid"),
-		templ.KV("bg-yellow-900/50 text-yellow-400", status == "unpaid" || status == "partially_paid"),
-		templ.KV("bg-red-900/50 text-red-400", status == "refunded"),
-		templ.KV("bg-slate-900/50 text-slate-400", status != "paid" && status != "unpaid" && status != "partially_paid" && status != "refunded"),
-	}>
-		{ capitalizeStatus(status) }
-	</span>
-}
-
-templ FulfillmentStatusBadge(status string) {
-	<span class={
-		"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium",
-		templ.KV("bg-green-900/50 text-green-400", status == "fulfilled"),
-		templ.KV("bg-yellow-900/50 text-yellow-400", status == "partial"),
-		templ.KV("bg-slate-900/50 text-slate-400", status == "unfulfilled" || (status != "fulfilled" && status != "partial")),
-	}>
-		{ capitalizeStatus(status) }
-	</span>
-}
-
-// Helper functions
 func getFullName(user *db.User) string {
-	if user.FullName != "" {
-		return user.FullName
-	}
 	if user.FirstName.Valid && user.LastName.Valid {
 		return user.FirstName.String + " " + user.LastName.String
 	}
 	if user.FirstName.Valid {
 		return user.FirstName.String
+	}
+	if user.LastName.Valid {
+		return user.LastName.String
 	}
 	return "User"
 }

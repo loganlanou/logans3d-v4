@@ -124,8 +124,9 @@ func (h *PaymentHandler) HandleWebhook(c echo.Context) error {
 
 		// Handle successful checkout - create order and send emails
 		if err := h.handleCheckoutCompleted(c, &session); err != nil {
-			slog.Error("error handling checkout completed", "error", err)
-			// Don't return error to Stripe - we'll log it and let them retry
+			slog.Error("error handling checkout completed", "error", err, "session_id", session.ID)
+			// Return error to Stripe so they retry the webhook
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to process checkout")
 		}
 
 	case "payment_intent.succeeded":
@@ -149,6 +150,11 @@ func (h *PaymentHandler) HandleWebhook(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+// HandleCheckoutCompleted is a public wrapper for order creation that can be called from webhooks or success pages
+func (h *PaymentHandler) HandleCheckoutCompleted(c echo.Context, session *stripego.CheckoutSession) error {
+	return h.handleCheckoutCompleted(c, session)
+}
+
 func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripego.CheckoutSession) error {
 	ctx := c.Request().Context()
 
@@ -164,6 +170,49 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 	customerName := session.CustomerDetails.Name
 	customerEmail := session.CustomerDetails.Email
 
+	// Get user ID and session ID from metadata if present
+	userID := ""
+	sessionID := ""
+	if session.Metadata != nil {
+		slog.Info("stripe metadata received", "metadata", session.Metadata)
+		if uid, ok := session.Metadata["user_id"]; ok && uid != "" {
+			userID = uid
+			slog.Info("order linked to user", "user_id", uid, "order_id", orderID)
+		} else {
+			slog.Warn("user_id not found in stripe metadata", "order_id", orderID)
+		}
+		if sid, ok := session.Metadata["session_id"]; ok && sid != "" {
+			sessionID = sid
+			slog.Info("order linked to session", "session_id", sid, "order_id", orderID)
+		}
+	} else {
+		slog.Warn("stripe session has no metadata", "order_id", orderID)
+	}
+
+	// Try to get EasyPost shipment ID and shipping costs from session shipping selection
+	easypostShipmentID := sql.NullString{}
+	var sessionShippingSelection db.SessionShippingSelection
+	shippingCents := int64(0)
+	hasShippingSelection := false
+
+	if sessionID != "" {
+		shippingSelection, err := h.queries.GetSessionShippingSelection(ctx, sessionID)
+		if err == nil && shippingSelection.ShipmentID != "" {
+			sessionShippingSelection = shippingSelection
+			hasShippingSelection = true
+			easypostShipmentID = sql.NullString{String: shippingSelection.ShipmentID, Valid: true}
+			shippingCents = shippingSelection.PriceCents
+			slog.Info("order linked to EasyPost shipment",
+				"shipment_id", shippingSelection.ShipmentID,
+				"order_id", orderID,
+				"carrier", shippingSelection.CarrierName,
+				"service", shippingSelection.ServiceName,
+				"shipping_cents", shippingCents)
+		} else if err != nil && err != sql.ErrNoRows {
+			slog.Warn("failed to get session shipping selection", "error", err, "session_id", sessionID)
+		}
+	}
+
 	// Get billing and shipping addresses
 	billingAddress := session.CustomerDetails.Address
 	shippingAddress := session.ShippingDetails.Address
@@ -173,45 +222,46 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 
 	// Calculate amounts (Stripe amounts are in cents)
 	totalCents := session.AmountTotal
-	subtotalCents := session.AmountSubtotal
 	taxCents := int64(0)
 	if session.TotalDetails != nil && session.TotalDetails.AmountTax != 0 {
 		taxCents = session.TotalDetails.AmountTax
 	}
-	shippingCents := int64(0)
-	if session.TotalDetails != nil && session.TotalDetails.AmountShipping != 0 {
-		shippingCents = session.TotalDetails.AmountShipping
+
+	// Calculate subtotal excluding shipping (since we track shipping separately)
+	subtotalCents := totalCents - taxCents - shippingCents
+
+	// Check if order already exists (idempotency)
+	existing, existErr := h.queries.GetOrderByStripeSessionID(ctx, sql.NullString{String: session.ID, Valid: true})
+	if existErr == nil {
+		slog.Info("order already exists for this checkout session", "order_id", existing.ID, "session_id", session.ID)
+		return nil // Order already created, skip
+	} else if existErr != sql.ErrNoRows {
+		return fmt.Errorf("failed to check existing order: %w", existErr)
 	}
 
 	// Create order
 	_, createErr := h.queries.CreateOrder(ctx, db.CreateOrderParams{
-		ID:                    orderID,
-		UserID:                sql.NullString{}, // Optional - may be guest checkout
-		CustomerEmail:         customerEmail,
-		CustomerName:          customerName,
-		CustomerPhone:         sql.NullString{String: session.CustomerDetails.Phone, Valid: session.CustomerDetails.Phone != ""},
-		BillingAddressLine1:   billingAddress.Line1,
-		BillingAddressLine2:   sql.NullString{String: billingAddress.Line2, Valid: billingAddress.Line2 != ""},
-		BillingCity:           billingAddress.City,
-		BillingState:          billingAddress.State,
-		BillingPostalCode:     billingAddress.PostalCode,
-		BillingCountry:        billingAddress.Country,
-		ShippingAddressLine1:  shippingAddress.Line1,
-		ShippingAddressLine2:  sql.NullString{String: shippingAddress.Line2, Valid: shippingAddress.Line2 != ""},
-		ShippingCity:          shippingAddress.City,
-		ShippingState:         shippingAddress.State,
-		ShippingPostalCode:    shippingAddress.PostalCode,
-		ShippingCountry:       shippingAddress.Country,
-		SubtotalCents:         subtotalCents,
-		TaxCents:              taxCents,
-		ShippingCents:         shippingCents,
-		TotalCents:            totalCents,
-		StripePaymentIntentID: sql.NullString{String: session.PaymentIntent.ID, Valid: true},
-		StripeCustomerID:      sql.NullString{String: session.Customer.ID, Valid: true},
-		Status:                sql.NullString{String: "confirmed", Valid: true},
-		FulfillmentStatus:     sql.NullString{String: "pending", Valid: true},
-		PaymentStatus:         sql.NullString{String: "paid", Valid: true},
-		Notes:                 sql.NullString{},
+		ID:                   orderID,
+		UserID:               userID, // Set from metadata if user was authenticated
+		CustomerEmail:        customerEmail,
+		CustomerName:         customerName,
+		CustomerPhone:        sql.NullString{String: session.CustomerDetails.Phone, Valid: session.CustomerDetails.Phone != ""},
+		ShippingAddressLine1: shippingAddress.Line1,
+		ShippingAddressLine2: sql.NullString{String: shippingAddress.Line2, Valid: shippingAddress.Line2 != ""},
+		ShippingCity:         shippingAddress.City,
+		ShippingState:        shippingAddress.State,
+		ShippingPostalCode:   shippingAddress.PostalCode,
+		ShippingCountry:      shippingAddress.Country,
+		SubtotalCents:        subtotalCents,
+		TaxCents:             taxCents,
+		ShippingCents:        shippingCents,
+		TotalCents:           totalCents,
+		StripePaymentIntentID:   sql.NullString{String: session.PaymentIntent.ID, Valid: true},
+		StripeCustomerID:        sql.NullString{String: session.Customer.ID, Valid: true},
+		StripeCheckoutSessionID: sql.NullString{String: session.ID, Valid: true},
+		EasypostShipmentID:      easypostShipmentID,
+		Status:                  sql.NullString{String: "received", Valid: true},
+		Notes:                   sql.NullString{},
 	})
 	if createErr != nil {
 		return fmt.Errorf("failed to create order: %w", createErr)
@@ -219,31 +269,81 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 
 	slog.Info("order created successfully", "order_id", orderID)
 
+	// Create order_shipping_selection record if we have shipping data
+	if hasShippingSelection {
+		_, shippingSelErr := h.queries.CreateOrderShippingSelection(ctx, db.CreateOrderShippingSelectionParams{
+			ID:                          uuid.New().String(),
+			OrderID:                     orderID,
+			CandidateBoxSku:             sessionShippingSelection.BoxSku,
+			RateID:                      sessionShippingSelection.RateID,
+			CarrierID:                   sessionShippingSelection.CarrierName,
+			ServiceCode:                 sessionShippingSelection.ServiceName,
+			ServiceName:                 sessionShippingSelection.ServiceName,
+			QuotedShippingAmountCents:   sessionShippingSelection.ShippingAmountCents,
+			QuotedBoxCostCents:          sessionShippingSelection.BoxCostCents,
+			QuotedHandlingCostCents:     sessionShippingSelection.HandlingCostCents,
+			QuotedTotalCents:            sessionShippingSelection.PriceCents,
+			DeliveryDays:                sessionShippingSelection.DeliveryDays,
+			EstimatedDeliveryDate:       sessionShippingSelection.EstimatedDate,
+			PackingSolutionJson:         sql.NullString{String: "{}", Valid: true}, // Could parse from shipping_address_json if needed
+			ShipmentID:                  sql.NullString{String: sessionShippingSelection.ShipmentID, Valid: true},
+		})
+		if shippingSelErr != nil {
+			slog.Error("failed to create order shipping selection", "error", shippingSelErr, "order_id", orderID)
+			return fmt.Errorf("failed to create order shipping selection: %w", shippingSelErr)
+		}
+		slog.Info("order shipping selection created", "order_id", orderID)
+	}
+
+	// Clear cart for this session/user after successful order creation
+	if sessionID != "" || userID != "" {
+		if err := h.queries.ClearCart(ctx, db.ClearCartParams{
+			SessionID: sql.NullString{String: sessionID, Valid: sessionID != ""},
+			UserID:    sql.NullString{String: userID, Valid: userID != ""},
+		}); err != nil {
+			slog.Error("failed to clear cart after order creation", "error", err, "session_id", sessionID, "user_id", userID)
+		} else {
+			slog.Info("cart cleared after successful checkout", "session_id", sessionID, "user_id", userID, "order_id", orderID)
+		}
+	}
+
 	// Get line items from session (need to expand)
 	orderItems := []email.OrderItem{}
 	if session.LineItems != nil {
 		for _, item := range session.LineItems.Data {
-			orderItems = append(orderItems, email.OrderItem{
-				ProductName:  item.Description,
-				Quantity:     item.Quantity,
-				PriceCents:   item.Price.UnitAmount,
-				TotalCents:   item.AmountTotal,
-			})
+			// Skip shipping line items
+			if item.Price != nil && item.Price.Product != nil && item.Price.Product.Metadata != nil {
+				productID, hasProductID := item.Price.Product.Metadata["product_id"]
 
-			// Create order item in database
-			_, itemErr := h.queries.CreateOrderItem(ctx, db.CreateOrderItemParams{
-				ID:               uuid.New().String(),
-				OrderID:          orderID,
-				ProductID:        "", // May need to parse from metadata
-				ProductVariantID: sql.NullString{},
-				Quantity:         item.Quantity,
-				UnitPriceCents:   item.Price.UnitAmount,
-				TotalPriceCents:  item.AmountTotal,
-				ProductName:      item.Description,
-				ProductSku:       sql.NullString{},
-			})
-			if itemErr != nil {
-				slog.Error("failed to create order item", "error", itemErr)
+				// Only create order item if it's a real product (not shipping)
+				if hasProductID && productID != "" {
+					// Calculate item total (excluding tax - Stripe's AmountTotal includes tax)
+					itemTotal := item.Price.UnitAmount * item.Quantity
+
+					orderItems = append(orderItems, email.OrderItem{
+						ProductName:  item.Description,
+						Quantity:     item.Quantity,
+						PriceCents:   item.Price.UnitAmount,
+						TotalCents:   itemTotal,
+					})
+
+					// Create order item in database - CRITICAL: Must succeed or order is corrupt
+					_, itemErr := h.queries.CreateOrderItem(ctx, db.CreateOrderItemParams{
+						ID:               uuid.New().String(),
+						OrderID:          orderID,
+						ProductID:        productID,
+						ProductVariantID: sql.NullString{},
+						Quantity:         item.Quantity,
+						UnitPriceCents:   item.Price.UnitAmount,
+						TotalPriceCents:  itemTotal,
+						ProductName:      item.Description,
+						ProductSku:       sql.NullString{},
+					})
+					if itemErr != nil {
+						slog.Error("failed to create order item", "error", itemErr, "product_id", productID, "order_id", orderID)
+						return fmt.Errorf("failed to create order item for product %s: %w", productID, itemErr)
+					}
+				}
 			}
 		}
 	}

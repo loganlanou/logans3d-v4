@@ -250,11 +250,22 @@ func clearAuthCookie(c echo.Context) {
 }
 
 // RequireClerkAuth middleware requires authentication
+// IMPORTANT: If session token is expired but __client cookie exists, redirect to refresh page
+// so Clerk JS SDK can perform handshake to refresh the session securely
 func RequireClerkAuth() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			isAuth, _ := c.Get(IsAuthenticatedKey).(bool)
 			if !isAuth {
+				// Check if __client cookie exists (long-lived session cookie)
+				// If it exists, the user is likely still logged in but session token expired
+				// Redirect to refresh page to securely refresh the session
+				if clientCookie, err := c.Request().Cookie("__client"); err == nil && clientCookie.Value != "" {
+					currentPath := c.Request().URL.Path
+					slog.Debug("=== AUTH MIDDLEWARE: Session expired but __client exists, redirecting to refresh ===", "return_path", currentPath)
+					return c.Redirect(http.StatusFound, "/auth/refresh?redirect="+currentPath)
+				}
+
 				return c.Redirect(http.StatusFound, "/login")
 			}
 			return next(c)
@@ -262,12 +273,29 @@ func RequireClerkAuth() echo.MiddlewareFunc {
 	}
 }
 
-// RequireAdmin middleware requires admin authentication and returns 401 if not admin
+// RequireAdmin middleware requires admin authentication
+// Returns custom 401 error that can be handled by error handler
 func RequireAdmin() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			isAuth, _ := c.Get(IsAuthenticatedKey).(bool)
 			if !isAuth {
+				// Store attempted path and client cookie status for 401 handler
+				currentPath := c.Request().URL.Path
+				if c.Request().URL.RawQuery != "" {
+					currentPath += "?" + c.Request().URL.RawQuery
+				}
+				c.Set("attempted_path", currentPath)
+
+				// Check if __client cookie exists for potential auto-refresh
+				if clientCookie, err := c.Request().Cookie("__client"); err == nil && clientCookie.Value != "" {
+					c.Set("has_client_cookie", true)
+					slog.Debug("=== ADMIN MIDDLEWARE: Session expired but __client exists, returning 401 for auto-refresh ===", "path", currentPath)
+				} else {
+					c.Set("has_client_cookie", false)
+					slog.Debug("=== ADMIN MIDDLEWARE: No valid session, returning 401 ===", "path", currentPath)
+				}
+
 				return echo.NewHTTPError(http.StatusUnauthorized, "Authentication required")
 			}
 
