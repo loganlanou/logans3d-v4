@@ -1,0 +1,19 @@
+[Unit]
+Description=Litestream SQLite Replication Service
+Documentation=https://litestream.io
+After=network.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=apprunner
+Group=apprunner
+EnvironmentFile=/etc/litestream/environment
+ExecStart=/usr/bin/litestream replicate -config /etc/litestream/litestream.yml
+Restart=always
+RestartSec=10
+StandardOutput=append:/var/log/litestream/litestream.log
+StandardError=append:/var/log/litestream/litestream.log
+
+[Install]
+WantedBy=multi-user.target
