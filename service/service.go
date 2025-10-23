@@ -632,8 +632,8 @@ func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
 	imageURL := ""
 	images, err := s.storage.Queries.GetProductImages(ctx, productID)
 	if err == nil && len(images) > 0 {
-		// Ensure we have an absolute URL for Stripe - database contains /images/products/ path
-		imageURL = fmt.Sprintf("%s://%s/public%s", c.Scheme(), c.Request().Host, images[0].ImageUrl)
+		// Ensure we have an absolute URL for Stripe - database contains only filename
+		imageURL = fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, images[0].ImageUrl)
 	}
 	
 	// Create Stripe Checkout Session with dynamic product
@@ -749,8 +749,8 @@ func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error 
 	imageURL := ""
 	images, err := s.storage.Queries.GetProductImages(ctx, request.ProductID)
 	if err == nil && len(images) > 0 {
-		// Ensure we have an absolute URL for Stripe - database contains /images/products/ path
-		imageURL = fmt.Sprintf("%s://%s/public%s", c.Scheme(), c.Request().Host, images[0].ImageUrl)
+		// Ensure we have an absolute URL for Stripe - database contains only filename
+		imageURL = fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, images[0].ImageUrl)
 	}
 	
 	// Create Stripe Checkout Session with dynamic product
@@ -853,14 +853,8 @@ func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
 		
 		// Add product image if available
 		if item.ImageURL != "" {
-			// Convert relative URL to absolute URL
-			var imageURL string
-			if item.ImageURL[0] == '/' {
-				imageURL = fmt.Sprintf("%s://%s/public%s", c.Scheme(), c.Request().Host, item.ImageURL)
-			} else {
-				// Handle direct filename - database contains /images/products/ path
-				imageURL = fmt.Sprintf("%s://%s/public/images/products/%s", c.Scheme(), c.Request().Host, item.ImageURL)
-			}
+			// Ensure we have an absolute URL for Stripe - database contains only filename
+			imageURL := fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, item.ImageURL)
 			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
 		}
 		
@@ -927,13 +921,8 @@ func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 		
 		// Add product image if available
 		if item.ImageUrl != "" {
-			var imageURL string
-			if item.ImageUrl[0] == '/' {
-				imageURL = fmt.Sprintf("%s://%s/public%s", c.Scheme(), c.Request().Host, item.ImageUrl)
-			} else {
-				// Database contains /images/products/ path
-				imageURL = fmt.Sprintf("%s://%s/public/images/products/%s", c.Scheme(), c.Request().Host, item.ImageUrl)
-			}
+			// Ensure we have an absolute URL for Stripe - database contains only filename
+			imageURL := fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, item.ImageUrl)
 			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
 		}
 		
