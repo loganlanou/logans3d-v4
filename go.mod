@@ -4,6 +4,7 @@ go 1.25
 
 require (
 	github.com/EasyPost/easypost-go/v5 v5.3.1
+	github.com/Oudwins/tailwind-merge-go v0.2.0
 	github.com/a-h/templ v0.3.943
 	github.com/clerk/clerk-sdk-go/v2 v2.4.2
 	github.com/google/uuid v1.6.0
@@ -17,6 +18,7 @@ require (
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -25,6 +27,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/sethvargo/go-retry v0.3.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect

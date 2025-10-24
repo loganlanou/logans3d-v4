@@ -1,0 +1,7 @@
+{
+  "componentsDir": "components",
+  "utilsDir": "utils",
+  "moduleName": "github.com/loganlanou/logans3d-v4",
+  "jsDir": "public/js",
+  "jsPublicPath": "/public/js"
+}
