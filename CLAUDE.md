@@ -81,6 +81,7 @@ AI assistants must NEVER make database schema changes directly. All schema chang
 When creating a new migration:
 
 1. **Create the migration file**:
+
    ```bash
    goose -dir storage/migrations create migration_name sql
    ```
@@ -91,6 +92,7 @@ When creating a new migration:
    - For SQLite, remember that `DROP COLUMN` is not supported - you must recreate the table
 
 3. **CRITICAL: ONLY TEST THE MIGRATION YOU JUST CREATED**:
+
    ```bash
    # WRONG - NEVER DO THIS - DESTROYS ALL DATA
    rm -f ./data/database.db*
@@ -169,6 +171,7 @@ This project uses **direnv** to manage environment variables:
 - **Environment variables are for secrets and environment-specific settings only**, NOT for application configuration
 
 To make environment changes:
+
 1. Update `.envrc`
 2. Run `direnv allow`
 
@@ -177,11 +180,13 @@ To make environment changes:
 **IMPORTANT: Product images follow a strict separation between database storage and view rendering.**
 
 ### Database Storage (product_images table)
+
 - **ONLY store the filename** (e.g., `pachycephalosaurus.jpg`)
 - **NEVER store paths** like `/public/images/products/` in the database
 - This keeps the database portable and allows path changes without database migrations
 
 ### View Layer (Service Handlers)
+
 - The view layer constructs the full public path when rendering
 - Pattern: `imageURL = "/public/images/products/" + filename`
 - This happens in:
@@ -189,34 +194,244 @@ To make environment changes:
   - `internal/handlers/admin.go` - Admin product listings
 
 ### Verification
+
 - Run `sqlite3 ./data/database.db "SELECT COUNT(*) FROM product_images WHERE image_url LIKE '%/%';"`
 - Should return `0` - no paths in the database
 - The script `scripts/fix-image-urls-correct/main.go` can clean up any incorrect path storage
 
 ### File System Location
+
 - Product images are stored at: `./public/images/products/`
 - Served at URL: `http://localhost:8000/public/images/products/filename.jpg`
 
-## Admin Dashboard Styling
+## UI Component Library
 
-**CRITICAL: All admin dashboard pages MUST use the standard admin CSS classes.**
+**CRITICAL: ALL admin dashboards and pages MUST use TemplUI components.**
 
-The admin dashboard has a predefined styling system that ensures consistency across all pages. When creating or modifying admin pages, you MUST use these classes instead of creating custom styles.
+This project uses [TemplUI](https://templui.io/docs/components) (v0.98.0) - a library of 45+ beautiful, accessible UI components for Go templ.
+
+### Installing TemplUI (Already Installed)
+
+TemplUI is already installed in this project. To add components to your pages:
+
+```go
+import (
+    "github.com/templui/templui/internal/components/card"
+    "github.com/templui/templui/internal/components/button"
+    "github.com/templui/templui/internal/components/table"
+    "github.com/templui/templui/internal/components/dialog"
+)
+```
+
+### Core TemplUI Components (Use These!)
+
+**Cards:**
+
+```templ
+@card.Card() {
+    @card.Header() {
+        @card.Title() {
+            Order Summary
+        }
+        @card.Description() {
+            View order details below
+        }
+    }
+    @card.Content() {
+        <p>Your content here</p>
+    }
+    @card.Footer(card.FooterProps{
+        Class: "flex justify-between",
+    }) {
+        @button.Button() {
+            Action
+        }
+    }
+}
+```
+
+**Buttons:**
+
+```templ
+// Primary button
+@button.Button(button.Props{
+    Variant: button.VariantPrimary,
+}) {
+    Save Changes
+}
+
+// Secondary button
+@button.Button(button.Props{
+    Variant: button.VariantSecondary,
+    Size:    button.SizeSm,
+}) {
+    Cancel
+}
+
+// Destructive button
+@button.Button(button.Props{
+    Variant: button.VariantDestructive,
+}) {
+    Delete
+}
+```
+
+**Tables:**
+
+```templ
+@table.Table() {
+    @table.Header() {
+        @table.Row() {
+            @table.Head() { Name }
+            @table.Head() { Email }
+            @table.Head() { Status }
+        }
+    }
+    @table.Body() {
+        for _, item := range items {
+            @table.Row() {
+                @table.Cell() { item.Name }
+                @table.Cell() { item.Email }
+                @table.Cell() { item.Status }
+            }
+        }
+    }
+}
+```
+
+**Dialogs/Modals:**
+
+```templ
+@dialog.Content(dialog.ContentProps{
+    ID: "myModal",
+    Class: "max-w-2xl",
+}) {
+    @dialog.Header() {
+        @dialog.Title() {
+            Confirm Action
+        }
+    }
+    <div class="p-6">
+        <p>Are you sure?</p>
+    </div>
+    @dialog.Footer() {
+        @dialog.Close() {
+            @button.Button(button.Props{
+                Variant: button.VariantOutline,
+            }) {
+                Cancel
+            }
+        }
+        @button.Button(button.Props{
+            Variant: button.VariantPrimary,
+        }) {
+            Confirm
+        }
+    }
+}
+```
+
+### Available TemplUI Components
+
+**Form & Input:** Input, Label, Textarea, Checkbox, Radio, Switch, Select Box, Tags Input, Date Picker, Time Picker, Input OTP, Form
+
+**Display & Layout:** Card, Badge, Avatar, Separator, Skeleton, Aspect Ratio
+
+**Navigation:** Button, Breadcrumb, Pagination, Tabs, Sidebar, Dropdown
+
+**Feedback:** Alert, Toast, Tooltip, Progress, Rating, Code, Copy Button
+
+**Advanced:** Dialog, Popover, Sheet, Accordion, Collapsible, Carousel, Calendar, Charts, Icon, Table
+
+### Migration from Custom CSS to TemplUI
+
+**WRONG (Old Pattern):**
+
+```templ
+<div class="admin-card">
+    <div class="admin-card-header">
+        <h2 class="admin-card-title">Title</h2>
+    </div>
+    <div class="p-6">Content</div>
+</div>
+
+<button class="admin-btn admin-btn-primary">Click Me</button>
+
+<table class="admin-table">
+    <thead><tr><th>Header</th></tr></thead>
+    <tbody><tr><td>Data</td></tr></tbody>
+</table>
+```
+
+**CORRECT (TemplUI Pattern):**
+
+```templ
+@card.Card() {
+    @card.Header() {
+        @card.Title() { Title }
+    }
+    @card.Content() {
+        Content
+    }
+}
+
+@button.Button(button.Props{
+    Variant: button.VariantPrimary,
+}) {
+    Click Me
+}
+
+@table.Table() {
+    @table.Header() {
+        @table.Row() {
+            @table.Head() { Header }
+        }
+    }
+    @table.Body() {
+        @table.Row() {
+            @table.Cell() { Data }
+        }
+    }
+}
+```
+
+### Component Priority Rules
+
+1. **ALWAYS use TemplUI components** when available (Card, Button, Table, Dialog, etc.)
+2. **ONLY use custom CSS classes** for styling not covered by TemplUI (like `admin-text-primary` for text colors)
+3. **NEVER create raw HTML equivalents** of TemplUI components (no `<div class="admin-card">`, use `@card.Card()` instead)
+
+### Reference Implementation
+
+See `views/admin/orders.templ` for correct TemplUI usage:
+
+- Lines 10-11: Component imports
+- Lines 678-712: Dialog component with proper syntax
+- Lines 705-709: Button component usage
+
+## Legacy Admin CSS Classes (Being Deprecated)
+
+**NOTE: The custom admin CSS classes below are DEPRECATED. Use TemplUI components instead.**
+
+These classes are only listed for reference when maintaining existing code. All new code MUST use TemplUI components.
 
 ### Required CSS Classes
 
 #### Card Components
+
 - `admin-card` - Card container with proper background, border, and shadow
 - `admin-card-header` - Card header section with border-bottom
 - `admin-card-title` - Card title styling (use `<h2>` element)
 
 #### Tables
+
 - `admin-table` - Table with proper borders, spacing, and hover effects
 - Tables must be wrapped in `<div class="overflow-x-auto">` for responsive scrolling
 - Table headers use `<th>` without additional classes (styling is automatic)
 - Table rows automatically get hover states
 
 #### Typography
+
 - `admin-text-primary` - Primary text color (dark)
 - `admin-text-muted` - Muted/secondary text color (gray)
 - `admin-text-disabled` - Disabled text color (light gray)
@@ -226,6 +441,7 @@ The admin dashboard has a predefined styling system that ensures consistency acr
 - `admin-text-2xl` - 2xl text size
 
 #### Buttons
+
 - `admin-btn` - Base button class (required for all buttons)
 - `admin-btn-primary` - Primary action button (blue)
 - `admin-btn-secondary` - Secondary action button (gray)
@@ -233,17 +449,31 @@ The admin dashboard has a predefined styling system that ensures consistency acr
 - `admin-btn-warning` - Warning action button (orange)
 - `admin-btn-sm` - Small button variant
 
-### Standard Page Structure
+### Standard Admin Page Structure (Using TemplUI)
 
 ```templ
+package admin
+
+import (
+    "github.com/labstack/echo/v4"
+    "github.com/loganlanou/logans3d-v4/views/layout"
+    "github.com/templui/templui/internal/components/card"
+    "github.com/templui/templui/internal/components/button"
+    "github.com/templui/templui/internal/components/table"
+)
+
 templ MyAdminPage(c echo.Context, data []MyData) {
     @layout.AdminBase(c, "Page Title") {
         @layout.AdminContainer() {
             <!-- Header -->
             <div class="flex justify-between items-center mb-6">
-                <h1 class="admin-text-primary admin-text-2xl admin-font-bold">Page Title</h1>
-                <a href="/admin/action" class="admin-btn admin-btn-primary">
-                    + Add Item
+                <h1 class="text-2xl font-bold text-gray-900">Page Title</h1>
+                <a href="/admin/action">
+                    @button.Button(button.Props{
+                        Variant: button.VariantPrimary,
+                    }) {
+                        + Add Item
+                    }
                 </a>
             </div>
 
@@ -255,48 +485,40 @@ templ MyAdminPage(c echo.Context, data []MyData) {
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     onkeyup="debounceSearch(this.value)"
                 />
-                <div class="flex gap-4 flex-wrap">
-                    <select
-                        name="filter"
-                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        onchange="window.location.href = updateQueryParam('filter', this.value)"
-                    >
-                        <option value="">All Items</option>
-                        <option value="active">Active</option>
-                    </select>
-                </div>
             </div>
 
-            <!-- Data Table -->
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h2 class="admin-card-title">Items ({ fmt.Sprintf("%d", len(data)) })</h2>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Column 1</th>
-                                <th>Column 2</th>
-                                <th>Column 3</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            for _, item := range data {
-                                <tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/items/%s'", item.ID)} } style="cursor: pointer;">
-                                    <td>
-                                        <span class="admin-text-primary admin-font-medium">{ item.Name }</span>
-                                    </td>
-                                    <td>{ item.Value }</td>
-                                    <td>
-                                        <span class="admin-text-muted">{ item.Status }</span>
-                                    </td>
-                                </tr>
+            <!-- Data Table with TemplUI Card -->
+            @card.Card() {
+                @card.Header() {
+                    @card.Title() {
+                        Items ({ fmt.Sprintf("%d", len(data)) })
+                    }
+                }
+                @card.Content() {
+                    @table.Table() {
+                        @table.Header() {
+                            @table.Row() {
+                                @table.Head() { Column 1 }
+                                @table.Head() { Column 2 }
+                                @table.Head() { Column 3 }
                             }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                        }
+                        @table.Body() {
+                            for _, item := range data {
+                                @table.Row() {
+                                    @table.Cell() {
+                                        <span class="font-medium text-gray-900">{ item.Name }</span>
+                                    }
+                                    @table.Cell() { item.Value }
+                                    @table.Cell() {
+                                        <span class="text-gray-600">{ item.Status }</span>
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -348,9 +570,18 @@ For links within clickable rows (like email links), stop propagation:
 </a>
 ```
 
-### Detail Page Pattern
+### Detail Page Pattern (Using TemplUI)
 
 ```templ
+package admin
+
+import (
+    "github.com/labstack/echo/v4"
+    "github.com/loganlanou/logans3d-v4/views/layout"
+    "github.com/templui/templui/internal/components/card"
+    "github.com/templui/templui/internal/components/button"
+)
+
 templ ItemDetail(c echo.Context, item MyItem) {
     @layout.AdminBase(c, "Item Details") {
         @layout.AdminContainer() {
@@ -363,23 +594,39 @@ templ ItemDetail(c echo.Context, item MyItem) {
 
             <!-- Header -->
             <div class="flex justify-between items-start mb-6">
-                <h1 class="admin-text-primary admin-text-2xl admin-font-bold">
+                <h1 class="text-2xl font-bold text-gray-900">
                     { item.Name }
                 </h1>
-                <div class="text-sm admin-text-muted">
+                <div class="text-sm text-gray-600">
                     ID: { item.ID }
                 </div>
             </div>
 
-            <!-- Content Cards -->
-            <div class="admin-card">
-                <div class="admin-card-header">
-                    <h2 class="admin-card-title">Information</h2>
-                </div>
-                <div class="p-6">
-                    <p class="admin-text-primary">{ item.Description }</p>
-                </div>
-            </div>
+            <!-- Content Cards using TemplUI -->
+            @card.Card() {
+                @card.Header() {
+                    @card.Title() {
+                        Information
+                    }
+                }
+                @card.Content() {
+                    <p class="text-gray-900">{ item.Description }</p>
+                }
+                @card.Footer(card.FooterProps{
+                    Class: "flex justify-end gap-2",
+                }) {
+                    @button.Button(button.Props{
+                        Variant: button.VariantSecondary,
+                    }) {
+                        Edit
+                    }
+                    @button.Button(button.Props{
+                        Variant: button.VariantDestructive,
+                    }) {
+                        Delete
+                    }
+                }
+            }
         }
     }
 }
@@ -387,16 +634,26 @@ templ ItemDetail(c echo.Context, item MyItem) {
 
 ### Common Mistakes to Avoid
 
-1. **DON'T create custom card styling** - Use `admin-card`, `admin-card-header`, `admin-card-title`
-2. **DON'T use raw Tailwind classes for tables** - Use `admin-table`
-3. **DON'T use raw color classes for text** - Use `admin-text-primary`, `admin-text-muted`, etc.
-4. **DON'T use HTMX for filters** - Use JavaScript `onchange` navigation
-5. **DON'T create a "View" or "Actions" column** - Make the entire row clickable
-6. **DON'T use inline styles except for `cursor: pointer`** on clickable rows
+1. **DON'T use `<div class="admin-card">`** - Use `@card.Card()` instead
+2. **DON'T use `<button class="admin-btn">`** - Use `@button.Button()` instead
+3. **DON'T use `<table class="admin-table">`** - Use `@table.Table()` instead
+4. **DON'T forget to import components** - Always import from `github.com/templui/templui/internal/components/...`
+5. **DON'T use HTMX for filters** - Use JavaScript `onchange` navigation
+6. **DON'T create a "View" or "Actions" column** - Make the entire row clickable
 
-### Reference Implementation
+### Reference Implementations
 
-See these files for correct implementation:
-- Table listing: `views/admin/dashboard.templ` (Products table)
-- Detail page: `views/admin/contacts.templ` (ContactDetail template)
-- Filters: `views/admin/dashboard.templ` (Product filters)
+**CORRECT TemplUI Usage:**
+
+- `views/admin/orders.templ` lines 10-11: Component imports
+- `views/admin/orders.templ` lines 678-712: Dialog component with Button
+- `views/admin/orders.templ` lines 705-709: Proper Button component usage
+
+**INCORRECT (Legacy Code - Needs Migration):**
+
+- Most of `views/admin/dashboard.templ` - Uses `<div class="admin-card">` instead of `@card.Card()`
+- Most of `views/admin/contacts.templ` - Uses raw HTML instead of TemplUI components
+
+**Migration Priority:**
+
+When editing any admin page, convert raw HTML components to TemplUI components.

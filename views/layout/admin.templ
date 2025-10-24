@@ -5,6 +5,7 @@ import (
 	"strings"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/loganlanou/logans3d-v4/components/dialog"
 )
 
 func getAlpineData(c echo.Context) string {
@@ -58,6 +59,9 @@ templ AdminBase(c echo.Context, title string) {
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+			<!-- templUI dialog component -->
+			@dialog.Script()
 		</head>
 		<body class="admin-root" x-data={ getAlpineData(c) }>
 			<!-- Sidebar -->

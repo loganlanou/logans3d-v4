@@ -53,22 +53,22 @@
   }
   
   /* Admin Typography */
-  .admin-root h1, 
-  .admin-root h2, 
-  .admin-root h3, 
-  .admin-root h4, 
-  .admin-root h5, 
+  .admin-root h1,
+  .admin-root h2,
+  .admin-root h3,
+  .admin-root h4,
+  .admin-root h5,
   .admin-root h6 {
     color: var(--admin-text-primary);
     font-weight: 600;
   }
-  
+
   .admin-root p,
   .admin-root span,
   .admin-root div {
     color: var(--admin-text-secondary);
   }
-  
+
   /* Admin Form Elements */
   .admin-root input[type="text"],
   .admin-root input[type="email"],
@@ -82,7 +82,7 @@
     border-radius: 0.375rem;
     padding: 0.75rem;
   }
-  
+
   .admin-root input:focus,
   .admin-root textarea:focus,
   .admin-root select:focus {
@@ -90,7 +90,7 @@
     border-color: var(--admin-primary);
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
   }
-  
+
   .admin-root input::placeholder,
   .admin-root textarea::placeholder {
     color: var(--admin-text-disabled);
@@ -683,4 +683,46 @@
 
 .admin-root .text-slate-400 {
   color: #cbd5e1 !important; /* slate-300 for better readability */
+}
+
+/* TemplUI Dialog Overrides - Ensure proper styling for modal dialogs */
+[data-tui-dialog-content] {
+  background: white !important;
+  color: #1f2937 !important; /* gray-800 for dark text */
+}
+
+[data-tui-dialog-content] h1,
+[data-tui-dialog-content] h2,
+[data-tui-dialog-content] h3,
+[data-tui-dialog-content] h4,
+[data-tui-dialog-content] h5,
+[data-tui-dialog-content] h6 {
+  color: #111827 !important; /* gray-900 for headers */
+  text-shadow: none !important;
+  font-weight: 600 !important;
+}
+
+[data-tui-dialog-content] p,
+[data-tui-dialog-content] span,
+[data-tui-dialog-content] div,
+[data-tui-dialog-content] label {
+  color: #374151 !important; /* gray-700 for body text */
+  text-shadow: none !important;
+}
+
+[data-tui-dialog-content] input,
+[data-tui-dialog-content] textarea,
+[data-tui-dialog-content] select {
+  background: white !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important; /* gray-300 border */
+}
+
+[data-tui-dialog-content] button {
+  text-shadow: none !important;
+}
+
+/* Dialog overlay backdrop */
+[data-tui-dialog-backdrop] {
+  background: rgba(0, 0, 0, 0.5) !important;
 }

@@ -7,6 +7,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/dialog"
+	"github.com/loganlanou/logans3d-v4/components/button"
 )
 
 templ OrdersList(c echo.Context, orders []db.Order) {
@@ -199,52 +201,57 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 			</div>
 
 			<!-- Shipping Info Modal for List Page -->
-			<div id="shippingModalList" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target === this) closeShippingModalList()">
-				<div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-					<h3 class="admin-text-primary admin-text-lg admin-font-bold mb-4">Enter Shipping Information</h3>
-					<form id="shippingFormList" class="space-y-4">
-						<div>
-							<label class="block text-sm font-medium admin-text-muted mb-1">Carrier</label>
-							<input type="text" id="carrierList" name="carrier" required
-								class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="e.g., USPS, UPS, FedEx">
-						</div>
-						<div>
-							<label class="block text-sm font-medium admin-text-muted mb-1">Tracking Number</label>
-							<input type="text" id="trackingNumberList" name="trackingNumber" required
-								class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="Enter tracking number">
-						</div>
-						<div>
-							<label class="block text-sm font-medium admin-text-muted mb-1">Tracking URL (Optional)</label>
-							<input type="url" id="trackingUrlList" name="trackingUrl"
-								class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="https://...">
-						</div>
-						<div class="flex gap-3 pt-2">
-							<button type="submit" class="admin-btn admin-btn-primary">
-								Ship Order
-							</button>
-							<button type="button" onclick="closeShippingModalList()" class="admin-btn admin-btn-secondary">
-								Cancel
-							</button>
-						</div>
-					</form>
-				</div>
-			</div>
+			@dialog.Content(dialog.ContentProps{
+				ID: "shippingModalList",
+				Class: "max-w-md",
+			}) {
+				@dialog.Header() {
+					@dialog.Title() {
+						Enter Shipping Information
+					}
+				}
+				<form id="shippingFormList" class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
+						<input type="text" id="carrierList" name="carrier" required
+							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="e.g., USPS, UPS, FedEx"/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
+						<input type="text" id="trackingNumberList" name="trackingNumber" required
+							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="Enter tracking number"/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
+						<input type="url" id="trackingUrlList" name="trackingUrl"
+							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="https://..."/>
+					</div>
+				</form>
+				@dialog.Footer() {
+					@button.Button(button.Props{
+						Variant: button.VariantOutline,
+						Attributes: templ.Attributes{
+							"onclick": "window.tui.dialog.close('filterDateModal')",
+						},
+					}) {
+						Cancel
+					}
+					@button.Button(button.Props{
+						Attributes: templ.Attributes{
+							"type":    "submit",
+							"form":    "shippingFormList",
+						},
+					}) {
+						Ship Order
+					}
+				}
+			}
 
 			<script>
 				let currentOrderIDList = '';
-
-				// ESC key handling for list modal
-				document.addEventListener('keydown', function(e) {
-					if (e.key === 'Escape') {
-						const modalList = document.getElementById('shippingModalList');
-						if (modalList && !modalList.classList.contains('hidden')) {
-							closeShippingModalList();
-						}
-					}
-				});
 
 				function advanceStatus(event, orderID, nextStatus, buttonText) {
 					event.stopPropagation();
@@ -252,7 +259,7 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 					// If advancing to shipped, show modal for shipping info
 					if (nextStatus === 'shipped') {
 						currentOrderIDList = orderID;
-						document.getElementById('shippingModalList').classList.remove('hidden');
+						window.tui.dialog.open('shippingModalList');
 						return;
 					}
 
@@ -278,7 +285,7 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 				}
 
 				function closeShippingModalList() {
-					document.getElementById('shippingModalList').classList.add('hidden');
+					window.tui.dialog.close('shippingModalList');
 				}
 
 				document.getElementById('shippingFormList').addEventListener('submit', function(e) {
@@ -634,88 +641,95 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 			}
 
 			<!-- Shipping Info Modal -->
-			<div id="shippingModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target === this) closeShippingModal()">
-				<div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-					<h3 class="admin-text-primary admin-text-lg admin-font-bold mb-4">Enter Shipping Information</h3>
-					<form id="shippingForm" class="space-y-4">
-						<div>
-							<label class="block text-sm font-medium admin-text-muted mb-1">Carrier</label>
-							<input type="text" id="carrier" name="carrier" required
-								class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="e.g., USPS, UPS, FedEx">
-						</div>
-						<div>
-							<label class="block text-sm font-medium admin-text-muted mb-1">Tracking Number</label>
-							<input type="text" id="trackingNumber" name="trackingNumber" required
-								class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="Enter tracking number">
-						</div>
-						<div>
-							<label class="block text-sm font-medium admin-text-muted mb-1">Tracking URL (Optional)</label>
-							<input type="url" id="trackingUrl" name="trackingUrl"
-								class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="https://...">
-						</div>
-						<div class="flex gap-3 pt-2">
-							<button type="submit" class="admin-btn admin-btn-primary">
-								Ship Order
-							</button>
-							<button type="button" onclick="closeShippingModal()" class="admin-btn admin-btn-secondary">
-								Cancel
-							</button>
-						</div>
-					</form>
-				</div>
-			</div>
+			@dialog.Content(dialog.ContentProps{
+				ID: "shippingModal",
+				Class: "max-w-md",
+			}) {
+				@dialog.Header() {
+					@dialog.Title() {
+						Enter Shipping Information
+					}
+				}
+				<form id="shippingForm" class="space-y-4">
+					<div>
+						<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
+						<input type="text" id="carrier" name="carrier" required
+							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="e.g., USPS, UPS, FedEx"/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
+						<input type="text" id="trackingNumber" name="trackingNumber" required
+							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="Enter tracking number"/>
+					</div>
+					<div>
+						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
+						<input type="url" id="trackingUrl" name="trackingUrl"
+							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							placeholder="https://..."/>
+					</div>
+				</form>
+				@dialog.Footer() {
+					@button.Button(button.Props{
+						Variant: button.VariantOutline,
+						Attributes: templ.Attributes{
+							"onclick": "window.tui.dialog.close('createShippingDialog')",
+						},
+					}) {
+						Cancel
+					}
+					@button.Button(button.Props{
+						Attributes: templ.Attributes{
+							"type":    "submit",
+							"form":    "shippingForm",
+						},
+					}) {
+						Ship Order
+					}
+				}
+			}
 
 			<!-- Label Purchase Modal -->
-			<div id="labelPurchaseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="if(event.target === this) closeLabelPurchaseModal()">
-				<div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-					<h3 class="admin-text-primary admin-text-lg admin-font-bold mb-4">Purchase Shipping Label</h3>
-					<div id="ratesLoadingState" class="text-center py-8">
-						<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-						<p class="admin-text-muted mt-2">Loading shipping rates...</p>
-					</div>
-					<div id="ratesErrorState" class="hidden">
-						<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-							<p class="text-red-800 text-sm" id="ratesErrorMessage"></p>
-						</div>
-						<button type="button" onclick="closeLabelPurchaseModal()" class="admin-btn admin-btn-secondary">
-							Close
-						</button>
-					</div>
-					<div id="ratesContentState" class="hidden">
-						<div class="mb-4">
-							<p class="text-sm admin-text-muted">Select a shipping rate to purchase a label:</p>
-						</div>
-						<div id="ratesList" class="space-y-3 mb-6">
-						</div>
-						<div class="flex gap-3 pt-2 border-t border-gray-200">
-							<button type="button" onclick="closeLabelPurchaseModal()" class="admin-btn admin-btn-secondary">
-								Cancel
-							</button>
-						</div>
+			@dialog.Content(dialog.ContentProps{
+				ID: "labelPurchaseModal",
+				Class: "max-w-2xl max-h-[90vh] overflow-y-auto",
+			}) {
+				@dialog.Header() {
+					@dialog.Title() {
+						Purchase Shipping Label
+					}
+				}
+				<div id="ratesLoadingState" class="text-center py-8">
+					<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+					<p class="text-muted-foreground mt-2">Loading shipping rates...</p>
+				</div>
+				<div id="ratesErrorState" class="hidden">
+					<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+						<p class="text-red-800 text-sm" id="ratesErrorMessage"></p>
 					</div>
 				</div>
-			</div>
+				<div id="ratesContentState" class="hidden">
+					<div class="mb-4">
+						<p class="text-sm text-muted-foreground">Select a shipping rate to purchase a label:</p>
+					</div>
+					<div id="ratesList" class="space-y-3 mb-6">
+					</div>
+				</div>
+				@dialog.Footer() {
+					@button.Button(button.Props{
+						Variant: button.VariantOutline,
+						Attributes: templ.Attributes{
+							"onclick": "window.tui.dialog.close('labelPurchaseModal')",
+						},
+					}) {
+						Cancel
+					}
+				}
+			}
 
 			<script>
 				let currentOrderID = '';
-
-				// ESC key handling for modals
-				document.addEventListener('keydown', function(e) {
-					if (e.key === 'Escape') {
-						const shippingModal = document.getElementById('shippingModal');
-						const labelModal = document.getElementById('labelPurchaseModal');
-
-						if (shippingModal && !shippingModal.classList.contains('hidden')) {
-							closeShippingModal();
-						}
-						if (labelModal && !labelModal.classList.contains('hidden')) {
-							closeLabelPurchaseModal();
-						}
-					}
-				});
 
 				function updateOrderStatusFromDropdown(orderID, newStatus) {
 					const statusLabels = {
@@ -754,11 +768,11 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 						console.error('Failed to load tracking info:', error);
 					}
 
-					document.getElementById('shippingModal').classList.remove('hidden');
+					window.tui.dialog.open('shippingModal');
 				}
 
 				function closeShippingModal() {
-					document.getElementById('shippingModal').classList.add('hidden');
+					window.tui.dialog.close('shippingModal');
 					document.getElementById('carrier').value = '';
 					document.getElementById('trackingNumber').value = '';
 					document.getElementById('trackingUrl').value = '';
@@ -804,12 +818,11 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 
 				async function openLabelPurchaseModal(orderID) {
 					currentOrderID = orderID;
-					const modal = document.getElementById('labelPurchaseModal');
 					const loadingState = document.getElementById('ratesLoadingState');
 					const errorState = document.getElementById('ratesErrorState');
 					const contentState = document.getElementById('ratesContentState');
 
-					modal.classList.remove('hidden');
+					window.tui.dialog.open('labelPurchaseModal');
 					loadingState.classList.remove('hidden');
 					errorState.classList.add('hidden');
 					contentState.classList.add('hidden');
@@ -893,7 +906,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 				}
 
 				function closeLabelPurchaseModal() {
-					document.getElementById('labelPurchaseModal').classList.add('hidden');
+					window.tui.dialog.close('labelPurchaseModal');
 				}
 			</script>
 		}
