@@ -6,6 +6,7 @@ package main
 
 //go:generate echo "Generating templ files..."
 //go:generate bash -c "export PATH=$$PATH:~/go/bin && templ generate -path ../views"
+//go:generate bash -c "export PATH=$$PATH:~/go/bin && templ generate -path ../components"
 //go:generate echo "templ files generated"
 
 //go:generate echo "CSS generation handled by Air pre-command (npm run build:css)"
