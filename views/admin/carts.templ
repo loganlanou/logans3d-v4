@@ -1,0 +1,360 @@
+package admin
+
+import (
+	"fmt"
+	"time"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/components/badge"
+)
+
+type CartMetrics struct {
+	TotalCarts      int64
+	GuestCarts      int64
+	RegisteredCarts int64
+	TotalValueCents int64
+	AvgValueCents   int64
+	AbandonedCount  int64
+	ActiveCount     int64
+}
+
+type CartListItem struct {
+	SessionID       string
+	UserID          string
+	CustomerEmail   string
+	CustomerName    string
+	CustomerAvatar  string
+	ItemCount       int64
+	CartValueCents  int64
+	CreatedAt       time.Time
+	LastActivity    time.Time
+	Status          string
+}
+
+templ CartsList(
+	c echo.Context,
+	metrics CartMetrics,
+	carts []CartListItem,
+	statusFilter string,
+	customerTypeFilter string,
+	searchQuery string,
+) {
+	@layout.AdminBase(c, "All Carts") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<div>
+					<h1 class="text-2xl font-bold text-white">Shopping Carts</h1>
+					<p class="text-sm text-gray-400 mt-1">Monitor all customer shopping carts</p>
+				</div>
+				<div class="flex gap-3">
+					<a href="/admin/abandoned-carts">
+						@button.Button(button.Props{
+							Variant: button.VariantOutline,
+							Size:    button.SizeSm,
+						}) {
+							View Abandoned Carts
+						}
+					</a>
+				</div>
+			</div>
+
+			<!-- Metrics Cards -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+				<!-- Total Carts -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-400">Total Carts</p>
+								<span class="text-2xl">🛒</span>
+							</div>
+							<p class="text-3xl font-bold text-white">
+								{ fmt.Sprintf("%d", metrics.TotalCarts) }
+							</p>
+							<p class="text-sm text-gray-400">
+								{ fmt.Sprintf("%d active • %d abandoned", metrics.ActiveCount, metrics.AbandonedCount) }
+							</p>
+						</div>
+					}
+				}
+
+				<!-- Guest vs Registered -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-400">Customer Type</p>
+								<span class="text-2xl">👥</span>
+							</div>
+							<div class="space-y-1">
+								<div class="flex justify-between items-center">
+									<span class="text-sm text-gray-400">Guest:</span>
+									<span class="text-lg font-bold text-white">{ fmt.Sprintf("%d", metrics.GuestCarts) }</span>
+								</div>
+								<div class="flex justify-between items-center">
+									<span class="text-sm text-gray-400">Registered:</span>
+									<span class="text-lg font-bold text-white">{ fmt.Sprintf("%d", metrics.RegisteredCarts) }</span>
+								</div>
+							</div>
+						</div>
+					}
+				}
+
+				<!-- Total Value -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-400">Total Value</p>
+								<span class="text-2xl">💰</span>
+							</div>
+							<p class="text-3xl font-bold text-white">
+								{ formatCartCents(metrics.TotalValueCents) }
+							</p>
+							<p class="text-sm text-gray-400">
+								Avg: { formatCartCents(metrics.AvgValueCents) }
+							</p>
+						</div>
+					}
+				}
+
+				<!-- Conversion Opportunity -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-400">Abandoned Value</p>
+								<span class="text-2xl">📉</span>
+							</div>
+							<p class="text-3xl font-bold text-orange-600">
+								{ fmt.Sprintf("%d%%", calculateAbandonmentPercentage(metrics.AbandonedCount, metrics.TotalCarts)) }
+							</p>
+							<p class="text-sm text-gray-400">
+								{ fmt.Sprintf("%d carts", metrics.AbandonedCount) }
+							</p>
+						</div>
+					}
+				}
+			</div>
+
+			<!-- Filters -->
+			<div class="mb-6 space-y-4">
+				<!-- Search -->
+				<div class="relative">
+					<input
+						type="text"
+						placeholder="Search by customer name, email, or session ID..."
+						value={ searchQuery }
+						class="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						onkeyup="debounceSearch(this.value)"
+					/>
+				</div>
+
+				<!-- Status and Type Filters -->
+				<div class="flex gap-4 flex-wrap items-center">
+					<a href="/admin/carts" class="px-4 py-2 text-sm text-gray-300 font-medium border border-gray-600 rounded-lg hover:bg-gray-700 hover:text-white transition-colors">All Carts</a>
+					<a href="/admin/carts?status=active" class={ getFilterClass(statusFilter, "active") }>Active</a>
+					<a href="/admin/carts?status=idle" class={ getFilterClass(statusFilter, "idle") }>Idle (15+ min)</a>
+					<a href="/admin/carts?status=at_risk" class={ getFilterClass(statusFilter, "at_risk") }>At-Risk (25+ min)</a>
+					<a href="/admin/carts?status=abandoned" class={ getFilterClass(statusFilter, "abandoned") }>Abandoned</a>
+					<span class="text-gray-300">|</span>
+					<a href="/admin/carts?customer_type=guest" class={ getFilterClass(customerTypeFilter, "guest") }>Guest Only</a>
+					<a href="/admin/carts?customer_type=registered" class={ getFilterClass(customerTypeFilter, "registered") }>Registered Only</a>
+				</div>
+			</div>
+
+			<script>
+				function updateQueryParam(key, value) {
+					const url = new URL(window.location);
+					if (value) {
+						url.searchParams.set(key, value);
+					} else {
+						url.searchParams.delete(key);
+					}
+					return url.toString();
+				}
+
+				let searchTimeout;
+				function debounceSearch(value) {
+					clearTimeout(searchTimeout);
+					searchTimeout = setTimeout(() => {
+						window.location.href = updateQueryParam('search', value);
+					}, 500);
+				}
+			</script>
+
+			<!-- Carts Table -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Shopping Carts ({ fmt.Sprintf("%d", len(carts)) })
+					}
+					@card.Description() {
+						Click on any cart to view details
+					}
+				}
+				@card.Content() {
+					<div class="overflow-x-auto">
+						@table.Table() {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() { Customer }
+									@table.Head() { Items }
+									@table.Head() { Value }
+									@table.Head() { Created }
+									@table.Head() { Last Activity }
+									@table.Head() { Status }
+								}
+							}
+							@table.Body() {
+								if len(carts) == 0 {
+									<tr>
+										<td colspan="6" class="text-center text-gray-400 py-8">
+											No carts found
+										</td>
+									</tr>
+								}
+								for _, cart := range carts {
+									<tr
+										onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/carts/%s'", getCartIdentifier(cart))} }
+										style="cursor: pointer;"
+										class="hover:bg-gray-50"
+									>
+										<td>
+											<div class="flex items-center gap-3">
+												if cart.CustomerAvatar != "" {
+													<img src={ cart.CustomerAvatar } alt="Avatar" class="w-8 h-8 rounded-full"/>
+												} else if cart.CustomerName != "" {
+													<div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+														<span class="text-white text-xs font-bold">{ cart.CustomerName[:1] }</span>
+													</div>
+												} else {
+													<div class="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+														<span class="text-gray-400 text-xs">👤</span>
+													</div>
+												}
+												<div>
+													<div class="font-medium text-white">
+														if cart.CustomerName != "" {
+															{ cart.CustomerName }
+														} else {
+															Guest
+														}
+													</div>
+													<div class="text-sm text-gray-400">
+														if cart.CustomerEmail != "" {
+															{ cart.CustomerEmail }
+														} else {
+															Session: { cart.SessionID[:8] }...
+														}
+													</div>
+												</div>
+											</div>
+										</td>
+										<td>
+											<span class="text-white">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+										</td>
+										<td>
+											<span class="font-medium text-white">{ formatCartCents(cart.CartValueCents) }</span>
+										</td>
+										<td>
+											<span class="text-sm text-gray-400">{ formatTimeAgoCart(cart.CreatedAt) }</span>
+										</td>
+										<td>
+											<span class="text-sm text-gray-400">{ formatTimeAgoCart(cart.LastActivity) }</span>
+										</td>
+										<td>
+											@renderStatusBadge(cart.Status)
+										</td>
+									</tr>
+								}
+							}
+						}
+					</div>
+				}
+			}
+		}
+	}
+}
+
+templ renderStatusBadge(status string) {
+	switch status {
+		case "active":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				Active
+			}
+		case "idle":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				Idle
+			}
+		case "at_risk":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				At-Risk
+			}
+		case "abandoned":
+			@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+				Abandoned
+			}
+		default:
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				{ status }
+			}
+	}
+}
+
+func formatCartCents(cents int64) string {
+	dollars := float64(cents) / 100.0
+	return fmt.Sprintf("$%.2f", dollars)
+}
+
+func formatTimeAgoCart(t time.Time) string {
+	duration := time.Since(t)
+
+	if duration < time.Minute {
+		return "Just now"
+	} else if duration < time.Hour {
+		minutes := int(duration.Minutes())
+		if minutes == 1 {
+			return "1 min ago"
+		}
+		return fmt.Sprintf("%d mins ago", minutes)
+	} else if duration < 24*time.Hour {
+		hours := int(duration.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	} else {
+		days := int(duration.Hours() / 24)
+		if days == 1 {
+			return "1 day ago"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	}
+}
+
+func getCartIdentifier(cart CartListItem) string {
+	if cart.UserID != "" {
+		return "user-" + cart.UserID
+	}
+	return "session-" + cart.SessionID
+}
+
+func calculateAbandonmentPercentage(abandoned, total int64) int64 {
+	if total == 0 {
+		return 0
+	}
+	return (abandoned * 100) / total
+}
+
+func getFilterClass(currentFilter, filterValue string) string {
+	baseClass := "px-4 py-2 text-sm font-medium border rounded-lg transition-colors"
+	if currentFilter == filterValue {
+		return baseClass + " bg-blue-600 border-blue-500 text-white"
+	}
+	return baseClass + " text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+}

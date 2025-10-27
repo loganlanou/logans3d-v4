@@ -1,0 +1,343 @@
+package admin
+
+import (
+	"fmt"
+	"time"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/components/badge"
+)
+
+type CartDetail struct {
+	SessionID       string
+	UserID          string
+	CustomerEmail   string
+	CustomerName    string
+	CustomerAvatar  string
+	ItemCount       int64
+	CartValueCents  int64
+	CreatedAt       time.Time
+	LastActivity    time.Time
+	Status          string
+}
+
+type CartItem struct {
+	ID               string
+	ProductID        string
+	ProductName      string
+	ProductImage     string
+	VariantSKU       string
+	VariantName      string
+	Quantity         int64
+	PriceCents       int64
+	LineTotalCents   int64
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
+}
+
+templ CartDetailPage(
+	c echo.Context,
+	cart CartDetail,
+	items []CartItem,
+) {
+	@layout.AdminBase(c, "Cart Details") {
+		@layout.AdminContainer() {
+			<!-- Back Button -->
+			<div class="mb-6">
+				<a href="/admin/carts" class="text-blue-600 hover:text-blue-800 flex items-center gap-2">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+					</svg>
+					Back to All Carts
+				</a>
+			</div>
+
+			<!-- Header -->
+			<div class="flex justify-between items-start mb-6">
+				<div>
+					<h1 class="text-2xl font-bold text-gray-900">Cart Details</h1>
+					<p class="text-sm text-gray-600 mt-1">
+						if cart.SessionID != "" {
+							Session: { cart.SessionID }
+						} else {
+							User ID: { cart.UserID }
+						}
+					</p>
+				</div>
+				<div class="flex gap-2">
+					@renderStatusBadgeDetail(cart.Status)
+				</div>
+			</div>
+
+			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+				<!-- Left Column - Customer Info & Cart Summary -->
+				<div class="lg:col-span-1 space-y-6">
+					<!-- Customer Information -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								Customer Information
+							}
+						}
+						@card.Content() {
+							<div class="space-y-4">
+								<!-- Avatar and Name -->
+								<div class="flex items-center gap-3">
+									if cart.CustomerAvatar != "" {
+										<img src={ cart.CustomerAvatar } alt="Avatar" class="w-16 h-16 rounded-full"/>
+									} else if cart.CustomerName != "" {
+										<div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+											<span class="text-white text-2xl font-bold">{ cart.CustomerName[:1] }</span>
+										</div>
+									} else {
+										<div class="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
+											<span class="text-gray-600 text-3xl">👤</span>
+										</div>
+									}
+									<div>
+										<div class="font-bold text-lg text-white">
+											if cart.CustomerName != "" {
+												{ cart.CustomerName }
+											} else {
+												Guest Customer
+											}
+										</div>
+										if cart.CustomerEmail != "" {
+											<a href={ templ.URL("mailto:" + cart.CustomerEmail) } class="text-sm text-blue-400 hover:underline" onclick="event.stopPropagation()">
+												{ cart.CustomerEmail }
+											</a>
+										}
+									</div>
+								</div>
+
+								<!-- Customer Type -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">Customer Type:</span>
+										<span class="text-sm font-medium text-white">
+											if cart.UserID != "" {
+												Registered User
+											} else {
+												Guest
+											}
+										</span>
+									</div>
+								</div>
+
+								<!-- Session/User ID -->
+								<div class="pt-1">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">
+											if cart.UserID != "" {
+												User ID:
+											} else {
+												Session ID:
+											}
+										</span>
+										<span class="text-xs font-mono text-gray-300">
+											if cart.UserID != "" {
+												{ cart.UserID[:16] }...
+											} else {
+												{ cart.SessionID[:16] }...
+											}
+										</span>
+									</div>
+								</div>
+
+								<!-- Actions -->
+								if cart.CustomerEmail != "" {
+									<div class="pt-4 border-t">
+										<a href={ templ.URL("/admin/carts/" + getCartIdentifierDetail(cart) + "/send-email") }>
+											@button.Button(button.Props{
+												Variant: button.VariantDefault,
+												Size:    button.SizeSm,
+											}) {
+												Send Reminder Email
+											}
+										</a>
+									</div>
+								}
+							</div>
+						}
+					}
+
+					<!-- Cart Summary -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								Cart Summary
+							}
+						}
+						@card.Content() {
+							<div class="space-y-3">
+								<div class="flex justify-between items-center">
+									<span class="text-sm text-gray-400">Total Items:</span>
+									<span class="text-lg font-bold text-white">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+								</div>
+								<div class="flex justify-between items-center pt-2 border-t border-gray-700">
+									<span class="text-sm text-gray-400">Cart Value:</span>
+									<span class="text-2xl font-bold text-white">{ formatDetailCents(cart.CartValueCents) }</span>
+								</div>
+								<div class="flex justify-between items-center pt-2 border-t border-gray-700">
+									<span class="text-sm text-gray-400">Created:</span>
+									<span class="text-sm text-gray-200">{ cart.CreatedAt.Format("Jan 2, 2006 3:04 PM") }</span>
+								</div>
+								<div class="flex justify-between items-center">
+									<span class="text-sm text-gray-400">Last Activity:</span>
+									<span class="text-sm text-gray-200">{ formatTimeAgoDetail(cart.LastActivity) }</span>
+								</div>
+							</div>
+						}
+					}
+				</div>
+
+				<!-- Right Column - Cart Items -->
+				<div class="lg:col-span-2">
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								Cart Items ({ fmt.Sprintf("%d", len(items)) })
+							}
+							@card.Description() {
+								Products currently in this shopping cart
+							}
+						}
+						@card.Content() {
+							<div class="overflow-x-auto">
+								@table.Table() {
+									@table.Header() {
+										@table.Row() {
+											@table.Head() { Product }
+											@table.Head() { Quantity }
+											@table.Head() { Price }
+											@table.Head() { Total }
+											@table.Head() { Added }
+										}
+									}
+									@table.Body() {
+										if len(items) == 0 {
+											<tr>
+												<td colspan="5" class="text-center text-gray-500 py-8">
+													No items in cart
+												</td>
+											</tr>
+										}
+										for _, item := range items {
+											<tr>
+												<td>
+													<div class="flex items-center gap-3">
+														if item.ProductImage != "" {
+															<img src={ "/public/images/products/" + item.ProductImage } alt={ item.ProductName } class="w-12 h-12 object-cover rounded border"/>
+														} else {
+															<div class="w-12 h-12 bg-gray-200 rounded border flex items-center justify-center">
+																<span class="text-gray-400 text-xs">No Image</span>
+															</div>
+														}
+														<div>
+															<div class="font-medium text-white">{ item.ProductName }</div>
+															if item.VariantName != "" {
+																<div class="text-xs text-gray-400">{ item.VariantName }</div>
+															}
+															if item.VariantSKU != "" {
+																<div class="text-xs text-gray-500">SKU: { item.VariantSKU }</div>
+															}
+														</div>
+													</div>
+												</td>
+												<td>
+													<span class="text-gray-200">{ fmt.Sprintf("%d", item.Quantity) }</span>
+												</td>
+												<td>
+													<span class="text-gray-200">{ formatDetailCents(item.PriceCents) }</span>
+												</td>
+												<td>
+													<span class="font-medium text-white">{ formatDetailCents(item.LineTotalCents) }</span>
+												</td>
+												<td>
+													<span class="text-sm text-gray-400">{ formatTimeAgoDetail(item.CreatedAt) }</span>
+												</td>
+											</tr>
+										}
+										<!-- Cart Total Row -->
+										if len(items) > 0 {
+											<tr class="border-t-2 border-gray-700">
+												<td colspan="3" class="text-right font-bold text-white">Cart Total:</td>
+												<td colspan="2" class="font-bold text-xl text-white">{ formatDetailCents(cart.CartValueCents) }</td>
+											</tr>
+										}
+									}
+								}
+							</div>
+						}
+					}
+				</div>
+			</div>
+		}
+	}
+}
+
+templ renderStatusBadgeDetail(status string) {
+	switch status {
+		case "active":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				✓ Active
+			}
+		case "idle":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				⏱ Idle
+			}
+		case "at_risk":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				⚠ At-Risk
+			}
+		case "abandoned":
+			@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+				✕ Abandoned
+			}
+		default:
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				{ status }
+			}
+	}
+}
+
+func formatDetailCents(cents int64) string {
+	dollars := float64(cents) / 100.0
+	return fmt.Sprintf("$%.2f", dollars)
+}
+
+func formatTimeAgoDetail(t time.Time) string {
+	duration := time.Since(t)
+
+	if duration < time.Minute {
+		return "Just now"
+	} else if duration < time.Hour {
+		minutes := int(duration.Minutes())
+		if minutes == 1 {
+			return "1 min ago"
+		}
+		return fmt.Sprintf("%d mins ago", minutes)
+	} else if duration < 24*time.Hour {
+		hours := int(duration.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	} else {
+		days := int(duration.Hours() / 24)
+		if days == 1 {
+			return "1 day ago"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	}
+}
+
+func getCartIdentifierDetail(cart CartDetail) string {
+	if cart.UserID != "" {
+		return "user-" + cart.UserID
+	}
+	return "session-" + cart.SessionID
+}

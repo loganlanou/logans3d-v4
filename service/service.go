@@ -262,6 +262,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/abandoned-carts/:id/notes", adminHandler.HandleUpdateCartNotes)
 	admin.POST("/abandoned-carts/:id/recover", adminHandler.HandleMarkCartRecovered)
 
+	// Cart management routes
+	cartHandler := handlers.NewCartHandler(s.storage)
+	admin.GET("/carts", cartHandler.HandleCartsList)
+	admin.GET("/carts/:id", cartHandler.HandleCartDetail)
+
 	// Shipping management routes
 	admin.GET("/shipping/boxes", adminHandler.HandleShippingTab)
 	admin.GET("/shipping/boxes/new", adminHandler.HandleBoxForm)
@@ -1500,6 +1505,13 @@ func (s *Service) handleAddToCart(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create session")
 	}
 
+	// Check if user is authenticated
+	user, isAuthenticated := auth.GetDBUser(c)
+	var userID string
+	if isAuthenticated {
+		userID = user.ID
+	}
+
 	ctx := c.Request().Context()
 
 	// Check if product exists
@@ -1510,8 +1522,8 @@ func (s *Service) handleAddToCart(c echo.Context) error {
 
 	// Check if item already exists in cart
 	existingItem, err := s.storage.Queries.GetExistingCartItem(ctx, db.GetExistingCartItemParams{
-		SessionID: sql.NullString{String: sessionID, Valid: true},
-		UserID:    sql.NullString{Valid: false}, // Handle user auth later
+		SessionID: sql.NullString{String: sessionID, Valid: !isAuthenticated},
+		UserID:    sql.NullString{String: userID, Valid: isAuthenticated},
 		ProductID: req.ProductID,
 	})
 
@@ -1530,8 +1542,8 @@ func (s *Service) handleAddToCart(c echo.Context) error {
 		itemID := uuid.New().String()
 		err = s.storage.Queries.AddToCart(ctx, db.AddToCartParams{
 			ID:        itemID,
-			SessionID: sql.NullString{String: sessionID, Valid: true},
-			UserID:    sql.NullString{Valid: false},
+			SessionID: sql.NullString{String: sessionID, Valid: !isAuthenticated},
+			UserID:    sql.NullString{String: userID, Valid: isAuthenticated},
 			ProductID: req.ProductID,
 			Quantity:  req.Quantity,
 		})
@@ -1640,18 +1652,30 @@ func (s *Service) handleGetCart(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create session")
 	}
 
+	// Check if user is authenticated
+	user, isAuthenticated := auth.GetDBUser(c)
+	var userID string
+	if isAuthenticated {
+		userID = user.ID
+	}
+
 	ctx := c.Request().Context()
 
 	// Get cart items
-	items, err := s.storage.Queries.GetCartBySession(ctx, sql.NullString{String: sessionID, Valid: true})
+	var items interface{}
+	if isAuthenticated {
+		items, err = s.storage.Queries.GetCartByUser(ctx, sql.NullString{String: userID, Valid: true})
+	} else {
+		items, err = s.storage.Queries.GetCartBySession(ctx, sql.NullString{String: sessionID, Valid: true})
+	}
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart items")
 	}
 
 	// Get cart total
 	total, err := s.storage.Queries.GetCartTotal(ctx, db.GetCartTotalParams{
-		SessionID: sql.NullString{String: sessionID, Valid: true},
-		UserID:    sql.NullString{Valid: false},
+		SessionID: sql.NullString{String: sessionID, Valid: !isAuthenticated},
+		UserID:    sql.NullString{String: userID, Valid: isAuthenticated},
 	})
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart total")

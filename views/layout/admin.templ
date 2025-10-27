@@ -12,13 +12,17 @@ func getAlpineData(c echo.Context) string {
 	path := c.Request().URL.Path
 	isDevPage := strings.HasPrefix(path, "/dev")
 	isShippingPage := strings.HasPrefix(path, "/admin/shipping")
+	isSalesPage := strings.HasPrefix(path, "/admin/orders") || strings.HasPrefix(path, "/admin/carts") || strings.HasPrefix(path, "/admin/abandoned-carts") || strings.HasPrefix(path, "/admin/quotes")
 	if isDevPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: true, mobileDevOpen: true, shippingOpen: false, mobileShippingOpen: false }"
+		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: true, mobileDevOpen: true, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false }"
 	}
 	if isShippingPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: true, mobileShippingOpen: true }"
+		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: true, mobileShippingOpen: true, salesOpen: false, mobileSalesOpen: false }"
 	}
-	return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false }"
+	if isSalesPage {
+		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: true, mobileSalesOpen: true }"
+	}
+	return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false }"
 }
 
 func getSubitemClass(c echo.Context, targetPath string) string {
@@ -187,26 +191,50 @@ templ AdminSidebar(c echo.Context) {
 					<span x-show="sidebarOpen" class="admin-sidebar-text">Categories</span>
 				</a>
 
-				<a href="/admin/orders" class="admin-sidebar-item" title="Orders">
+				<!-- Sales Section (Collapsible) -->
+				<div x-show="sidebarOpen">
+					<button
+						@click="salesOpen = !salesOpen"
+						class="admin-sidebar-item w-full"
+						title="Sales"
+					>
+						<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+						</svg>
+						<span class="admin-sidebar-text flex-1 text-left">Sales</span>
+						<svg
+							class="w-4 h-4 transition-transform duration-200"
+							:class="{ 'rotate-180': salesOpen }"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+						>
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+						</svg>
+					</button>
+
+					<!-- Sales Sub-items -->
+					<div x-show="salesOpen" x-collapse class="ml-6 mt-1 space-y-1">
+						<a href="/admin/orders" class={ getSubitemClass(c, "/admin/orders") } title="Orders">
+							<span class="admin-sidebar-text">Orders</span>
+						</a>
+						<a href="/admin/carts" class={ getSubitemClass(c, "/admin/carts") } title="All Carts">
+							<span class="admin-sidebar-text">All Carts</span>
+						</a>
+						<a href="/admin/abandoned-carts" class={ getSubitemClass(c, "/admin/abandoned-carts") } title="Abandoned Carts">
+							<span class="admin-sidebar-text">Abandoned Carts</span>
+						</a>
+						<a href="/admin/quotes" class={ getSubitemClass(c, "/admin/quotes") } title="Quotes">
+							<span class="admin-sidebar-text">Quotes</span>
+						</a>
+					</div>
+				</div>
+
+				<!-- Sales Icon Only (When Collapsed) -->
+				<a href="/admin/orders" class="admin-sidebar-item" title="Sales" x-show="!sidebarOpen">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Orders</span>
-				</a>
-
-				<a href="/admin/abandoned-carts" class="admin-sidebar-item" title="Abandoned Carts">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6"></path>
-					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Abandoned Carts</span>
-				</a>
-
-				<a href="/admin/quotes" class="admin-sidebar-item" title="Quotes">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Quotes</span>
 				</a>
 
 				<a href="/admin/events" class="admin-sidebar-item" title="Events">
