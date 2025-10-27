@@ -254,3 +254,101 @@ func RenderContactRequestEmail(data *ContactRequestData) (string, error) {
 	subject := fmt.Sprintf("New Contact Request - %s", data.Subject)
 	return WrapEmailContent(content.String(), subject)
 }
+
+// AbandonedCartItem represents an item in an abandoned cart
+type AbandonedCartItem struct {
+	ProductName  string
+	ProductImage string
+	Quantity     int64
+	UnitPrice    int64
+}
+
+// AbandonedCartData contains all data for abandoned cart recovery emails
+type AbandonedCartData struct {
+	CustomerName  string
+	CustomerEmail string
+	CartValue     int64
+	ItemCount     int64
+	Items         []AbandonedCartItem
+	TrackingToken string
+	AbandonedAt   string
+}
+
+// SendAbandonedCartRecoveryEmail sends a recovery email to a customer
+func (s *Service) SendAbandonedCartRecoveryEmail(data *AbandonedCartData, attemptType string) error {
+	var html string
+	var err error
+	var subject string
+
+	switch attemptType {
+	case "email_1hr":
+		html, err = RenderAbandonedCartRecovery1Hr(data)
+		subject = "You left something in your cart!"
+	case "email_24hr":
+		html, err = RenderAbandonedCartRecovery24Hr(data)
+		subject = "Still interested in your cart?"
+	case "email_72hr":
+		html, err = RenderAbandonedCartRecovery72Hr(data)
+		subject = "Last chance to complete your order!"
+	default:
+		return fmt.Errorf("unknown attempt type: %s", attemptType)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	email := &Email{
+		To:      []string{data.CustomerEmail},
+		Subject: subject,
+		Body:    html,
+		IsHTML:  true,
+	}
+
+	return s.Send(email)
+}
+
+// RenderAbandonedCartRecovery1Hr renders the 1-hour recovery email
+func RenderAbandonedCartRecovery1Hr(data *AbandonedCartData) (string, error) {
+	tmpl := template.Must(template.New("abandoned_1hr").Funcs(template.FuncMap{
+		"FormatCents": FormatCents,
+		"ne":          func(a, b int64) bool { return a != b },
+	}).Parse(abandonedCartRecovery1HrTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render 1hr recovery email: %w", err)
+	}
+
+	return WrapEmailContent(content.String(), "You left something in your cart!")
+}
+
+// RenderAbandonedCartRecovery24Hr renders the 24-hour recovery email
+func RenderAbandonedCartRecovery24Hr(data *AbandonedCartData) (string, error) {
+	tmpl := template.Must(template.New("abandoned_24hr").Funcs(template.FuncMap{
+		"FormatCents": FormatCents,
+		"ne":          func(a, b int64) bool { return a != b },
+	}).Parse(abandonedCartRecovery24HrTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render 24hr recovery email: %w", err)
+	}
+
+	return WrapEmailContent(content.String(), "Still interested in your cart?")
+}
+
+// RenderAbandonedCartRecovery72Hr renders the 72-hour recovery email
+func RenderAbandonedCartRecovery72Hr(data *AbandonedCartData) (string, error) {
+	tmpl := template.Must(template.New("abandoned_72hr").Funcs(template.FuncMap{
+		"FormatCents": FormatCents,
+		"ne":          func(a, b int64) bool { return a != b },
+	}).Parse(abandonedCartRecovery72HrTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render 72hr recovery email: %w", err)
+	}
+
+	return WrapEmailContent(content.String(), "Last chance to complete your order!")
+}

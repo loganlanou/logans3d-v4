@@ -62,6 +62,7 @@ templ AdminBase(c echo.Context, title string) {
 
 			<!-- templUI dialog component -->
 			@dialog.Script()
+			<script defer nonce={ templ.GetNonce(ctx) } src="/public/js/chart.min.js"></script>
 		</head>
 		<body class="admin-root" x-data={ getAlpineData(c) }>
 			<!-- Sidebar -->
@@ -191,6 +192,14 @@ templ AdminSidebar(c echo.Context) {
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
 					</svg>
 					<span x-show="sidebarOpen" class="admin-sidebar-text">Orders</span>
+				</a>
+
+				<a href="/admin/abandoned-carts" class="admin-sidebar-item" title="Abandoned Carts">
+					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6"></path>
+					</svg>
+					<span x-show="sidebarOpen" class="admin-sidebar-text">Abandoned Carts</span>
 				</a>
 
 				<a href="/admin/quotes" class="admin-sidebar-item" title="Quotes">
@@ -411,6 +420,14 @@ templ AdminSidebar(c echo.Context) {
 					</svg>
 					<span class="admin-sidebar-text">Orders</span>
 				</a>
+
+			<a href="/admin/abandoned-carts" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
+				<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6"></path>
+				</svg>
+				<span class="admin-sidebar-text">Abandoned Carts</span>
+			</a>
 
 				<a href="/admin/quotes" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">

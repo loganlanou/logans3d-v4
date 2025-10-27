@@ -21,6 +21,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
+	"github.com/loganlanou/logans3d-v4/internal/jobs"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -38,13 +39,15 @@ import (
 
 
 type Service struct {
-	storage         *storage.Storage
-	config          *Config
-	paymentHandler  *handlers.PaymentHandler
-	shippingHandler *handlers.ShippingHandler
-	shippingService *shipping.ShippingService
-	emailService    *email.Service
-	authHandler     *handlers.AuthHandler
+	storage                   *storage.Storage
+	config                    *Config
+	paymentHandler            *handlers.PaymentHandler
+	shippingHandler           *handlers.ShippingHandler
+	shippingService           *shipping.ShippingService
+	emailService              *email.Service
+	authHandler               *handlers.AuthHandler
+	abandonedCartDetector     *jobs.AbandonedCartDetector
+	abandonedCartEmailSender  *jobs.AbandonedCartEmailSender
 }
 
 func New(storage *storage.Storage, config *Config) *Service {
@@ -73,14 +76,26 @@ func New(storage *storage.Storage, config *Config) *Service {
 	// Initialize email service
 	emailService := email.NewService()
 
+	// Initialize abandoned cart detector
+	abandonedCartDetector := jobs.NewAbandonedCartDetector(storage)
+	// Start the detector
+	abandonedCartDetector.Start(ctx)
+
+	// Initialize abandoned cart email sender
+	abandonedCartEmailSender := jobs.NewAbandonedCartEmailSender(storage, emailService)
+	// Start the email sender
+	abandonedCartEmailSender.Start(ctx)
+
 	return &Service{
-		storage:         storage,
-		config:          config,
-		paymentHandler:  handlers.NewPaymentHandler(storage.Queries, emailService),
-		shippingHandler: shippingHandler,
-		shippingService: shippingService,
-		emailService:    emailService,
-		authHandler:     handlers.NewAuthHandler(),
+		storage:                  storage,
+		config:                   config,
+		paymentHandler:           handlers.NewPaymentHandler(storage.Queries, emailService),
+		shippingHandler:          shippingHandler,
+		shippingService:          shippingService,
+		emailService:             emailService,
+		authHandler:              handlers.NewAuthHandler(),
+		abandonedCartDetector:    abandonedCartDetector,
+		abandonedCartEmailSender: abandonedCartEmailSender,
 	}
 }
 
@@ -181,6 +196,10 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Admin routes - protected with RequireAdmin middleware
 	// Initialize admin handler with all required services
 	adminHandler := handlers.NewAdminHandler(s.storage, s.shippingService, s.emailService)
+
+	// Cart recovery email tracking - uses adminHandler but no auth required (customers click from email)
+	withAuth.GET("/cart/recover", adminHandler.HandleRecoveryEmailTracking)
+
 	admin := withAuth.Group("/admin", auth.RequireAdmin())
 	admin.GET("", adminHandler.HandleAdminDashboard)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
@@ -234,6 +253,14 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/contacts/:id/priority", adminHandler.HandleUpdateContactPriority)
 	admin.POST("/contacts/:id/notes", adminHandler.HandleAddContactNotes)
 	admin.POST("/contacts/:id/notes/delete", adminHandler.HandleDeleteContactNotes)
+
+	// Abandoned Carts management routes
+	admin.GET("/abandoned-carts", adminHandler.HandleAbandonedCartsDashboard)
+	admin.GET("/abandoned-carts/export", adminHandler.HandleExportAbandonedCarts)
+	admin.GET("/abandoned-carts/:id", adminHandler.HandleAbandonedCartDetail)
+	admin.POST("/abandoned-carts/:id/send-email", adminHandler.HandleSendRecoveryEmail)
+	admin.POST("/abandoned-carts/:id/notes", adminHandler.HandleUpdateCartNotes)
+	admin.POST("/abandoned-carts/:id/recover", adminHandler.HandleMarkCartRecovered)
 
 	// Shipping management routes
 	admin.GET("/shipping/boxes", adminHandler.HandleShippingTab)

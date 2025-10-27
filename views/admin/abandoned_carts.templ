@@ -1,0 +1,571 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/components/badge"
+	"github.com/loganlanou/logans3d-v4/components/chart"
+)
+
+type AbandonedCartMetrics struct {
+	TotalAbandoned24h    int64
+	AbandonmentRate      float64
+	LostRevenueCents     int64
+	RecoveryRate         float64
+	TotalRecovered       int64
+	RecoveredValueCents  int64
+}
+
+type AbandonedCartWithDetails struct {
+	Cart          db.AbandonedCart
+	ItemCount     int64
+	AttemptCount  int64
+	TimeAgo       string
+}
+
+type ChartData struct {
+	Labels   []string
+	Values   []float64
+}
+
+type RecoveryEmailStats struct {
+	AttemptType      string
+	TotalSent        int64
+	OpenedCount      int64
+	ClickedCount     int64
+	OpenRatePercent  float64
+	ClickRatePercent float64
+}
+
+type ProductAbandonmentData struct {
+	ProductID    string
+	ProductName  string
+	Count        int64
+	TotalValue   int64
+}
+
+templ AbandonedCartsDashboard(
+	c echo.Context,
+	metrics AbandonedCartMetrics,
+	carts []AbandonedCartWithDetails,
+	trendData ChartData,
+	topProducts []ProductAbandonmentData,
+	emailStats []RecoveryEmailStats,
+	hourlyData ChartData,
+) {
+	@layout.AdminBase(c, "Abandoned Carts") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<div>
+					<h1 class="text-2xl font-bold text-gray-900">Abandoned Cart Analytics</h1>
+					<p class="text-sm text-gray-600 mt-1">Monitor and recover abandoned shopping carts</p>
+				</div>
+				<div class="flex gap-3">
+					<a href="/admin/abandoned-carts/export">
+						@button.Button(button.Props{
+							Variant: button.VariantOutline,
+							Size:    button.SizeSm,
+						}) {
+							📊 Export CSV
+						}
+					</a>
+					<a href="/admin/abandoned-carts/settings">
+						@button.Button(button.Props{
+							Variant: button.VariantSecondary,
+							Size:    button.SizeSm,
+						}) {
+							⚙️ Settings
+						}
+					</a>
+				</div>
+			</div>
+
+			<!-- Key Metrics Cards -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+				<!-- Total Abandoned (24h) -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-600">Abandoned (24h)</p>
+								<span class="text-2xl">🛒</span>
+							</div>
+							<p class="text-3xl font-bold text-gray-900">
+								{ fmt.Sprintf("%d", metrics.TotalAbandoned24h) }
+							</p>
+							<p class="text-xs text-gray-500">
+								Last 24 hours
+							</p>
+						</div>
+					}
+				}
+
+				<!-- Abandonment Rate -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-600">Abandonment Rate</p>
+								<span class="text-2xl">📉</span>
+							</div>
+							<p class="text-3xl font-bold text-gray-900">
+								{ fmt.Sprintf("%.1f%%", metrics.AbandonmentRate) }
+							</p>
+							<p class="text-xs text-gray-500">
+								Industry avg: 69.9%
+							</p>
+						</div>
+					}
+				}
+
+				<!-- Lost Revenue -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-600">Lost Revenue</p>
+								<span class="text-2xl">💰</span>
+							</div>
+							<p class="text-3xl font-bold text-red-600">
+								${ fmt.Sprintf("%.2f", float64(metrics.LostRevenueCents)/100) }
+							</p>
+							<p class="text-xs text-gray-500">
+								Active abandoned carts
+							</p>
+						</div>
+					}
+				}
+
+				<!-- Recovery Rate -->
+				@card.Card() {
+					@card.Content() {
+						<div class="space-y-2">
+							<div class="flex items-center justify-between">
+								<p class="text-sm font-medium text-gray-600">Recovery Rate</p>
+								<span class="text-2xl">✅</span>
+							</div>
+							<p class="text-3xl font-bold text-green-600">
+								{ fmt.Sprintf("%.1f%%", metrics.RecoveryRate) }
+							</p>
+							<p class="text-xs text-gray-500">
+								{ fmt.Sprintf("%d carts / $%.2f", metrics.TotalRecovered, float64(metrics.RecoveredValueCents)/100) }
+							</p>
+						</div>
+					}
+				}
+			</div>
+
+			<!-- Charts Section -->
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+				<!-- Abandonment Trend -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Abandonment Trend (Last 7 Days)
+						}
+					}
+					@card.Content() {
+						@chart.Chart(chart.Props{
+							Variant:     chart.VariantLine,
+							ShowYGrid:   true,
+							ShowXLabels: true,
+							ShowLegend:  false,
+							Data: chart.Data{
+								Labels: trendData.Labels,
+								Datasets: []chart.Dataset{
+									{
+										Data:            trendData.Values,
+										Label:           "Abandoned Carts",
+										BackgroundColor: "rgba(239, 68, 68, 0.1)",
+										BorderColor:     "rgb(239, 68, 68)",
+										Tension:         0.4,
+									},
+								},
+							},
+						})
+					}
+				}
+
+				<!-- Top Abandoned Products -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Top Abandoned Products
+						}
+					}
+					@card.Content() {
+						@chart.Chart(chart.Props{
+							Variant:     chart.VariantBar,
+							Horizontal:  true,
+							ShowXGrid:   true,
+							ShowYLabels: true,
+							ShowLegend:  false,
+							Data: chart.Data{
+								Labels: extractProductNames(topProducts),
+								Datasets: []chart.Dataset{
+									{
+										Data:            extractProductCounts(topProducts),
+										Label:           "Times Abandoned",
+										BackgroundColor: "rgba(59, 130, 246, 0.7)",
+										BorderColor:     "rgb(59, 130, 246)",
+									},
+								},
+							},
+						})
+					}
+				}
+			</div>
+
+			<!-- Email Recovery Performance -->
+			if len(emailStats) > 0 {
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Email Recovery Performance
+						}
+						@card.Description() {
+							Performance metrics for automated recovery emails
+						}
+					}
+					@card.Content() {
+						<div class="overflow-x-auto">
+							@table.Table() {
+								@table.Header() {
+									@table.Row() {
+										@table.Head() { Email Type }
+										@table.Head() { Sent }
+										@table.Head() { Opened }
+										@table.Head() { Clicked }
+										@table.Head() { Open Rate }
+										@table.Head() { Click Rate }
+									}
+								}
+								@table.Body() {
+									for _, stat := range emailStats {
+										@table.Row() {
+											@table.Cell() {
+												<span class="font-medium">{ formatAttemptType(stat.AttemptType) }</span>
+											}
+											@table.Cell() {
+												<span class="text-gray-900">{ fmt.Sprintf("%d", stat.TotalSent) }</span>
+											}
+											@table.Cell() {
+												<span class="text-gray-900">{ fmt.Sprintf("%d", stat.OpenedCount) }</span>
+											}
+											@table.Cell() {
+												<span class="text-gray-900">{ fmt.Sprintf("%d", stat.ClickedCount) }</span>
+											}
+											@table.Cell() {
+												<span class="font-medium text-blue-600">{ fmt.Sprintf("%.1f%%", stat.OpenRatePercent) }</span>
+											}
+											@table.Cell() {
+												<span class="font-medium text-green-600">{ fmt.Sprintf("%.1f%%", stat.ClickRatePercent) }</span>
+											}
+										}
+									}
+								}
+							}
+						</div>
+					}
+				}
+			}
+
+			<!-- Filters -->
+			<div class="mb-6 space-y-4 mt-6">
+				<!-- Search -->
+				<div class="relative">
+					<input
+						type="text"
+						placeholder="Search by customer name or email..."
+						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						onkeyup="debounceSearch(this.value)"
+					/>
+				</div>
+
+				<!-- Status Filters -->
+				<div class="flex gap-4 flex-wrap items-center">
+					<a href="/admin/abandoned-carts" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors">All Carts</a>
+					<a href="/admin/abandoned-carts?status=active" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 transition-colors">Active</a>
+					<a href="/admin/abandoned-carts?status=contacted" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Contacted</a>
+					<a href="/admin/abandoned-carts?status=recovered" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-green-100 hover:border-green-400 hover:text-green-900 transition-colors">Recovered</a>
+					<a href="/admin/abandoned-carts?high_value=true" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">High Value ($100+)</a>
+				</div>
+			</div>
+
+			<script>
+				function updateQueryParam(key, value) {
+					const url = new URL(window.location);
+					if (value) {
+						url.searchParams.set(key, value);
+					} else {
+						url.searchParams.delete(key);
+					}
+					return url.toString();
+				}
+
+				let searchTimeout;
+				function debounceSearch(value) {
+					clearTimeout(searchTimeout);
+					searchTimeout = setTimeout(() => {
+						window.location.href = updateQueryParam('search', value);
+					}, 500);
+				}
+			</script>
+
+			<!-- Abandoned Carts Table -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Recent Abandoned Carts ({ fmt.Sprintf("%d", len(carts)) })
+					}
+					@card.Description() {
+						Carts abandoned in the last 24 hours
+					}
+				}
+				@card.Content() {
+					<div class="overflow-x-auto">
+						@table.Table() {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() { Customer }
+									@table.Head() { Cart Value }
+									@table.Head() { Items }
+									@table.Head() { Abandoned }
+									@table.Head() { Status }
+									@table.Head() { Actions }
+								}
+							}
+							@table.Body() {
+								if len(carts) == 0 {
+									<tr>
+										<td colspan="6" class="text-center text-gray-500 py-8">
+											No abandoned carts found
+										</td>
+									</tr>
+								}
+								for _, cartDetail := range carts {
+									<tr class="hover:bg-gray-50">
+										<td>
+											<div class="font-medium text-gray-900">
+												{ getCartCustomerName(cartDetail.Cart) }
+											</div>
+											<div class="text-sm text-gray-500">
+												{ getCartCustomerEmail(cartDetail.Cart) }
+											</div>
+										</td>
+										<td>
+											<div class="font-semibold text-gray-900">
+												${ fmt.Sprintf("%.2f", float64(cartDetail.Cart.CartValueCents)/100) }
+											</div>
+										</td>
+										<td>
+											<span class="text-gray-900">
+												{ fmt.Sprintf("%d", cartDetail.Cart.ItemCount) }
+											</span>
+										</td>
+										<td>
+											<div class="text-sm text-gray-600">
+												{ cartDetail.TimeAgo }
+											</div>
+										</td>
+										<td>
+											@AbandonedCartStatusBadge(cartDetail.Cart.Status.String)
+										</td>
+										<td>
+											<div class="flex gap-2">
+												<a href={ templ.URL(fmt.Sprintf("/admin/abandoned-carts/%s", cartDetail.Cart.ID)) }>
+													@button.Button(button.Props{
+														Variant: button.VariantOutline,
+														Size:    button.SizeSm,
+													}) {
+														View
+													}
+												</a>
+												if cartDetail.Cart.Status.String == "active" {
+													<button
+														onclick={ templ.ComponentScript{Call: fmt.Sprintf("sendRecoveryEmail('%s')", cartDetail.Cart.ID)} }
+														class="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
+													>
+														Send Email
+													</button>
+												}
+											</div>
+										</td>
+									</tr>
+								}
+							}
+						}
+					</div>
+				}
+			}
+
+			<!-- Actionable Insights -->
+			<div class="mt-6">
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							💡 Actionable Insights & Next Steps
+						}
+					}
+					@card.Content() {
+						<div class="space-y-3">
+							if metrics.AbandonmentRate > 70 {
+								<div class="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+									<span class="text-xl">⚠️</span>
+									<div>
+										<p class="font-medium text-red-900">High abandonment rate detected</p>
+										<p class="text-sm text-red-700 mt-1">Your abandonment rate ({ fmt.Sprintf("%.1f%%", metrics.AbandonmentRate) }) is above industry average. Consider reviewing your checkout process and shipping costs.</p>
+									</div>
+								</div>
+							}
+							if metrics.RecoveryRate < 10 {
+								<div class="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+									<span class="text-xl">📧</span>
+									<div>
+										<p class="font-medium text-yellow-900">Low recovery rate</p>
+										<p class="text-sm text-yellow-700 mt-1">Recovery rate is below 10%. Consider improving email copy, adding incentives, or adjusting send timing.</p>
+									</div>
+								</div>
+							}
+							if metrics.LostRevenueCents > 100000 {
+								<div class="flex items-start gap-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+									<span class="text-xl">💎</span>
+									<div>
+										<p class="font-medium text-purple-900">High-value carts need attention</p>
+										<p class="text-sm text-purple-700 mt-1">You have ${ fmt.Sprintf("%.2f", float64(metrics.LostRevenueCents)/100) } in abandoned carts. Prioritize manual outreach to high-value customers.</p>
+									</div>
+								</div>
+							}
+							<div class="flex items-start gap-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+								<span class="text-xl">✨</span>
+								<div>
+									<p class="font-medium text-green-900">Recommended actions</p>
+									<ul class="text-sm text-green-700 mt-1 list-disc list-inside space-y-1">
+										<li>Review top abandoned products for pricing or description issues</li>
+										<li>Check if shipping costs are being shown too late in checkout</li>
+										<li>Test different email subject lines to improve open rates</li>
+										<li>Consider offering time-limited discounts for high-value abandoned carts</li>
+									</ul>
+								</div>
+							</div>
+						</div>
+					}
+				}
+			</div>
+
+			<script>
+				function sendRecoveryEmail(cartId) {
+					if (confirm('Send recovery email to this customer?')) {
+						fetch(`/admin/abandoned-carts/${cartId}/send-email`, {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+							},
+						})
+						.then(response => response.json())
+						.then(data => {
+							if (data.success) {
+								alert('Recovery email sent successfully!');
+								window.location.reload();
+							} else {
+								alert('Failed to send email: ' + data.error);
+							}
+						})
+						.catch(error => {
+							alert('Error sending email: ' + error.message);
+						});
+					}
+				}
+			</script>
+
+			<!-- Include chart script -->
+			@chart.Script()
+		}
+	}
+}
+
+templ AbandonedCartStatusBadge(status string) {
+	switch status {
+		case "active":
+			@badge.Badge(badge.Props{
+				Variant: badge.VariantDefault,
+			}) {
+				Active
+			}
+		case "contacted":
+			@badge.Badge(badge.Props{
+				Variant: badge.VariantSecondary,
+			}) {
+				Contacted
+			}
+		case "recovered":
+			@badge.Badge(badge.Props{
+				Variant: badge.VariantDefault,
+			}) {
+				Recovered
+			}
+		case "expired":
+			@badge.Badge(badge.Props{
+				Variant: badge.VariantDestructive,
+			}) {
+				Expired
+			}
+		default:
+			@badge.Badge(badge.Props{
+				Variant: badge.VariantOutline,
+			}) {
+				{ status }
+			}
+	}
+}
+
+func getCartCustomerName(cart db.AbandonedCart) string {
+	if cart.CustomerName.Valid {
+		return cart.CustomerName.String
+	}
+	return "Guest"
+}
+
+func getCartCustomerEmail(cart db.AbandonedCart) string {
+	if cart.CustomerEmail.Valid {
+		return cart.CustomerEmail.String
+	}
+	return "No email"
+}
+
+func formatAttemptType(attemptType string) string {
+	switch attemptType {
+	case "email_1hr":
+		return "1 Hour Email"
+	case "email_24hr":
+		return "24 Hour Email"
+	case "email_72hr":
+		return "72 Hour Email"
+	case "manual":
+		return "Manual Outreach"
+	default:
+		return attemptType
+	}
+}
+
+func extractProductNames(products []ProductAbandonmentData) []string {
+	names := make([]string, len(products))
+	for i, p := range products {
+		names[i] = p.ProductName
+	}
+	return names
+}
+
+func extractProductCounts(products []ProductAbandonmentData) []float64 {
+	counts := make([]float64, len(products))
+	for i, p := range products {
+		counts[i] = float64(p.Count)
+	}
+	return counts
+}

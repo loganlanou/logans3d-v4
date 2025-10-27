@@ -2099,7 +2099,24 @@ func (h *AdminHandler) HandleEmailPreview(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to render contact request email template: "+err.Error())
 	}
 
-	return Render(c, admin.EmailPreview(c, customerHTML, adminHTML, contactHTML))
+	// Create sample abandoned cart data and render all three recovery emails
+	abandonedCartData := createSampleAbandonedCartData()
+	abandonedCart1HrHTML, err := email.RenderAbandonedCartRecovery1Hr(abandonedCartData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render 1hr abandoned cart email: "+err.Error())
+	}
+
+	abandonedCart24HrHTML, err := email.RenderAbandonedCartRecovery24Hr(abandonedCartData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render 24hr abandoned cart email: "+err.Error())
+	}
+
+	abandonedCart72HrHTML, err := email.RenderAbandonedCartRecovery72Hr(abandonedCartData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render 72hr abandoned cart email: "+err.Error())
+	}
+
+	return Render(c, admin.EmailPreview(c, customerHTML, adminHTML, contactHTML, abandonedCart1HrHTML, abandonedCart24HrHTML, abandonedCart72HrHTML))
 }
 
 func (h *AdminHandler) HandleEmailPreviewCustomer(c echo.Context) error {
@@ -2195,6 +2212,32 @@ func createSampleContactRequestData() *email.ContactRequestData {
 	}
 }
 
+// createSampleAbandonedCartData creates sample abandoned cart data for email preview
+func createSampleAbandonedCartData() *email.AbandonedCartData {
+	return &email.AbandonedCartData{
+		CustomerName:  "Sarah Johnson",
+		CustomerEmail: "sarah.j@example.com",
+		CartValue:     8497,  // $84.97
+		ItemCount:     3,
+		Items: []email.AbandonedCartItem{
+			{
+				ProductName:  "Pachycephalosaurus",
+				ProductImage: "pachycephalosaurus.jpg",
+				Quantity:     2,
+				UnitPrice:    2999, // $29.99
+			},
+			{
+				ProductName:  "Crystal Dragon with Wings",
+				ProductImage: "crystal_dragon_with_wings.jpeg",
+				Quantity:     1,
+				UnitPrice:    2499, // $24.99
+			},
+		},
+		TrackingToken: "sample-tracking-token-12345",
+		AbandonedAt:   "October 27, 2025 at 2:15 PM",
+	}
+}
+
 func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 	var request struct {
 		Email string `json:"email"`
@@ -2213,7 +2256,15 @@ func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 		})
 	}
 
-	if request.Type != "customer" && request.Type != "admin" && request.Type != "contact" {
+	validTypes := []string{"customer", "admin", "contact", "abandoned-1hr", "abandoned-24hr", "abandoned-72hr"}
+	isValid := false
+	for _, t := range validTypes {
+		if request.Type == t {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "Invalid email type",
 		})
@@ -2221,12 +2272,30 @@ func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 
 	// Send the appropriate email
 	var err error
-	if request.Type == "contact" {
+	switch request.Type {
+	case "contact":
 		// Create sample contact request data
 		contactData := createSampleContactRequestData()
 		contactData.Email = request.Email
 		err = h.emailService.SendContactRequestNotification(contactData)
-	} else {
+
+	case "abandoned-1hr", "abandoned-24hr", "abandoned-72hr":
+		// Create sample abandoned cart data
+		abandonedCartData := createSampleAbandonedCartData()
+		abandonedCartData.CustomerEmail = request.Email
+
+		var attemptType string
+		switch request.Type {
+		case "abandoned-1hr":
+			attemptType = "email_1hr"
+		case "abandoned-24hr":
+			attemptType = "email_24hr"
+		case "abandoned-72hr":
+			attemptType = "email_72hr"
+		}
+		err = h.emailService.SendAbandonedCartRecoveryEmail(abandonedCartData, attemptType)
+
+	default:
 		// Create sample order data
 		sampleData := createSampleOrderData()
 		sampleData.CustomerEmail = request.Email

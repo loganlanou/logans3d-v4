@@ -5,7 +5,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contactHTML string) {
+templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contactHTML string, abandonedCart1HrHTML string, abandonedCart24HrHTML string, abandonedCart72HrHTML string) {
 	@layout.AdminBase(c, "Email Preview") {
 		@layout.AdminContainer() {
 			<!-- Header -->
@@ -48,6 +48,27 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 									class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
 								>
 									Contact Request Email
+								</button>
+								<button
+									onclick="showEmail('abandoned-1hr')"
+									id="btn-abandoned-1hr"
+									class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+								>
+									Abandoned Cart (1hr)
+								</button>
+								<button
+									onclick="showEmail('abandoned-24hr')"
+									id="btn-abandoned-24hr"
+									class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+								>
+									Abandoned Cart (24hr)
+								</button>
+								<button
+									onclick="showEmail('abandoned-72hr')"
+									id="btn-abandoned-72hr"
+									class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+								>
+									Abandoned Cart (72hr)
 								</button>
 							</div>
 							<button
@@ -112,6 +133,54 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 								title="Contact Request Email Preview"
 							></iframe>
 						</div>
+
+						<div id="email-abandoned-1hr" class="email-preview hidden">
+							<div class="bg-gray-100 px-4 py-2 border-b">
+								<div class="text-sm text-gray-600">
+									<strong>To:</strong> customer@example.com<br/>
+									<strong>From:</strong> prints@logans3dcreations.com<br/>
+									<strong>Subject:</strong> You left something in your cart!
+								</div>
+							</div>
+							<iframe
+								srcdoc={ abandonedCart1HrHTML }
+								class="w-full"
+								style="height: 800px; border: none;"
+								title="Abandoned Cart 1hr Email Preview"
+							></iframe>
+						</div>
+
+						<div id="email-abandoned-24hr" class="email-preview hidden">
+							<div class="bg-gray-100 px-4 py-2 border-b">
+								<div class="text-sm text-gray-600">
+									<strong>To:</strong> customer@example.com<br/>
+									<strong>From:</strong> prints@logans3dcreations.com<br/>
+									<strong>Subject:</strong> Still interested in your cart?
+								</div>
+							</div>
+							<iframe
+								srcdoc={ abandonedCart24HrHTML }
+								class="w-full"
+								style="height: 800px; border: none;"
+								title="Abandoned Cart 24hr Email Preview"
+							></iframe>
+						</div>
+
+						<div id="email-abandoned-72hr" class="email-preview hidden">
+							<div class="bg-gray-100 px-4 py-2 border-b">
+								<div class="text-sm text-gray-600">
+									<strong>To:</strong> customer@example.com<br/>
+									<strong>From:</strong> prints@logans3dcreations.com<br/>
+									<strong>Subject:</strong> Last chance to complete your order!
+								</div>
+							</div>
+							<iframe
+								srcdoc={ abandonedCart72HrHTML }
+								class="w-full"
+								style="height: 800px; border: none;"
+								title="Abandoned Cart 72hr Email Preview"
+							></iframe>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -146,6 +215,9 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 									<option value="customer">Customer Order Confirmation</option>
 									<option value="admin">Admin Order Notification</option>
 									<option value="contact">Contact Request Notification</option>
+									<option value="abandoned-1hr">Abandoned Cart Recovery (1hr)</option>
+									<option value="abandoned-24hr">Abandoned Cart Recovery (24hr)</option>
+									<option value="abandoned-72hr">Abandoned Cart Recovery (72hr)</option>
 								</select>
 							</div>
 						</div>

@@ -192,6 +192,179 @@ const adminOrderContentTemplate = `
 </div>
 `
 
+// abandonedCartRecovery1HrTemplate is for the first recovery email (1 hour after abandonment)
+const abandonedCartRecovery1HrTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <h1 style="color: #E85D5D; margin: 0; font-size: 28px;">You Left Something Behind!</h1>
+    <p style="font-size: 18px; color: #666; margin: 10px 0;">We saved your cart for you</p>
+</div>
+
+<div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #E85D5D; margin-bottom: 25px; text-align: center;">
+    <p style="font-size: 16px; margin: 5px 0;">Hi {{.CustomerName}},</p>
+    <p style="font-size: 16px; margin: 15px 0;">We noticed you left {{.ItemCount}} item{{if ne .ItemCount 1}}s{{end}} in your cart. Don't worry - we've saved everything for you!</p>
+</div>
+
+<h2 style="color: #555; font-size: 20px; margin-top: 30px;">Your Cart</h2>
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+    <thead>
+        <tr style="background-color: #E85D5D;">
+            <th style="color: white; padding: 12px; text-align: left; font-weight: 600;">Product</th>
+            <th style="color: white; padding: 12px; text-align: center; font-weight: 600;">Quantity</th>
+            <th style="color: white; padding: 12px; text-align: right; font-weight: 600;">Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Items}}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    {{if .ProductImage}}
+                    <img src="https://www.logans3dcreations.com/public/images/products/{{.ProductImage}}" alt="{{.ProductName}}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                    {{end}}
+                    <span>{{.ProductName}}</span>
+                </div>
+            </td>
+            <td style="padding: 12px; text-align: center;">{{.Quantity}}</td>
+            <td style="padding: 12px; text-align: right;">{{FormatCents .UnitPrice}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #ddd;">
+    <div style="display: flex; justify-content: space-between; padding: 15px 0 0 0; font-size: 20px; font-weight: bold; color: #E85D5D;">
+        <span>Cart Total:</span>
+        <span>{{FormatCents .CartValue}}</span>
+    </div>
+</div>
+
+<div style="text-align: center; margin: 40px 0;">
+    <a href="https://www.logans3dcreations.com/cart?token={{.TrackingToken}}" style="display: inline-block; padding: 16px 40px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 18px;">Complete Your Order</a>
+</div>
+
+<div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">
+    <p>Have questions? We're here to help!<br>
+    <a href="mailto:prints@logans3dcreations.com" style="color: #E85D5D; text-decoration: none;">prints@logans3dcreations.com</a></p>
+</div>
+`
+
+// abandonedCartRecovery24HrTemplate is for the second recovery email (24 hours after abandonment)
+const abandonedCartRecovery24HrTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <h1 style="color: #E85D5D; margin: 0; font-size: 28px;">Still Interested?</h1>
+    <p style="font-size: 18px; color: #666; margin: 10px 0;">Your cart is waiting for you</p>
+</div>
+
+<div style="background-color: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #E85D5D; margin-bottom: 25px; text-align: center;">
+    <p style="font-size: 16px; margin: 5px 0;">Hi {{.CustomerName}},</p>
+    <p style="font-size: 16px; margin: 15px 0;">We're holding these items for you. Complete your order today!</p>
+</div>
+
+<h2 style="color: #555; font-size: 20px; margin-top: 30px;">Items in Your Cart</h2>
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+    <thead>
+        <tr style="background-color: #E85D5D;">
+            <th style="color: white; padding: 12px; text-align: left; font-weight: 600;">Product</th>
+            <th style="color: white; padding: 12px; text-align: center; font-weight: 600;">Quantity</th>
+            <th style="color: white; padding: 12px; text-align: right; font-weight: 600;">Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Items}}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    {{if .ProductImage}}
+                    <img src="https://www.logans3dcreations.com/public/images/products/{{.ProductImage}}" alt="{{.ProductName}}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                    {{end}}
+                    <span>{{.ProductName}}</span>
+                </div>
+            </td>
+            <td style="padding: 12px; text-align: center;">{{.Quantity}}</td>
+            <td style="padding: 12px; text-align: right;">{{FormatCents .UnitPrice}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #ddd;">
+    <div style="display: flex; justify-content: space-between; padding: 15px 0 0 0; font-size: 20px; font-weight: bold; color: #E85D5D;">
+        <span>Cart Total:</span>
+        <span>{{FormatCents .CartValue}}</span>
+    </div>
+</div>
+
+<div style="background-color: #fff9e6; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 2px dashed #FFA000;">
+    <p style="font-size: 16px; margin: 0; color: #555;">💡 <strong>Need help deciding?</strong> Contact us with any questions!</p>
+</div>
+
+<div style="text-align: center; margin: 40px 0;">
+    <a href="https://www.logans3dcreations.com/cart?token={{.TrackingToken}}" style="display: inline-block; padding: 16px 40px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 18px;">Return to Cart</a>
+</div>
+
+<div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">
+    <p>Questions? We're here to help!<br>
+    <a href="mailto:prints@logans3dcreations.com" style="color: #E85D5D; text-decoration: none;">prints@logans3dcreations.com</a></p>
+</div>
+`
+
+// abandonedCartRecovery72HrTemplate is for the final recovery email (72 hours after abandonment)
+const abandonedCartRecovery72HrTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <h1 style="color: #E85D5D; margin: 0; font-size: 28px;">Last Chance!</h1>
+    <p style="font-size: 18px; color: #666; margin: 10px 0;">Your cart expires soon</p>
+</div>
+
+<div style="background-color: #fff3e0; padding: 20px; border-radius: 8px; border-left: 4px solid #FF6B6B; margin-bottom: 25px; text-align: center;">
+    <p style="font-size: 16px; margin: 5px 0;">Hi {{.CustomerName}},</p>
+    <p style="font-size: 16px; margin: 15px 0;"><strong>This is your final reminder!</strong> We're holding {{.ItemCount}} item{{if ne .ItemCount 1}}s{{end}} for you, but we can only save your cart for a limited time.</p>
+</div>
+
+<h2 style="color: #555; font-size: 20px; margin-top: 30px;">Last Chance Items</h2>
+<table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+    <thead>
+        <tr style="background-color: #E85D5D;">
+            <th style="color: white; padding: 12px; text-align: left; font-weight: 600;">Product</th>
+            <th style="color: white; padding: 12px; text-align: center; font-weight: 600;">Quantity</th>
+            <th style="color: white; padding: 12px; text-align: right; font-weight: 600;">Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Items}}
+        <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 12px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    {{if .ProductImage}}
+                    <img src="https://www.logans3dcreations.com/public/images/products/{{.ProductImage}}" alt="{{.ProductName}}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;">
+                    {{end}}
+                    <span>{{.ProductName}}</span>
+                </div>
+            </td>
+            <td style="padding: 12px; text-align: center;">{{.Quantity}}</td>
+            <td style="padding: 12px; text-align: right;">{{FormatCents .UnitPrice}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+
+<div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #ddd;">
+    <div style="display: flex; justify-content: space-between; padding: 15px 0 0 0; font-size: 20px; font-weight: bold; color: #E85D5D;">
+        <span>Cart Total:</span>
+        <span>{{FormatCents .CartValue}}</span>
+    </div>
+</div>
+
+<div style="text-align: center; margin: 40px 0;">
+    <a href="https://www.logans3dcreations.com/cart?token={{.TrackingToken}}" style="display: inline-block; padding: 18px 45px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 700; font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Complete Order Now</a>
+    <p style="font-size: 14px; color: #999; margin-top: 15px;">⏰ Cart expires in 24 hours</p>
+</div>
+
+<div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">
+    <p>Need assistance? Contact us anytime!<br>
+    <a href="mailto:prints@logans3dcreations.com" style="color: #E85D5D; text-decoration: none;">prints@logans3dcreations.com</a></p>
+</div>
+`
+
 // contactRequestContentTemplate is the content section for contact request notification emails
 const contactRequestContentTemplate = `
 <div style="text-align: center; margin-bottom: 30px;">
