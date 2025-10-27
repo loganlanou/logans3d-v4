@@ -31,6 +31,14 @@ templ Base(c echo.Context, meta Meta) {
 			if meta.OGImage != "" {
 				<meta property="og:image" content={ meta.OGImage }/>
 			}
+			<!-- Google Analytics -->
+			<script async src="https://www.googletagmanager.com/gtag/js?id=G-0DMM8W9JY7"></script>
+			<script>
+				window.dataLayer = window.dataLayer || [];
+				function gtag(){dataLayer.push(arguments);}
+				gtag('js', new Date());
+				gtag('config', 'G-0DMM8W9JY7');
+			</script>
 			<!-- Favicon -->
 			<link rel="icon" type="image/png" href="/public/images/favicon.png"/>
 			<!-- CSS -->
