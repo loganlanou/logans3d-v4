@@ -260,3 +260,34 @@ DELETE FROM abandoned_carts
 WHERE
     status = 'expired'
     AND abandoned_at < datetime('now', '-90 days');
+
+-- Active Carts queries (carts not yet abandoned)
+
+-- name: GetActiveCarts :many
+SELECT
+    COALESCE(ci.session_id, '') as session_id,
+    COALESCE(ci.user_id, '') as user_id,
+    MAX(ci.updated_at) as last_activity,
+    COUNT(DISTINCT ci.id) as item_count,
+    SUM(p.price_cents * ci.quantity) as cart_value_cents,
+    u.email as customer_email,
+    u.full_name as customer_name
+FROM cart_items ci
+JOIN products p ON ci.product_id = p.id
+LEFT JOIN users u ON ci.user_id = u.id
+LEFT JOIN abandoned_carts ac ON (ci.session_id = ac.session_id OR ci.user_id = ac.user_id) AND ac.status = 'active'
+WHERE ac.id IS NULL
+GROUP BY COALESCE(ci.session_id, ''), COALESCE(ci.user_id, ''), u.email, u.full_name
+HAVING item_count > 0
+ORDER BY last_activity DESC
+LIMIT 100;
+
+-- name: GetActiveCartsMetrics :one
+SELECT
+    COUNT(DISTINCT COALESCE(ci.session_id, ci.user_id)) as total_active_carts,
+    COALESCE(SUM(p.price_cents * ci.quantity), 0) as total_value_cents,
+    COALESCE(AVG(p.price_cents * ci.quantity), 0) as avg_cart_value_cents
+FROM cart_items ci
+JOIN products p ON ci.product_id = p.id
+LEFT JOIN abandoned_carts ac ON (ci.session_id = ac.session_id OR ci.user_id = ac.user_id) AND ac.status = 'active'
+WHERE ac.id IS NULL;

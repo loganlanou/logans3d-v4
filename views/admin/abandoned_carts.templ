@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"time"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
@@ -49,6 +50,23 @@ type ProductAbandonmentData struct {
 	TotalValue   int64
 }
 
+type ActiveCart struct {
+	SessionID     string
+	UserID        string
+	CustomerEmail string
+	CustomerName  string
+	ItemCount     int64
+	CartValue     int64
+	LastActivity  time.Time
+	TimeAgo       string
+}
+
+type ActiveCartsMetrics struct {
+	TotalActiveCarts int64
+	TotalValueCents  int64
+	AvgValueCents    int64
+}
+
 templ AbandonedCartsDashboard(
 	c echo.Context,
 	metrics AbandonedCartMetrics,
@@ -57,6 +75,8 @@ templ AbandonedCartsDashboard(
 	topProducts []ProductAbandonmentData,
 	emailStats []RecoveryEmailStats,
 	hourlyData ChartData,
+	activeCarts []ActiveCart,
+	activeCartsMetrics ActiveCartsMetrics,
 ) {
 	@layout.AdminBase(c, "Abandoned Carts") {
 		@layout.AdminContainer() {
@@ -275,6 +295,80 @@ templ AbandonedCartsDashboard(
 					}
 				}
 			}
+
+			<!-- Active Carts Section -->
+			<div class="mt-6">
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Active Carts ({ fmt.Sprintf("%d", activeCartsMetrics.TotalActiveCarts) })
+						}
+						@card.Description() {
+							Shopping carts with items that haven't been abandoned yet
+						}
+					}
+					@card.Content() {
+						<!-- Active Carts Metrics -->
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
+							<div>
+								<p class="text-sm text-gray-600">Total Active Carts</p>
+								<p class="text-2xl font-bold text-blue-700">{ fmt.Sprintf("%d", activeCartsMetrics.TotalActiveCarts) }</p>
+							</div>
+							<div>
+								<p class="text-sm text-gray-600">Total Value</p>
+								<p class="text-2xl font-bold text-blue-700">{ formatCents(activeCartsMetrics.TotalValueCents) }</p>
+							</div>
+							<div>
+								<p class="text-sm text-gray-600">Average Cart Value</p>
+								<p class="text-2xl font-bold text-blue-700">{ formatCents(activeCartsMetrics.AvgValueCents) }</p>
+							</div>
+						</div>
+
+						<!-- Active Carts Table -->
+						if len(activeCarts) > 0 {
+							<div class="overflow-x-auto">
+								@table.Table() {
+									@table.Header() {
+										@table.Row() {
+											@table.Head() { Customer }
+											@table.Head() { Items }
+											@table.Head() { Cart Value }
+											@table.Head() { Last Activity }
+										}
+									}
+									@table.Body() {
+										for _, cart := range activeCarts {
+											@table.Row() {
+												@table.Cell() {
+													<div class="font-medium text-gray-900">{ cart.CustomerName }</div>
+													if cart.CustomerEmail != "Guest" {
+														<div class="text-sm text-gray-500">{ cart.CustomerEmail }</div>
+													} else {
+														<div class="text-sm text-gray-400">Guest Session</div>
+													}
+												}
+												@table.Cell() {
+													<span class="text-gray-900">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+												}
+												@table.Cell() {
+													<span class="font-medium text-gray-900">{ formatCents(cart.CartValue) }</span>
+												}
+												@table.Cell() {
+													<span class="text-sm text-gray-600">{ cart.TimeAgo }</span>
+												}
+											}
+										}
+									}
+								}
+							</div>
+						} else {
+							<div class="text-center text-gray-500 py-8">
+								No active carts at this time
+							</div>
+						}
+					}
+				}
+			</div>
 
 			<!-- Filters -->
 			<div class="mb-6 space-y-4 mt-6">
@@ -568,4 +662,9 @@ func extractProductCounts(products []ProductAbandonmentData) []float64 {
 		counts[i] = float64(p.Count)
 	}
 	return counts
+}
+
+func formatCents(cents int64) string {
+	dollars := float64(cents) / 100.0
+	return fmt.Sprintf("$%.2f", dollars)
 }

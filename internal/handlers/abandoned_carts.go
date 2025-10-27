@@ -153,6 +153,18 @@ func (h *AdminHandler) HandleAbandonedCartsDashboard(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch email stats: "+err.Error())
 	}
 
+	// Get active carts (carts not yet abandoned)
+	activeCarts, err := h.getActiveCarts(ctx)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch active carts: "+err.Error())
+	}
+
+	// Get active carts metrics
+	activeCartsMetrics, err := h.getActiveCartsMetrics(ctx)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch active cart metrics: "+err.Error())
+	}
+
 	// Hourly data (not used yet but prepared for future)
 	hourlyData := admin.ChartData{
 		Labels: []string{},
@@ -167,6 +179,8 @@ func (h *AdminHandler) HandleAbandonedCartsDashboard(c echo.Context) error {
 		topProducts,
 		emailStats,
 		hourlyData,
+		activeCarts,
+		activeCartsMetrics,
 	))
 }
 
@@ -597,4 +611,80 @@ func formatTimeAgo(t time.Time) string {
 		}
 		return fmt.Sprintf("%d days ago", days)
 	}
+}
+
+func (h *AdminHandler) getActiveCarts(ctx context.Context) ([]admin.ActiveCart, error) {
+	carts, err := h.storage.Queries.GetActiveCarts(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]admin.ActiveCart, len(carts))
+	for i, cart := range carts {
+		customerEmail := "Guest"
+		if cart.CustomerEmail.Valid {
+			customerEmail = cart.CustomerEmail.String
+		}
+
+		customerName := "Guest"
+		if cart.CustomerName.Valid {
+			customerName = cart.CustomerName.String
+		}
+
+		// Convert cart value from NullFloat64 to int64
+		cartValue := int64(0)
+		if cart.CartValueCents.Valid {
+			cartValue = int64(cart.CartValueCents.Float64)
+		}
+
+		// Convert last activity from interface{} to time.Time
+		lastActivity := time.Now()
+		if cart.LastActivity != nil {
+			if t, ok := cart.LastActivity.(time.Time); ok {
+				lastActivity = t
+			} else if s, ok := cart.LastActivity.(string); ok {
+				// Try parsing as SQLite datetime string
+				if parsed, err := time.Parse("2006-01-02 15:04:05", s); err == nil {
+					lastActivity = parsed
+				}
+			}
+		}
+
+		result[i] = admin.ActiveCart{
+			SessionID:     cart.SessionID,
+			UserID:        cart.UserID,
+			CustomerEmail: customerEmail,
+			CustomerName:  customerName,
+			ItemCount:     cart.ItemCount,
+			CartValue:     cartValue,
+			LastActivity:  lastActivity,
+			TimeAgo:       formatTimeAgo(lastActivity),
+		}
+	}
+
+	return result, nil
+}
+
+func (h *AdminHandler) getActiveCartsMetrics(ctx context.Context) (admin.ActiveCartsMetrics, error) {
+	metrics, err := h.storage.Queries.GetActiveCartsMetrics(ctx)
+	if err != nil {
+		return admin.ActiveCartsMetrics{}, err
+	}
+
+	// Convert interface{} values to int64
+	totalValue := int64(0)
+	if metrics.TotalValueCents != nil {
+		totalValue = int64(toFloat64(metrics.TotalValueCents))
+	}
+
+	avgValue := int64(0)
+	if metrics.AvgCartValueCents != nil {
+		avgValue = int64(toFloat64(metrics.AvgCartValueCents))
+	}
+
+	return admin.ActiveCartsMetrics{
+		TotalActiveCarts: metrics.TotalActiveCarts,
+		TotalValueCents:  totalValue,
+		AvgValueCents:    avgValue,
+	}, nil
 }
