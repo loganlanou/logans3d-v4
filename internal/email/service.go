@@ -544,3 +544,29 @@ func RenderAbandonedCartRecovery72HrWithToken(data *AbandonedCartData, unsubscri
 
 	return WrapEmailContentWithUnsubscribe(content.String(), "Last chance to complete your order!", unsubscribeToken)
 }
+
+// WelcomeCouponData contains data for welcome coupon emails
+type WelcomeCouponData struct {
+	CustomerName string
+	Email        string
+	PromoCode    string
+	DiscountText string
+	ExpiresAt    string
+}
+
+// RenderWelcomeCouponEmail renders the welcome coupon email
+func RenderWelcomeCouponEmail(data *WelcomeCouponData) (string, error) {
+	return RenderWelcomeCouponEmailWithToken(data, "")
+}
+
+// RenderWelcomeCouponEmailWithToken renders the welcome coupon email with unsubscribe token
+func RenderWelcomeCouponEmailWithToken(data *WelcomeCouponData, unsubscribeToken string) (string, error) {
+	tmpl := template.Must(template.New("welcome_coupon").Parse(welcomeCouponContentTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render welcome coupon email: %w", err)
+	}
+
+	return WrapEmailContentWithUnsubscribe(content.String(), "Welcome! Here's your exclusive discount", unsubscribeToken)
+}

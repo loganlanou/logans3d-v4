@@ -399,3 +399,65 @@ const contactRequestContentTemplate = `
 </div>
 `
 
+
+
+// welcomeCouponContentTemplate is the content section for welcome coupon emails
+const welcomeCouponContentTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <div style="display: inline-block; background-color: #10b981; color: white; padding: 8px 20px; border-radius: 25px; font-weight: 700; font-size: 16px; margin-bottom: 20px;">🎉 WELCOME GIFT</div>
+    <h1 style="color: #E85D5D; margin: 10px 0; font-size: 32px;">Welcome to Logans 3D Creations!</h1>
+    <p style="font-size: 18px; color: #666; margin: 15px 0;">Thanks for signing up! Here's a special gift just for you.</p>
+</div>
+
+<div style="background: linear-gradient(135deg, #E85D5D 0%, #ff6b6b 100%); padding: 40px 30px; border-radius: 12px; text-align: center; margin: 30px 0; box-shadow: 0 10px 25px rgba(232, 93, 93, 0.3);">
+    <p style="color: rgba(255,255,255,0.95); font-size: 18px; margin: 0 0 15px 0; font-weight: 600;">Your Exclusive Discount Code</p>
+    <div style="background-color: white; padding: 20px 30px; border-radius: 8px; margin: 20px auto; max-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <p style="color: #E85D5D; font-size: 36px; font-weight: 800; letter-spacing: 2px; margin: 0; font-family: 'Courier New', monospace;">{{.PromoCode}}</p>
+    </div>
+    <p style="color: white; font-size: 24px; font-weight: 700; margin: 15px 0;">{{.DiscountText}} Your First Order</p>
+    <p style="color: rgba(255,255,255,0.9); font-size: 14px; margin: 10px 0;">Valid until {{.ExpiresAt}}</p>
+</div>
+
+<div style="margin: 35px 0;">
+    <h2 style="color: #555; font-size: 22px; margin-bottom: 20px; text-align: center;">Why Choose Logan's 3D Creations?</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 25px 0;">
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 40px; margin-bottom: 10px;">🎨</div>
+            <h3 style="color: #E85D5D; font-size: 16px; margin: 10px 0;">Premium Quality</h3>
+            <p style="color: #666; font-size: 14px; margin: 5px 0;">High-quality 3D prints with attention to detail</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 40px; margin-bottom: 10px;">⚡</div>
+            <h3 style="color: #E85D5D; font-size: 16px; margin: 10px 0;">Fast Shipping</h3>
+            <p style="color: #666; font-size: 14px; margin: 5px 0;">Quick turnaround and reliable delivery</p>
+        </div>
+        <div style="text-align: center; padding: 20px;">
+            <div style="font-size: 40px; margin-bottom: 10px;">💪</div>
+            <h3 style="color: #E85D5D; font-size: 16px; margin: 10px 0;">Durable Prints</h3>
+            <p style="color: #666; font-size: 14px; margin: 5px 0;">Long-lasting materials and expert craftsmanship</p>
+        </div>
+    </div>
+</div>
+
+<div style="text-align: center; margin: 40px 0;">
+    <a href="https://www.logans3dcreations.com/shop" style="display: inline-block; padding: 18px 45px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 18px; box-shadow: 0 4px 12px rgba(232, 93, 93, 0.3); transition: all 0.3s;">Start Shopping Now →</a>
+    <p style="font-size: 14px; color: #999; margin-top: 15px;">Use code <strong style="color: #E85D5D;">{{.PromoCode}}</strong> at checkout</p>
+</div>
+
+<div style="background-color: #f9f9f9; padding: 25px; border-radius: 8px; margin: 30px 0; border-left: 4px solid #10b981;">
+    <h3 style="color: #555; font-size: 18px; margin: 0 0 15px 0;">📝 How to Redeem:</h3>
+    <ol style="color: #666; margin: 0; padding-left: 20px; line-height: 1.8;">
+        <li>Browse our shop and add items to your cart</li>
+        <li>At checkout, enter code <strong>{{.PromoCode}}</strong></li>
+        <li>Your discount will be applied automatically</li>
+        <li>Complete your order and enjoy!</li>
+    </ol>
+</div>
+
+<div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">
+    <p style="margin: 5px 0;">Questions? We're here to help!</p>
+    <p style="margin: 5px 0;">
+        <a href="mailto:prints@logans3dcreations.com" style="color: #E85D5D; text-decoration: none; font-weight: 600;">prints@logans3dcreations.com</a>
+    </p>
+</div>
+`

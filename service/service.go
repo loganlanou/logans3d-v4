@@ -188,6 +188,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	api.GET("/email-preferences", emailPrefsHandler.HandleGetEmailPreferences)
 	api.PUT("/email-preferences", emailPrefsHandler.HandleUpdateEmailPreferences)
 
+	// Promotion routes (public)
+	promotionsHandler := handlers.NewPromotionsHandler(s.storage.Queries, s.emailService)
+	api.POST("/promotions/capture-email", promotionsHandler.HandleCaptureEmail)
+	api.GET("/promotions/validate/:code", promotionsHandler.HandleValidateCode)
+
 	// Shipping API routes
 	if s.shippingHandler != nil {
 		api.POST("/shipping/rates", s.shippingHandler.GetShippingRates)
