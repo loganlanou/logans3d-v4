@@ -7,8 +7,9 @@ import (
 
 // BaseEmailData contains data for the base email wrapper
 type BaseEmailData struct {
-	Content template.HTML
-	Subject string
+	Content          template.HTML
+	Subject          string
+	UnsubscribeToken string // Optional - for marketing emails only
 }
 
 // baseEmailTemplate is the reusable wrapper for all emails
@@ -197,6 +198,13 @@ const baseEmailTemplate = `
                 <a href="mailto:prints@logans3dcreations.com">prints@logans3dcreations.com</a>
                 <span style="color: #666; margin: 0 8px;">•</span>
                 <a href="https://www.logans3dcreations.com">www.logans3dcreations.com</a>
+                {{if .UnsubscribeToken}}
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #555;">
+                    <a href="https://www.logans3dcreations.com/unsubscribe/{{.UnsubscribeToken}}" style="color: #999; font-size: 11px;">
+                        Unsubscribe from marketing emails
+                    </a>
+                </div>
+                {{end}}
                 <div style="margin-top: 20px; font-size: 11px; color: #888;">
                     © 2025 Logan's 3D Creations. All rights reserved.
                 </div>
@@ -209,11 +217,17 @@ const baseEmailTemplate = `
 
 // WrapEmailContent wraps content in the base email template
 func WrapEmailContent(content string, subject string) (string, error) {
+	return WrapEmailContentWithUnsubscribe(content, subject, "")
+}
+
+// WrapEmailContentWithUnsubscribe wraps content in the base email template with optional unsubscribe link
+func WrapEmailContentWithUnsubscribe(content string, subject string, unsubscribeToken string) (string, error) {
 	tmpl := template.Must(template.New("base").Parse(baseEmailTemplate))
 
 	data := BaseEmailData{
-		Content: template.HTML(content),
-		Subject: subject,
+		Content:          template.HTML(content),
+		Subject:          subject,
+		UnsubscribeToken: unsubscribeToken,
 	}
 
 	var result bytes.Buffer

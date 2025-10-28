@@ -182,6 +182,12 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	api.POST("/payment/create-customer", s.paymentHandler.CreateCustomer)
 	api.POST("/stripe/webhook", s.paymentHandler.HandleWebhook)
 
+	// Email preferences routes (public - accessible via token)
+	emailPrefsHandler := handlers.NewEmailPreferencesHandler(s.storage.Queries)
+	e.GET("/unsubscribe/:token", emailPrefsHandler.HandleUnsubscribe)
+	api.GET("/email-preferences", emailPrefsHandler.HandleGetEmailPreferences)
+	api.PUT("/email-preferences", emailPrefsHandler.HandleUpdateEmailPreferences)
+
 	// Shipping API routes
 	if s.shippingHandler != nil {
 		api.POST("/shipping/rates", s.shippingHandler.GetShippingRates)
