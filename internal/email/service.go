@@ -418,19 +418,41 @@ type AbandonedCartData struct {
 
 // SendAbandonedCartRecoveryEmail sends a recovery email to a customer
 func (s *Service) SendAbandonedCartRecoveryEmail(data *AbandonedCartData, attemptType string) error {
+	ctx := context.Background()
+
+	// Check if user has opted out of abandoned cart emails
+	canSend, err := s.CheckEmailPreference(ctx, data.CustomerEmail, "abandoned_cart")
+	if err != nil {
+		slog.Warn("failed to check email preference, proceeding with send", "email", data.CustomerEmail, "error", err)
+	} else if !canSend {
+		slog.Info("user has opted out of abandoned cart emails", "email", data.CustomerEmail)
+		return fmt.Errorf("user has opted out of abandoned cart emails")
+	}
+
+	// Get or create email preferences to get unsubscribe token
+	prefs, err := s.GetOrCreateEmailPreferences(ctx, data.CustomerEmail, nil)
+	if err != nil {
+		slog.Warn("failed to get email preferences, sending without unsubscribe link", "email", data.CustomerEmail, "error", err)
+		prefs = nil
+	}
+
+	var unsubscribeToken string
+	if prefs != nil && prefs.UnsubscribeToken.Valid {
+		unsubscribeToken = prefs.UnsubscribeToken.String
+	}
+
 	var html string
-	var err error
 	var subject string
 
 	switch attemptType {
 	case "email_1hr":
-		html, err = RenderAbandonedCartRecovery1Hr(data)
+		html, err = RenderAbandonedCartRecovery1HrWithToken(data, unsubscribeToken)
 		subject = "You left something in your cart!"
 	case "email_24hr":
-		html, err = RenderAbandonedCartRecovery24Hr(data)
+		html, err = RenderAbandonedCartRecovery24HrWithToken(data, unsubscribeToken)
 		subject = "Still interested in your cart?"
 	case "email_72hr":
-		html, err = RenderAbandonedCartRecovery72Hr(data)
+		html, err = RenderAbandonedCartRecovery72HrWithToken(data, unsubscribeToken)
 		subject = "Last chance to complete your order!"
 	default:
 		return fmt.Errorf("unknown attempt type: %s", attemptType)
@@ -447,11 +469,29 @@ func (s *Service) SendAbandonedCartRecoveryEmail(data *AbandonedCartData, attemp
 		IsHTML:  true,
 	}
 
-	return s.Send(email)
+	// Send the email
+	sendErr := s.Send(email)
+
+	// Log the email send (even if it failed, for tracking)
+	logErr := s.LogEmailSend(ctx, data.CustomerEmail, "abandoned_cart", subject, attemptType, data.TrackingToken, map[string]interface{}{
+		"cart_value":  data.CartValue,
+		"item_count":  data.ItemCount,
+		"attempt_type": attemptType,
+	})
+	if logErr != nil {
+		slog.Error("failed to log email send", "error", logErr)
+	}
+
+	return sendErr
 }
 
 // RenderAbandonedCartRecovery1Hr renders the 1-hour recovery email
 func RenderAbandonedCartRecovery1Hr(data *AbandonedCartData) (string, error) {
+	return RenderAbandonedCartRecovery1HrWithToken(data, "")
+}
+
+// RenderAbandonedCartRecovery1HrWithToken renders the 1-hour recovery email with unsubscribe token
+func RenderAbandonedCartRecovery1HrWithToken(data *AbandonedCartData, unsubscribeToken string) (string, error) {
 	tmpl := template.Must(template.New("abandoned_1hr").Funcs(template.FuncMap{
 		"FormatCents": FormatCents,
 		"ne":          func(a, b int64) bool { return a != b },
@@ -462,11 +502,16 @@ func RenderAbandonedCartRecovery1Hr(data *AbandonedCartData) (string, error) {
 		return "", fmt.Errorf("failed to render 1hr recovery email: %w", err)
 	}
 
-	return WrapEmailContent(content.String(), "You left something in your cart!")
+	return WrapEmailContentWithUnsubscribe(content.String(), "You left something in your cart!", unsubscribeToken)
 }
 
 // RenderAbandonedCartRecovery24Hr renders the 24-hour recovery email
 func RenderAbandonedCartRecovery24Hr(data *AbandonedCartData) (string, error) {
+	return RenderAbandonedCartRecovery24HrWithToken(data, "")
+}
+
+// RenderAbandonedCartRecovery24HrWithToken renders the 24-hour recovery email with unsubscribe token
+func RenderAbandonedCartRecovery24HrWithToken(data *AbandonedCartData, unsubscribeToken string) (string, error) {
 	tmpl := template.Must(template.New("abandoned_24hr").Funcs(template.FuncMap{
 		"FormatCents": FormatCents,
 		"ne":          func(a, b int64) bool { return a != b },
@@ -477,11 +522,16 @@ func RenderAbandonedCartRecovery24Hr(data *AbandonedCartData) (string, error) {
 		return "", fmt.Errorf("failed to render 24hr recovery email: %w", err)
 	}
 
-	return WrapEmailContent(content.String(), "Still interested in your cart?")
+	return WrapEmailContentWithUnsubscribe(content.String(), "Still interested in your cart?", unsubscribeToken)
 }
 
 // RenderAbandonedCartRecovery72Hr renders the 72-hour recovery email
 func RenderAbandonedCartRecovery72Hr(data *AbandonedCartData) (string, error) {
+	return RenderAbandonedCartRecovery72HrWithToken(data, "")
+}
+
+// RenderAbandonedCartRecovery72HrWithToken renders the 72-hour recovery email with unsubscribe token
+func RenderAbandonedCartRecovery72HrWithToken(data *AbandonedCartData, unsubscribeToken string) (string, error) {
 	tmpl := template.Must(template.New("abandoned_72hr").Funcs(template.FuncMap{
 		"FormatCents": FormatCents,
 		"ne":          func(a, b int64) bool { return a != b },
@@ -492,5 +542,5 @@ func RenderAbandonedCartRecovery72Hr(data *AbandonedCartData) (string, error) {
 		return "", fmt.Errorf("failed to render 72hr recovery email: %w", err)
 	}
 
-	return WrapEmailContent(content.String(), "Last chance to complete your order!")
+	return WrapEmailContentWithUnsubscribe(content.String(), "Last chance to complete your order!", unsubscribeToken)
 }
