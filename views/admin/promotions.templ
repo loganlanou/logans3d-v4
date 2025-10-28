@@ -1,0 +1,241 @@
+package admin
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/templui/templui/internal/components/card"
+	"github.com/templui/templui/internal/components/table"
+	"github.com/templui/templui/internal/components/badge"
+	"fmt"
+)
+
+templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int) {
+	@layout.AdminBase(c, "Promotion Campaigns") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<div>
+					<h1 class="text-2xl font-bold text-gray-900">Promotion Campaigns</h1>
+					<p class="text-gray-600 mt-1">Manage discount campaigns and promotion codes</p>
+				</div>
+			</div>
+
+			<!-- Campaigns List -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						All Campaigns ({ fmt.Sprintf("%d", len(campaigns)) })
+					}
+				}
+				@card.Content() {
+					if len(campaigns) == 0 {
+						<div class="text-center py-12 text-gray-500">
+							<p>No campaigns created yet</p>
+						</div>
+					} else {
+						@table.Table() {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() { Campaign Name }
+									@table.Head() { Type }
+									@table.Head() { Discount }
+									@table.Head() { Codes Issued }
+									@table.Head() { Status }
+									@table.Head() { Created }
+								}
+							}
+							@table.Body() {
+								for _, campaign := range campaigns {
+									@table.Row() {
+										@table.Cell() {
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/promotions/%s", campaign.ID)) } class="text-blue-600 hover:text-blue-800 font-medium">
+												{ campaign.Name }
+											</a>
+											if campaign.Description.Valid {
+												<p class="text-sm text-gray-500 mt-1">{ campaign.Description.String }</p>
+											}
+										}
+										@table.Cell() {
+											<span class="capitalize">{ campaign.DiscountType }</span>
+										}
+										@table.Cell() {
+											if campaign.DiscountType == "percentage" {
+												<span class="font-semibold">{ fmt.Sprintf("%d%%", campaign.DiscountValue) }</span>
+											} else {
+												<span class="font-semibold">${ fmt.Sprintf("%.2f", float64(campaign.DiscountValue)/100) }</span>
+											}
+										}
+										@table.Cell() {
+											<span class="text-gray-700">{ fmt.Sprintf("%d", campaign.CurrentUses) }</span>
+											if campaign.MaxUses.Valid {
+												<span class="text-gray-500">/ { fmt.Sprintf("%d", campaign.MaxUses.Int64) }</span>
+											}
+										}
+										@table.Cell() {
+											if campaign.Active.Valid && campaign.Active.Int64 == 1 {
+												@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+													Active
+												}
+											} else {
+												@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+													Inactive
+												}
+											}
+										}
+										@table.Cell() {
+											<span class="text-sm text-gray-600">
+												{ campaign.CreatedAt.Time.Format("Jan 2, 2006") }
+											</span>
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.PromotionCode, stats db.GetPromotionCodeStatsRow) {
+	@layout.AdminBase(c, "Campaign Details") {
+		@layout.AdminContainer() {
+			<!-- Back Button -->
+			<div class="mb-6">
+				<a href="/admin/promotions" class="text-blue-600 hover:text-blue-800">
+					← Back to Campaigns
+				</a>
+			</div>
+
+			<!-- Header -->
+			<div class="flex justify-between items-start mb-6">
+				<div>
+					<h1 class="text-2xl font-bold text-gray-900">{ campaign.Name }</h1>
+					if campaign.Description.Valid {
+						<p class="text-gray-600 mt-1">{ campaign.Description.String }</p>
+					}
+				</div>
+				<div>
+					if campaign.Active.Valid && campaign.Active.Int64 == 1 {
+						@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+							Active
+						}
+					} else {
+						@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+							Inactive
+						}
+					}
+				</div>
+			</div>
+
+			<!-- Campaign Stats -->
+			<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+				@card.Card() {
+					@card.Content() {
+						<div class="text-center">
+							<p class="text-3xl font-bold text-gray-900">{ fmt.Sprintf("%d", stats.TotalCodes) }</p>
+							<p class="text-sm text-gray-600 mt-1">Total Codes</p>
+						</div>
+					}
+				}
+
+				@card.Card() {
+					@card.Content() {
+						<div class="text-center">
+							<p class="text-3xl font-bold text-green-600">{ fmt.Sprintf("%d", stats.UsedCodes) }</p>
+							<p class="text-sm text-gray-600 mt-1">Codes Used</p>
+						</div>
+					}
+				}
+
+				@card.Card() {
+					@card.Content() {
+						<div class="text-center">
+							<p class="text-3xl font-bold text-blue-600">{ fmt.Sprintf("%d", stats.TotalUses) }</p>
+							<p class="text-sm text-gray-600 mt-1">Total Redemptions</p>
+						</div>
+					}
+				}
+
+				@card.Card() {
+					@card.Content() {
+						<div class="text-center">
+							if campaign.DiscountType == "percentage" {
+								<p class="text-3xl font-bold text-brand-primary">{ fmt.Sprintf("%d%%", campaign.DiscountValue) }</p>
+							} else {
+								<p class="text-3xl font-bold text-brand-primary">${ fmt.Sprintf("%.2f", float64(campaign.DiscountValue)/100) }</p>
+							}
+							<p class="text-sm text-gray-600 mt-1">Discount Value</p>
+						</div>
+					}
+				}
+			</div>
+
+			<!-- Codes List -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Promotion Codes ({ fmt.Sprintf("%d", len(codes)) })
+					}
+				}
+				@card.Content() {
+					if len(codes) == 0 {
+						<div class="text-center py-12 text-gray-500">
+							<p>No codes issued yet</p>
+						</div>
+					} else {
+						@table.Table() {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() { Code }
+									@table.Head() { Email }
+									@table.Head() { Uses }
+									@table.Head() { Expires }
+									@table.Head() { Created }
+								}
+							}
+							@table.Body() {
+								for _, code := range codes {
+									@table.Row() {
+										@table.Cell() {
+											<span class="font-mono font-semibold text-brand-primary">{ code.Code }</span>
+										}
+										@table.Cell() {
+											if code.Email.Valid {
+												<span class="text-gray-700">{ code.Email.String }</span>
+											} else {
+												<span class="text-gray-400">-</span>
+											}
+										}
+										@table.Cell() {
+											if code.CurrentUses.Valid {
+												<span class="text-gray-700">{ fmt.Sprintf("%d", code.CurrentUses.Int64) }</span>
+											} else {
+												<span>0</span>
+											}
+											if code.MaxUses.Valid {
+												<span class="text-gray-500">/ { fmt.Sprintf("%d", code.MaxUses.Int64) }</span>
+											}
+										}
+										@table.Cell() {
+											if code.ExpiresAt.Valid {
+												<span class="text-sm text-gray-600">{ code.ExpiresAt.Time.Format("Jan 2, 2006") }</span>
+											} else {
+												<span class="text-gray-400">Never</span>
+											}
+										}
+										@table.Cell() {
+											<span class="text-sm text-gray-600">{ code.CreatedAt.Time.Format("Jan 2, 2006") }</span>
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

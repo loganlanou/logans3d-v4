@@ -7,7 +7,10 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	emailutil "github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/account"
+	"github.com/oklog/ulid/v2"
 )
 
 type EmailPreferencesHandler struct {
@@ -175,4 +178,42 @@ func boolToInt64(b bool) int64 {
 		return 1
 	}
 	return 0
+}
+
+// HandleEmailPreferencesPage renders the user-facing email preferences page
+func (h *EmailPreferencesHandler) HandleEmailPreferencesPage(c echo.Context) error {
+	// Get user email from session/auth
+	user, ok := c.Get("user").(map[string]interface{})
+	if !ok || user == nil {
+		return c.Redirect(http.StatusFound, "/login")
+	}
+
+	email, ok := user["email"].(string)
+	if !ok || email == "" {
+		return c.String(http.StatusBadRequest, "Email not found in user profile")
+	}
+
+	ctx := context.Background()
+
+	// Get or create email preferences
+	prefs, err := h.queries.GetEmailPreferencesByEmail(ctx, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Create default preferences
+			token, _ := emailutil.GenerateUnsubscribeToken()
+			prefs, err = h.queries.GetOrCreateEmailPreferences(ctx, db.GetOrCreateEmailPreferencesParams{
+				ID:               ulid.Make().String(),
+				UserID:           sql.NullString{},
+				Email:            email,
+				UnsubscribeToken: sql.NullString{String: token, Valid: true},
+			})
+			if err != nil {
+				return c.String(http.StatusInternalServerError, "Failed to create preferences")
+			}
+		} else {
+			return c.String(http.StatusInternalServerError, "Failed to load preferences")
+		}
+	}
+
+	return account.EmailPreferences(c, &prefs).Render(c.Request().Context(), c.Response().Writer)
 }

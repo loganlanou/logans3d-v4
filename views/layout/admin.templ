@@ -12,17 +12,21 @@ func getAlpineData(c echo.Context) string {
 	path := c.Request().URL.Path
 	isDevPage := strings.HasPrefix(path, "/dev")
 	isShippingPage := strings.HasPrefix(path, "/admin/shipping")
-	isSalesPage := strings.HasPrefix(path, "/admin/orders") || strings.HasPrefix(path, "/admin/carts") || strings.HasPrefix(path, "/admin/abandoned-carts") || strings.HasPrefix(path, "/admin/quotes")
+	isSalesPage := strings.HasPrefix(path, "/admin/orders") || strings.HasPrefix(path, "/admin/carts") || strings.HasPrefix(path, "/admin/abandoned-carts") || strings.HasPrefix(path, "/admin/quotes") || strings.HasPrefix(path, "/admin/emails")
+	isPromotionsPage := strings.HasPrefix(path, "/admin/promotions")
 	if isDevPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: true, mobileDevOpen: true, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false }"
+		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: true, mobileDevOpen: true, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false, promotionsOpen: false, mobilePromotionsOpen: false }"
 	}
 	if isShippingPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: true, mobileShippingOpen: true, salesOpen: false, mobileSalesOpen: false }"
+		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: true, mobileShippingOpen: true, salesOpen: false, mobileSalesOpen: false, promotionsOpen: false, mobilePromotionsOpen: false }"
 	}
 	if isSalesPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: true, mobileSalesOpen: true }"
+		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: true, mobileSalesOpen: true, promotionsOpen: false, mobilePromotionsOpen: false }"
 	}
-	return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false }"
+	if isPromotionsPage {
+		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false, promotionsOpen: true, mobilePromotionsOpen: true }"
+	}
+	return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false, promotionsOpen: false, mobilePromotionsOpen: false }"
 }
 
 func getSubitemClass(c echo.Context, targetPath string) string {
@@ -274,6 +278,13 @@ templ AdminSidebar(c echo.Context) {
 					<span x-show="sidebarOpen" class="admin-sidebar-text">Email Preview</span>
 				</a>
 
+				<a href="/admin/promotions" class="admin-sidebar-item" title="Promotions">
+					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
+					</svg>
+					<span x-show="sidebarOpen" class="admin-sidebar-text">Promotions</span>
+				</a>
+
 				<!-- Shipping Section (Collapsible) -->
 				<div x-show="sidebarOpen">
 					<button
@@ -513,6 +524,13 @@ templ AdminSidebar(c echo.Context) {
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
 					</svg>
 					<span class="admin-sidebar-text">Email Preview</span>
+				</a>
+
+				<a href="/admin/promotions" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
+					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
+					</svg>
+					<span class="admin-sidebar-text">Promotions</span>
 				</a>
 
 				<!-- Shipping Section (Collapsible) -->

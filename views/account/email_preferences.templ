@@ -1,0 +1,208 @@
+package account
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+)
+
+templ EmailPreferences(c echo.Context, prefs *db.EmailPreference) {
+	@layout.Base(c, layout.Meta{
+		Title:       "Email Preferences - Logan's 3D Creations",
+		Description: "Manage your email preferences",
+	}) {
+		@layout.Header(c)
+		<main class="min-h-screen bg-gray-50 py-12">
+			<div class="max-w-3xl mx-auto px-4">
+				<!-- Header -->
+				<div class="mb-8">
+					<h1 class="text-3xl font-bold text-gray-900">Email Preferences</h1>
+					<p class="text-gray-600 mt-2">Choose which emails you'd like to receive from us</p>
+				</div>
+
+				<!-- Preferences Card -->
+				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+					<form id="email-preferences-form" class="space-y-6">
+						<!-- Email Display -->
+						<div class="pb-4 border-b border-gray-200">
+							<label class="block text-sm font-medium text-gray-700 mb-2">Your Email</label>
+							<p class="text-gray-900 font-medium">{ prefs.Email }</p>
+						</div>
+
+						<!-- Transactional (Read-only) -->
+						<div class="flex items-start">
+							<div class="flex-1">
+								<h3 class="text-lg font-semibold text-gray-900">Order Updates</h3>
+								<p class="text-sm text-gray-600 mt-1">Order confirmations, shipping updates, and important account notifications</p>
+								<p class="text-xs text-gray-500 mt-2 italic">Required - These emails cannot be disabled</p>
+							</div>
+							<div class="ml-4">
+								<input type="checkbox" checked disabled class="h-5 w-5 text-brand-primary rounded border-gray-300 opacity-50 cursor-not-allowed"/>
+							</div>
+						</div>
+
+						<!-- Abandoned Cart -->
+						<div class="flex items-start">
+							<div class="flex-1">
+								<h3 class="text-lg font-semibold text-gray-900">Abandoned Cart Reminders</h3>
+								<p class="text-sm text-gray-600 mt-1">Helpful reminders about items you left in your cart</p>
+							</div>
+							<div class="ml-4">
+								<input
+									type="checkbox"
+									name="abandoned_cart"
+									id="pref-abandoned-cart"
+									checked?={ prefs.AbandonedCart.Valid && prefs.AbandonedCart.Int64 == 1 }
+									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+								/>
+							</div>
+						</div>
+
+						<!-- Promotional -->
+						<div class="flex items-start">
+							<div class="flex-1">
+								<h3 class="text-lg font-semibold text-gray-900">Promotional Offers</h3>
+								<p class="text-sm text-gray-600 mt-1">Exclusive discounts, special offers, and sales announcements</p>
+							</div>
+							<div class="ml-4">
+								<input
+									type="checkbox"
+									name="promotional"
+									id="pref-promotional"
+									checked?={ prefs.Promotional.Valid && prefs.Promotional.Int64 == 1 }
+									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+								/>
+							</div>
+						</div>
+
+						<!-- Newsletter -->
+						<div class="flex items-start">
+							<div class="flex-1">
+								<h3 class="text-lg font-semibold text-gray-900">Newsletter</h3>
+								<p class="text-sm text-gray-600 mt-1">Monthly newsletter with 3D printing tips, project showcases, and community highlights</p>
+							</div>
+							<div class="ml-4">
+								<input
+									type="checkbox"
+									name="newsletter"
+									id="pref-newsletter"
+									checked?={ prefs.Newsletter.Valid && prefs.Newsletter.Int64 == 1 }
+									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+								/>
+							</div>
+						</div>
+
+						<!-- Product Updates -->
+						<div class="flex items-start">
+							<div class="flex-1">
+								<h3 class="text-lg font-semibold text-gray-900">Product Updates</h3>
+								<p class="text-sm text-gray-600 mt-1">Notifications about new products, restocks, and featured items</p>
+							</div>
+							<div class="ml-4">
+								<input
+									type="checkbox"
+									name="product_updates"
+									id="pref-product-updates"
+									checked?={ prefs.ProductUpdates.Valid && prefs.ProductUpdates.Int64 == 1 }
+									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+								/>
+							</div>
+						</div>
+
+						<!-- Messages -->
+						<div id="success-message" class="hidden p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
+							Your preferences have been saved!
+						</div>
+
+						<div id="error-message" class="hidden p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg"></div>
+
+						<!-- Buttons -->
+						<div class="flex gap-4 pt-4">
+							<button
+								type="submit"
+								class="btn-primary flex-1"
+							>
+								Save Preferences
+							</button>
+							<a
+								href="/account"
+								class="btn-secondary flex-1 text-center"
+							>
+								Cancel
+							</a>
+						</div>
+					</form>
+				</div>
+
+				<!-- Unsubscribe All -->
+				<div class="mt-8 text-center">
+					<p class="text-sm text-gray-600 mb-4">Want to stop receiving all marketing emails?</p>
+					if prefs.UnsubscribeToken.Valid {
+						<a
+							href={ templ.SafeURL("/unsubscribe/" + prefs.UnsubscribeToken.String) }
+							class="text-red-600 hover:text-red-800 text-sm font-medium"
+						>
+							Unsubscribe from all marketing emails
+						</a>
+					}
+				</div>
+			</div>
+		</main>
+		@layout.Footer()
+	}
+
+	<script>
+		document.getElementById('email-preferences-form').addEventListener('submit', async function(e) {
+			e.preventDefault();
+
+			const form = e.target;
+			const submitBtn = form.querySelector('button[type="submit"]');
+			const successMsg = document.getElementById('success-message');
+			const errorMsg = document.getElementById('error-message');
+
+			// Get checkbox values
+			const data = {
+				email: '{ prefs.Email }',
+				abandoned_cart: document.getElementById('pref-abandoned-cart').checked,
+				promotional: document.getElementById('pref-promotional').checked,
+				newsletter: document.getElementById('pref-newsletter').checked,
+				product_updates: document.getElementById('pref-product-updates').checked
+			};
+
+			// Disable submit button
+			submitBtn.disabled = true;
+			submitBtn.textContent = 'Saving...';
+
+			// Hide previous messages
+			successMsg.classList.add('hidden');
+			errorMsg.classList.add('hidden');
+
+			try {
+				const response = await fetch('/api/email-preferences', {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(data)
+				});
+
+				const result = await response.json();
+
+				if (response.ok) {
+					successMsg.classList.remove('hidden');
+					setTimeout(() => {
+						successMsg.classList.add('hidden');
+					}, 5000);
+				} else {
+					throw new Error(result.error || 'Failed to save preferences');
+				}
+			} catch (error) {
+				errorMsg.textContent = error.message || 'Something went wrong. Please try again.';
+				errorMsg.classList.remove('hidden');
+			} finally {
+				submitBtn.disabled = false;
+				submitBtn.textContent = 'Save Preferences';
+			}
+		});
+	</script>
+}

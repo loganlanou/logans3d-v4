@@ -153,9 +153,13 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Cart routes
 	withAuth.GET("/cart", s.handleCart)
 
+	// Email preferences handler (needed for account routes)
+	emailPrefsHandler := handlers.NewEmailPreferencesHandler(s.storage.Queries)
+
 	// Account routes
 	withAuth.GET("/account", s.handleAccount)
 	withAuth.GET("/account/orders/:id", s.handleAccountOrderDetail)
+	withAuth.GET("/account/email-preferences", emailPrefsHandler.HandleEmailPreferencesPage)
 
 	// Cart API - all routes public for now
 	withAuth.GET("/api/cart", s.handleGetCart)
@@ -183,7 +187,6 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	api.POST("/stripe/webhook", s.paymentHandler.HandleWebhook)
 
 	// Email preferences routes (public - accessible via token)
-	emailPrefsHandler := handlers.NewEmailPreferencesHandler(s.storage.Queries)
 	e.GET("/unsubscribe/:token", emailPrefsHandler.HandleUnsubscribe)
 	api.GET("/email-preferences", emailPrefsHandler.HandleGetEmailPreferences)
 	api.PUT("/email-preferences", emailPrefsHandler.HandleUpdateEmailPreferences)
@@ -277,6 +280,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Email management routes
 	emailHandler := handlers.NewAdminEmailsHandler(s.storage.Queries)
 	admin.GET("/emails", emailHandler.HandleEmailHistory)
+
+	// Promotion management routes
+	promotionsAdminHandler := handlers.NewAdminPromotionsHandler(s.storage.Queries)
+	admin.GET("/promotions", promotionsAdminHandler.HandlePromotionsList)
+	admin.GET("/promotions/:id", promotionsAdminHandler.HandlePromotionDetail)
 
 	// Cart management routes
 	cartHandler := handlers.NewCartHandler(s.storage)
@@ -1112,6 +1120,7 @@ func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error 
 		SuccessURL: stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
 		CancelURL:  stripe.String(fmt.Sprintf("%s://%s/shop", c.Scheme(), c.Request().Host)),
 		CustomerCreation: stripe.String("always"),
+		AllowPromotionCodes: stripe.Bool(true),
 		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
 			Metadata: map[string]string{
 				"product_id": request.ProductID,
@@ -1119,7 +1128,7 @@ func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error 
 			},
 		},
 	}
-	
+
 	// Add product image if available
 	if imageURL != "" {
 		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
@@ -1211,6 +1220,7 @@ func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
 		SuccessURL:       stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
 		CancelURL:        stripe.String(fmt.Sprintf("%s://%s/cart", c.Scheme(), c.Request().Host)),
 		CustomerCreation: stripe.String("always"),
+		AllowPromotionCodes: stripe.Bool(true),
 	}
 
 	// Expand line_items for webhook processing
@@ -1351,6 +1361,9 @@ func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 		ShippingAddressCollection: &stripe.CheckoutSessionShippingAddressCollectionParams{
 			AllowedCountries: []*string{stripe.String("US")},
 		},
+
+		// Enable promotion code input in Stripe checkout
+		AllowPromotionCodes: stripe.Bool(true),
 	}
 
 	// Store shipment_id and user_id in metadata for label creation and order linking after payment
