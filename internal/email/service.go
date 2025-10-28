@@ -2,12 +2,20 @@ package email
 
 import (
 	"bytes"
+	"context"
+	"crypto/rand"
+	"database/sql"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"log/slog"
 	"net/smtp"
 	"os"
 	"strconv"
+
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/oklog/ulid/v2"
 )
 
 // Service handles email sending via Brevo SMTP
@@ -17,10 +25,11 @@ type Service struct {
 	username string
 	password string
 	from     string
+	queries  *db.Queries
 }
 
 // NewService creates a new email service configured with Brevo SMTP
-func NewService() *Service {
+func NewService(queries *db.Queries) *Service {
 	port, err := strconv.Atoi(os.Getenv("BREVO_SMTP_PORT"))
 	if err != nil {
 		port = 587 // default
@@ -32,7 +41,140 @@ func NewService() *Service {
 		username: os.Getenv("BREVO_SMTP_LOGIN"),
 		password: os.Getenv("BREVO_SMTP_KEY"),
 		from:     os.Getenv("EMAIL_FROM"),
+		queries:  queries,
 	}
+}
+
+// GenerateUnsubscribeToken generates a secure random token for unsubscribe links
+func GenerateUnsubscribeToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
+
+// CheckEmailPreference checks if a user has opted in to receive a specific email type
+// Returns true if the user can receive the email, false otherwise
+func (s *Service) CheckEmailPreference(ctx context.Context, email string, emailType string) (bool, error) {
+	if s.queries == nil {
+		// If no database connection, allow all emails (backward compatibility)
+		return true, nil
+	}
+
+	// Transactional emails always allowed (order confirmations, etc.)
+	if emailType == "transactional" {
+		return true, nil
+	}
+
+	// Check if preferences exist for this email
+	prefs, err := s.queries.GetEmailPreferencesByEmail(ctx, email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// No preferences set - default to allowing abandoned cart, denying others
+			if emailType == "abandoned_cart" {
+				return true, nil
+			}
+			return false, nil
+		}
+		return false, fmt.Errorf("failed to get email preferences: %w", err)
+	}
+
+	// Check the specific preference
+	switch emailType {
+	case "abandoned_cart":
+		return prefs.AbandonedCart.Valid && prefs.AbandonedCart.Int64 == 1, nil
+	case "promotional":
+		return prefs.Promotional.Valid && prefs.Promotional.Int64 == 1, nil
+	case "newsletter":
+		return prefs.Newsletter.Valid && prefs.Newsletter.Int64 == 1, nil
+	case "product_updates":
+		return prefs.ProductUpdates.Valid && prefs.ProductUpdates.Int64 == 1, nil
+	default:
+		return false, nil
+	}
+}
+
+// LogEmailSend logs an email send to the database
+func (s *Service) LogEmailSend(ctx context.Context, recipientEmail, emailType, subject, templateName, trackingToken string, metadata map[string]interface{}) error {
+	if s.queries == nil {
+		// If no database connection, skip logging (backward compatibility)
+		return nil
+	}
+
+	var metadataJSON sql.NullString
+	if metadata != nil {
+		jsonBytes, err := json.Marshal(metadata)
+		if err != nil {
+			slog.Warn("failed to marshal email metadata", "error", err)
+		} else {
+			metadataJSON = sql.NullString{String: string(jsonBytes), Valid: true}
+		}
+	}
+
+	var trackingTokenNullable sql.NullString
+	if trackingToken != "" {
+		trackingTokenNullable = sql.NullString{String: trackingToken, Valid: true}
+	}
+
+	_, err := s.queries.CreateEmailHistory(ctx, db.CreateEmailHistoryParams{
+		ID:             ulid.Make().String(),
+		UserID:         sql.NullString{}, // Will be set by caller if known
+		RecipientEmail: recipientEmail,
+		EmailType:      emailType,
+		Subject:        subject,
+		TemplateName:   templateName,
+		TrackingToken:  trackingTokenNullable,
+		Metadata:       metadataJSON,
+	})
+
+	if err != nil {
+		slog.Error("failed to log email send", "error", err, "email", recipientEmail, "type", emailType)
+		return fmt.Errorf("failed to log email: %w", err)
+	}
+
+	return nil
+}
+
+// GetOrCreateEmailPreferences gets existing preferences or creates new ones with default values
+func (s *Service) GetOrCreateEmailPreferences(ctx context.Context, email string, userID *string) (*db.EmailPreference, error) {
+	if s.queries == nil {
+		return nil, fmt.Errorf("database queries not available")
+	}
+
+	// Try to get existing preferences
+	prefs, err := s.queries.GetEmailPreferencesByEmail(ctx, email)
+	if err == nil {
+		return &prefs, nil
+	}
+
+	if err != sql.ErrNoRows {
+		return nil, fmt.Errorf("failed to get email preferences: %w", err)
+	}
+
+	// Create new preferences with default values
+	token, err := GenerateUnsubscribeToken()
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate unsubscribe token: %w", err)
+	}
+
+	var userIDNullable sql.NullString
+	if userID != nil {
+		userIDNullable = sql.NullString{String: *userID, Valid: true}
+	}
+
+	newPrefs, err := s.queries.GetOrCreateEmailPreferences(ctx, db.GetOrCreateEmailPreferencesParams{
+		ID:               ulid.Make().String(),
+		UserID:           userIDNullable,
+		Email:            email,
+		UnsubscribeToken: sql.NullString{String: token, Valid: true},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create email preferences: %w", err)
+	}
+
+	return &newPrefs, nil
 }
 
 // Email represents an email message

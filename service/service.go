@@ -73,8 +73,8 @@ func New(storage *storage.Storage, config *Config) *Service {
 		shippingHandler = handlers.NewShippingHandler(storage.Queries, shippingService)
 	}
 
-	// Initialize email service
-	emailService := email.NewService()
+	// Initialize email service with database queries
+	emailService := email.NewService(storage.Queries)
 
 	// Initialize abandoned cart detector
 	abandonedCartDetector := jobs.NewAbandonedCartDetector(storage)
