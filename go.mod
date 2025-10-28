@@ -6,6 +6,7 @@ require (
 	github.com/EasyPost/easypost-go/v5 v5.3.1
 	github.com/Oudwins/tailwind-merge-go v0.2.0
 	github.com/a-h/templ v0.3.943
+	github.com/brianvoe/gofakeit/v7 v7.8.1
 	github.com/clerk/clerk-sdk-go/v2 v2.4.2
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.3
@@ -18,7 +19,6 @@ require (
 )
 
 require (
-	github.com/brianvoe/gofakeit/v7 v7.8.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect
