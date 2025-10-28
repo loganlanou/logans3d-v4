@@ -77,8 +77,8 @@ templ Index(c echo.Context, user *db.User, orders []db.Order) {
 								}
 							</div>
 
-							<!-- Manage Account Button -->
-							<div class="mt-8 pt-6 border-t border-slate-700/50">
+							<!-- Action Buttons -->
+							<div class="mt-8 pt-6 border-t border-slate-700/50 space-y-3">
 								<a
 									href={ templ.SafeURL(fmt.Sprintf("https://accounts.logans3dcreations.com/user")) }
 									target="_blank"
@@ -86,6 +86,12 @@ templ Index(c echo.Context, user *db.User, orders []db.Order) {
 									class="block w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-center font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
 								>
 									Manage Account
+								</a>
+								<a
+									href="/email-preferences"
+									class="block w-full px-4 py-3 bg-slate-800 hover:bg-slate-700 text-white text-center font-semibold rounded-lg transition-all duration-200 border border-slate-600/50 hover:border-slate-500/50"
+								>
+									Email Preferences
 								</a>
 							</div>
 						</div>

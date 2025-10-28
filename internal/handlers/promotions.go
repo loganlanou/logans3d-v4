@@ -47,14 +47,15 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 	ctx := context.Background()
 
 	// Check if email already exists
-	existingContact, err := h.queries.GetMarketingContactByEmail(ctx, req.Email)
+	var existingContact db.MarketingContact
+	var err error
+	existingContact, err = h.queries.GetMarketingContactByEmail(ctx, req.Email)
 	if err == nil {
 		// Email already captured, update popup_shown_at
 		_ = h.queries.UpdatePopupShownAt(ctx, req.Email)
 
-		// Email already captured
+		// If they already have a code, return it
 		if existingContact.PromotionCodeID.Valid {
-			// Already has a code, get it
 			code, err := h.queries.GetPromotionCodeByID(ctx, existingContact.PromotionCodeID.String)
 			if err == nil {
 				return c.JSON(http.StatusOK, map[string]interface{}{
@@ -64,6 +65,7 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 				})
 			}
 		}
+		// Note: If existing contact has no code, we'll create one and update the record below
 	}
 
 	// Get or create first-time customer campaign
@@ -105,22 +107,49 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 	if req.Source == "" {
 		req.Source = "popup"
 	}
-	_, err = h.queries.CreateMarketingContact(ctx, db.CreateMarketingContactParams{
-		ID:               ulid.Make().String(),
-		Email:            req.Email,
-		FirstName:        sql.NullString{String: req.FirstName, Valid: req.FirstName != ""},
-		LastName:         sql.NullString{String: req.LastName, Valid: req.LastName != ""},
-		Source:           req.Source,
-		OptedIn:          sql.NullInt64{Int64: 1, Valid: true},
-		PromotionCodeID:  sql.NullString{String: promoCode.ID, Valid: true},
-	})
-	if err != nil && !strings.Contains(err.Error(), "UNIQUE constraint") {
-		// Ignore unique constraint errors (email already exists)
-		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to save contact"})
+
+	// If we found an existing contact earlier (without a code), update it
+	if existingContact.Email != "" {
+		// Update existing contact with new promotion code
+		err = h.queries.UpdateMarketingContactPromoCode(ctx, db.UpdateMarketingContactPromoCodeParams{
+			PromotionCodeID: sql.NullString{String: promoCode.ID, Valid: true},
+			Email:           req.Email,
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update contact"})
+		}
+	} else {
+		// Create new marketing contact
+		_, err = h.queries.CreateMarketingContact(ctx, db.CreateMarketingContactParams{
+			ID:              ulid.Make().String(),
+			Email:           req.Email,
+			FirstName:       sql.NullString{String: req.FirstName, Valid: req.FirstName != ""},
+			LastName:        sql.NullString{String: req.LastName, Valid: req.LastName != ""},
+			Source:          req.Source,
+			OptedIn:         sql.NullInt64{Int64: 1, Valid: true},
+			PromotionCodeID: sql.NullString{String: promoCode.ID, Valid: true},
+		})
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to save contact"})
+		}
 	}
 
 	// Mark popup as shown for this email
 	_ = h.queries.UpdatePopupShownAt(ctx, req.Email)
+
+	// Create email preferences with promotional opt-in (user explicitly opted in via popup)
+	prefs, _ := h.emailService.GetOrCreateEmailPreferences(ctx, req.Email, nil)
+	// Ensure promotional emails are enabled
+	if prefs != nil {
+		_ = h.queries.UpdateEmailPreferences(ctx, db.UpdateEmailPreferencesParams{
+			ID:            prefs.ID,
+			Transactional: sql.NullInt64{Int64: 1, Valid: true},
+			Promotional:   sql.NullInt64{Int64: 1, Valid: true},
+			AbandonedCart: sql.NullInt64{Int64: 1, Valid: true},
+			Newsletter:    sql.NullInt64{Int64: 0, Valid: true},
+			ProductUpdates: sql.NullInt64{Int64: 0, Valid: true},
+		})
+	}
 
 	// Send welcome email with code
 	go h.sendWelcomeEmail(req.Email, req.FirstName, codeStr)

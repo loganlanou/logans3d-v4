@@ -619,8 +619,24 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 					<div class="space-y-2 max-w-sm ml-auto">
 						<div class="flex justify-between admin-text-primary">
 							<span>Subtotal:</span>
-							<span>${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }</span>
+							if order.OriginalSubtotalCents.Valid && order.OriginalSubtotalCents.Int64 > 0 {
+								<span>${ fmt.Sprintf("%.2f", float64(order.OriginalSubtotalCents.Int64)/100) }</span>
+							} else {
+								<span>${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }</span>
+							}
 						</div>
+						if order.DiscountCents.Valid && order.DiscountCents.Int64 > 0 {
+							<div class="flex justify-between text-emerald-600 font-medium">
+								<span>
+									Discount
+									if order.PromotionCode.Valid && order.PromotionCode.String != "" {
+										<span class="text-sm font-normal">({ order.PromotionCode.String })</span>
+									}
+									:
+								</span>
+								<span>-${ fmt.Sprintf("%.2f", float64(order.DiscountCents.Int64)/100) }</span>
+							</div>
+						}
 						if order.TaxCents > 0 {
 							<div class="flex justify-between admin-text-primary">
 								<span>Tax:</span>

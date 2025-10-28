@@ -39,9 +39,10 @@ INSERT INTO orders (
     shipping_address_line1, shipping_address_line2, shipping_city, shipping_state,
     shipping_postal_code, shipping_country,
     subtotal_cents, tax_cents, shipping_cents, total_cents,
+    original_subtotal_cents, discount_cents, promotion_code, promotion_code_id,
     stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id,
     easypost_shipment_id, status, notes
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateOrderStatus :one

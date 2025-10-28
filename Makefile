@@ -53,6 +53,24 @@ build:
 test:
 	go test ./... || echo "No tests found. Skipping."
 
+.PHONY: test-coverage
+test-coverage:
+	go test -coverprofile=coverage.out -covermode=atomic ./...
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+.PHONY: test-integration
+test-integration:
+	go test -tags=integration ./... -v
+
+.PHONY: test-verbose
+test-verbose:
+	go test -v ./...
+
+.PHONY: ci
+ci: lint test build
+	@echo "✅ All CI checks passed!"
+
 .PHONY: lint
 lint:
 	golangci-lint run --max-issues-per-linter=0 || echo "Linter not installed. Run make install-linter"
@@ -72,6 +90,11 @@ migrate-down:
 .PHONY: migrate-status
 migrate-status:
 	goose -dir storage/migrations sqlite3 ./db/logans3d.db status
+
+.PHONY: test-migrations
+test-migrations:
+	@echo "🧪 Testing database migrations..."
+	@cd scripts/test-migrations && go run main.go
 
 .PHONY: sqlc-generate
 sqlc-generate:

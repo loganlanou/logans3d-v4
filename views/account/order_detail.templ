@@ -137,8 +137,24 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem) {
 							<div class="space-y-2 max-w-sm ml-auto">
 								<div class="flex justify-between text-slate-300">
 									<span>Subtotal:</span>
-									<span>${ formatCents(order.SubtotalCents) }</span>
+									if order.OriginalSubtotalCents.Valid && order.OriginalSubtotalCents.Int64 > 0 {
+										<span>${ formatCents(order.OriginalSubtotalCents.Int64) }</span>
+									} else {
+										<span>${ formatCents(order.SubtotalCents) }</span>
+									}
 								</div>
+								if order.DiscountCents.Valid && order.DiscountCents.Int64 > 0 {
+									<div class="flex justify-between text-emerald-400">
+										<span>
+											Discount
+											if order.PromotionCode.Valid && order.PromotionCode.String != "" {
+												<span class="text-sm">({ order.PromotionCode.String })</span>
+											}
+											:
+										</span>
+										<span>-${ formatCents(order.DiscountCents.Int64) }</span>
+									</div>
+								}
 								if order.TaxCents > 0 {
 									<div class="flex justify-between text-slate-300">
 										<span>Tax:</span>

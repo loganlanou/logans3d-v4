@@ -419,17 +419,10 @@ type AbandonedCartData struct {
 }
 
 // SendAbandonedCartRecoveryEmail sends a recovery email to a customer
+// Abandoned cart emails are always sent (transactional reminders)
+// Promo codes are only included if user has opted into promotional emails
 func (s *Service) SendAbandonedCartRecoveryEmail(data *AbandonedCartData, attemptType string) error {
 	ctx := context.Background()
-
-	// Check if user has opted out of abandoned cart emails
-	canSend, err := s.CheckEmailPreference(ctx, data.CustomerEmail, "abandoned_cart")
-	if err != nil {
-		slog.Warn("failed to check email preference, proceeding with send", "email", data.CustomerEmail, "error", err)
-	} else if !canSend {
-		slog.Info("user has opted out of abandoned cart emails", "email", data.CustomerEmail)
-		return fmt.Errorf("user has opted out of abandoned cart emails")
-	}
 
 	// Get or create email preferences to get unsubscribe token
 	prefs, err := s.GetOrCreateEmailPreferences(ctx, data.CustomerEmail, nil)

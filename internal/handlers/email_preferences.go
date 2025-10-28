@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	emailutil "github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/account"
@@ -182,14 +183,14 @@ func boolToInt64(b bool) int64 {
 
 // HandleEmailPreferencesPage renders the user-facing email preferences page
 func (h *EmailPreferencesHandler) HandleEmailPreferencesPage(c echo.Context) error {
-	// Get user email from session/auth
-	user, ok := c.Get("user").(map[string]interface{})
-	if !ok || user == nil {
+	// Get user from auth middleware
+	dbUser, ok := auth.GetDBUser(c)
+	if !ok {
 		return c.Redirect(http.StatusFound, "/login")
 	}
 
-	email, ok := user["email"].(string)
-	if !ok || email == "" {
+	email := dbUser.Email
+	if email == "" {
 		return c.String(http.StatusBadRequest, "Email not found in user profile")
 	}
 
@@ -203,7 +204,7 @@ func (h *EmailPreferencesHandler) HandleEmailPreferencesPage(c echo.Context) err
 			token, _ := emailutil.GenerateUnsubscribeToken()
 			prefs, err = h.queries.GetOrCreateEmailPreferences(ctx, db.GetOrCreateEmailPreferencesParams{
 				ID:               ulid.Make().String(),
-				UserID:           sql.NullString{},
+				UserID:           sql.NullString{String: dbUser.ID, Valid: true},
 				Email:            email,
 				UnsubscribeToken: sql.NullString{String: token, Valid: true},
 			})

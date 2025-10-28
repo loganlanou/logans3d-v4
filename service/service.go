@@ -161,6 +161,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	withAuth.GET("/account/orders/:id", s.handleAccountOrderDetail)
 	withAuth.GET("/account/email-preferences", emailPrefsHandler.HandleEmailPreferencesPage)
 
+	// Redirect for backward compatibility
+	withAuth.GET("/email-preferences", func(c echo.Context) error {
+		return c.Redirect(http.StatusMovedPermanently, "/account/email-preferences")
+	})
+
 	// Cart API - all routes public for now
 	withAuth.GET("/api/cart", s.handleGetCart)
 	withAuth.POST("/api/cart/add", s.handleAddToCart)
@@ -892,9 +897,10 @@ func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
 	
 	// Create Stripe Checkout Session with dynamic product
 	stripe.Key = s.config.Stripe.SecretKey
-	
+
 	params := &stripe.CheckoutSessionParams{
-		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
+		Mode:                stripe.String(string(stripe.CheckoutSessionModePayment)),
+		AllowPromotionCodes: stripe.Bool(true),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
 				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
@@ -954,6 +960,7 @@ func (s *Service) handleCheckoutSuccess(c echo.Context) error {
 	params := &stripe.CheckoutSessionParams{}
 	params.AddExpand("line_items")
 	params.AddExpand("line_items.data.price.product")
+	params.AddExpand("total_details.breakdown")
 	session, err := checkoutsession.Get(sessionID, params)
 	if err != nil {
 		slog.Error("failed to retrieve stripe session", "error", err, "session_id", sessionID)

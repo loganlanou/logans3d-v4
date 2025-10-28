@@ -1,0 +1,97 @@
+run:
+  timeout: 5m
+  tests: true
+  build-tags:
+    - integration
+
+linters:
+  enable:
+    # Critical linters that would have caught reported bugs
+    - goconst        # Finds repeated strings that should be constants (would catch "user" vs DBUserKey)
+    - errcheck       # Checks that errors are checked (email sending, DB operations)
+    - sqlclosecheck  # Checks that sql.Rows and sql.Stmt are closed
+    - bodyclose      # Checks that HTTP response bodies are closed
+    - unconvert      # Removes unnecessary type conversions
+    - unparam        # Reports unused function parameters
+    - gocyclo        # Computes cyclomatic complexity
+
+    # Standard Go linters
+    - gofmt          # Checks whether code was gofmt-ed
+    - goimports      # Checks import order
+    - govet          # Reports suspicious constructs
+    - ineffassign    # Detects ineffectual assignments
+    - staticcheck    # Go's official static analyzer
+    - unused         # Checks for unused constants, variables, functions
+    - gosimple       # Simplifies code
+
+    # Code quality
+    - dupl           # Finds code clones
+    - misspell       # Finds commonly misspelled English words
+    - prealloc       # Finds slice declarations that could be preallocated
+    - revive         # Fast, configurable, extensible linter
+
+    # Security
+    - gosec          # Inspects source code for security problems
+
+    # Style
+    - stylecheck     # Replacement for golint
+    - whitespace     # Checks for unnecessary newlines
+
+  disable:
+    - exhaustive     # Too strict for this project
+    - exhaustruct    # Too strict for this project
+    - funlen         # Function length checks - can be noisy
+    - lll            # Line length - handled by gofmt
+    - wsl            # Whitespace linter - too opinionated
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15  # Maximum cyclomatic complexity
+
+  goconst:
+    min-len: 3
+    min-occurrences: 3
+
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+
+  govet:
+    check-shadowing: true
+
+  revive:
+    rules:
+      - name: exported
+        disabled: false
+      - name: unexported-return
+        disabled: true  # Too strict
+
+  staticcheck:
+    checks: ["all"]
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - gocyclo
+        - errcheck
+        - dupl
+        - gosec
+
+    # Exclude generated files
+    - path: _templ\.go$
+      linters:
+        - all
+    - path: storage/db/.*\.go$
+      linters:
+        - all
+
+    # Allow shadowing in specific cases
+    - linters:
+        - govet
+      text: "shadow: declaration of \"err\""

@@ -11,171 +11,172 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference) {
 		Title:       "Email Preferences - Logan's 3D Creations",
 		Description: "Manage your email preferences",
 	}) {
-		@layout.Header(c)
-		<main class="min-h-screen bg-gray-50 py-12">
-			<div class="max-w-3xl mx-auto px-4">
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
+			<!-- Animated background orbs -->
+			<div class="fixed inset-0 overflow-hidden pointer-events-none">
+				<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
+				<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+			</div>
+
+			<!-- Toast Notification -->
+			<div id="toast-container" class="fixed top-4 right-4 z-50"></div>
+
+			<div class="relative max-w-4xl mx-auto">
+				<!-- Back Button -->
+				<div class="mb-6">
+					<a href="/account" class="inline-flex items-center text-slate-400 hover:text-white transition-colors duration-200">
+						<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+						</svg>
+						Back to Account
+					</a>
+				</div>
+
 				<!-- Header -->
 				<div class="mb-8">
-					<h1 class="text-3xl font-bold text-gray-900">Email Preferences</h1>
-					<p class="text-gray-600 mt-2">Choose which emails you'd like to receive from us</p>
+					<h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
+						Email Preferences
+					</h1>
+					<p class="mt-2 text-slate-400">Choose which emails you'd like to receive from us</p>
 				</div>
 
 				<!-- Preferences Card -->
-				<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-					<form id="email-preferences-form" class="space-y-6">
+				<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl">
+					<div id="email-preferences-form" class="space-y-6" data-email={ prefs.Email }>
 						<!-- Email Display -->
-						<div class="pb-4 border-b border-gray-200">
-							<label class="block text-sm font-medium text-gray-700 mb-2">Your Email</label>
-							<p class="text-gray-900 font-medium">{ prefs.Email }</p>
+						<div class="pb-6 border-b border-slate-700/50">
+							<label class="text-sm text-slate-400 uppercase tracking-wider">Your Email</label>
+							<p class="text-white font-medium mt-2">{ prefs.Email }</p>
 						</div>
 
 						<!-- Transactional (Read-only) -->
-						<div class="flex items-start">
+						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30">
 							<div class="flex-1">
-								<h3 class="text-lg font-semibold text-gray-900">Order Updates</h3>
-								<p class="text-sm text-gray-600 mt-1">Order confirmations, shipping updates, and important account notifications</p>
-								<p class="text-xs text-gray-500 mt-2 italic">Required - These emails cannot be disabled</p>
+								<h3 class="text-lg font-semibold text-white">Order Updates</h3>
+								<p class="text-sm text-slate-400 mt-1">Order confirmations, shipping updates, and important account notifications</p>
+								<p class="text-xs text-slate-500 mt-2 italic">Required - These emails cannot be disabled</p>
 							</div>
-							<div class="ml-4">
-								<input type="checkbox" checked disabled class="h-5 w-5 text-brand-primary rounded border-gray-300 opacity-50 cursor-not-allowed"/>
+							<div class="ml-4 flex-shrink-0">
+								<input type="checkbox" checked disabled class="h-5 w-5 text-blue-500 rounded border-slate-600 bg-slate-800 opacity-50 cursor-not-allowed"/>
 							</div>
 						</div>
 
 						<!-- Abandoned Cart -->
-						<div class="flex items-start">
+						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
-								<h3 class="text-lg font-semibold text-gray-900">Abandoned Cart Reminders</h3>
-								<p class="text-sm text-gray-600 mt-1">Helpful reminders about items you left in your cart</p>
+								<h3 class="text-lg font-semibold text-white">Abandoned Cart Reminders</h3>
+								<p class="text-sm text-slate-400 mt-1">Helpful reminders about items you left in your cart</p>
 							</div>
-							<div class="ml-4">
+							<div class="ml-4 flex-shrink-0">
 								<input
 									type="checkbox"
 									name="abandoned_cart"
 									id="pref-abandoned-cart"
 									checked?={ prefs.AbandonedCart.Valid && prefs.AbandonedCart.Int64 == 1 }
-									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+									class="h-5 w-5 text-blue-500 rounded border-slate-600 bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+									onchange="updatePreference('abandoned_cart', this.checked)"
 								/>
 							</div>
 						</div>
 
 						<!-- Promotional -->
-						<div class="flex items-start">
+						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
-								<h3 class="text-lg font-semibold text-gray-900">Promotional Offers</h3>
-								<p class="text-sm text-gray-600 mt-1">Exclusive discounts, special offers, and sales announcements</p>
+								<h3 class="text-lg font-semibold text-white">Promotional Offers</h3>
+								<p class="text-sm text-slate-400 mt-1">Exclusive discounts, special offers, and sales announcements</p>
 							</div>
-							<div class="ml-4">
+							<div class="ml-4 flex-shrink-0">
 								<input
 									type="checkbox"
 									name="promotional"
 									id="pref-promotional"
 									checked?={ prefs.Promotional.Valid && prefs.Promotional.Int64 == 1 }
-									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+									class="h-5 w-5 text-blue-500 rounded border-slate-600 bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+									onchange="updatePreference('promotional', this.checked)"
 								/>
 							</div>
 						</div>
 
 						<!-- Newsletter -->
-						<div class="flex items-start">
+						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
-								<h3 class="text-lg font-semibold text-gray-900">Newsletter</h3>
-								<p class="text-sm text-gray-600 mt-1">Monthly newsletter with 3D printing tips, project showcases, and community highlights</p>
+								<h3 class="text-lg font-semibold text-white">Newsletter</h3>
+								<p class="text-sm text-slate-400 mt-1">Monthly newsletter with 3D printing tips, project showcases, and community highlights</p>
 							</div>
-							<div class="ml-4">
+							<div class="ml-4 flex-shrink-0">
 								<input
 									type="checkbox"
 									name="newsletter"
 									id="pref-newsletter"
 									checked?={ prefs.Newsletter.Valid && prefs.Newsletter.Int64 == 1 }
-									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+									class="h-5 w-5 text-blue-500 rounded border-slate-600 bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+									onchange="updatePreference('newsletter', this.checked)"
 								/>
 							</div>
 						</div>
 
 						<!-- Product Updates -->
-						<div class="flex items-start">
+						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
-								<h3 class="text-lg font-semibold text-gray-900">Product Updates</h3>
-								<p class="text-sm text-gray-600 mt-1">Notifications about new products, restocks, and featured items</p>
+								<h3 class="text-lg font-semibold text-white">Product Updates</h3>
+								<p class="text-sm text-slate-400 mt-1">Notifications about new products, restocks, and featured items</p>
 							</div>
-							<div class="ml-4">
+							<div class="ml-4 flex-shrink-0">
 								<input
 									type="checkbox"
 									name="product_updates"
 									id="pref-product-updates"
 									checked?={ prefs.ProductUpdates.Valid && prefs.ProductUpdates.Int64 == 1 }
-									class="h-5 w-5 text-brand-primary rounded border-gray-300 focus:ring-brand-primary"
+									class="h-5 w-5 text-blue-500 rounded border-slate-600 bg-slate-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+									onchange="updatePreference('product_updates', this.checked)"
 								/>
 							</div>
 						</div>
 
-						<!-- Messages -->
-						<div id="success-message" class="hidden p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-							Your preferences have been saved!
-						</div>
-
-						<div id="error-message" class="hidden p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg"></div>
-
-						<!-- Buttons -->
-						<div class="flex gap-4 pt-4">
+						<!-- Unsubscribe All Button -->
+						<div class="pt-6 mt-6 border-t border-slate-700/50">
 							<button
-								type="submit"
-								class="btn-primary flex-1"
+								type="button"
+								onclick="unsubscribeAll()"
+								class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
 							>
-								Save Preferences
+								Unsubscribe from All Marketing Emails
 							</button>
-							<a
-								href="/account"
-								class="btn-secondary flex-1 text-center"
-							>
-								Cancel
-							</a>
+							<p class="text-xs text-slate-500 text-center mt-3">
+								This will disable all preferences except Order Updates
+							</p>
 						</div>
-					</form>
-				</div>
-
-				<!-- Unsubscribe All -->
-				<div class="mt-8 text-center">
-					<p class="text-sm text-gray-600 mb-4">Want to stop receiving all marketing emails?</p>
-					if prefs.UnsubscribeToken.Valid {
-						<a
-							href={ templ.SafeURL("/unsubscribe/" + prefs.UnsubscribeToken.String) }
-							class="text-red-600 hover:text-red-800 text-sm font-medium"
-						>
-							Unsubscribe from all marketing emails
-						</a>
-					}
+					</div>
 				</div>
 			</div>
-		</main>
-		@layout.Footer()
+		</div>
 	}
 
 	<script>
-		document.getElementById('email-preferences-form').addEventListener('submit', async function(e) {
-			e.preventDefault();
+		function showToast(message, isError = false) {
+			const container = document.getElementById('toast-container');
+			const toast = document.createElement('div');
+			toast.className = `${isError ? 'bg-red-500' : 'bg-green-500'} text-white px-6 py-3 rounded-lg shadow-lg transition-opacity duration-500`;
+			toast.textContent = message;
+			container.appendChild(toast);
 
-			const form = e.target;
-			const submitBtn = form.querySelector('button[type="submit"]');
-			const successMsg = document.getElementById('success-message');
-			const errorMsg = document.getElementById('error-message');
+			setTimeout(() => {
+				toast.style.opacity = '0';
+				setTimeout(() => toast.remove(), 500);
+			}, 3000);
+		}
 
-			// Get checkbox values
+		async function updatePreference(prefName, value) {
+			const form = document.getElementById('email-preferences-form');
+			const email = form.dataset.email;
+
 			const data = {
-				email: '{ prefs.Email }',
+				email: email,
 				abandoned_cart: document.getElementById('pref-abandoned-cart').checked,
 				promotional: document.getElementById('pref-promotional').checked,
 				newsletter: document.getElementById('pref-newsletter').checked,
 				product_updates: document.getElementById('pref-product-updates').checked
 			};
-
-			// Disable submit button
-			submitBtn.disabled = true;
-			submitBtn.textContent = 'Saving...';
-
-			// Hide previous messages
-			successMsg.classList.add('hidden');
-			errorMsg.classList.add('hidden');
 
 			try {
 				const response = await fetch('/api/email-preferences', {
@@ -189,20 +190,59 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference) {
 				const result = await response.json();
 
 				if (response.ok) {
-					successMsg.classList.remove('hidden');
-					setTimeout(() => {
-						successMsg.classList.add('hidden');
-					}, 5000);
+					showToast('Preference saved!');
 				} else {
-					throw new Error(result.error || 'Failed to save preferences');
+					throw new Error(result.error || 'Failed to save preference');
 				}
 			} catch (error) {
-				errorMsg.textContent = error.message || 'Something went wrong. Please try again.';
-				errorMsg.classList.remove('hidden');
-			} finally {
-				submitBtn.disabled = false;
-				submitBtn.textContent = 'Save Preferences';
+				showToast(error.message || 'Failed to save preference', true);
+				// Revert checkbox on error
+				const checkbox = document.querySelector(`[name="${prefName}"]`);
+				if (checkbox) {
+					checkbox.checked = !value;
+				}
 			}
-		});
+		}
+
+		async function unsubscribeAll() {
+			const form = document.getElementById('email-preferences-form');
+			const email = form.dataset.email;
+
+			// Uncheck all checkboxes except Order Updates (which is disabled anyway)
+			document.getElementById('pref-abandoned-cart').checked = false;
+			document.getElementById('pref-promotional').checked = false;
+			document.getElementById('pref-newsletter').checked = false;
+			document.getElementById('pref-product-updates').checked = false;
+
+			const data = {
+				email: email,
+				abandoned_cart: false,
+				promotional: false,
+				newsletter: false,
+				product_updates: false
+			};
+
+			try {
+				const response = await fetch('/api/email-preferences', {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(data)
+				});
+
+				const result = await response.json();
+
+				if (response.ok) {
+					showToast('Unsubscribed from all marketing emails');
+				} else {
+					throw new Error(result.error || 'Failed to unsubscribe');
+				}
+			} catch (error) {
+				showToast(error.message || 'Failed to unsubscribe', true);
+				// Re-check the boxes on error (would need to fetch current state)
+				location.reload();
+			}
+		}
 	</script>
 }

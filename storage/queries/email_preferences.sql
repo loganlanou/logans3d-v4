@@ -101,6 +101,6 @@ INSERT INTO email_preferences (
     email,
     unsubscribe_token
 ) VALUES (?, ?, ?, ?)
-ON CONFLICT(user_id, email) DO UPDATE SET
+ON CONFLICT(email) DO UPDATE SET
     updated_at = CURRENT_TIMESTAMP
 RETURNING *;

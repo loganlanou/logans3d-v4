@@ -16,10 +16,11 @@ INSERT INTO orders (
     shipping_address_line1, shipping_address_line2, shipping_city, shipping_state,
     shipping_postal_code, shipping_country,
     subtotal_cents, tax_cents, shipping_cents, total_cents,
+    original_subtotal_cents, discount_cents, promotion_code, promotion_code_id,
     stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id,
     easypost_shipment_id, status, notes
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id
 `
 
 type CreateOrderParams struct {
@@ -38,6 +39,10 @@ type CreateOrderParams struct {
 	TaxCents                int64          `db:"tax_cents" json:"tax_cents"`
 	ShippingCents           int64          `db:"shipping_cents" json:"shipping_cents"`
 	TotalCents              int64          `db:"total_cents" json:"total_cents"`
+	OriginalSubtotalCents   sql.NullInt64  `db:"original_subtotal_cents" json:"original_subtotal_cents"`
+	DiscountCents           sql.NullInt64  `db:"discount_cents" json:"discount_cents"`
+	PromotionCode           sql.NullString `db:"promotion_code" json:"promotion_code"`
+	PromotionCodeID         sql.NullString `db:"promotion_code_id" json:"promotion_code_id"`
 	StripePaymentIntentID   sql.NullString `db:"stripe_payment_intent_id" json:"stripe_payment_intent_id"`
 	StripeCustomerID        sql.NullString `db:"stripe_customer_id" json:"stripe_customer_id"`
 	StripeCheckoutSessionID sql.NullString `db:"stripe_checkout_session_id" json:"stripe_checkout_session_id"`
@@ -63,6 +68,10 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		arg.TaxCents,
 		arg.ShippingCents,
 		arg.TotalCents,
+		arg.OriginalSubtotalCents,
+		arg.DiscountCents,
+		arg.PromotionCode,
+		arg.PromotionCodeID,
 		arg.StripePaymentIntentID,
 		arg.StripeCustomerID,
 		arg.StripeCheckoutSessionID,
@@ -99,6 +108,10 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 	)
 	return i, err
 }
@@ -161,7 +174,7 @@ func (q *Queries) DeleteOrder(ctx context.Context, id string) error {
 }
 
 const getOrder = `-- name: GetOrder :one
-SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders WHERE id = ?
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id FROM orders WHERE id = ?
 `
 
 func (q *Queries) GetOrder(ctx context.Context, id string) (Order, error) {
@@ -195,12 +208,16 @@ func (q *Queries) GetOrder(ctx context.Context, id string) (Order, error) {
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 	)
 	return i, err
 }
 
 const getOrderByStripeSessionID = `-- name: GetOrderByStripeSessionID :one
-SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id FROM orders
 WHERE stripe_checkout_session_id = ?
 LIMIT 1
 `
@@ -236,6 +253,10 @@ func (q *Queries) GetOrderByStripeSessionID(ctx context.Context, stripeCheckoutS
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 	)
 	return i, err
 }
@@ -320,7 +341,7 @@ func (q *Queries) GetOrderStats(ctx context.Context) (GetOrderStatsRow, error) {
 
 const getOrderWithItems = `-- name: GetOrderWithItems :one
 SELECT 
-    o.id, o.user_id, o.customer_name, o.customer_email, o.customer_phone, o.shipping_address_line1, o.shipping_address_line2, o.shipping_city, o.shipping_state, o.shipping_postal_code, o.shipping_country, o.subtotal_cents, o.tax_cents, o.shipping_cents, o.total_cents, o.status, o.notes, o.stripe_payment_intent_id, o.stripe_customer_id, o.stripe_checkout_session_id, o.tracking_number, o.tracking_url, o.carrier, o.created_at, o.updated_at, o.easypost_shipment_id, o.easypost_label_url,
+    o.id, o.user_id, o.customer_name, o.customer_email, o.customer_phone, o.shipping_address_line1, o.shipping_address_line2, o.shipping_city, o.shipping_state, o.shipping_postal_code, o.shipping_country, o.subtotal_cents, o.tax_cents, o.shipping_cents, o.total_cents, o.status, o.notes, o.stripe_payment_intent_id, o.stripe_customer_id, o.stripe_checkout_session_id, o.tracking_number, o.tracking_url, o.carrier, o.created_at, o.updated_at, o.easypost_shipment_id, o.easypost_label_url, o.original_subtotal_cents, o.discount_cents, o.promotion_code, o.promotion_code_id,
     GROUP_CONCAT(
         oi.id || ',' || oi.product_id || ',' || oi.quantity || ',' || 
         oi.unit_price_cents || ',' || oi.total_price_cents || ',' || 
@@ -360,6 +381,10 @@ type GetOrderWithItemsRow struct {
 	UpdatedAt               sql.NullTime   `db:"updated_at" json:"updated_at"`
 	EasypostShipmentID      sql.NullString `db:"easypost_shipment_id" json:"easypost_shipment_id"`
 	EasypostLabelUrl        sql.NullString `db:"easypost_label_url" json:"easypost_label_url"`
+	OriginalSubtotalCents   sql.NullInt64  `db:"original_subtotal_cents" json:"original_subtotal_cents"`
+	DiscountCents           sql.NullInt64  `db:"discount_cents" json:"discount_cents"`
+	PromotionCode           sql.NullString `db:"promotion_code" json:"promotion_code"`
+	PromotionCodeID         sql.NullString `db:"promotion_code_id" json:"promotion_code_id"`
 	OrderItems              string         `db:"order_items" json:"order_items"`
 }
 
@@ -394,13 +419,17 @@ func (q *Queries) GetOrderWithItems(ctx context.Context, id string) (GetOrderWit
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 		&i.OrderItems,
 	)
 	return i, err
 }
 
 const listOrders = `-- name: ListOrders :many
-SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders 
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id FROM orders 
 ORDER BY created_at DESC
 `
 
@@ -441,6 +470,10 @@ func (q *Queries) ListOrders(ctx context.Context) ([]Order, error) {
 			&i.UpdatedAt,
 			&i.EasypostShipmentID,
 			&i.EasypostLabelUrl,
+			&i.OriginalSubtotalCents,
+			&i.DiscountCents,
+			&i.PromotionCode,
+			&i.PromotionCodeID,
 		); err != nil {
 			return nil, err
 		}
@@ -456,7 +489,7 @@ func (q *Queries) ListOrders(ctx context.Context) ([]Order, error) {
 }
 
 const listOrdersByStatus = `-- name: ListOrdersByStatus :many
-SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders 
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id FROM orders 
 WHERE status = ? 
 ORDER BY created_at DESC
 `
@@ -498,6 +531,10 @@ func (q *Queries) ListOrdersByStatus(ctx context.Context, status sql.NullString)
 			&i.UpdatedAt,
 			&i.EasypostShipmentID,
 			&i.EasypostLabelUrl,
+			&i.OriginalSubtotalCents,
+			&i.DiscountCents,
+			&i.PromotionCode,
+			&i.PromotionCodeID,
 		); err != nil {
 			return nil, err
 		}
@@ -513,7 +550,7 @@ func (q *Queries) ListOrdersByStatus(ctx context.Context, status sql.NullString)
 }
 
 const listOrdersByUser = `-- name: ListOrdersByUser :many
-SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url FROM orders
+SELECT id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id FROM orders
 WHERE user_id = ?
 ORDER BY created_at DESC
 `
@@ -555,6 +592,10 @@ func (q *Queries) ListOrdersByUser(ctx context.Context, userID string) ([]Order,
 			&i.UpdatedAt,
 			&i.EasypostShipmentID,
 			&i.EasypostLabelUrl,
+			&i.OriginalSubtotalCents,
+			&i.DiscountCents,
+			&i.PromotionCode,
+			&i.PromotionCodeID,
 		); err != nil {
 			return nil, err
 		}
@@ -573,7 +614,7 @@ const updateOrderLabel = `-- name: UpdateOrderLabel :one
 UPDATE orders
 SET easypost_label_url = ?, tracking_number = ?, carrier = ?, status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id
 `
 
 type UpdateOrderLabelParams struct {
@@ -621,6 +662,10 @@ func (q *Queries) UpdateOrderLabel(ctx context.Context, arg UpdateOrderLabelPara
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 	)
 	return i, err
 }
@@ -629,7 +674,7 @@ const updateOrderNotes = `-- name: UpdateOrderNotes :one
 UPDATE orders 
 SET notes = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id
 `
 
 type UpdateOrderNotesParams struct {
@@ -668,6 +713,10 @@ func (q *Queries) UpdateOrderNotes(ctx context.Context, arg UpdateOrderNotesPara
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 	)
 	return i, err
 }
@@ -676,7 +725,7 @@ const updateOrderStatus = `-- name: UpdateOrderStatus :one
 UPDATE orders 
 SET status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id
 `
 
 type UpdateOrderStatusParams struct {
@@ -715,6 +764,10 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 	)
 	return i, err
 }
@@ -723,7 +776,7 @@ const updateOrderTracking = `-- name: UpdateOrderTracking :one
 UPDATE orders
 SET tracking_number = ?, tracking_url = ?, carrier = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url
+RETURNING id, user_id, customer_name, customer_email, customer_phone, shipping_address_line1, shipping_address_line2, shipping_city, shipping_state, shipping_postal_code, shipping_country, subtotal_cents, tax_cents, shipping_cents, total_cents, status, notes, stripe_payment_intent_id, stripe_customer_id, stripe_checkout_session_id, tracking_number, tracking_url, carrier, created_at, updated_at, easypost_shipment_id, easypost_label_url, original_subtotal_cents, discount_cents, promotion_code, promotion_code_id
 `
 
 type UpdateOrderTrackingParams struct {
@@ -769,6 +822,10 @@ func (q *Queries) UpdateOrderTracking(ctx context.Context, arg UpdateOrderTracki
 		&i.UpdatedAt,
 		&i.EasypostShipmentID,
 		&i.EasypostLabelUrl,
+		&i.OriginalSubtotalCents,
+		&i.DiscountCents,
+		&i.PromotionCode,
+		&i.PromotionCodeID,
 	)
 	return i, err
 }

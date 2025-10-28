@@ -11,6 +11,10 @@ RETURNING *;
 SELECT * FROM promotion_campaigns
 WHERE id = ?;
 
+-- name: GetPromotionCampaignByName :one
+SELECT * FROM promotion_campaigns
+WHERE name = ?;
+
 -- name: GetAllPromotionCampaigns :many
 SELECT * FROM promotion_campaigns
 ORDER BY created_at DESC
@@ -159,6 +163,12 @@ UPDATE marketing_contacts
 SET opted_in = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
+
+-- name: UpdateMarketingContactPromoCode :exec
+UPDATE marketing_contacts
+SET promotion_code_id = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE email = ?;
 
 -- name: CountMarketingContacts :one
 SELECT COUNT(*) FROM marketing_contacts;

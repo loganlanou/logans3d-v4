@@ -145,13 +145,21 @@ func (s *AbandonedCartEmailSender) sendEmailsForAttemptType(ctx context.Context,
 		trackingToken := uuid.New().String()
 
 		// Get promo code if available (for 24hr and 72hr emails only)
+		// Only include promo code if user has opted into promotional emails
 		var promoCode, promoExpires string
 		if attemptType == "email_24hr" || attemptType == "email_72hr" {
-			cartWithPromo, err := s.storage.Queries.GetAbandonedCartWithPromoCode(ctx, cart.ID)
-			if err == nil && cartWithPromo.PromoCode.Valid {
-				promoCode = cartWithPromo.PromoCode.String
-				if cartWithPromo.PromoExpiresAt.Valid {
-					promoExpires = cartWithPromo.PromoExpiresAt.Time.Format("Jan 2, 2006")
+			// Check if user has opted into promotional emails
+			canSendPromo, err := s.emailService.CheckEmailPreference(ctx, cart.CustomerEmail.String, "promotional")
+			if err != nil {
+				slog.Warn("failed to check promotional preference, not including promo code", "email", cart.CustomerEmail.String, "error", err)
+			} else if canSendPromo {
+				// User is opted in, get promo code
+				cartWithPromo, err := s.storage.Queries.GetAbandonedCartWithPromoCode(ctx, cart.ID)
+				if err == nil && cartWithPromo.PromoCode.Valid {
+					promoCode = cartWithPromo.PromoCode.String
+					if cartWithPromo.PromoExpiresAt.Valid {
+						promoExpires = cartWithPromo.PromoExpiresAt.Time.Format("Jan 2, 2006")
+					}
 				}
 			}
 		}

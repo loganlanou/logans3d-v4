@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	stripego "github.com/stripe/stripe-go/v80"
+	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
+	promotioncode "github.com/stripe/stripe-go/v80/promotioncode"
 	"github.com/stripe/stripe-go/v80/webhook"
 	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/stripe"
@@ -163,6 +166,42 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 		"customer_email", session.CustomerDetails.Email,
 		"amount_total", session.AmountTotal)
 
+	// Debug logging for session data
+	slog.Debug("session data check",
+		"session_id", session.ID,
+		"has_line_items", session.LineItems != nil,
+		"has_total_details", session.TotalDetails != nil)
+
+	if session.LineItems != nil {
+		slog.Debug("line items present", "count", len(session.LineItems.Data))
+	}
+
+	if session.TotalDetails != nil {
+		slog.Debug("total details present",
+			"amount_discount", session.TotalDetails.AmountDiscount,
+			"has_breakdown", session.TotalDetails.Breakdown != nil)
+	}
+
+	// If breakdown is missing and there's a discount, re-fetch session with expanded details
+	if session.TotalDetails != nil && session.TotalDetails.AmountDiscount > 0 && session.TotalDetails.Breakdown == nil {
+		slog.Debug("re-fetching session to get discount breakdown", "session_id", session.ID)
+		stripego.Key = os.Getenv("STRIPE_SECRET_KEY")
+		params := &stripego.CheckoutSessionParams{}
+		params.AddExpand("total_details.breakdown")
+		params.AddExpand("line_items")
+		params.AddExpand("line_items.data.price.product")
+		expandedSession, err := checkoutsession.Get(session.ID, params)
+		if err != nil {
+			slog.Warn("failed to re-fetch session for breakdown", "error", err, "session_id", session.ID)
+			// Continue with original session - we'll still have the discount amount
+		} else {
+			session = expandedSession
+			slog.Debug("successfully retrieved discount breakdown",
+				"session_id", session.ID,
+				"has_breakdown", session.TotalDetails != nil && session.TotalDetails.Breakdown != nil)
+		}
+	}
+
 	// Create order in database
 	orderID := uuid.New().String()
 
@@ -227,8 +266,103 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 		taxCents = session.TotalDetails.AmountTax
 	}
 
+	// Get discount amount from Stripe
+	discountCents := int64(0)
+	promotionCode := sql.NullString{}
+	promotionCodeID := sql.NullString{}
+
+	if session.TotalDetails != nil && session.TotalDetails.AmountDiscount != 0 {
+		discountCents = session.TotalDetails.AmountDiscount
+		slog.Info("discount applied to order", "discount_cents", discountCents, "order_id", orderID)
+
+		// Try to get the promotion code from the session
+		// The session object may have discount information in the discounts array
+		if session.TotalDetails.Breakdown != nil && len(session.TotalDetails.Breakdown.Discounts) > 0 {
+			// Get the first discount's promotion code
+			firstDiscount := session.TotalDetails.Breakdown.Discounts[0]
+			slog.Debug("discount breakdown structure",
+				"has_discount", firstDiscount.Discount != nil,
+				"has_promo_code", firstDiscount.Discount != nil && firstDiscount.Discount.PromotionCode != nil,
+				"discount_id", firstDiscount.Discount.ID,
+				"order_id", orderID)
+
+			if firstDiscount.Discount != nil && firstDiscount.Discount.PromotionCode != nil {
+				promoCodeObj := firstDiscount.Discount.PromotionCode
+				slog.Debug("promotion code object details",
+					"code", promoCodeObj.Code,
+					"id", promoCodeObj.ID,
+					"active", promoCodeObj.Active,
+					"order_id", orderID)
+
+				code := promoCodeObj.Code
+
+				// Stripe expansion depth limit means we only get the ID, not the full object
+				// If code is empty but we have an ID, retrieve the full promotion code
+				if code == "" && promoCodeObj.ID != "" {
+					slog.Debug("promotion code is empty, retrieving full object by ID",
+						"promo_code_id", promoCodeObj.ID,
+						"order_id", orderID)
+
+					stripego.Key = os.Getenv("STRIPE_SECRET_KEY")
+					fullPromoCode, err := promotioncode.Get(promoCodeObj.ID, nil)
+					if err != nil {
+						slog.Error("failed to retrieve promotion code details",
+							"error", err,
+							"promo_code_id", promoCodeObj.ID,
+							"order_id", orderID)
+					} else {
+						code = fullPromoCode.Code
+						slog.Debug("retrieved full promotion code",
+							"code", code,
+							"promo_code_id", fullPromoCode.ID,
+							"order_id", orderID)
+					}
+				}
+
+				// Only proceed if we successfully got a code
+				if code != "" {
+					promotionCode = sql.NullString{String: code, Valid: true}
+					slog.Debug("promotion code found", "code", code, "order_id", orderID)
+				} else {
+					slog.Warn("promotion code ID present but code string is empty",
+						"promo_code_id", promoCodeObj.ID,
+						"order_id", orderID)
+				}
+
+				// Only try to create/link the code if we have a non-empty code string
+				if code != "" {
+					// Try to find this code in our promotion_codes table
+					promoRecord, err := h.queries.GetPromotionCodeByCode(ctx, code)
+					if err == nil {
+						// Code exists in our database
+						promotionCodeID = sql.NullString{String: promoRecord.ID, Valid: true}
+						slog.Debug("promotion code matched to database", "promotion_code_id", promoRecord.ID, "order_id", orderID)
+					} else if err == sql.ErrNoRows {
+						// Code doesn't exist in our database - create it
+						slog.Debug("promotion code not found in database, creating external promotion code", "code", code, "order_id", orderID)
+						promoRecord, createErr := h.createExternalPromotionCode(ctx, code, firstDiscount)
+						if createErr != nil {
+							slog.Error("failed to create external promotion code", "error", createErr, "code", code, "order_id", orderID)
+							// Don't fail the order - just log and continue with NULL promotion_code_id
+						} else {
+							promotionCodeID = sql.NullString{String: promoRecord.ID, Valid: true}
+							slog.Debug("created and linked external promotion code", "promotion_code_id", promoRecord.ID, "code", code, "order_id", orderID)
+						}
+					} else {
+						// Some other error occurred during lookup
+						slog.Warn("failed to lookup promotion code in database", "error", err, "code", code)
+					}
+				}
+			}
+		}
+	}
+
 	// Calculate subtotal excluding shipping (since we track shipping separately)
+	// This is the discounted subtotal
 	subtotalCents := totalCents - taxCents - shippingCents
+
+	// Calculate original subtotal (before discount)
+	originalSubtotalCents := subtotalCents + discountCents
 
 	// Check if order already exists (idempotency)
 	existing, existErr := h.queries.GetOrderByStripeSessionID(ctx, sql.NullString{String: session.ID, Valid: true})
@@ -241,21 +375,25 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 
 	// Create order
 	_, createErr := h.queries.CreateOrder(ctx, db.CreateOrderParams{
-		ID:                   orderID,
-		UserID:               userID, // Set from metadata if user was authenticated
-		CustomerEmail:        customerEmail,
-		CustomerName:         customerName,
-		CustomerPhone:        sql.NullString{String: session.CustomerDetails.Phone, Valid: session.CustomerDetails.Phone != ""},
-		ShippingAddressLine1: shippingAddress.Line1,
-		ShippingAddressLine2: sql.NullString{String: shippingAddress.Line2, Valid: shippingAddress.Line2 != ""},
-		ShippingCity:         shippingAddress.City,
-		ShippingState:        shippingAddress.State,
-		ShippingPostalCode:   shippingAddress.PostalCode,
-		ShippingCountry:      shippingAddress.Country,
-		SubtotalCents:        subtotalCents,
-		TaxCents:             taxCents,
-		ShippingCents:        shippingCents,
-		TotalCents:           totalCents,
+		ID:                      orderID,
+		UserID:                  userID, // Set from metadata if user was authenticated
+		CustomerEmail:           customerEmail,
+		CustomerName:            customerName,
+		CustomerPhone:           sql.NullString{String: session.CustomerDetails.Phone, Valid: session.CustomerDetails.Phone != ""},
+		ShippingAddressLine1:    shippingAddress.Line1,
+		ShippingAddressLine2:    sql.NullString{String: shippingAddress.Line2, Valid: shippingAddress.Line2 != ""},
+		ShippingCity:            shippingAddress.City,
+		ShippingState:           shippingAddress.State,
+		ShippingPostalCode:      shippingAddress.PostalCode,
+		ShippingCountry:         shippingAddress.Country,
+		SubtotalCents:           subtotalCents,
+		TaxCents:                taxCents,
+		ShippingCents:           shippingCents,
+		TotalCents:              totalCents,
+		OriginalSubtotalCents:   sql.NullInt64{Int64: originalSubtotalCents, Valid: true},
+		DiscountCents:           sql.NullInt64{Int64: discountCents, Valid: discountCents > 0},
+		PromotionCode:           promotionCode,
+		PromotionCodeID:         promotionCodeID,
 		StripePaymentIntentID:   sql.NullString{String: session.PaymentIntent.ID, Valid: true},
 		StripeCustomerID:        sql.NullString{String: session.Customer.ID, Valid: true},
 		StripeCheckoutSessionID: sql.NullString{String: session.ID, Valid: true},
@@ -346,7 +484,11 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 				}
 			}
 		}
+	} else {
+		slog.Warn("session.LineItems is nil - no order items will be created", "session_id", session.ID)
 	}
+
+	slog.Debug("order items processed", "order_id", orderID, "item_count", len(orderItems))
 
 	// Prepare email data
 	emailData := &email.OrderData{
@@ -397,4 +539,112 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 	}
 
 	return nil
+}
+
+// getOrCreateCampaignForDiscount gets or creates a campaign for an external Stripe discount
+func (h *PaymentHandler) getOrCreateCampaignForDiscount(ctx context.Context, discount *stripego.CheckoutSessionTotalDetailsBreakdownDiscount) (*db.PromotionCampaign, error) {
+	if discount == nil || discount.Discount == nil || discount.Discount.Coupon == nil {
+		return nil, fmt.Errorf("invalid discount structure")
+	}
+
+	coupon := discount.Discount.Coupon
+
+	// Determine discount type and value
+	var discountType string
+	var discountValue int64
+	var campaignName string
+
+	if coupon.PercentOff > 0 {
+		discountType = "percentage"
+		discountValue = int64(coupon.PercentOff)
+		campaignName = fmt.Sprintf("External Stripe - %.0f%% Off", coupon.PercentOff)
+	} else if coupon.AmountOff > 0 {
+		discountType = "amount"
+		discountValue = coupon.AmountOff
+		campaignName = fmt.Sprintf("External Stripe - $%.2f Off", float64(coupon.AmountOff)/100)
+	} else {
+		discountType = "percentage"
+		discountValue = 0
+		campaignName = "External Stripe - Variable Discount"
+	}
+
+	// Try to find existing campaign by name
+	campaign, err := h.queries.GetPromotionCampaignByName(ctx, campaignName)
+	if err == nil {
+		slog.Debug("found existing campaign for external discount", "campaign_id", campaign.ID, "campaign_name", campaignName)
+		return &campaign, nil
+	}
+
+	if err != sql.ErrNoRows {
+		return nil, fmt.Errorf("failed to lookup campaign: %w", err)
+	}
+
+	// Campaign doesn't exist - create it
+	slog.Debug("creating new campaign for external discount", "campaign_name", campaignName, "discount_type", discountType, "discount_value", discountValue)
+
+	campaign, err = h.queries.CreatePromotionCampaign(ctx, db.CreatePromotionCampaignParams{
+		ID:                uuid.New().String(),
+		Name:              campaignName,
+		Description:       sql.NullString{String: "Promotion codes created externally in Stripe", Valid: true},
+		DiscountType:      discountType,
+		DiscountValue:     discountValue,
+		StripePromotionID: sql.NullString{String: coupon.ID, Valid: true},
+		StartDate:         time.Now(),
+		EndDate:           sql.NullTime{},
+		MaxUses:           sql.NullInt64{},
+		Active:            sql.NullInt64{Int64: 1, Valid: true},
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to create campaign: %w", err)
+	}
+
+	slog.Debug("created new campaign for external discount", "campaign_id", campaign.ID, "campaign_name", campaignName)
+	return &campaign, nil
+}
+
+// createExternalPromotionCode creates a promotion code record for an external Stripe promotion code
+func (h *PaymentHandler) createExternalPromotionCode(ctx context.Context, code string, discount *stripego.CheckoutSessionTotalDetailsBreakdownDiscount) (*db.PromotionCode, error) {
+	// Get or create the appropriate campaign for this discount
+	campaign, err := h.getOrCreateCampaignForDiscount(ctx, discount)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get/create campaign: %w", err)
+	}
+
+	// Extract Stripe promotion code ID if available
+	stripePromoCodeID := ""
+	if discount.Discount != nil && discount.Discount.PromotionCode != nil {
+		stripePromoCodeID = discount.Discount.PromotionCode.ID
+	}
+
+	slog.Info("creating external promotion code", "code", code, "campaign_id", campaign.ID, "stripe_promo_code_id", stripePromoCodeID)
+
+	// Create the promotion code
+	promoCode, err := h.queries.CreatePromotionCode(ctx, db.CreatePromotionCodeParams{
+		ID:                    uuid.New().String(),
+		CampaignID:            campaign.ID,
+		Code:                  code,
+		StripePromotionCodeID: sql.NullString{String: stripePromoCodeID, Valid: stripePromoCodeID != ""},
+		Email:                 sql.NullString{},
+		UserID:                sql.NullString{},
+		MaxUses:               sql.NullInt64{},
+		ExpiresAt:             sql.NullTime{},
+	})
+
+	if err != nil {
+		// Check if this is a unique constraint violation (race condition)
+		if err.Error() == "UNIQUE constraint failed: promotion_codes.code" {
+			slog.Info("promotion code already exists (race condition), fetching existing record", "code", code)
+			// Another request created this code - fetch it
+			existingCode, fetchErr := h.queries.GetPromotionCodeByCode(ctx, code)
+			if fetchErr != nil {
+				return nil, fmt.Errorf("failed to fetch existing promotion code after race condition: %w", fetchErr)
+			}
+			return &existingCode, nil
+		}
+		return nil, fmt.Errorf("failed to create promotion code: %w", err)
+	}
+
+	slog.Info("created external promotion code", "code", code, "promotion_code_id", promoCode.ID, "campaign_id", campaign.ID)
+	return &promoCode, nil
 }

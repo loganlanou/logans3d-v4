@@ -198,6 +198,9 @@ const baseEmailTemplate = `
                 <a href="mailto:prints@logans3dcreations.com">prints@logans3dcreations.com</a>
                 <span style="color: #666; margin: 0 8px;">•</span>
                 <a href="https://www.logans3dcreations.com">www.logans3dcreations.com</a>
+                <div style="margin-top: 10px; font-size: 11px; color: #888;">
+                    25580 County Highway S, Cadott WI 54727
+                </div>
                 {{if .UnsubscribeToken}}
                 <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #555;">
                     <a href="https://www.logans3dcreations.com/unsubscribe/{{.UnsubscribeToken}}" style="color: #999; font-size: 11px;">

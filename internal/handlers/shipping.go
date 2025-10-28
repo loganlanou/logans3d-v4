@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 )
@@ -60,7 +61,13 @@ func (h *ShippingHandler) GetShippingRates(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get session")
 	}
 
-	counts, err := h.getCartItemCounts(c, sessionID, "")
+	// Check if user is authenticated and prefer user_id for cart lookups
+	var userID string
+	if user, ok := auth.GetDBUser(c); ok {
+		userID = user.ID
+	}
+
+	counts, err := h.getCartItemCounts(c, sessionID, userID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart items")
 	}

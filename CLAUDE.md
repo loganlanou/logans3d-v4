@@ -52,6 +52,123 @@ All development logs are **always available** in the `./tmp/` directory:
 
 **Note**: `make dev` keeps only the 5 most recent archived logs and automatically rotates them.
 
+## Logging Best Practices
+
+**CRITICAL: Use the correct log level for different types of information.**
+
+This project uses Go's structured logging package `log/slog`. Choosing the correct log level is essential for maintainability and debugging.
+
+### Log Level Guidelines
+
+**slog.Debug** - Use for diagnostic and troubleshooting information:
+- Understanding code execution flow
+- Variable values during processing
+- State checks and validation steps
+- API response parsing details
+- Database query debugging
+- Checking for nil values or edge cases
+- Any information needed to understand "why did this happen?"
+
+**slog.Info** - Use ONLY for significant application events:
+- Server startup/shutdown
+- Major lifecycle events (e.g., "migration completed")
+- Business-critical actions completed successfully
+- External service connections established
+
+**slog.Warn** - Use for concerning but non-fatal situations:
+- Deprecated feature usage
+- Fallback to default values
+- Recoverable errors that don't fail the operation
+
+**slog.Error** - Use for errors that require attention:
+- Failed operations
+- Unexpected errors
+- Data integrity issues
+
+### Common Mistakes to Avoid
+
+**WRONG - Using slog.Info for debugging:**
+```go
+slog.Info("session data check", "session_id", session.ID, "has_line_items", session.LineItems != nil)
+slog.Info("re-fetching session to get discount breakdown", "session_id", session.ID)
+slog.Info("checking if promotion code exists", "code", code)
+```
+
+**CORRECT - Using slog.Debug for debugging:**
+```go
+slog.Debug("session data check", "session_id", session.ID, "has_line_items", session.LineItems != nil)
+slog.Debug("re-fetching session to get discount breakdown", "session_id", session.ID)
+slog.Debug("checking if promotion code exists", "code", code)
+```
+
+**CORRECT - Using slog.Info for significant events:**
+```go
+slog.Info("server started", "port", 8000)
+slog.Info("database migrations completed", "version", currentVersion)
+slog.Info("payment processed successfully", "order_id", orderID, "amount", total)
+```
+
+### Why This Matters
+
+**Debug logs:**
+- Can be filtered out in production
+- Help understand code execution without cluttering normal operation logs
+- Make it easy to enable detailed logging when investigating issues
+- Don't pollute logs with information only needed during troubleshooting
+
+**Info logs:**
+- Should tell the "story" of what the application is doing at a high level
+- Signal important milestones and state changes
+- Should be readable and meaningful in production logs
+- Too many Info logs make it hard to find important events
+
+### Rule of Thumb
+
+Ask yourself: "Would I want to see this in production logs during normal operation?"
+- **NO** → Use `slog.Debug`
+- **YES** → Use `slog.Info` (or `slog.Warn`/`slog.Error` if appropriate)
+
+### Error Logging Pattern
+
+**CRITICAL: Always log with slog.Error immediately before returning an error.**
+
+This makes it easy to find errors in logs and provides context about where and why the error occurred.
+
+**Pattern:**
+```go
+// CORRECT - Log before returning error
+if err != nil {
+    slog.Error("failed to create order", "error", err, "order_id", orderID, "customer", email)
+    return nil, fmt.Errorf("create order: %w", err)
+}
+
+// CORRECT - Log in error path even if not returning
+if err := queries.UpdateUser(ctx, userID); err != nil {
+    slog.Error("failed to update user", "error", err, "user_id", userID)
+    // ... continue with fallback logic
+}
+```
+
+**WRONG - Returning error without logging:**
+```go
+// Missing context - where did this error come from?
+if err != nil {
+    return nil, fmt.Errorf("create order: %w", err)
+}
+```
+
+**Best Practices:**
+- Include the error itself: `"error", err`
+- Include relevant context: IDs, names, values that help diagnose the issue
+- Use descriptive messages that explain what operation failed
+- Log at the point where you have the most context about what went wrong
+
+**Why This Matters:**
+- Errors bubble up and lose context as they propagate
+- Logs provide the full context at the point of failure
+- Makes debugging production issues much faster
+- Helps correlate errors with specific operations and data
+
 ## Database Configuration
 
 **Official database location**: `./data/database.db`
