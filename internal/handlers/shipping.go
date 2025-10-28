@@ -181,18 +181,18 @@ func (h *ShippingHandler) compareSnapshots(current, stored *CartSnapshot) bool {
 
 // SaveShippingSelectionRequest - Updated to include all shipping details with breakdown
 type SaveShippingSelectionRequest struct {
-	RateID               string                 `json:"rate_id"`
-	ShipmentID           string                 `json:"shipment_id"`
-	CarrierName          string                 `json:"carrier_name"`
-	ServiceName          string                 `json:"service_name"`
-	PriceCents           int64                  `json:"price_cents"`            // Total price (for backwards compatibility)
-	ShippingAmountCents  int64                  `json:"shipping_amount_cents"`  // Carrier shipping rate only
-	BoxCostCents         int64                  `json:"box_cost_cents"`         // Box/packaging cost
-	HandlingCostCents    int64                  `json:"handling_cost_cents"`    // Handling cost
-	BoxSKU               string                 `json:"box_sku"`                // Box SKU used
-	DeliveryDays         int64                  `json:"delivery_days"`
-	EstimatedDate        string                 `json:"estimated_date"`
-	ShippingAddress      map[string]interface{} `json:"shipping_address"`
+	RateID              string                 `json:"rate_id"`
+	ShipmentID          string                 `json:"shipment_id"`
+	CarrierName         string                 `json:"carrier_name"`
+	ServiceName         string                 `json:"service_name"`
+	PriceCents          int64                  `json:"price_cents"`           // Total price (for backwards compatibility)
+	ShippingAmountCents int64                  `json:"shipping_amount_cents"` // Carrier shipping rate only
+	BoxCostCents        int64                  `json:"box_cost_cents"`        // Box/packaging cost
+	HandlingCostCents   int64                  `json:"handling_cost_cents"`   // Handling cost
+	BoxSKU              string                 `json:"box_sku"`               // Box SKU used
+	DeliveryDays        int64                  `json:"delivery_days"`
+	EstimatedDate       string                 `json:"estimated_date"`
+	ShippingAddress     map[string]interface{} `json:"shipping_address"`
 }
 
 func (h *ShippingHandler) SaveShippingSelection(c echo.Context) error {

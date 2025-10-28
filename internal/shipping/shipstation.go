@@ -66,17 +66,17 @@ type RateRequest struct {
 }
 
 type Rate struct {
-	RateID           string  `json:"rate_id"`
-	ShipmentID       string  `json:"shipment_id,omitempty"` // EasyPost shipment ID for label purchase
-	CarrierID        string  `json:"carrier_id"`
-	CarrierCode      string  `json:"carrier_code"`
-	CarrierNickname  string  `json:"carrier_nickname"`
-	ServiceCode      string  `json:"service_code"`
-	ServiceType      string  `json:"service_type"`
-	ShippingAmount   Amount  `json:"shipping_amount"`
-	DeliveryDays     int     `json:"delivery_days,omitempty"`
-	EstimatedDate    string  `json:"estimated_delivery_date,omitempty"`
-	ValidationStatus string  `json:"validation_status,omitempty"`
+	RateID           string   `json:"rate_id"`
+	ShipmentID       string   `json:"shipment_id,omitempty"` // EasyPost shipment ID for label purchase
+	CarrierID        string   `json:"carrier_id"`
+	CarrierCode      string   `json:"carrier_code"`
+	CarrierNickname  string   `json:"carrier_nickname"`
+	ServiceCode      string   `json:"service_code"`
+	ServiceType      string   `json:"service_type"`
+	ShippingAmount   Amount   `json:"shipping_amount"`
+	DeliveryDays     int      `json:"delivery_days,omitempty"`
+	EstimatedDate    string   `json:"estimated_delivery_date,omitempty"`
+	ValidationStatus string   `json:"validation_status,omitempty"`
 	WarningMessages  []string `json:"warning_messages,omitempty"`
 	ErrorMessages    []string `json:"error_messages,omitempty"`
 }
@@ -87,10 +87,10 @@ type Amount struct {
 }
 
 type RateResponse struct {
-	Rates          []Rate `json:"rates"`
-	InvalidRates   []Rate `json:"invalid_rates,omitempty"`
-	RateRequestID  string `json:"rate_request_id,omitempty"`
-	Errors         []APIError `json:"errors,omitempty"`
+	Rates         []Rate     `json:"rates"`
+	InvalidRates  []Rate     `json:"invalid_rates,omitempty"`
+	RateRequestID string     `json:"rate_request_id,omitempty"`
+	Errors        []APIError `json:"errors,omitempty"`
 }
 
 type APIError struct {
@@ -120,14 +120,14 @@ type LabelDownload struct {
 }
 
 type Label struct {
-	LabelID         string        `json:"label_id"`
-	TrackingNumber  string        `json:"tracking_number"`
-	Status          string        `json:"status"`
-	ShippingAmount  Amount        `json:"shipping_amount"`
-	CarrierID       string        `json:"carrier_id"`
-	ServiceCode     string        `json:"service_code"`
-	LabelDownload   LabelDownload `json:"label_download"`
-	CreatedAt       time.Time     `json:"created_at"`
+	LabelID        string        `json:"label_id"`
+	TrackingNumber string        `json:"tracking_number"`
+	Status         string        `json:"status"`
+	ShippingAmount Amount        `json:"shipping_amount"`
+	CarrierID      string        `json:"carrier_id"`
+	ServiceCode    string        `json:"service_code"`
+	LabelDownload  LabelDownload `json:"label_download"`
+	CreatedAt      time.Time     `json:"created_at"`
 }
 
 type LabelResponse struct {

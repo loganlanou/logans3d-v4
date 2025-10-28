@@ -6,6 +6,17 @@ install-tools:
 	go install github.com/pressly/goose/v3/cmd/goose@latest
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
+.PHONY: setup-hooks
+setup-hooks:
+	@echo "⚙️  Setting up git hooks..."
+	@if [ ! -d .git ]; then \
+		echo "❌ Not a git repository"; \
+		exit 1; \
+	fi
+	@git config core.hooksPath .githooks
+	@chmod +x .githooks/*
+	@echo "✅ Git hooks configured! Pre-commit hook will check formatting and vet."
+
 .PHONY: templ-update
 templ-update:
 	go install github.com/a-h/templ/cmd/templ@latest
@@ -144,7 +155,7 @@ clean:
 	rm -rf node_modules/.playwright
 
 .PHONY: setup
-setup: install-tools tidy
+setup: install-tools tidy setup-hooks
 	npm install
 	mkdir -p db
 	make migrate
@@ -192,8 +203,9 @@ log-web-production:
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  setup        - Complete project setup (install tools, deps, migrate, css)"
+	@echo "  setup        - Complete project setup (install tools, deps, migrate, css, hooks)"
 	@echo "  install-tools - Install Go development tools (templ, goose, sqlc)"
+	@echo "  setup-hooks  - Configure git pre-commit hooks (gofmt, go vet)"
 	@echo "  generate     - Generate SQLC and templ files"
 	@echo "  dev          - Start development server with Air (RECOMMENDED)"
 	@echo "  run          - DEPRECATED: Use 'air' or 'make dev' instead"

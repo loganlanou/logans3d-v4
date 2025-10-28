@@ -6,17 +6,18 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	stripe "github.com/stripe/stripe-go/v80"
 	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
 	promotioncode "github.com/stripe/stripe-go/v80/promotioncode"
-	"github.com/stretchr/testify/require"
 )
 
 // TestLiveStripeSession queries the actual Stripe API to see what data is returned
 // This test is SKIPPED by default and only runs when STRIPE_LIVE_TEST=1
 //
 // Usage:
-//   STRIPE_LIVE_TEST=1 STRIPE_SESSION_ID=cs_test_xxx go test -v ./internal/handlers -run TestLiveStripeSession
+//
+//	STRIPE_LIVE_TEST=1 STRIPE_SESSION_ID=cs_test_xxx go test -v ./internal/handlers -run TestLiveStripeSession
 func TestLiveStripeSession(t *testing.T) {
 	if os.Getenv("STRIPE_LIVE_TEST") != "1" {
 		t.Skip("Skipping live Stripe API test. Set STRIPE_LIVE_TEST=1 to enable.")
@@ -37,7 +38,7 @@ func TestLiveStripeSession(t *testing.T) {
 
 	// Test different expansion strategies
 	testCases := []struct {
-		name      string
+		name       string
 		expansions []string
 	}{
 		{
@@ -152,7 +153,8 @@ func TestLiveStripeSession(t *testing.T) {
 // This helps us understand if we need to make a separate API call to get the code string
 //
 // Usage:
-//   STRIPE_LIVE_TEST=1 STRIPE_PROMO_CODE_ID=promo_xxx go test -v ./internal/handlers -run TestLiveStripePromotionCodeRetrieval
+//
+//	STRIPE_LIVE_TEST=1 STRIPE_PROMO_CODE_ID=promo_xxx go test -v ./internal/handlers -run TestLiveStripePromotionCodeRetrieval
 func TestLiveStripePromotionCodeRetrieval(t *testing.T) {
 	if os.Getenv("STRIPE_LIVE_TEST") != "1" {
 		t.Skip("Skipping live Stripe API test. Set STRIPE_LIVE_TEST=1 to enable.")

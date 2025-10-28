@@ -211,9 +211,9 @@ func (h *AdminHandler) HandleAbandonedCartDetail(c echo.Context) error {
 
 	// TODO: Create detail page template
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"cart":      cart,
-		"items":     snapshots,
-		"attempts":  attempts,
+		"cart":     cart,
+		"items":    snapshots,
+		"attempts": attempts,
 	})
 }
 
@@ -466,12 +466,12 @@ func (h *AdminHandler) getAbandonedCartMetrics(ctx context.Context) (admin.Aband
 	}
 
 	return admin.AbandonedCartMetrics{
-		TotalAbandoned24h:    int64(len(recentCarts)),
-		AbandonmentRate:      toFloat64(abandonmentData.AbandonmentRatePercent),
-		LostRevenueCents:     int64(totalValue.TotalValueCents.Float64),
-		RecoveryRate:         toFloat64(recoveryData.RecoveryRatePercent),
-		TotalRecovered:       recoveryData.RecoveredCount,
-		RecoveredValueCents:  int64(recoveryData.RecoveredValueCents.Float64),
+		TotalAbandoned24h:   int64(len(recentCarts)),
+		AbandonmentRate:     toFloat64(abandonmentData.AbandonmentRatePercent),
+		LostRevenueCents:    int64(totalValue.TotalValueCents.Float64),
+		RecoveryRate:        toFloat64(recoveryData.RecoveryRatePercent),
+		TotalRecovered:      recoveryData.RecoveredCount,
+		RecoveredValueCents: int64(recoveryData.RecoveredValueCents.Float64),
 	}, nil
 }
 

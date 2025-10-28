@@ -50,14 +50,14 @@ func main() {
 	}))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORS())
-	
+
 	// Custom slog request middleware
 	e.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			start := time.Now()
-			
+
 			err := next(c)
-			
+
 			slog.Info("request handled",
 				"method", c.Request().Method,
 				"path", c.Request().URL.Path,
@@ -65,7 +65,7 @@ func main() {
 				"duration", time.Since(start),
 				"ip", c.RealIP(),
 			)
-			
+
 			return err
 		}
 	})
@@ -92,14 +92,14 @@ func main() {
 	// Start server
 	addr := fmt.Sprintf(":%s", config.Port)
 	url := fmt.Sprintf("http://localhost:%s", config.Port)
-	
-	slog.Info("🚀 Logan's 3D Creations v4 starting", 
+
+	slog.Info("🚀 Logan's 3D Creations v4 starting",
 		"url", url,
 		"port", config.Port,
 		"environment", config.Environment,
 		"database", config.DBPath,
 	)
-	
+
 	if err := e.Start(addr); err != nil {
 		slog.Error("server failed", "error", err)
 		os.Exit(1)

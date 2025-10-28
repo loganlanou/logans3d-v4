@@ -227,18 +227,18 @@ func (s *Service) Send(email *Email) error {
 
 // OrderData contains all the data needed for order emails
 type OrderData struct {
-	OrderID           string
-	CustomerName      string
-	CustomerEmail     string
-	OrderDate         string
-	Items             []OrderItem
-	SubtotalCents     int64
-	TaxCents          int64
-	ShippingCents     int64
-	TotalCents        int64
-	ShippingAddress   Address
-	BillingAddress    Address
-	PaymentIntentID   string
+	OrderID         string
+	CustomerName    string
+	CustomerEmail   string
+	OrderDate       string
+	Items           []OrderItem
+	SubtotalCents   int64
+	TaxCents        int64
+	ShippingCents   int64
+	TotalCents      int64
+	ShippingAddress Address
+	BillingAddress  Address
+	PaymentIntentID string
 }
 
 // OrderItem represents a single item in an order
@@ -469,8 +469,8 @@ func (s *Service) SendAbandonedCartRecoveryEmail(data *AbandonedCartData, attemp
 
 	// Log the email send (even if it failed, for tracking)
 	logErr := s.LogEmailSend(ctx, data.CustomerEmail, "abandoned_cart", subject, attemptType, data.TrackingToken, map[string]interface{}{
-		"cart_value":  data.CartValue,
-		"item_count":  data.ItemCount,
+		"cart_value":   data.CartValue,
+		"item_count":   data.ItemCount,
 		"attempt_type": attemptType,
 	})
 	if logErr != nil {

@@ -72,15 +72,15 @@ func (h *CartHandler) HandleCartsList(c echo.Context) error {
 			}
 
 			carts = append(carts, admin.CartListItem{
-				SessionID:       row.SessionID,
-				UserID:          row.UserID,
-				CustomerEmail:   customerEmail,
-				CustomerName:    customerName,
-				ItemCount:       row.ItemCount,
-				CartValueCents:  toInt64(row.CartValueCents),
-				CreatedAt:       parseTime(row.CreatedAt),
-				LastActivity:    parseTime(row.LastActivity),
-				Status:          status,
+				SessionID:      row.SessionID,
+				UserID:         row.UserID,
+				CustomerEmail:  customerEmail,
+				CustomerName:   customerName,
+				ItemCount:      row.ItemCount,
+				CartValueCents: toInt64(row.CartValueCents),
+				CreatedAt:      parseTime(row.CreatedAt),
+				LastActivity:   parseTime(row.LastActivity),
+				Status:         status,
 			})
 		}
 	} else {
@@ -114,16 +114,16 @@ func (h *CartHandler) HandleCartsList(c echo.Context) error {
 			}
 
 			carts = append(carts, admin.CartListItem{
-				SessionID:       row.SessionID,
-				UserID:          row.UserID,
-				CustomerEmail:   customerEmail,
-				CustomerName:    customerName,
-				CustomerAvatar:  customerAvatar,
-				ItemCount:       row.ItemCount,
-				CartValueCents:  toInt64(row.CartValueCents),
-				CreatedAt:       parseTime(row.CreatedAt),
-				LastActivity:    parseTime(row.LastActivity),
-				Status:          row.Status,
+				SessionID:      row.SessionID,
+				UserID:         row.UserID,
+				CustomerEmail:  customerEmail,
+				CustomerName:   customerName,
+				CustomerAvatar: customerAvatar,
+				ItemCount:      row.ItemCount,
+				CartValueCents: toInt64(row.CartValueCents),
+				CreatedAt:      parseTime(row.CreatedAt),
+				LastActivity:   parseTime(row.LastActivity),
+				Status:         row.Status,
 			})
 		}
 	}

@@ -148,4 +148,3 @@ func (h *AdminPromotionsHandler) HandlePopupStatus(c echo.Context) error {
 	shown := popupShownAt.Valid
 	return c.JSON(http.StatusOK, map[string]bool{"shown": shown})
 }
-

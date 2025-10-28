@@ -7,8 +7,8 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/loganlanou/logans3d-v4/storage/db"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func main() {

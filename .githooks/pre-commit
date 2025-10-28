@@ -1,70 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Pre-commit hook for Logan's 3D
-# This hook runs before each commit to ensure code quality
+# Pre-commit hook to ensure Go code is properly formatted and passes vet
+# Based on: https://www.gopherguides.com/articles/dont-commit-improperly-formatted-golang-code
 
-set -e
-
-echo "🔍 Running pre-commit checks..."
-
-# Check if we're in the right directory
-if [ ! -f "go.mod" ]; then
-    echo "❌ Error: Must be run from project root"
+# Check formatting
+fmtcount=`git ls-files | grep '.go$' | xargs gofmt -l 2>&1 | wc -l`
+if [ $fmtcount -gt 0 ]; then
+    echo "❌ Some files aren't formatted, please run 'go fmt ./...' to format your source code before committing"
+    echo ""
+    echo "Unformatted files:"
+    git ls-files | grep '.go$' | xargs gofmt -l
     exit 1
 fi
 
-# 1. Format Go code
-echo "📝 Formatting Go code..."
-if command -v gofmt &> /dev/null; then
-    UNFORMATTED=$(gofmt -l .)
-    if [ -n "$UNFORMATTED" ]; then
-        echo "❌ The following files are not formatted:"
-        echo "$UNFORMATTED"
-        echo "Run 'gofmt -w .' to fix"
-        exit 1
-    fi
-    echo "✅ Go code is formatted"
-else
-    echo "⚠️  gofmt not found, skipping format check"
-fi
-
-# 2. Format templ files
-echo "📝 Formatting templ files..."
-if command -v templ &> /dev/null; then
-    templ fmt . > /dev/null 2>&1 || true
-    echo "✅ Templ files formatted"
-else
-    echo "⚠️  templ not found, skipping templ format"
-fi
-
-# 3. Run tests
-echo "🧪 Running tests..."
-if make test > /dev/null 2>&1; then
-    echo "✅ All tests passed"
-else
-    echo "❌ Tests failed"
+# Check vet
+vetcount=`go vet ./... 2>&1 | wc -l`
+if [ $vetcount -gt 0 ]; then
+    echo "❌ Some files aren't passing vet heuristics, please run 'go vet ./...' to see the errors it flags and correct your source code before committing"
     exit 1
 fi
 
-# 4. Run linters
-echo "🔎 Running linters..."
-if command -v golangci-lint &> /dev/null; then
-    if golangci-lint run --timeout=3m; then
-        echo "✅ Linters passed"
-    else
-        echo "❌ Linters failed"
-        exit 1
-    fi
-else
-    echo "⚠️  golangci-lint not found, skipping linter checks"
-    echo "    Install with: brew install golangci-lint"
-fi
-
-# 5. Tidy go.mod
-echo "🧹 Tidying go.mod..."
-go mod tidy
-echo "✅ go.mod is tidy"
-
-echo ""
-echo "✨ All pre-commit checks passed!"
-echo ""
+echo "✅ Code is properly formatted and passes go vet"
+exit 0

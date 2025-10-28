@@ -26,7 +26,6 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/admin"
 )
 
-
 type AdminHandler struct {
 	storage         *storage.Storage
 	shippingService *shipping.ShippingService
@@ -408,7 +407,6 @@ func (h *AdminHandler) HandleCategoriesTab(c echo.Context) error {
 	return Render(c, admin.CategoriesTab(c, productsWithImages, categories, filter))
 }
 
-
 func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []db.Product) []types.ProductWithImage {
 	// Get products with their primary images
 	productsWithImages := make([]types.ProductWithImage, 0, len(products))
@@ -423,9 +421,9 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 			isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
 
 			productsWithImages = append(productsWithImages, types.ProductWithImage{
-				Product:       product,
-				ImageURL:      "",
-				IsNew:         isNew,
+				Product:        product,
+				ImageURL:       "",
+				IsNew:          isNew,
 				IsDiscontinued: isDiscontinued,
 			})
 			continue
@@ -461,9 +459,9 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 		isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
 
 		productsWithImages = append(productsWithImages, types.ProductWithImage{
-			Product:       product,
-			ImageURL:      imageURL,
-			IsNew:         isNew,
+			Product:        product,
+			ImageURL:       imageURL,
+			IsNew:          isNew,
 			IsDiscontinued: isDiscontinued,
 		})
 	}
@@ -510,12 +508,12 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
 	isPremiumCollectionStr := c.FormValue("is_premium_collection")
-	
+
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Invalid price")
 	}
-	
+
 	stockQuantity := int64(0)
 	if stockQuantityStr != "" {
 		sq, err := strconv.ParseInt(stockQuantityStr, 10, 64)
@@ -547,7 +545,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 
 	_, err = h.storage.Queries.CreateProduct(c.Request().Context(), params)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to create product: " + err.Error())
+		return c.String(http.StatusInternalServerError, "Failed to create product: "+err.Error())
 	}
 
 	// Handle image upload
@@ -607,7 +605,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 
 func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	productID := c.Param("id")
-	
+
 	name := c.FormValue("name")
 	description := c.FormValue("description")
 	shortDescription := c.FormValue("short_description")
@@ -617,12 +615,12 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	stockQuantityStr := c.FormValue("stock_quantity")
 	isActiveStr := c.FormValue("is_active")
 	isPremiumCollectionStr := c.FormValue("is_premium_collection")
-	
+
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Invalid price")
 	}
-	
+
 	stockQuantity := int64(0)
 	if stockQuantityStr != "" {
 		sq, err := strconv.ParseInt(stockQuantityStr, 10, 64)
@@ -661,7 +659,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 
 	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to update product: " + err.Error())
+		return c.String(http.StatusInternalServerError, "Failed to update product: "+err.Error())
 	}
 
 	// Handle image upload
@@ -793,7 +791,7 @@ func (h *AdminHandler) HandleToggleProductFeatured(c echo.Context) error {
 	isFeatured := product.IsFeatured.Valid && product.IsFeatured.Bool
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
+		"success":     true,
 		"is_featured": isFeatured,
 	})
 }
@@ -811,7 +809,7 @@ func (h *AdminHandler) HandleToggleProductPremium(c echo.Context) error {
 	isPremium := product.IsPremium.Valid && product.IsPremium.Bool
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
+		"success":    true,
 		"is_premium": isPremium,
 	})
 }
@@ -829,7 +827,7 @@ func (h *AdminHandler) HandleToggleProductActive(c echo.Context) error {
 	isActive := product.IsActive.Valid && product.IsActive.Bool
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
-		"success": true,
+		"success":   true,
 		"is_active": isActive,
 	})
 }
@@ -848,7 +846,7 @@ func (h *AdminHandler) HandleToggleProductNew(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,
-		"is_new": isNew,
+		"is_new":  isNew,
 	})
 }
 
@@ -921,10 +919,10 @@ func (h *AdminHandler) HandleCreateCategory(c echo.Context) error {
 	description := c.FormValue("description")
 	parentID := c.FormValue("parent_id")
 	displayOrderStr := c.FormValue("display_order")
-	
+
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 	categoryID := uuid.New().String()
-	
+
 	var displayOrder sql.NullInt64
 	if displayOrderStr != "" {
 		if order, err := strconv.ParseInt(displayOrderStr, 10, 64); err == nil {
@@ -943,7 +941,7 @@ func (h *AdminHandler) HandleCreateCategory(c echo.Context) error {
 
 	_, err := h.storage.Queries.CreateCategory(c.Request().Context(), params)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to create category: " + err.Error())
+		return c.String(http.StatusInternalServerError, "Failed to create category: "+err.Error())
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/admin")
@@ -951,14 +949,14 @@ func (h *AdminHandler) HandleCreateCategory(c echo.Context) error {
 
 func (h *AdminHandler) HandleUpdateCategory(c echo.Context) error {
 	categoryID := c.Param("id")
-	
+
 	name := c.FormValue("name")
 	description := c.FormValue("description")
 	parentID := c.FormValue("parent_id")
 	displayOrderStr := c.FormValue("display_order")
-	
+
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
-	
+
 	var displayOrder sql.NullInt64
 	if displayOrderStr != "" {
 		if order, err := strconv.ParseInt(displayOrderStr, 10, 64); err == nil {
@@ -977,7 +975,7 @@ func (h *AdminHandler) HandleUpdateCategory(c echo.Context) error {
 
 	_, err := h.storage.Queries.UpdateCategory(c.Request().Context(), params)
 	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to update category: " + err.Error())
+		return c.String(http.StatusInternalServerError, "Failed to update category: "+err.Error())
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/admin")
@@ -985,7 +983,7 @@ func (h *AdminHandler) HandleUpdateCategory(c echo.Context) error {
 
 func (h *AdminHandler) HandleDeleteCategory(c echo.Context) error {
 	categoryID := c.Param("id")
-	
+
 	err := h.storage.Queries.DeleteCategory(c.Request().Context(), categoryID)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to delete category")
@@ -1033,13 +1031,13 @@ func (h *AdminHandler) HandleDeveloperDashboard(c echo.Context) error {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
 	memStats := types.MemoryStats{
-		Alloc:        m.Alloc,
-		TotalAlloc:   m.TotalAlloc,
-		Sys:          m.Sys,
-		NumGC:        m.NumGC,
-		Goroutines:   runtime.NumGoroutine(),
-		AllocMB:      float64(m.Alloc) / 1024 / 1024,
-		SysMB:        float64(m.Sys) / 1024 / 1024,
+		Alloc:      m.Alloc,
+		TotalAlloc: m.TotalAlloc,
+		Sys:        m.Sys,
+		NumGC:      m.NumGC,
+		Goroutines: runtime.NumGoroutine(),
+		AllocMB:    float64(m.Alloc) / 1024 / 1024,
+		SysMB:      float64(m.Sys) / 1024 / 1024,
 	}
 
 	// Get database file size
@@ -1257,7 +1255,7 @@ func (h *AdminHandler) HandleLogTail(c echo.Context) error {
 	// Check if log file exists
 	if _, err := os.Stat(logPath); os.IsNotExist(err) {
 		return c.JSON(http.StatusOK, map[string]interface{}{
-			"lines": []string{},
+			"lines":   []string{},
 			"message": "Log file not found",
 		})
 	}
@@ -1295,8 +1293,8 @@ func (h *AdminHandler) HandleSystemInfo(c echo.Context) error {
 	info := map[string]interface{}{
 		"timestamp": time.Now(),
 		"system": map[string]interface{}{
-			"go_version":    runtime.Version(),
-			"architecture":  runtime.GOARCH,
+			"go_version":   runtime.Version(),
+			"architecture": runtime.GOARCH,
 			"os":           runtime.GOOS,
 			"pid":          os.Getpid(),
 			"goroutines":   runtime.NumGoroutine(),
@@ -1307,25 +1305,25 @@ func (h *AdminHandler) HandleSystemInfo(c echo.Context) error {
 			"environment": os.Getenv("ENVIRONMENT"),
 		},
 	}
-	
+
 	return c.JSON(http.StatusOK, info)
 }
 
 func (h *AdminHandler) HandleMemoryStats(c echo.Context) error {
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	stats := map[string]interface{}{
 		"timestamp": time.Now(),
 		"memory": map[string]interface{}{
-			"alloc_mb":     float64(m.Alloc) / 1024 / 1024,
-			"sys_mb":       float64(m.Sys) / 1024 / 1024,
-			"total_alloc":  m.TotalAlloc,
-			"num_gc":       m.NumGC,
-			"goroutines":   runtime.NumGoroutine(),
+			"alloc_mb":    float64(m.Alloc) / 1024 / 1024,
+			"sys_mb":      float64(m.Sys) / 1024 / 1024,
+			"total_alloc": m.TotalAlloc,
+			"num_gc":      m.NumGC,
+			"goroutines":  runtime.NumGoroutine(),
 		},
 	}
-	
+
 	return c.JSON(http.StatusOK, stats)
 }
 
@@ -1333,17 +1331,17 @@ func (h *AdminHandler) HandleDatabaseInfo(c echo.Context) error {
 	stats := map[string]interface{}{
 		"timestamp": time.Now(),
 	}
-	
+
 	// Count products
 	if products, err := h.storage.Queries.ListProducts(c.Request().Context()); err == nil {
 		stats["product_count"] = len(products)
 	}
-	
+
 	// Count categories
 	if categories, err := h.storage.Queries.ListCategories(c.Request().Context()); err == nil {
 		stats["category_count"] = len(categories)
 	}
-	
+
 	// Get database file size
 	if dbPath := os.Getenv("DB_PATH"); dbPath != "" {
 		if stat, err := os.Stat(dbPath); err == nil {
@@ -1351,7 +1349,7 @@ func (h *AdminHandler) HandleDatabaseInfo(c echo.Context) error {
 			stats["database_size_mb"] = float64(stat.Size()) / 1024 / 1024
 		}
 	}
-	
+
 	return c.JSON(http.StatusOK, stats)
 }
 
@@ -1368,16 +1366,16 @@ func (h *AdminHandler) HandleConfigInfo(c echo.Context) error {
 			"uptime":     time.Since(appStartTime).String(),
 		},
 	}
-	
+
 	return c.JSON(http.StatusOK, config)
 }
 
 func (h *AdminHandler) HandleGarbageCollect(c echo.Context) error {
 	runtime.GC()
-	
+
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	
+
 	result := map[string]interface{}{
 		"timestamp": time.Now(),
 		"message":   "Garbage collection completed",
@@ -1387,7 +1385,7 @@ func (h *AdminHandler) HandleGarbageCollect(c echo.Context) error {
 			"num_gc":   m.NumGC,
 		},
 	}
-	
+
 	return c.JSON(http.StatusOK, result)
 }
 
@@ -1660,11 +1658,11 @@ func (h *AdminHandler) HandleBuyShippingLabel(c echo.Context) error {
 	}
 
 	_, updateErr := h.storage.Queries.UpdateOrderLabel(ctx, db.UpdateOrderLabelParams{
-		ID:                orderID,
-		EasypostLabelUrl:  sql.NullString{String: label.LabelDownload.Hrefs.PDF, Valid: true},
-		TrackingNumber:    sql.NullString{String: label.TrackingNumber, Valid: true},
-		Carrier:           sql.NullString{String: carrier, Valid: true},
-		Status:            sql.NullString{String: "shipped", Valid: true},
+		ID:               orderID,
+		EasypostLabelUrl: sql.NullString{String: label.LabelDownload.Hrefs.PDF, Valid: true},
+		TrackingNumber:   sql.NullString{String: label.TrackingNumber, Valid: true},
+		Carrier:          sql.NullString{String: carrier, Valid: true},
+		Status:           sql.NullString{String: "shipped", Valid: true},
 	})
 	if updateErr != nil {
 		slog.Error("failed to update order with label info", "error", updateErr, "order_id", orderID)
@@ -1722,45 +1720,45 @@ func (h *AdminHandler) HandleQuoteDetail(c echo.Context) error {
 
 func (h *AdminHandler) HandleUpdateQuote(c echo.Context) error {
 	quoteID := c.Param("id")
-	
+
 	status := c.FormValue("status")
 	adminNotes := c.FormValue("admin_notes")
 	quotedPriceStr := c.FormValue("quoted_price")
-	
+
 	var quotedPriceCents sql.NullInt64
 	if quotedPriceStr != "" {
 		if price, err := strconv.ParseFloat(quotedPriceStr, 64); err == nil {
 			quotedPriceCents = sql.NullInt64{Int64: int64(price * 100), Valid: true}
 		}
 	}
-	
+
 	// Get existing quote to preserve other fields
 	existingQuote, err := h.storage.Queries.GetQuoteRequest(c.Request().Context(), quoteID)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to fetch existing quote")
 	}
-	
+
 	params := db.UpdateQuoteRequestParams{
-		ID:                  quoteID,
-		CustomerName:        existingQuote.CustomerName,
-		CustomerEmail:       existingQuote.CustomerEmail,
-		CustomerPhone:       existingQuote.CustomerPhone,
-		ProjectDescription:  existingQuote.ProjectDescription,
-		Quantity:            existingQuote.Quantity,
-		MaterialPreference:  existingQuote.MaterialPreference,
-		FinishPreference:    existingQuote.FinishPreference,
-		DeadlineDate:        existingQuote.DeadlineDate,
-		BudgetRange:         existingQuote.BudgetRange,
-		Status:              sql.NullString{String: status, Valid: true},
-		AdminNotes:          sql.NullString{String: adminNotes, Valid: adminNotes != ""},
-		QuotedPriceCents:    quotedPriceCents,
+		ID:                 quoteID,
+		CustomerName:       existingQuote.CustomerName,
+		CustomerEmail:      existingQuote.CustomerEmail,
+		CustomerPhone:      existingQuote.CustomerPhone,
+		ProjectDescription: existingQuote.ProjectDescription,
+		Quantity:           existingQuote.Quantity,
+		MaterialPreference: existingQuote.MaterialPreference,
+		FinishPreference:   existingQuote.FinishPreference,
+		DeadlineDate:       existingQuote.DeadlineDate,
+		BudgetRange:        existingQuote.BudgetRange,
+		Status:             sql.NullString{String: status, Valid: true},
+		AdminNotes:         sql.NullString{String: adminNotes, Valid: adminNotes != ""},
+		QuotedPriceCents:   quotedPriceCents,
 	}
-	
+
 	_, err = h.storage.Queries.UpdateQuoteRequest(c.Request().Context(), params)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to update quote request")
 	}
-	
+
 	return c.Redirect(http.StatusSeeOther, "/admin/quotes")
 }
 
@@ -1816,26 +1814,26 @@ func (h *AdminHandler) HandleCreateEvent(c echo.Context) error {
 	endDateStr := c.FormValue("end_date")
 	url := c.FormValue("url")
 	isActiveStr := c.FormValue("is_active")
-	
+
 	if title == "" || startDateStr == "" {
 		return c.String(http.StatusBadRequest, "Title and start date are required")
 	}
-	
+
 	startDate, err := time.Parse("2006-01-02T15:04", startDateStr)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Invalid start date format")
 	}
-	
+
 	var endDate sql.NullTime
 	if endDateStr != "" {
 		if ed, err := time.Parse("2006-01-02T15:04", endDateStr); err == nil {
 			endDate = sql.NullTime{Time: ed, Valid: true}
 		}
 	}
-	
+
 	isActive := isActiveStr == "on" || isActiveStr == "true"
 	eventID := uuid.New().String()
-	
+
 	params := db.CreateEventParams{
 		ID:          eventID,
 		Title:       title,
@@ -1847,18 +1845,18 @@ func (h *AdminHandler) HandleCreateEvent(c echo.Context) error {
 		Url:         sql.NullString{String: url, Valid: url != ""},
 		IsActive:    sql.NullBool{Bool: isActive, Valid: true},
 	}
-	
+
 	_, err = h.storage.Queries.CreateEvent(c.Request().Context(), params)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to create event: "+err.Error())
 	}
-	
+
 	return c.Redirect(http.StatusSeeOther, "/admin/events")
 }
 
 func (h *AdminHandler) HandleUpdateEvent(c echo.Context) error {
 	eventID := c.Param("id")
-	
+
 	title := c.FormValue("title")
 	description := c.FormValue("description")
 	location := c.FormValue("location")
@@ -1867,25 +1865,25 @@ func (h *AdminHandler) HandleUpdateEvent(c echo.Context) error {
 	endDateStr := c.FormValue("end_date")
 	url := c.FormValue("url")
 	isActiveStr := c.FormValue("is_active")
-	
+
 	if title == "" || startDateStr == "" {
 		return c.String(http.StatusBadRequest, "Title and start date are required")
 	}
-	
+
 	startDate, err := time.Parse("2006-01-02T15:04", startDateStr)
 	if err != nil {
 		return c.String(http.StatusBadRequest, "Invalid start date format")
 	}
-	
+
 	var endDate sql.NullTime
 	if endDateStr != "" {
 		if ed, err := time.Parse("2006-01-02T15:04", endDateStr); err == nil {
 			endDate = sql.NullTime{Time: ed, Valid: true}
 		}
 	}
-	
+
 	isActive := isActiveStr == "on" || isActiveStr == "true"
-	
+
 	params := db.UpdateEventParams{
 		ID:          eventID,
 		Title:       title,
@@ -1897,12 +1895,12 @@ func (h *AdminHandler) HandleUpdateEvent(c echo.Context) error {
 		Url:         sql.NullString{String: url, Valid: url != ""},
 		IsActive:    sql.NullBool{Bool: isActive, Valid: true},
 	}
-	
+
 	_, err = h.storage.Queries.UpdateEvent(c.Request().Context(), params)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to update event: "+err.Error())
 	}
-	
+
 	return c.Redirect(http.StatusSeeOther, "/admin/events")
 }
 
@@ -1995,15 +1993,15 @@ func (h *AdminHandler) HandleCreateBox(c echo.Context) error {
 	boxID := uuid.New().String()
 
 	params := db.CreateBoxCatalogItemParams{
-		ID:            boxID,
-		Sku:           sku,
-		Name:          name,
-		LengthInches:  length,
-		WidthInches:   width,
-		HeightInches:  height,
-		BoxWeightOz:   weight,
-		UnitCostUsd:   cost,
-		IsActive:      sql.NullBool{Bool: isActive, Valid: true},
+		ID:           boxID,
+		Sku:          sku,
+		Name:         name,
+		LengthInches: length,
+		WidthInches:  width,
+		HeightInches: height,
+		BoxWeightOz:  weight,
+		UnitCostUsd:  cost,
+		IsActive:     sql.NullBool{Bool: isActive, Valid: true},
 	}
 
 	_, err = h.storage.Queries.CreateBoxCatalogItem(c.Request().Context(), params)
@@ -2345,10 +2343,10 @@ func createSampleOrderData() *email.OrderData {
 				TotalCents:   1999, // $19.99
 			},
 		},
-		SubtotalCents: 7997,  // $79.97
-		TaxCents:      547,   // $5.47
-		ShippingCents: 750,   // $7.50
-		TotalCents:    9294,  // $92.94
+		SubtotalCents: 7997, // $79.97
+		TaxCents:      547,  // $5.47
+		ShippingCents: 750,  // $7.50
+		TotalCents:    9294, // $92.94
 		ShippingAddress: email.Address{
 			Name:       "John Doe",
 			Line1:      "123 Main Street",
@@ -2394,7 +2392,7 @@ func createSampleAbandonedCartData() *email.AbandonedCartData {
 	return &email.AbandonedCartData{
 		CustomerName:  "Sarah Johnson",
 		CustomerEmail: "sarah.j@example.com",
-		CartValue:     8497,  // $84.97
+		CartValue:     8497, // $84.97
 		ItemCount:     3,
 		Items: []email.AbandonedCartItem{
 			{
@@ -2527,6 +2525,7 @@ func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 		"message": fmt.Sprintf("Test email sent successfully to %s", request.Email),
 	})
 }
+
 // HandleContactsList displays all contact requests
 func (h *AdminHandler) HandleContactsList(c echo.Context) error {
 	ctx := c.Request().Context()

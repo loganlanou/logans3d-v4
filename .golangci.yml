@@ -1,3 +1,5 @@
+version: "2"
+
 run:
   timeout: 5m
   tests: true
@@ -16,13 +18,10 @@ linters:
     - gocyclo        # Computes cyclomatic complexity
 
     # Standard Go linters
-    - gofmt          # Checks whether code was gofmt-ed
-    - goimports      # Checks import order
     - govet          # Reports suspicious constructs
     - ineffassign    # Detects ineffectual assignments
     - staticcheck    # Go's official static analyzer
     - unused         # Checks for unused constants, variables, functions
-    - gosimple       # Simplifies code
 
     # Code quality
     - dupl           # Finds code clones
@@ -34,7 +33,6 @@ linters:
     - gosec          # Inspects source code for security problems
 
     # Style
-    - stylecheck     # Replacement for golint
     - whitespace     # Checks for unnecessary newlines
 
   disable:
@@ -43,6 +41,11 @@ linters:
     - funlen         # Function length checks - can be noisy
     - lll            # Line length - handled by gofmt
     - wsl            # Whitespace linter - too opinionated
+
+formatters:
+  enable:
+    - gofmt          # Checks whether code was gofmt-ed
+    - goimports      # Checks import order
 
 linters-settings:
   gocyclo:

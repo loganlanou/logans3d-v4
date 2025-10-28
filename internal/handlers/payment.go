@@ -13,13 +13,13 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/email"
+	"github.com/loganlanou/logans3d-v4/internal/stripe"
+	"github.com/loganlanou/logans3d-v4/storage/db"
 	stripego "github.com/stripe/stripe-go/v80"
 	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
 	promotioncode "github.com/stripe/stripe-go/v80/promotioncode"
 	"github.com/stripe/stripe-go/v80/webhook"
-	"github.com/loganlanou/logans3d-v4/internal/email"
-	"github.com/loganlanou/logans3d-v4/internal/stripe"
-	"github.com/loganlanou/logans3d-v4/storage/db"
 )
 
 type PaymentHandler struct {
@@ -43,7 +43,7 @@ type CreatePaymentIntentRequest struct {
 }
 
 type CreatePaymentIntentResponse struct {
-	ClientSecret string `json:"client_secret"`
+	ClientSecret    string `json:"client_secret"`
 	PaymentIntentID string `json:"payment_intent_id"`
 }
 
@@ -410,21 +410,21 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 	// Create order_shipping_selection record if we have shipping data
 	if hasShippingSelection {
 		_, shippingSelErr := h.queries.CreateOrderShippingSelection(ctx, db.CreateOrderShippingSelectionParams{
-			ID:                          uuid.New().String(),
-			OrderID:                     orderID,
-			CandidateBoxSku:             sessionShippingSelection.BoxSku,
-			RateID:                      sessionShippingSelection.RateID,
-			CarrierID:                   sessionShippingSelection.CarrierName,
-			ServiceCode:                 sessionShippingSelection.ServiceName,
-			ServiceName:                 sessionShippingSelection.ServiceName,
-			QuotedShippingAmountCents:   sessionShippingSelection.ShippingAmountCents,
-			QuotedBoxCostCents:          sessionShippingSelection.BoxCostCents,
-			QuotedHandlingCostCents:     sessionShippingSelection.HandlingCostCents,
-			QuotedTotalCents:            sessionShippingSelection.PriceCents,
-			DeliveryDays:                sessionShippingSelection.DeliveryDays,
-			EstimatedDeliveryDate:       sessionShippingSelection.EstimatedDate,
-			PackingSolutionJson:         sql.NullString{String: "{}", Valid: true}, // Could parse from shipping_address_json if needed
-			ShipmentID:                  sql.NullString{String: sessionShippingSelection.ShipmentID, Valid: true},
+			ID:                        uuid.New().String(),
+			OrderID:                   orderID,
+			CandidateBoxSku:           sessionShippingSelection.BoxSku,
+			RateID:                    sessionShippingSelection.RateID,
+			CarrierID:                 sessionShippingSelection.CarrierName,
+			ServiceCode:               sessionShippingSelection.ServiceName,
+			ServiceName:               sessionShippingSelection.ServiceName,
+			QuotedShippingAmountCents: sessionShippingSelection.ShippingAmountCents,
+			QuotedBoxCostCents:        sessionShippingSelection.BoxCostCents,
+			QuotedHandlingCostCents:   sessionShippingSelection.HandlingCostCents,
+			QuotedTotalCents:          sessionShippingSelection.PriceCents,
+			DeliveryDays:              sessionShippingSelection.DeliveryDays,
+			EstimatedDeliveryDate:     sessionShippingSelection.EstimatedDate,
+			PackingSolutionJson:       sql.NullString{String: "{}", Valid: true}, // Could parse from shipping_address_json if needed
+			ShipmentID:                sql.NullString{String: sessionShippingSelection.ShipmentID, Valid: true},
 		})
 		if shippingSelErr != nil {
 			slog.Error("failed to create order shipping selection", "error", shippingSelErr, "order_id", orderID)
@@ -459,10 +459,10 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 					itemTotal := item.Price.UnitAmount * item.Quantity
 
 					orderItems = append(orderItems, email.OrderItem{
-						ProductName:  item.Description,
-						Quantity:     item.Quantity,
-						PriceCents:   item.Price.UnitAmount,
-						TotalCents:   itemTotal,
+						ProductName: item.Description,
+						Quantity:    item.Quantity,
+						PriceCents:  item.Price.UnitAmount,
+						TotalCents:  itemTotal,
 					})
 
 					// Create order item in database - CRITICAL: Must succeed or order is corrupt

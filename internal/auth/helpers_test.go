@@ -16,8 +16,8 @@ func TestGetDBUser_Found(t *testing.T) {
 
 	// Create test user
 	testUser := &db.User{
-		ID:    ulid.Make().String(),
-		Email: "test@example.com",
+		ID:        ulid.Make().String(),
+		Email:     "test@example.com",
 		FirstName: sql.NullString{String: "Test", Valid: true},
 		LastName:  sql.NullString{String: "User", Valid: true},
 	}

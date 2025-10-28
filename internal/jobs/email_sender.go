@@ -17,11 +17,11 @@ const (
 	EmailSendInterval = 15 * time.Minute
 
 	// Email timing offsets
-	Email1HrOffset    = "-1 hour -5 minutes"    // Send 1hr after abandonment (with 5min buffer)
-	Email1HrMinOffset = "-1 hour -20 minutes"   // Don't send earlier than 1hr 20min ago
-	Email24HrOffset   = "-24 hours -5 minutes"  // Send 24hr after abandonment
+	Email1HrOffset     = "-1 hour -5 minutes"   // Send 1hr after abandonment (with 5min buffer)
+	Email1HrMinOffset  = "-1 hour -20 minutes"  // Don't send earlier than 1hr 20min ago
+	Email24HrOffset    = "-24 hours -5 minutes" // Send 24hr after abandonment
 	Email24HrMinOffset = "-24 hours -30 minutes"
-	Email72HrOffset   = "-72 hours -5 minutes"  // Send 72hr after abandonment
+	Email72HrOffset    = "-72 hours -5 minutes" // Send 72hr after abandonment
 	Email72HrMinOffset = "-72 hours -30 minutes"
 )
 

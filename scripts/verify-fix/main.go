@@ -34,10 +34,10 @@ func main() {
 
 	fmt.Println("Products and their image URLs (fixed):")
 	fmt.Println("=====================================")
-	
+
 	successCount := 0
 	totalCount := 0
-	
+
 	for rows.Next() {
 		var name string
 		var imageUrl sql.NullString
@@ -45,20 +45,20 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		
+
 		totalCount++
-		
+
 		if imageUrl.Valid {
 			fmt.Printf("Product: %s\n", name)
 			fmt.Printf("  Image URL (DB): %s\n", imageUrl.String)
-			
+
 			// Check if file exists on filesystem
 			fullImagePath := filepath.Join("public", "images", "products", imageUrl.String)
 			if _, err := os.Stat(fullImagePath); os.IsNotExist(err) {
 				fmt.Printf("  ❌ FILE MISSING: %s\n", fullImagePath)
 			} else {
 				fmt.Printf("  ✅ FILE EXISTS: %s\n", fullImagePath)
-				
+
 				// Check if file is accessible via HTTP
 				resp, err := http.Get(fmt.Sprintf("http://localhost:8000/public/images/products/%s", imageUrl.String))
 				if err != nil {
@@ -76,24 +76,24 @@ func main() {
 		}
 		fmt.Println()
 	}
-	
+
 	// Check event images
 	fmt.Println("Event Images:")
 	fmt.Println("=============")
-	
+
 	eventImages := []string{
 		"event-maker-fair.jpg",
-		"event-library-workshop.jpg", 
+		"event-library-workshop.jpg",
 		"event-craft-show.jpg",
 	}
-	
+
 	for _, img := range eventImages {
 		fullPath := filepath.Join("public", "images", img)
 		if _, err := os.Stat(fullPath); os.IsNotExist(err) {
 			fmt.Printf("❌ FILE MISSING: %s\n", fullPath)
 		} else {
 			fmt.Printf("✅ FILE EXISTS: %s\n", fullPath)
-			
+
 			// Check HTTP accessibility
 			resp, err := http.Get(fmt.Sprintf("http://localhost:8000/public/images/%s", img))
 			if err != nil {
@@ -107,6 +107,6 @@ func main() {
 		}
 		fmt.Println()
 	}
-	
+
 	fmt.Printf("SUMMARY: %d/%d product images working correctly\n", successCount, totalCount)
 }

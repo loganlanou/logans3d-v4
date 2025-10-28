@@ -43,9 +43,9 @@ func NewPacker(config *ShippingConfig) *Packer {
 func (p *Packer) SmallUnits(counts ItemCounts) int {
 	eq := p.config.Packing.Equivalences
 	return counts.Small +
-		   eq["medium"]*counts.Medium +
-		   eq["large"]*counts.Large +
-		   eq["xlarge"]*counts.XL
+		eq["medium"]*counts.Medium +
+		eq["large"]*counts.Large +
+		eq["xlarge"]*counts.XL
 }
 
 func (p *Packer) Capacity(box Box) int {
@@ -175,9 +175,9 @@ func (p *Packer) dimensionsOK(box Box, counts ItemCounts) bool {
 	}
 
 	return checkCategory("small", counts.Small) &&
-		   checkCategory("medium", counts.Medium) &&
-		   checkCategory("large", counts.Large) &&
-		   checkCategory("xlarge", counts.XL)
+		checkCategory("medium", counts.Medium) &&
+		checkCategory("large", counts.Large) &&
+		checkCategory("xlarge", counts.XL)
 }
 
 func (p *Packer) candidateBoxes(counts ItemCounts) []Box {

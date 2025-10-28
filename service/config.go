@@ -50,7 +50,7 @@ func LoadConfig() (*Config, error) {
 		BaseURL:     getEnv("BASE_URL", "http://localhost:8000"),
 		DBPath:      getEnv("DB_PATH", "./db/logans3d.db"),
 	}
-	
+
 	// JWT
 	config.JWT.Secret = getEnv("JWT_SECRET", "development-secret")
 
@@ -58,12 +58,12 @@ func LoadConfig() (*Config, error) {
 	config.Stripe.PublishableKey = getEnv("STRIPE_PUBLISHABLE_KEY", "")
 	config.Stripe.SecretKey = getEnv("STRIPE_SECRET_KEY", "")
 	config.Stripe.WebhookSecret = getEnv("STRIPE_WEBHOOK_SECRET", "")
-	
+
 	// Email
 	config.Email.From = getEnv("EMAIL_FROM", "noreply@logans3dcreations.com")
 	config.Email.Provider = getEnv("EMAIL_PROVIDER", "sendgrid")
 	config.Email.APIKey = getEnv("EMAIL_API_KEY", "")
-	
+
 	// Upload
 	maxSize := getEnv("UPLOAD_MAX_SIZE", "104857600") // 100MB default
 	if size, err := strconv.ParseInt(maxSize, 10, 64); err == nil {
@@ -72,7 +72,7 @@ func LoadConfig() (*Config, error) {
 		config.Upload.MaxSize = 104857600
 	}
 	config.Upload.Dir = getEnv("UPLOAD_DIR", "./public/uploads")
-	
+
 	// Admin
 	config.Admin.Username = getEnv("ADMIN_USERNAME", "admin")
 	config.Admin.Password = getEnv("ADMIN_PASSWORD", "password")

@@ -95,10 +95,10 @@ func TestPackSingleBox(t *testing.T) {
 	packer := NewPacker(config)
 
 	tests := []struct {
-		name       string
-		counts     ItemCounts
-		shouldFit  bool
-		expectBox  string // SKU of expected box
+		name      string
+		counts    ItemCounts
+		shouldFit bool
+		expectBox string // SKU of expected box
 	}{
 		{
 			name:      "small order fits in smallest box",
@@ -154,19 +154,19 @@ func TestPackMultipleBoxes(t *testing.T) {
 	packer := NewPacker(config)
 
 	tests := []struct {
-		name      string
-		counts    ItemCounts
-		maxBoxes  int
+		name     string
+		counts   ItemCounts
+		maxBoxes int
 	}{
 		{
 			name:     "very large order requiring multiple boxes",
 			counts:   ItemCounts{Small: 0, Medium: 0, Large: 0, XL: 3}, // 54 small units
-			maxBoxes: 3, // Should need multiple 12x12x6 boxes
+			maxBoxes: 3,                                                // Should need multiple 12x12x6 boxes
 		},
 		{
 			name:     "mixed large order",
 			counts:   ItemCounts{Small: 10, Medium: 5, Large: 2, XL: 1}, // 10 + 15 + 12 + 18 = 55 small units
-			maxBoxes: 3, // Should need multiple boxes
+			maxBoxes: 3,                                                 // Should need multiple boxes
 		},
 	}
 
@@ -201,9 +201,9 @@ func TestPack(t *testing.T) {
 	packer := NewPacker(config)
 
 	tests := []struct {
-		name     string
-		counts   ItemCounts
-		wantErr  bool
+		name    string
+		counts  ItemCounts
+		wantErr bool
 	}{
 		{
 			name:    "empty order",
@@ -244,36 +244,36 @@ func TestValidateItemDimensions(t *testing.T) {
 	packer := NewPacker(config)
 
 	tests := []struct {
-		name      string
-		category  string
-		length    float64
-		width     float64
-		height    float64
-		wantErr   bool
+		name     string
+		category string
+		length   float64
+		width    float64
+		height   float64
+		wantErr  bool
 	}{
 		{
 			name:     "small item within limits",
 			category: "small",
 			length:   3, width: 3, height: 3,
-			wantErr:  false,
+			wantErr: false,
 		},
 		{
 			name:     "small item exceeds limits",
 			category: "small",
 			length:   5, width: 3, height: 3,
-			wantErr:  true,
+			wantErr: true,
 		},
 		{
 			name:     "medium item within limits",
 			category: "medium",
 			length:   7, width: 4, height: 4,
-			wantErr:  false,
+			wantErr: false,
 		},
 		{
 			name:     "invalid category",
 			category: "invalid",
 			length:   1, width: 1, height: 1,
-			wantErr:  true,
+			wantErr: true,
 		},
 	}
 
@@ -309,7 +309,7 @@ func TestEstimateWeightWithActualItems(t *testing.T) {
 			name:   "small items only",
 			counts: ItemCounts{Small: 3, Medium: 0, Large: 0, XL: 0},
 			expectedRange: struct{ min, max float64 }{
-				min: 6.0 + 3.0*3 + 0.2*3 + 1.0 + 0.5 + 0.8, // box + items + bubble wrap + materials
+				min: 6.0 + 3.0*3 + 0.2*3 + 1.0 + 0.5 + 0.8,     // box + items + bubble wrap + materials
 				max: 6.0 + 3.0*3 + 0.2*3 + 1.0 + 0.5 + 0.8 + 1, // small tolerance
 			},
 		},

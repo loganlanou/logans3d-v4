@@ -169,15 +169,15 @@ func (d *AbandonedCartDetector) createAbandonedCartRecord(
 	// Create abandoned cart record
 	cartID := uuid.New().String()
 	_, err := d.storage.Queries.CreateAbandonedCart(ctx, db.CreateAbandonedCartParams{
-		ID:              cartID,
-		SessionID:       sql.NullString{String: sessionID, Valid: sessionID != ""},
-		UserID:          sql.NullString{String: userID, Valid: userID != ""},
-		CustomerEmail:   customerEmail,
-		CustomerName:    customerName,
-		CartValueCents:  cartValue,
-		ItemCount:       itemCount,
-		AbandonedAt:     abandonedAt,
-		Status:          sql.NullString{String: "active", Valid: true},
+		ID:             cartID,
+		SessionID:      sql.NullString{String: sessionID, Valid: sessionID != ""},
+		UserID:         sql.NullString{String: userID, Valid: userID != ""},
+		CustomerEmail:  customerEmail,
+		CustomerName:   customerName,
+		CartValueCents: cartValue,
+		ItemCount:      itemCount,
+		AbandonedAt:    abandonedAt,
+		Status:         sql.NullString{String: "active", Valid: true},
 	})
 	if err != nil {
 		return err
@@ -251,14 +251,14 @@ func (d *AbandonedCartDetector) generatePromoCodeForFirstTimer(ctx context.Conte
 
 	// Create promotion code in database
 	promoCode, err := d.storage.Queries.CreatePromotionCode(ctx, db.CreatePromotionCodeParams{
-		ID:                   ulid.Make().String(),
-		CampaignID:           campaign.ID,
-		Code:                 codeStr,
+		ID:                    ulid.Make().String(),
+		CampaignID:            campaign.ID,
+		Code:                  codeStr,
 		StripePromotionCodeID: sql.NullString{String: stripePromoCode.ID, Valid: true},
-		Email:                sql.NullString{String: email, Valid: true},
-		UserID:               sql.NullString{String: userID, Valid: userID != ""},
-		MaxUses:              sql.NullInt64{Int64: 1, Valid: true},
-		ExpiresAt:            sql.NullTime{Time: time.Now().AddDate(0, 0, 10), Valid: true},
+		Email:                 sql.NullString{String: email, Valid: true},
+		UserID:                sql.NullString{String: userID, Valid: userID != ""},
+		MaxUses:               sql.NullInt64{Int64: 1, Valid: true},
+		ExpiresAt:             sql.NullTime{Time: time.Now().AddDate(0, 0, 10), Valid: true},
 	})
 	if err != nil {
 		slog.Error("failed to create promotion code in database", "error", err, "code", codeStr)
