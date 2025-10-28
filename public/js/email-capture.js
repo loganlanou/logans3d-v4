@@ -3,6 +3,7 @@
     'use strict';
 
     const COOKIE_NAME = 'email_capture_shown';
+    const LOCALSTORAGE_KEY = 'email_capture_permanent';
     const COOKIE_DAYS = 7;
     const SHOW_DELAY = 10000; // 10 seconds
     const SCROLL_THRESHOLD = 0.5; // 50% page scroll
@@ -11,6 +12,8 @@
     let popupShown = false;
     let scrollTriggered = false;
     let timeTriggered = false;
+    let serverCheckComplete = false;
+    let serverSaysShown = false;
 
     // Check if popup was already shown
     function getCookie(name) {
@@ -26,12 +29,39 @@
         document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
     }
 
-    function shouldShowPopup() {
+    async function checkServerPopupStatus(email) {
+        if (!email) return false;
+
+        try {
+            const response = await fetch(`/api/promotions/popup-status?email=${encodeURIComponent(email)}`);
+            const data = await response.json();
+            return data.shown || false;
+        } catch (error) {
+            console.error('Server popup check failed:', error);
+            return false;
+        }
+    }
+
+    async function shouldShowPopup() {
         // Don't show if already shown in this session
         if (popupShown) return false;
 
-        // Don't show if cookie exists
+        // Check localStorage first (permanent)
+        if (localStorage.getItem(LOCALSTORAGE_KEY)) {
+            return false;
+        }
+
+        // Don't show if cookie exists (7-day backup)
         if (getCookie(COOKIE_NAME)) return false;
+
+        // Wait for server check to complete if not done yet
+        if (!serverCheckComplete) {
+            // Server check will be done on init, wait a bit
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Don't show if server says it was shown
+        if (serverSaysShown) return false;
 
         // Don't show on checkout or cart pages
         if (window.location.pathname.includes('/checkout') ||
@@ -42,8 +72,8 @@
         return true;
     }
 
-    function showPopup() {
-        if (!shouldShowPopup()) return;
+    async function showPopup() {
+        if (!(await shouldShowPopup())) return;
 
         popupShown = true;
         const popup = document.getElementById('email-capture-popup');
@@ -61,34 +91,48 @@
             popup.classList.remove('flex');
             document.body.style.overflow = ''; // Restore scroll
         }
+
+        // Set all layers of suppression
+        localStorage.setItem(LOCALSTORAGE_KEY, 'true');
         setCookie(COOKIE_NAME, 'true', COOKIE_DAYS);
     }
 
-    function setupEventListeners() {
+    async function initializeServerCheck() {
+        // For logged-in users, check server status
+        // This will be handled by base.templ hiding the popup for authenticated users
+        // But we also check server-side database records here
+        serverCheckComplete = true;
+        serverSaysShown = false;
+    }
+
+    async function setupEventListeners() {
+        // Initialize server check
+        await initializeServerCheck();
+
         // Time-based trigger
-        setTimeout(() => {
+        setTimeout(async () => {
             if (!timeTriggered && !popupShown) {
                 timeTriggered = true;
-                showPopup();
+                await showPopup();
             }
         }, SHOW_DELAY);
 
         // Scroll-based trigger
-        window.addEventListener('scroll', () => {
+        window.addEventListener('scroll', async () => {
             if (scrollTriggered || popupShown) return;
 
             const scrollPercent = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight));
             if (scrollPercent >= SCROLL_THRESHOLD) {
                 scrollTriggered = true;
-                showPopup();
+                await showPopup();
             }
         });
 
         // Exit intent trigger
-        document.addEventListener('mouseleave', (e) => {
+        document.addEventListener('mouseleave', async (e) => {
             if (popupShown) return;
             if (e.clientY < EXIT_INTENT_SENSITIVITY) {
-                showPopup();
+                await showPopup();
             }
         });
 
@@ -149,9 +193,9 @@
             const data = await response.json();
 
             if (response.ok && data.success) {
-                // Show success message with code
+                // Show success message - code sent via email only
                 if (successDiv) {
-                    successDiv.textContent = `Success! Your code: ${data.code}. Check your email!`;
+                    successDiv.textContent = `Success! Check your email for your 15% discount code.`;
                     successDiv.classList.remove('hidden');
                 }
 

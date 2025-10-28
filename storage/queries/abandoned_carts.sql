@@ -297,3 +297,28 @@ FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
 LEFT JOIN abandoned_carts ac ON (ci.session_id = ac.session_id OR ci.user_id = ac.user_id) AND ac.status = 'active'
 WHERE ac.id IS NULL;
+
+-- Promotion Code Support for Abandoned Carts
+
+-- name: HasUserMadePurchase :one
+SELECT COUNT(*) > 0 as has_purchased
+FROM orders
+WHERE (user_id = sqlc.narg(user_id) OR customer_email = sqlc.narg(customer_email))
+  AND status NOT IN ('cancelled', 'failed');
+
+-- name: UpdateAbandonedCartPromoCode :exec
+UPDATE abandoned_carts
+SET promotion_code_id = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+
+-- name: GetAbandonedCartWithPromoCode :one
+SELECT
+    ac.*,
+    pc.code as promo_code,
+    pc.expires_at as promo_expires_at,
+    pcamp.discount_value as promo_discount_value,
+    pcamp.discount_type as promo_discount_type
+FROM abandoned_carts ac
+LEFT JOIN promotion_codes pc ON ac.promotion_code_id = pc.id
+LEFT JOIN promotion_campaigns pcamp ON pc.campaign_id = pcamp.id
+WHERE ac.id = ?;

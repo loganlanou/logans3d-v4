@@ -193,8 +193,10 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 	// Promotion routes (public)
 	promotionsHandler := handlers.NewPromotionsHandler(s.storage.Queries, s.emailService)
+	adminPromotionsHandler := handlers.NewAdminPromotionsHandler(s.storage.Queries)
 	api.POST("/promotions/capture-email", promotionsHandler.HandleCaptureEmail)
 	api.GET("/promotions/validate/:code", promotionsHandler.HandleValidateCode)
+	api.GET("/promotions/popup-status", adminPromotionsHandler.HandlePopupStatus)
 
 	// Shipping API routes
 	if s.shippingHandler != nil {

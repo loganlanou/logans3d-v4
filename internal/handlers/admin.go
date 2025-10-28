@@ -2236,6 +2236,10 @@ func (h *AdminHandler) HandleSaveShippingSettings(c echo.Context) error {
 // Email Preview Handlers
 
 func (h *AdminHandler) HandleEmailPreview(c echo.Context) error {
+	// Check if we should show promo code in abandoned cart emails
+	// Default to true (show promo codes by default)
+	withPromo := c.QueryParam("withPromo") != "false"
+
 	// Create sample order data
 	sampleData := createSampleOrderData()
 
@@ -2259,22 +2263,37 @@ func (h *AdminHandler) HandleEmailPreview(c echo.Context) error {
 
 	// Create sample abandoned cart data and render all three recovery emails
 	abandonedCartData := createSampleAbandonedCartData()
+
+	// For 24hr and 72hr emails, optionally remove promo code data
+	abandonedCartDataNoPromo := createSampleAbandonedCartData()
+	if !withPromo {
+		abandonedCartDataNoPromo.PromoCode = ""
+		abandonedCartDataNoPromo.PromoExpires = ""
+	}
+
 	abandonedCart1HrHTML, err := email.RenderAbandonedCartRecovery1Hr(abandonedCartData)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to render 1hr abandoned cart email: "+err.Error())
 	}
 
-	abandonedCart24HrHTML, err := email.RenderAbandonedCartRecovery24Hr(abandonedCartData)
+	abandonedCart24HrHTML, err := email.RenderAbandonedCartRecovery24Hr(abandonedCartDataNoPromo)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to render 24hr abandoned cart email: "+err.Error())
 	}
 
-	abandonedCart72HrHTML, err := email.RenderAbandonedCartRecovery72Hr(abandonedCartData)
+	abandonedCart72HrHTML, err := email.RenderAbandonedCartRecovery72Hr(abandonedCartDataNoPromo)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to render 72hr abandoned cart email: "+err.Error())
 	}
 
-	return Render(c, admin.EmailPreview(c, customerHTML, adminHTML, contactHTML, abandonedCart1HrHTML, abandonedCart24HrHTML, abandonedCart72HrHTML))
+	// Create sample welcome coupon data
+	welcomeCouponData := createSampleWelcomeCouponData()
+	welcomeCouponHTML, err := email.RenderWelcomeCouponEmail(welcomeCouponData)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to render welcome coupon email: "+err.Error())
+	}
+
+	return Render(c, admin.EmailPreview(c, customerHTML, adminHTML, contactHTML, abandonedCart1HrHTML, abandonedCart24HrHTML, abandonedCart72HrHTML, welcomeCouponHTML, withPromo))
 }
 
 func (h *AdminHandler) HandleEmailPreviewCustomer(c echo.Context) error {
@@ -2393,6 +2412,18 @@ func createSampleAbandonedCartData() *email.AbandonedCartData {
 		},
 		TrackingToken: "sample-tracking-token-12345",
 		AbandonedAt:   "October 27, 2025 at 2:15 PM",
+		PromoCode:     "CART5-ABC12345",
+		PromoExpires:  "November 6, 2025",
+	}
+}
+
+func createSampleWelcomeCouponData() *email.WelcomeCouponData {
+	return &email.WelcomeCouponData{
+		CustomerName: "Alex Smith",
+		Email:        "alex.smith@example.com",
+		PromoCode:    "WELCOME15",
+		DiscountText: "15% off",
+		ExpiresAt:    "November 27, 2025",
 	}
 }
 
@@ -2414,7 +2445,7 @@ func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 		})
 	}
 
-	validTypes := []string{"customer", "admin", "contact", "abandoned-1hr", "abandoned-24hr", "abandoned-72hr"}
+	validTypes := []string{"customer", "admin", "contact", "abandoned-1hr", "abandoned-24hr", "abandoned-72hr", "welcome-coupon"}
 	isValid := false
 	for _, t := range validTypes {
 		if request.Type == t {
@@ -2452,6 +2483,27 @@ func (h *AdminHandler) HandleSendTestEmail(c echo.Context) error {
 			attemptType = "email_72hr"
 		}
 		err = h.emailService.SendAbandonedCartRecoveryEmail(abandonedCartData, attemptType)
+
+	case "welcome-coupon":
+		// Create sample welcome coupon data
+		welcomeData := createSampleWelcomeCouponData()
+		welcomeData.Email = request.Email
+
+		// Render email
+		html, renderErr := email.RenderWelcomeCouponEmail(welcomeData)
+		if renderErr != nil {
+			err = renderErr
+			break
+		}
+
+		// Send email
+		emailMsg := &email.Email{
+			To:      []string{request.Email},
+			Subject: "Welcome! Here's your exclusive discount",
+			Body:    html,
+			IsHTML:  true,
+		}
+		err = h.emailService.Send(emailMsg)
 
 	default:
 		// Create sample order data

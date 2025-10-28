@@ -3,12 +3,15 @@ package jobs
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/loganlanou/logans3d-v4/internal/stripe"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/oklog/ulid/v2"
 )
 
 const (
@@ -180,6 +183,23 @@ func (d *AbandonedCartDetector) createAbandonedCartRecord(
 		return err
 	}
 
+	// Check if customer is a first-time customer and generate promo code
+	if customerEmail.Valid && customerEmail.String != "" {
+		promoCodeID := d.generatePromoCodeForFirstTimer(ctx, userID, customerEmail.String)
+		if promoCodeID != "" {
+			// Link promo code to abandoned cart
+			err := d.storage.Queries.UpdateAbandonedCartPromoCode(ctx, db.UpdateAbandonedCartPromoCodeParams{
+				PromotionCodeID: sql.NullString{String: promoCodeID, Valid: true},
+				ID:              cartID,
+			})
+			if err != nil {
+				slog.Error("failed to link promo code to abandoned cart", "error", err, "cart_id", cartID, "promo_code_id", promoCodeID)
+			} else {
+				slog.Info("linked 5% promo code to abandoned cart", "cart_id", cartID, "email", customerEmail.String)
+			}
+		}
+	}
+
 	// Create snapshots of cart items
 	err = d.createCartSnapshots(ctx, cartID, sessionID, userID)
 	if err != nil {
@@ -188,6 +208,98 @@ func (d *AbandonedCartDetector) createAbandonedCartRecord(
 	}
 
 	return nil
+}
+
+// generatePromoCodeForFirstTimer checks if user has never purchased and generates a 5% promo code
+func (d *AbandonedCartDetector) generatePromoCodeForFirstTimer(ctx context.Context, userID, email string) string {
+	// Check if user has made any purchases
+	hasPurchased, err := d.storage.Queries.HasUserMadePurchase(ctx, db.HasUserMadePurchaseParams{
+		UserID:        sql.NullString{String: userID, Valid: userID != ""},
+		CustomerEmail: sql.NullString{String: email, Valid: true},
+	})
+	if err != nil {
+		slog.Error("failed to check user purchase history", "error", err, "user_id", userID, "email", email)
+		return ""
+	}
+
+	// Only generate code for first-time customers
+	if hasPurchased {
+		return ""
+	}
+
+	// Get or create abandoned cart campaign
+	campaign, err := d.getOrCreateAbandonedCartCampaign(ctx)
+	if err != nil {
+		slog.Error("failed to get abandoned cart campaign", "error", err)
+		return ""
+	}
+
+	// Generate unique code (CART5-XXXX format)
+	codeStr := fmt.Sprintf("CART5-%s", ulid.Make().String()[0:8])
+
+	// Create Stripe promotion code
+	stripePromoCode, err := stripe.CreateUniquePromotionCode(
+		campaign.StripePromotionID.String,
+		codeStr,
+		email,
+		10, // 10 days expiration
+	)
+	if err != nil {
+		slog.Error("failed to create Stripe promotion code", "error", err, "code", codeStr)
+		return ""
+	}
+
+	// Create promotion code in database
+	promoCode, err := d.storage.Queries.CreatePromotionCode(ctx, db.CreatePromotionCodeParams{
+		ID:                   ulid.Make().String(),
+		CampaignID:           campaign.ID,
+		Code:                 codeStr,
+		StripePromotionCodeID: sql.NullString{String: stripePromoCode.ID, Valid: true},
+		Email:                sql.NullString{String: email, Valid: true},
+		UserID:               sql.NullString{String: userID, Valid: userID != ""},
+		MaxUses:              sql.NullInt64{Int64: 1, Valid: true},
+		ExpiresAt:            sql.NullTime{Time: time.Now().AddDate(0, 0, 10), Valid: true},
+	})
+	if err != nil {
+		slog.Error("failed to create promotion code in database", "error", err, "code", codeStr)
+		return ""
+	}
+
+	return promoCode.ID
+}
+
+// getOrCreateAbandonedCartCampaign gets or creates the 5% abandoned cart campaign
+func (d *AbandonedCartDetector) getOrCreateAbandonedCartCampaign(ctx context.Context) (*db.PromotionCampaign, error) {
+	// Try to get existing campaign
+	campaigns, err := d.storage.Queries.GetActivePromotionCampaigns(ctx)
+	if err == nil {
+		for _, campaign := range campaigns {
+			if campaign.Name == "Abandoned Cart Recovery - 5% Off" {
+				return &campaign, nil
+			}
+		}
+	}
+
+	// Create new campaign
+	stripeCoupon, err := stripe.CreatePromotionCampaign("Abandoned Cart Recovery - 5% Off", "percentage", 5)
+	if err != nil {
+		return nil, err
+	}
+
+	campaign, err := d.storage.Queries.CreatePromotionCampaign(ctx, db.CreatePromotionCampaignParams{
+		ID:                ulid.Make().String(),
+		Name:              "Abandoned Cart Recovery - 5% Off",
+		Description:       sql.NullString{String: "5% discount for first-time customers who abandoned their cart", Valid: true},
+		DiscountType:      "percentage",
+		DiscountValue:     5,
+		StripePromotionID: sql.NullString{String: stripeCoupon.ID, Valid: true},
+		StartDate:         time.Now(),
+		EndDate:           sql.NullTime{},
+		MaxUses:           sql.NullInt64{},
+		Active:            sql.NullInt64{Int64: 1, Valid: true},
+	})
+
+	return &campaign, err
 }
 
 func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandonedCartID, sessionID, userID string) error {

@@ -467,12 +467,33 @@
   font-family: var(--font-display);
 }
 
-/* Input text color - white by default for dark backgrounds */
-input[type="text"], input[type="email"], input[type="password"], input[type="search"], textarea, select {
+/* Input text color - white by default for dark backgrounds (account pages) */
+/* Only apply to inputs within account pages and dark sections, not modals with white backgrounds */
+.account-page input[type="text"],
+.account-page input[type="email"],
+.account-page input[type="password"],
+.account-page input[type="search"],
+.account-page textarea,
+.account-page select,
+.hero input[type="text"],
+.hero input[type="email"],
+.hero input[type="password"],
+.hero input[type="search"],
+.hero textarea,
+.hero select {
   color: white;
 }
 
-input[type="text"]::placeholder, input[type="email"]::placeholder, input[type="password"]::placeholder, input[type="search"]::placeholder, textarea::placeholder {
+.account-page input[type="text"]::placeholder,
+.account-page input[type="email"]::placeholder,
+.account-page input[type="password"]::placeholder,
+.account-page input[type="search"]::placeholder,
+.account-page textarea::placeholder,
+.hero input[type="text"]::placeholder,
+.hero input[type="email"]::placeholder,
+.hero input[type="password"]::placeholder,
+.hero input[type="search"]::placeholder,
+.hero textarea::placeholder {
   color: var(--color-gray-400);
 }
 

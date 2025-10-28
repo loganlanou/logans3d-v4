@@ -103,3 +103,9 @@ LIMIT ?;
 -- name: DeleteOldEmailHistory :exec
 DELETE FROM email_history
 WHERE sent_at < ?;
+
+-- name: AssociateEmailHistoryWithUser :execrows
+UPDATE email_history
+SET user_id = ?
+WHERE recipient_email = ?
+  AND user_id IS NULL;

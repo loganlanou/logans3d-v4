@@ -80,6 +80,58 @@ SELECT
 FROM promotion_codes
 WHERE campaign_id = ?;
 
+-- name: CountEmailsToNonUsers :one
+SELECT COUNT(DISTINCT pc.email) as count
+FROM promotion_codes pc
+WHERE pc.campaign_id = ?
+  AND pc.user_id IS NULL
+  AND pc.email IS NOT NULL;
+
+-- name: GetActiveCodesStats :one
+SELECT
+    COUNT(*) as active_codes_issued,
+    SUM(CASE WHEN current_uses > 0 THEN 1 ELSE 0 END) as active_codes_redeemed,
+    ROUND(
+        CAST(SUM(CASE WHEN current_uses > 0 THEN 1 ELSE 0 END) AS FLOAT)
+        / NULLIF(COUNT(*), 0) * 100,
+        1
+    ) as redemption_rate_percent
+FROM promotion_codes
+WHERE campaign_id = ?
+  AND (expires_at IS NULL OR expires_at > datetime('now'))
+  AND (max_uses IS NULL OR current_uses < max_uses);
+
+-- Composite Stats Across Active Campaigns
+
+-- name: GetActivePromotionsOverallStats :one
+SELECT
+    COUNT(DISTINCT pc.id) as total_codes_issued,
+    SUM(CASE WHEN pc.current_uses > 0 THEN 1 ELSE 0 END) as total_codes_redeemed,
+    ROUND(
+        CAST(SUM(CASE WHEN pc.current_uses > 0 THEN 1 ELSE 0 END) AS FLOAT)
+        / NULLIF(COUNT(DISTINCT pc.id), 0) * 100,
+        1
+    ) as overall_redemption_rate
+FROM promotion_codes pc
+JOIN promotion_campaigns c ON pc.campaign_id = c.id
+WHERE c.active = 1;
+
+-- name: CountTotalEmailsToNonUsersActive :one
+SELECT COUNT(DISTINCT pc.email) as count
+FROM promotion_codes pc
+JOIN promotion_campaigns c ON pc.campaign_id = c.id
+WHERE c.active = 1
+  AND pc.user_id IS NULL
+  AND pc.email IS NOT NULL;
+
+-- name: CountTotalActiveCodesAcrossActive :one
+SELECT COUNT(*) as count
+FROM promotion_codes pc
+JOIN promotion_campaigns c ON pc.campaign_id = c.id
+WHERE c.active = 1
+  AND (pc.expires_at IS NULL OR pc.expires_at > datetime('now'))
+  AND (pc.max_uses IS NULL OR pc.current_uses < pc.max_uses);
+
 -- Marketing Contacts
 
 -- name: CreateMarketingContact :one
@@ -114,3 +166,13 @@ SELECT COUNT(*) FROM marketing_contacts;
 -- name: CountOptedInContacts :one
 SELECT COUNT(*) FROM marketing_contacts
 WHERE opted_in = 1;
+
+-- name: CheckPopupShownForEmail :one
+SELECT popup_shown_at FROM marketing_contacts
+WHERE email = ?;
+
+-- name: UpdatePopupShownAt :exec
+UPDATE marketing_contacts
+SET popup_shown_at = CURRENT_TIMESTAMP,
+    updated_at = CURRENT_TIMESTAMP
+WHERE email = ?;

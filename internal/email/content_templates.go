@@ -294,12 +294,24 @@ const abandonedCartRecovery24HrTemplate = `
     </div>
 </div>
 
+{{if .PromoCode}}
+<div style="background-color: #E8F5E9; padding: 25px; border-radius: 8px; margin: 30px 0; text-align: center; border: 2px solid #4CAF50;">
+    <div style="font-size: 18px; font-weight: 600; color: #2E7D32; margin-bottom: 12px;">🎉 Special Offer Just For You!</div>
+    <div style="font-size: 16px; color: #555; margin-bottom: 15px;">Save 5% on your first order</div>
+    <div style="background-color: white; padding: 12px 20px; border-radius: 6px; display: inline-block; border: 2px dashed #4CAF50;">
+        <div style="font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Your Code</div>
+        <div style="font-size: 24px; font-weight: 700; color: #2E7D32; letter-spacing: 2px; font-family: 'Courier New', monospace;">{{.PromoCode}}</div>
+    </div>
+    <div style="font-size: 13px; color: #666; margin-top: 12px;">✓ Auto-applied at checkout | Expires {{.PromoExpires}}</div>
+</div>
+{{else}}
 <div style="background-color: #fff9e6; padding: 20px; border-radius: 8px; margin: 30px 0; text-align: center; border: 2px dashed #FFA000;">
     <p style="font-size: 16px; margin: 0; color: #555;">💡 <strong>Need help deciding?</strong> Contact us with any questions!</p>
 </div>
+{{end}}
 
 <div style="text-align: center; margin: 40px 0;">
-    <a href="https://www.logans3dcreations.com/cart?token={{.TrackingToken}}" style="display: inline-block; padding: 16px 40px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 18px;">Return to Cart</a>
+    <a href="https://www.logans3dcreations.com/cart?token={{.TrackingToken}}{{if .PromoCode}}&promo={{.PromoCode}}{{end}}" style="display: inline-block; padding: 16px 40px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 600; font-size: 18px;">{{if .PromoCode}}Claim Your 5% Discount{{else}}Return to Cart{{end}}</a>
 </div>
 
 <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">
@@ -354,9 +366,21 @@ const abandonedCartRecovery72HrTemplate = `
     </div>
 </div>
 
+{{if .PromoCode}}
+<div style="background-color: #FFF3E0; padding: 30px; border-radius: 8px; margin: 30px 0; text-align: center; border: 3px solid #FF6B6B; box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2);">
+    <div style="font-size: 20px; font-weight: 700; color: #C62828; margin-bottom: 10px;">⏰ FINAL OFFER - Don't Miss Out!</div>
+    <div style="font-size: 17px; color: #555; margin-bottom: 18px; font-weight: 600;">Save 5% Before Your Cart Expires</div>
+    <div style="background-color: white; padding: 15px 24px; border-radius: 8px; display: inline-block; border: 3px dashed #FF6B6B; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <div style="font-size: 14px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">Exclusive Code</div>
+        <div style="font-size: 28px; font-weight: 700; color: #C62828; letter-spacing: 2px; font-family: 'Courier New', monospace;">{{.PromoCode}}</div>
+    </div>
+    <div style="font-size: 14px; color: #C62828; margin-top: 15px; font-weight: 600;">⚡ Auto-applied | Expires {{.PromoExpires}} ⚡</div>
+</div>
+{{end}}
+
 <div style="text-align: center; margin: 40px 0;">
-    <a href="https://www.logans3dcreations.com/cart?token={{.TrackingToken}}" style="display: inline-block; padding: 18px 45px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 700; font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">Complete Order Now</a>
-    <p style="font-size: 14px; color: #999; margin-top: 15px;">⏰ Cart expires in 24 hours</p>
+    <a href="https://www.logans3dcreations.com/cart?token={{.TrackingToken}}{{if .PromoCode}}&promo={{.PromoCode}}{{end}}" style="display: inline-block; padding: 18px 45px; background-color: #E85D5D; color: white; text-decoration: none; border-radius: 5px; font-weight: 700; font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">{{if .PromoCode}}Claim 5% Off Now{{else}}Complete Order Now{{end}}</a>
+    <p style="font-size: 14px; color: #999; margin-top: 15px;">⏰ {{if .PromoCode}}Discount and cart expire{{else}}Cart expires{{end}} in 24 hours</p>
 </div>
 
 <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">

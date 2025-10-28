@@ -144,6 +144,18 @@ func (s *AbandonedCartEmailSender) sendEmailsForAttemptType(ctx context.Context,
 
 		trackingToken := uuid.New().String()
 
+		// Get promo code if available (for 24hr and 72hr emails only)
+		var promoCode, promoExpires string
+		if attemptType == "email_24hr" || attemptType == "email_72hr" {
+			cartWithPromo, err := s.storage.Queries.GetAbandonedCartWithPromoCode(ctx, cart.ID)
+			if err == nil && cartWithPromo.PromoCode.Valid {
+				promoCode = cartWithPromo.PromoCode.String
+				if cartWithPromo.PromoExpiresAt.Valid {
+					promoExpires = cartWithPromo.PromoExpiresAt.Time.Format("Jan 2, 2006")
+				}
+			}
+		}
+
 		emailData := &email.AbandonedCartData{
 			CustomerName:  customerName,
 			CustomerEmail: cart.CustomerEmail.String,
@@ -152,6 +164,8 @@ func (s *AbandonedCartEmailSender) sendEmailsForAttemptType(ctx context.Context,
 			Items:         items,
 			TrackingToken: trackingToken,
 			AbandonedAt:   cart.AbandonedAt.Format("January 2, 2006 at 3:04 PM"),
+			PromoCode:     promoCode,
+			PromoExpires:  promoExpires,
 		}
 
 		// Send the email

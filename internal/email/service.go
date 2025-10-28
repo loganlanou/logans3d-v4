@@ -414,6 +414,8 @@ type AbandonedCartData struct {
 	Items         []AbandonedCartItem
 	TrackingToken string
 	AbandonedAt   string
+	PromoCode     string // Optional 5% promo code for first-time customers
+	PromoExpires  string // Expiration date of promo code in human-readable format
 }
 
 // SendAbandonedCartRecoveryEmail sends a recovery email to a customer

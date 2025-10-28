@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -40,12 +41,14 @@ func (h *AdminEmailsHandler) HandleEmailHistory(c echo.Context) error {
 		Offset: offset,
 	})
 	if err != nil {
+		slog.Error("failed to get email history", "error", err)
 		return c.String(http.StatusInternalServerError, "Failed to load email history")
 	}
 
 	// Get total count
 	totalCount, err := h.queries.CountEmailHistory(ctx)
 	if err != nil {
+		slog.Error("failed to count email history", "error", err)
 		totalCount = 0
 	}
 

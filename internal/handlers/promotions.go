@@ -49,6 +49,9 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 	// Check if email already exists
 	existingContact, err := h.queries.GetMarketingContactByEmail(ctx, req.Email)
 	if err == nil {
+		// Email already captured, update popup_shown_at
+		_ = h.queries.UpdatePopupShownAt(ctx, req.Email)
+
 		// Email already captured
 		if existingContact.PromotionCodeID.Valid {
 			// Already has a code, get it
@@ -115,6 +118,9 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 		// Ignore unique constraint errors (email already exists)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to save contact"})
 	}
+
+	// Mark popup as shown for this email
+	_ = h.queries.UpdatePopupShownAt(ctx, req.Email)
 
 	// Send welcome email with code
 	go h.sendWelcomeEmail(req.Email, req.FirstName, codeStr)

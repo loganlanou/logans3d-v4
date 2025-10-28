@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 
 	"github.com/clerk/clerk-sdk-go/v2"
 	"github.com/google/uuid"
@@ -169,6 +170,17 @@ func syncUserFromClaims(ctx context.Context, storage *storage.Storage, clerkUser
 		return nil, err
 	}
 
+	// Associate any existing email history records with this user
+	rowsAffected, err := storage.Queries.AssociateEmailHistoryWithUser(ctx, db.AssociateEmailHistoryWithUserParams{
+		UserID:         toNullString(dbUser.ID),
+		RecipientEmail: claims.PrimaryEmailAddress,
+	})
+	if err != nil {
+		slog.Error("failed to associate email history with user", "error", err, "user_id", dbUser.ID, "email", claims.PrimaryEmailAddress)
+	} else if rowsAffected > 0 {
+		slog.Info("associated email history with user", "user_id", dbUser.ID, "email", claims.PrimaryEmailAddress, "rows_affected", rowsAffected)
+	}
+
 	return &dbUser, nil
 }
 
@@ -208,6 +220,17 @@ func syncUserToDatabase(ctx context.Context, storage *storage.Storage, clerkUser
 
 	if err != nil {
 		return nil, err
+	}
+
+	// Associate any existing email history records with this user
+	rowsAffected, err := storage.Queries.AssociateEmailHistoryWithUser(ctx, db.AssociateEmailHistoryWithUserParams{
+		UserID:         toNullString(dbUser.ID),
+		RecipientEmail: email,
+	})
+	if err != nil {
+		slog.Error("failed to associate email history with user", "error", err, "user_id", dbUser.ID, "email", email)
+	} else if rowsAffected > 0 {
+		slog.Info("associated email history with user", "user_id", dbUser.ID, "email", email, "rows_affected", rowsAffected)
 	}
 
 	return &dbUser, nil
