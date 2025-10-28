@@ -42,59 +42,60 @@ linters:
     - lll            # Line length - handled by gofmt
     - wsl            # Whitespace linter - too opinionated
 
+  settings:
+    gocyclo:
+      min-complexity: 15  # Maximum cyclomatic complexity
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    govet:
+      enable:
+        - shadow
+
+    revive:
+      rules:
+        - name: exported
+          disabled: false
+        - name: unexported-return
+          disabled: true  # Too strict
+
+    staticcheck:
+      checks: ["all"]
+
+  exclusions:
+    rules:
+      # Exclude some linters from running on tests files
+      - path: _test\.go
+        linters:
+          - gocyclo
+          - errcheck
+          - dupl
+          - gosec
+
+      # Exclude generated files
+      - path: _templ\.go$
+        linters:
+          - all
+      - path: storage/db/.*\.go$
+        linters:
+          - all
+
+      # Allow shadowing in specific cases
+      - linters:
+          - govet
+        text: "shadow: declaration of \"err\""
+
 formatters:
   enable:
     - gofmt          # Checks whether code was gofmt-ed
     - goimports      # Checks import order
 
-linters-settings:
-  gocyclo:
-    min-complexity: 15  # Maximum cyclomatic complexity
-
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  govet:
-    check-shadowing: true
-
-  revive:
-    rules:
-      - name: exported
-        disabled: false
-      - name: unexported-return
-        disabled: true  # Too strict
-
-  staticcheck:
-    checks: ["all"]
-
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
-
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-
-    # Exclude generated files
-    - path: _templ\.go$
-      linters:
-        - all
-    - path: storage/db/.*\.go$
-      linters:
-        - all
-
-    # Allow shadowing in specific cases
-    - linters:
-        - govet
-      text: "shadow: declaration of \"err\""
