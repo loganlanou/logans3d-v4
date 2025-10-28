@@ -220,9 +220,12 @@ templ Users(
 															}
 														}
 													</div>
-													if user.Username != "" {
-														<p class="text-sm text-gray-400">{ "@" + user.Username }</p>
-													}
+													<div class="flex items-center gap-1 mt-1">
+														if user.Username != "" {
+															<p class="text-sm text-gray-400 mr-2">{ "@" + user.Username }</p>
+														}
+														@renderUserBadges(user)
+													</div>
 												</div>
 											</div>
 										}
@@ -325,4 +328,46 @@ func formatUserAvgLifetimeValue(users []UserListItem) string {
 	}
 	avg := total / int64(len(users))
 	return formatUsersCents(avg)
+}
+
+func isVIPUser(user UserListItem) bool {
+	return user.OrderCount >= 5 || user.LifetimeSpendCents >= 50000
+}
+
+func isNewUser(user UserListItem) bool {
+	return time.Since(user.CreatedAt) < 30*24*time.Hour
+}
+
+func isInactiveUser(user UserListItem) bool {
+	if user.LastActivity.IsZero() {
+		return true
+	}
+	return time.Since(user.LastActivity) > 90*24*time.Hour
+}
+
+templ renderUserBadges(user UserListItem) {
+	if isVIPUser(user) {
+		@badge.Badge(badge.Props{
+			Variant: badge.VariantDefault,
+			Class:   "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+		}) {
+			⭐ VIP
+		}
+	}
+	if isNewUser(user) {
+		@badge.Badge(badge.Props{
+			Variant: badge.VariantSecondary,
+			Class:   "bg-green-500/10 text-green-400 border-green-500/20",
+		}) {
+			🆕 New
+		}
+	}
+	if isInactiveUser(user) {
+		@badge.Badge(badge.Props{
+			Variant: badge.VariantSecondary,
+			Class:   "bg-gray-500/10 text-gray-400 border-gray-500/20",
+		}) {
+			💤 Inactive
+		}
+	}
 }

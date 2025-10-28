@@ -114,6 +114,9 @@ templ UserDetail(
 						if user.Username != "" {
 							<p class="text-sm text-gray-400 mt-1">{ "@" + user.Username }</p>
 						}
+						<div class="flex items-center gap-2 mt-2">
+							@renderUserDetailBadges(user)
+						</div>
 						<p class="text-sm text-gray-500 mt-1">User ID: { user.ID[:16] }...</p>
 					</div>
 				</div>
@@ -582,6 +585,48 @@ templ renderOrderStatusBadge(status string) {
 	default:
 		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
 			{ status }
+		}
+	}
+}
+
+func isVIPUserDetail(user UserDetailData) bool {
+	return user.OrderCount >= 5 || user.LifetimeSpendCents >= 50000
+}
+
+func isNewUserDetail(user UserDetailData) bool {
+	return time.Since(user.CreatedAt) < 30*24*time.Hour
+}
+
+func isInactiveUserDetail(user UserDetailData) bool {
+	if user.LastSyncedAt.IsZero() {
+		return true
+	}
+	return time.Since(user.LastSyncedAt) > 90*24*time.Hour
+}
+
+templ renderUserDetailBadges(user UserDetailData) {
+	if isVIPUserDetail(user) {
+		@badge.Badge(badge.Props{
+			Variant: badge.VariantDefault,
+			Class:   "bg-yellow-500/10 text-yellow-400 border-yellow-500/20",
+		}) {
+			⭐ VIP Customer
+		}
+	}
+	if isNewUserDetail(user) {
+		@badge.Badge(badge.Props{
+			Variant: badge.VariantSecondary,
+			Class:   "bg-green-500/10 text-green-400 border-green-500/20",
+		}) {
+			🆕 New Customer
+		}
+	}
+	if isInactiveUserDetail(user) {
+		@badge.Badge(badge.Props{
+			Variant: badge.VariantSecondary,
+			Class:   "bg-gray-500/10 text-gray-400 border-gray-500/20",
+		}) {
+			💤 Inactive
 		}
 	}
 }
