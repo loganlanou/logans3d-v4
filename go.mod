@@ -18,6 +18,7 @@ require (
 )
 
 require (
+	github.com/brianvoe/gofakeit/v7 v7.8.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-jose/go-jose/v3 v3.0.4 // indirect

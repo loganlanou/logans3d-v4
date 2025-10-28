@@ -52,25 +52,6 @@ go run scripts/seed-fake-data/main.go
 DB_PATH=./data/database.db go run scripts/seed-fake-data/main.go
 ```
 
-### Build and Run
-
-From the **project root** directory:
-
-```bash
-cd scripts/seed-fake-data
-go build -o seed
-cd ../..
-./scripts/seed-fake-data/seed
-```
-
-Or build and run with proper paths:
-
-```bash
-cd scripts/seed-fake-data
-go build -o seed
-DB_PATH=../../data/database.db ./seed
-```
-
 ### Custom Database Path
 
 By default, the script uses `./data/database.db` (relative to where you run it). To use a different database:
@@ -156,15 +137,6 @@ You need to seed products first. The script requires existing products to create
 ### Database locked
 
 Make sure the development server (`make dev`) is not running, or close other database connections.
-
-### Import errors
-
-Run `go mod tidy` to download dependencies:
-
-```bash
-cd scripts/seed-fake-data
-go mod tidy
-```
 
 ## Example Output
 
