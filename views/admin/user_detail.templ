@@ -1,0 +1,587 @@
+package admin
+
+import (
+	"fmt"
+	"time"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/components/badge"
+)
+
+type UserDetailData struct {
+	ID                  string
+	Email               string
+	FullName            string
+	FirstName           string
+	LastName            string
+	Username            string
+	ProfileImageUrl     string
+	ClerkID             string
+	IsAdmin             bool
+	CreatedAt           time.Time
+	UpdatedAt           time.Time
+	LastSyncedAt        time.Time
+	OrderCount          int64
+	LifetimeSpendCents  int64
+	FavoritesCount      int64
+	CollectionsCount    int64
+	ActiveCartsCount    int64
+	AbandonedCartsCount int64
+}
+
+type UserOrderItem struct {
+	ID            string
+	CustomerEmail string
+	CustomerName  string
+	CustomerPhone string
+	Status        string
+	TotalCents    int64
+	CreatedAt     time.Time
+}
+
+type UserCartItem struct {
+	SessionID    string
+	ItemCount    int64
+	TotalCents   int64
+	LastActivity time.Time
+}
+
+type UserFavoriteItem struct {
+	ProductID   string
+	ProductName string
+	ProductSlug string
+	PriceCents  int64
+	ImageUrl    string
+	FavoritedAt time.Time
+}
+
+type UserCollectionItem struct {
+	ID                string
+	Name              string
+	Description       string
+	IsQuoteRequested  bool
+	CreatedAt         time.Time
+}
+
+templ UserDetail(
+	c echo.Context,
+	user UserDetailData,
+	orders []UserOrderItem,
+	activeCarts []UserCartItem,
+	abandonedCarts []UserCartItem,
+	favorites []UserFavoriteItem,
+	collections []UserCollectionItem,
+) {
+	@layout.AdminBase(c, user.FullName) {
+		@layout.AdminContainer() {
+			<!-- Back Button -->
+			<div class="mb-6">
+				<a href="/admin/users" class="text-blue-400 hover:text-blue-300 flex items-center gap-2">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+					</svg>
+					Back to Users
+				</a>
+			</div>
+
+			<!-- Header -->
+			<div class="flex justify-between items-start mb-6">
+				<div class="flex items-center gap-4">
+					if user.ProfileImageUrl != "" {
+						<img
+							src={ user.ProfileImageUrl }
+							alt={ user.FullName }
+							class="w-20 h-20 rounded-full"
+						/>
+					} else {
+						<div class="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-white text-2xl font-semibold">
+							{ getUserInitialsDetail(user) }
+						</div>
+					}
+					<div>
+						<div class="flex items-center gap-2">
+							<h1 class="text-2xl font-bold text-white">{ user.FullName }</h1>
+							if user.IsAdmin {
+								@badge.Badge(badge.Props{
+									Variant: badge.VariantSecondary,
+								}) {
+									Admin
+								}
+							}
+						</div>
+						if user.Username != "" {
+							<p class="text-sm text-gray-400 mt-1">{ "@" + user.Username }</p>
+						}
+						<p class="text-sm text-gray-500 mt-1">User ID: { user.ID[:16] }...</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+				<!-- Left Column - User Info & Stats -->
+				<div class="lg:col-span-1 space-y-6">
+					<!-- Account Details -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								Account Details
+							}
+						}
+						@card.Content() {
+							<div class="space-y-4">
+								<!-- Email -->
+								<div>
+									<div class="text-sm text-gray-400 mb-1">Email</div>
+									<a
+										href={ templ.URL("mailto:" + user.Email) }
+										class="text-blue-400 hover:text-blue-300"
+									>
+										{ user.Email }
+									</a>
+								</div>
+
+								<!-- Clerk ID -->
+								if user.ClerkID != "" {
+									<div class="pt-3 border-t border-gray-700">
+										<div class="text-sm text-gray-400 mb-1">Clerk ID</div>
+										<div class="text-xs font-mono text-gray-300">{ user.ClerkID }</div>
+									</div>
+								}
+
+								<!-- Registration Date -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="text-sm text-gray-400 mb-1">Registered</div>
+									<div class="text-white">{ user.CreatedAt.Format("Jan 2, 2006") }</div>
+									<div class="text-xs text-gray-500">{ formatTimeAgoUser(user.CreatedAt) }</div>
+								</div>
+
+								<!-- Last Activity -->
+								if !user.LastSyncedAt.IsZero() {
+									<div class="pt-3 border-t border-gray-700">
+										<div class="text-sm text-gray-400 mb-1">Last Activity</div>
+										<div class="text-white">{ user.LastSyncedAt.Format("Jan 2, 2006") }</div>
+										<div class="text-xs text-gray-500">{ formatTimeAgoUser(user.LastSyncedAt) }</div>
+									</div>
+								}
+							</div>
+						}
+					}
+
+					<!-- Statistics -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								Statistics
+							}
+						}
+						@card.Content() {
+							<div class="space-y-4">
+								<!-- Lifetime Spend -->
+								<div>
+									<div class="text-sm text-gray-400 mb-1">Lifetime Spend</div>
+									<div class="text-3xl font-bold text-white">{ formatUserCents(user.LifetimeSpendCents) }</div>
+								</div>
+
+								<!-- Orders -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">Orders</span>
+										<span class="text-xl font-bold text-white">{ fmt.Sprintf("%d", user.OrderCount) }</span>
+									</div>
+								</div>
+
+								<!-- Average Order Value -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">Avg Order Value</span>
+										<span class="text-lg font-semibold text-white">
+											if user.OrderCount > 0 {
+												{ formatUserCents(user.LifetimeSpendCents / user.OrderCount) }
+											} else {
+												$0.00
+											}
+										</span>
+									</div>
+								</div>
+
+								<!-- Favorites -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">Favorites</span>
+										<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.FavoritesCount) }</span>
+									</div>
+								</div>
+
+								<!-- Collections -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">Collections</span>
+										<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.CollectionsCount) }</span>
+									</div>
+								</div>
+
+								<!-- Active Carts -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">Active Carts</span>
+										<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.ActiveCartsCount) }</span>
+									</div>
+								</div>
+
+								<!-- Abandoned Carts -->
+								<div class="pt-3 border-t border-gray-700">
+									<div class="flex justify-between items-center">
+										<span class="text-sm text-gray-400">Abandoned Carts</span>
+										<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.AbandonedCartsCount) }</span>
+									</div>
+								</div>
+							</div>
+						}
+					}
+				</div>
+
+				<!-- Right Column - Activity Data -->
+				<div class="lg:col-span-2 space-y-6">
+					<!-- Orders Table -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								Orders ({ fmt.Sprintf("%d", len(orders)) })
+							}
+							@card.Description() {
+								Customer order history
+							}
+						}
+						@card.Content() {
+							if len(orders) == 0 {
+								<div class="text-center py-8">
+									<p class="text-gray-400">No orders yet</p>
+								</div>
+							} else {
+								@table.Table() {
+									@table.Header() {
+										@table.Row() {
+											@table.Head() { Order ID }
+											@table.Head() { Status }
+											@table.Head() { Total }
+											@table.Head() { Date }
+										}
+									}
+									@table.Body() {
+										for _, order := range orders {
+											@table.Row(table.RowProps{
+												Class:   "cursor-pointer hover:bg-gray-750",
+												Attributes: templ.Attributes{
+													"data-order-id": order.ID,
+												},
+											}) {
+												@table.Cell() {
+													<span class="font-mono text-sm text-blue-400">{ order.ID[:8] }</span>
+												}
+												@table.Cell() {
+													@renderOrderStatusBadge(order.Status)
+												}
+												@table.Cell() {
+													<span class="font-medium text-white">{ formatUserCents(order.TotalCents) }</span>
+												}
+												@table.Cell() {
+													<span class="text-gray-400">{ order.CreatedAt.Format("Jan 2, 2006") }</span>
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+
+					<!-- Cart Activity -->
+					if len(activeCarts) > 0 || len(abandonedCarts) > 0 {
+						@card.Card() {
+							@card.Header() {
+								@card.Title() {
+									Cart Activity
+								}
+								@card.Description() {
+									Active and abandoned shopping carts
+								}
+							}
+							@card.Content() {
+								<div class="space-y-6">
+									if len(activeCarts) > 0 {
+										<div>
+											<h3 class="text-sm font-semibold text-gray-300 mb-3">Active Carts</h3>
+											@table.Table() {
+												@table.Header() {
+													@table.Row() {
+														@table.Head() { Session }
+														@table.Head() { Items }
+														@table.Head() { Value }
+														@table.Head() { Last Activity }
+													}
+												}
+												@table.Body() {
+													for _, cart := range activeCarts {
+														@table.Row(table.RowProps{
+															Class:   "cursor-pointer hover:bg-gray-750",
+															Attributes: templ.Attributes{
+																"data-cart-session": cart.SessionID,
+															},
+														}) {
+															@table.Cell() {
+																<span class="font-mono text-xs text-gray-400">{ formatSessionID(cart.SessionID) }</span>
+															}
+															@table.Cell() {
+																<span class="text-white">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+															}
+															@table.Cell() {
+																<span class="text-white">{ formatUserCents(cart.TotalCents) }</span>
+															}
+															@table.Cell() {
+																<span class="text-gray-400">{ formatTimeAgoUser(cart.LastActivity) }</span>
+															}
+														}
+													}
+												}
+											}
+										</div>
+									}
+									if len(abandonedCarts) > 0 {
+										<div>
+											<h3 class="text-sm font-semibold text-gray-300 mb-3">Abandoned Carts</h3>
+											@table.Table() {
+												@table.Header() {
+													@table.Row() {
+														@table.Head() { Session }
+														@table.Head() { Items }
+														@table.Head() { Value }
+														@table.Head() { Abandoned }
+													}
+												}
+												@table.Body() {
+													for _, cart := range abandonedCarts {
+														@table.Row(table.RowProps{
+															Class:   "cursor-pointer hover:bg-gray-750",
+															Attributes: templ.Attributes{
+																"data-cart-session": cart.SessionID,
+															},
+														}) {
+															@table.Cell() {
+																<span class="font-mono text-xs text-gray-400">{ formatSessionID(cart.SessionID) }</span>
+															}
+															@table.Cell() {
+																<span class="text-white">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+															}
+															@table.Cell() {
+																<span class="text-white">{ formatUserCents(cart.TotalCents) }</span>
+															}
+															@table.Cell() {
+																<span class="text-gray-400">{ cart.LastActivity.Format("Jan 2, 2006") }</span>
+															}
+														}
+													}
+												}
+											}
+										</div>
+									}
+								</div>
+							}
+						}
+					}
+
+					<!-- Favorites & Collections -->
+					if len(favorites) > 0 || len(collections) > 0 {
+						@card.Card() {
+							@card.Header() {
+								@card.Title() {
+									Favorites & Collections
+								}
+								@card.Description() {
+									Products and collections saved by user
+								}
+							}
+							@card.Content() {
+								<div class="space-y-6">
+									if len(favorites) > 0 {
+										<div>
+											<h3 class="text-sm font-semibold text-gray-300 mb-3">Recent Favorites ({ fmt.Sprintf("%d", len(favorites)) })</h3>
+											<div class="grid grid-cols-2 gap-4">
+												for _, fav := range favorites {
+													<a href={ templ.URL("/shop/" + fav.ProductSlug) } class="flex items-center gap-3 p-3 bg-gray-750 hover:bg-gray-700 rounded-lg transition-colors">
+														if fav.ImageUrl != "" {
+															<img src={ "/public/images/products/" + fav.ImageUrl } alt={ fav.ProductName } class="w-12 h-12 object-cover rounded"/>
+														} else {
+															<div class="w-12 h-12 bg-gray-600 rounded flex items-center justify-center text-gray-400">📦</div>
+														}
+														<div class="flex-1 min-w-0">
+															<div class="text-sm font-medium text-white truncate">{ fav.ProductName }</div>
+															<div class="text-xs text-gray-400">{ formatUserCents(fav.PriceCents) }</div>
+														</div>
+													</a>
+												}
+											</div>
+										</div>
+									}
+									if len(collections) > 0 {
+										<div>
+											<h3 class="text-sm font-semibold text-gray-300 mb-3">Collections ({ fmt.Sprintf("%d", len(collections)) })</h3>
+											<div class="space-y-2">
+												for _, col := range collections {
+													<div class="p-3 bg-gray-750 rounded-lg">
+														<div class="flex items-center justify-between">
+															<div class="flex-1">
+																<div class="font-medium text-white">{ col.Name }</div>
+																if col.Description != "" {
+																	<div class="text-sm text-gray-400 mt-1">{ col.Description }</div>
+																}
+															</div>
+															if col.IsQuoteRequested {
+																@badge.Badge(badge.Props{
+																	Variant: badge.VariantSecondary,
+																}) {
+																	Quote Requested
+																}
+															}
+														</div>
+													</div>
+												}
+											</div>
+										</div>
+									}
+								</div>
+							}
+						}
+					}
+				</div>
+			</div>
+		}
+
+		<!-- Script to make table rows clickable -->
+		<script>
+			(function() {
+				// Make order rows clickable
+				document.querySelectorAll('[data-order-id]').forEach(function(row) {
+					row.addEventListener('click', function(e) {
+						var orderId = row.getAttribute('data-order-id');
+						if (orderId) {
+							window.location.href = '/admin/orders/' + orderId;
+						}
+					});
+				});
+
+				// Make cart rows clickable
+				document.querySelectorAll('[data-cart-session]').forEach(function(row) {
+					row.addEventListener('click', function(e) {
+						var sessionId = row.getAttribute('data-cart-session');
+						if (sessionId) {
+							window.location.href = '/admin/carts/' + sessionId;
+						}
+					});
+				});
+			})();
+		</script>
+	}
+}
+
+func getUserInitialsDetail(user UserDetailData) string {
+	if user.FirstName != "" && user.LastName != "" {
+		return string(user.FirstName[0]) + string(user.LastName[0])
+	}
+	if user.FullName != "" && len(user.FullName) >= 2 {
+		return string(user.FullName[0]) + string(user.FullName[1])
+	}
+	if user.Email != "" {
+		return string(user.Email[0])
+	}
+	return "U"
+}
+
+func formatUserCents(cents int64) string {
+	return fmt.Sprintf("$%.2f", float64(cents)/100)
+}
+
+func formatSessionID(sessionID string) string {
+	if len(sessionID) == 0 {
+		return "N/A"
+	}
+	if len(sessionID) > 16 {
+		return sessionID[:16] + "..."
+	}
+	return sessionID
+}
+
+func formatTimeAgoUser(t time.Time) string {
+	if t.IsZero() {
+		return "Never"
+	}
+
+	duration := time.Since(t)
+
+	if duration < time.Minute {
+		return "Just now"
+	}
+	if duration < time.Hour {
+		mins := int(duration.Minutes())
+		if mins == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", mins)
+	}
+	if duration < 24*time.Hour {
+		hours := int(duration.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	}
+	days := int(duration.Hours() / 24)
+	if days == 1 {
+		return "1 day ago"
+	}
+	if days < 30 {
+		return fmt.Sprintf("%d days ago", days)
+	}
+	if days < 365 {
+		months := days / 30
+		if months == 1 {
+			return "1 month ago"
+		}
+		return fmt.Sprintf("%d months ago", months)
+	}
+	years := days / 365
+	if years == 1 {
+		return "1 year ago"
+	}
+	return fmt.Sprintf("%d years ago", years)
+}
+
+templ renderOrderStatusBadge(status string) {
+	switch status {
+	case "received":
+		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+			{ status }
+		}
+	case "in_production":
+		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+			{ status }
+		}
+	case "shipped":
+		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+			{ status }
+		}
+	case "delivered":
+		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+			{ status }
+		}
+	case "cancelled":
+		@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+			{ status }
+		}
+	default:
+		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+			{ status }
+		}
+	}
+}

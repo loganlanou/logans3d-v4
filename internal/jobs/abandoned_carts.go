@@ -98,12 +98,19 @@ func (d *AbandonedCartDetector) detectAbandonedCarts(ctx context.Context) {
 
 	for rows.Next() {
 		var sessionID, userID string
-		var lastUpdate time.Time
+		var lastUpdateStr string
 		var itemCount int64
 		var cartValue int64
 
-		if err := rows.Scan(&sessionID, &userID, &lastUpdate, &itemCount, &cartValue); err != nil {
+		if err := rows.Scan(&sessionID, &userID, &lastUpdateStr, &itemCount, &cartValue); err != nil {
 			slog.Error("failed to scan abandoned cart row", "error", err)
+			continue
+		}
+
+		// Parse the timestamp string from SQLite
+		lastUpdate, err := time.Parse("2006-01-02 15:04:05", lastUpdateStr)
+		if err != nil {
+			slog.Error("failed to parse last_update timestamp", "error", err, "value", lastUpdateStr)
 			continue
 		}
 
@@ -114,10 +121,13 @@ func (d *AbandonedCartDetector) detectAbandonedCarts(ctx context.Context) {
 
 		if sessionID != "" {
 			_, checkErr = d.storage.Queries.GetAbandonedCartBySession(ctx, sql.NullString{String: sessionID, Valid: true})
+		} else if userID != "" {
+			// Check by user_id if no session_id
+			_, checkErr = d.storage.Queries.GetAbandonedCartByUser(ctx, sql.NullString{String: userID, Valid: true})
 		}
 
 		// If no existing abandoned cart record, create one
-		if checkErr == sql.ErrNoRows || (sessionID == "" && userID != "") {
+		if checkErr == sql.ErrNoRows {
 			err := d.createAbandonedCartRecord(ctx, sessionID, userID, itemCount, cartValue, lastUpdate)
 			if err != nil {
 				slog.Error("failed to create abandoned cart record", "error", err, "session_id", sessionID, "user_id", userID)

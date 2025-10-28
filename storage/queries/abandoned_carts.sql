@@ -23,6 +23,12 @@ WHERE session_id = ? AND status = 'active'
 ORDER BY abandoned_at DESC
 LIMIT 1;
 
+-- name: GetAbandonedCartByUser :one
+SELECT * FROM abandoned_carts
+WHERE user_id = ? AND status = 'active'
+ORDER BY abandoned_at DESC
+LIMIT 1;
+
 -- name: GetAbandonedCartsByStatus :many
 SELECT * FROM abandoned_carts
 WHERE status = ?
@@ -209,13 +215,13 @@ LIMIT sqlc.arg(limit_count);
 
 -- name: GetAbandonmentTrendByDay :many
 SELECT
-    DATE(abandoned_at) as date,
+    DATE(substr(abandoned_at, 1, 10)) as date,
     COUNT(*) as cart_count,
     SUM(cart_value_cents) as total_value_cents,
     AVG(cart_value_cents) as avg_value_cents
 FROM abandoned_carts
 WHERE abandoned_at >= datetime('now', sqlc.arg(period_offset))
-GROUP BY DATE(abandoned_at)
+GROUP BY DATE(substr(abandoned_at, 1, 10))
 ORDER BY date DESC;
 
 -- name: GetAbandonmentByHourOfDay :many

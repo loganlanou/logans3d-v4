@@ -1,0 +1,504 @@
+package admin
+
+import (
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/types"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	switchcomp "github.com/loganlanou/logans3d-v4/components/switch"
+	"github.com/loganlanou/logans3d-v4/components/table"
+)
+
+templ Products(c echo.Context, products []types.ProductWithImage, categories []db.Category, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter, sortBy, sortOrder string) {
+	@layout.AdminBase(c, "Products") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold text-gray-100">Products</h1>
+				<div class="flex space-x-3">
+					<a href="/admin/categories">
+						@button.Button(button.Props{
+							Variant: button.VariantOutline,
+							Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600",
+						}) {
+							Manage Categories
+						}
+					</a>
+					<a href="/admin/product/new">
+						@button.Button(button.Props{
+							Variant: button.VariantDefault,
+							Class: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
+						}) {
+							+ Add Product
+						}
+					</a>
+				</div>
+			</div>
+
+			<!-- Search and Filter Bar -->
+			<div class="mb-6 space-y-4">
+				<!-- Type-ahead Search -->
+				<div class="relative" x-data="{
+					search: '',
+					results: [],
+					showResults: false,
+					loading: false,
+					async searchProducts() {
+						if (this.search.length < 2) {
+							this.results = [];
+							this.showResults = false;
+							return;
+						}
+						this.loading = true;
+						try {
+							const response = await fetch(`/admin/product/search?q=${encodeURIComponent(this.search)}`);
+							this.results = await response.json();
+							this.showResults = true;
+						} catch (error) {
+							console.error('Search error:', error);
+						} finally {
+							this.loading = false;
+						}
+					}
+				}">
+					<input
+						type="text"
+						x-model="search"
+						@input.debounce.300ms="searchProducts()"
+						@focus="if(results.length > 0) showResults = true"
+						@click.outside="showResults = false"
+						placeholder="Search products by name..."
+						class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-gray-700 transition-colors"
+					/>
+					<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto">
+						<template x-for="result in results" :key="result.id">
+							<a
+								:href="`/admin/product/edit?id=${result.id}`"
+								class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
+								@click="showResults = false"
+							>
+								<img
+									:src="result.image || '/public/images/placeholder.png'"
+									:alt="result.name"
+									class="w-12 h-12 object-cover rounded"
+								/>
+								<div class="flex-1">
+									<div class="font-medium text-gray-100" x-text="result.name"></div>
+									<div class="text-sm text-gray-400" x-text="`$${result.price.toFixed(2)}`"></div>
+								</div>
+							</a>
+						</template>
+					</div>
+				</div>
+
+				<!-- Filters -->
+				<div class="flex gap-3 flex-wrap items-center">
+					<select
+						name="category"
+						class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm font-medium text-gray-200 hover:bg-gray-700 hover:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
+						onchange="window.location.href = updateQueryParam('category', this.value)"
+					>
+						<option value="">All Categories</option>
+						for _, cat := range categories {
+							if categoryFilter == cat.ID {
+								<option value={ cat.ID } selected>{ cat.Name }</option>
+							} else {
+								<option value={ cat.ID }>{ cat.Name }</option>
+							}
+						}
+					</select>
+
+					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${newFilter == "true" ? "bg-green-900/30 border-green-600/50 hover:bg-green-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+						<div class="switch-wrapper">
+							@switchcomp.Switch(switchcomp.Props{
+								ID: "new-filter",
+								Checked: newFilter == "true",
+								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('new', this.checked ? 'true' : '')"},
+							})
+						</div>
+						<span class={ `text-sm font-medium ${newFilter == "true" ? "text-green-400" : "text-gray-200"}` }>New</span>
+					</div>
+
+					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${featuredFilter == "true" ? "bg-blue-900/30 border-blue-600/50 hover:bg-blue-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+						<div class="switch-wrapper">
+							@switchcomp.Switch(switchcomp.Props{
+								ID: "featured-filter",
+								Checked: featuredFilter == "true",
+								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('featured', this.checked ? 'true' : '')"},
+							})
+						</div>
+						<span class={ `text-sm font-medium ${featuredFilter == "true" ? "text-blue-400" : "text-gray-200"}` }>Featured</span>
+					</div>
+
+					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${premiumFilter == "true" ? "bg-yellow-900/30 border-yellow-600/50 hover:bg-yellow-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+						<div class="switch-wrapper">
+							@switchcomp.Switch(switchcomp.Props{
+								ID: "premium-filter",
+								Checked: premiumFilter == "true",
+								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('premium', this.checked ? 'true' : '')"},
+							})
+						</div>
+						<span class={ `text-sm font-medium ${premiumFilter == "true" ? "text-yellow-400" : "text-gray-200"}` }>Premium</span>
+					</div>
+
+					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${statusFilter == "inactive" ? "bg-red-900/30 border-red-600/50 hover:bg-red-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+						<div class="switch-wrapper">
+							@switchcomp.Switch(switchcomp.Props{
+								ID: "inactive-filter",
+								Checked: statusFilter == "inactive",
+								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('status', this.checked ? 'inactive' : '')"},
+							})
+						</div>
+						<span class={ `text-sm font-medium ${statusFilter == "inactive" ? "text-red-400" : "text-gray-200"}` }>Inactive</span>
+					</div>
+
+					if categoryFilter != "" || featuredFilter != "" || premiumFilter != "" || newFilter != "" || statusFilter != "" || sortBy != "" {
+						<a href="/admin">
+							@button.Button(button.Props{
+								Variant: button.VariantOutline,
+								Size: button.SizeSm,
+								Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600 hover:text-gray-100",
+							}) {
+								Clear Filters
+							}
+						</a>
+					}
+				</div>
+			</div>
+
+			<style>
+				/* Custom switch styles for dark theme */
+				.switch-wrapper label > div {
+					background-color: #4B5563 !important; /* gray-600 */
+					border: 1px solid #6B7280 !important; /* gray-500 */
+				}
+				.switch-wrapper input:checked + div {
+					background-color: #10B981 !important; /* green-600 for default */
+					border-color: #059669 !important;
+				}
+				.switch-wrapper input:checked + div::after {
+					background-color: white !important;
+				}
+				.switch-wrapper input + div::after {
+					background-color: white !important;
+				}
+				/* Specific colors for each filter */
+				#featured-filter:checked + div {
+					background-color: #2563EB !important; /* blue-600 */
+					border-color: #1D4ED8 !important;
+				}
+				#premium-filter:checked + div {
+					background-color: #F59E0B !important; /* yellow-600 */
+					border-color: #D97706 !important;
+				}
+				#inactive-filter:checked + div {
+					background-color: #DC2626 !important; /* red-600 */
+					border-color: #B91C1C !important;
+				}
+				#new-filter:checked + div {
+					background-color: #10B981 !important; /* green-600 */
+					border-color: #059669 !important;
+				}
+			</style>
+			<script>
+				function updateQueryParam(key, value) {
+					const url = new URL(window.location);
+					if (value) {
+						url.searchParams.set(key, value);
+					} else {
+						url.searchParams.delete(key);
+					}
+					return url.toString();
+				}
+			</script>
+
+			<!-- Products Table -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Products ({ fmt.Sprintf("%d", len(products)) })
+					}
+				}
+				@card.Content(card.ContentProps{
+					Class: "p-0",
+				}) {
+					<div class="overflow-x-auto">
+						@table.Table() {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() { Image }
+									@table.Head() {
+										<a
+											href={ templ.SafeURL(getSortURL("name", sortBy, sortOrder)) }
+											class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+											title="Click to sort by name"
+										>
+											Name
+											if sortBy == "name" {
+												if sortOrder == "asc" {
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+													</svg>
+												} else {
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+													</svg>
+												}
+											} else {
+												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+												</svg>
+											}
+										</a>
+									}
+									@table.Head() { SKU }
+									@table.Head() {
+										<a
+											href={ templ.SafeURL(getSortURL("price", sortBy, sortOrder)) }
+											class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+											title="Click to sort by price"
+										>
+											Price
+											if sortBy == "price" {
+												if sortOrder == "asc" {
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+													</svg>
+												} else {
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+													</svg>
+												}
+											} else {
+												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+												</svg>
+											}
+										</a>
+									}
+									@table.Head() { Stock }
+									@table.Head() { New }
+									@table.Head() { Featured }
+									@table.Head() { Premium }
+									@table.Head() { Status }
+									@table.Head() { Actions }
+								}
+							}
+							@table.Body() {
+								for _, product := range products {
+									@table.Row() {
+										@table.Cell() {
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) } class="block">
+												if product.ImageURL != "" {
+													<img src={ product.ImageURL } alt={ product.Product.Name } class="w-12 h-12 object-cover rounded-lg hover:opacity-80 transition-opacity" />
+												} else {
+													<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors">
+														<span class="admin-text-muted text-xs">No Image</span>
+													</div>
+												}
+											</a>
+										}
+										@table.Cell() {
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) } class="admin-text-primary admin-font-medium hover:text-blue-600">
+												{ product.Product.Name }
+											</a>
+										}
+										@table.Cell() {
+											if product.Product.Sku.Valid {
+												{ product.Product.Sku.String }
+											} else {
+												<span class="admin-text-disabled">-</span>
+											}
+										}
+										@table.Cell() {
+											${ fmt.Sprintf("%.2f", float64(product.Product.PriceCents)/100) }
+										}
+										@table.Cell() {
+											if product.Product.StockQuantity.Valid {
+												if product.Product.StockQuantity.Int64 <= 5 {
+													<span class="admin-text-warning admin-font-medium">{ fmt.Sprintf("%d", product.Product.StockQuantity.Int64) }</span>
+												} else {
+													{ fmt.Sprintf("%d", product.Product.StockQuantity.Int64) }
+												}
+											} else {
+												<span class="admin-text-disabled">-</span>
+											}
+										}
+										@table.Cell() {
+											<div
+												x-data={ fmt.Sprintf("{ isNew: %t, productId: '%s' }", product.IsNew, product.Product.ID) }
+												@click="
+													isNew = !isNew;
+													fetch(`/admin/product/${productId}/toggle-new`, {
+														method: 'POST',
+														headers: {
+															'Content-Type': 'application/json',
+														},
+													})
+													.then(response => response.json())
+													.then(data => {
+														if (data.success) {
+															isNew = data.is_new;
+														} else {
+															isNew = !isNew;
+															alert('Failed to update new status');
+														}
+													})
+													.catch(error => {
+														isNew = !isNew;
+														console.error('Error:', error);
+														alert('Failed to update new status');
+													});
+												"
+												class="relative inline-flex items-center cursor-pointer"
+											>
+												<input type="checkbox" :checked="isNew" class="sr-only peer"/>
+												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+											</div>
+										}
+										@table.Cell() {
+											<div
+												x-data={ fmt.Sprintf("{ featured: %t, productId: '%s' }", product.Product.IsFeatured.Valid && product.Product.IsFeatured.Bool, product.Product.ID) }
+												@click="
+													featured = !featured;
+													fetch(`/admin/product/${productId}/toggle-featured`, {
+														method: 'POST',
+														headers: {
+															'Content-Type': 'application/json',
+														},
+													})
+													.then(response => response.json())
+													.then(data => {
+														if (data.success) {
+															featured = data.is_featured;
+														} else {
+															featured = !featured;
+															alert('Failed to update featured status');
+														}
+													})
+													.catch(error => {
+														featured = !featured;
+														console.error('Error:', error);
+														alert('Failed to update featured status');
+													});
+												"
+												class="relative inline-flex items-center cursor-pointer"
+											>
+												<input type="checkbox" :checked="featured" class="sr-only peer"/>
+												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+											</div>
+										}
+										@table.Cell() {
+											<div
+												x-data={ fmt.Sprintf("{ premium: %t, productId: '%s' }", product.Product.IsPremium.Valid && product.Product.IsPremium.Bool, product.Product.ID) }
+												@click="
+													premium = !premium;
+													fetch(`/admin/product/${productId}/toggle-premium`, {
+														method: 'POST',
+														headers: {
+															'Content-Type': 'application/json',
+														},
+													})
+													.then(response => response.json())
+													.then(data => {
+														if (data.success) {
+															premium = data.is_premium;
+														} else {
+															premium = !premium;
+															alert('Failed to update premium status');
+														}
+													})
+													.catch(error => {
+														premium = !premium;
+														console.error('Error:', error);
+														alert('Failed to update premium status');
+													});
+												"
+												class="relative inline-flex items-center cursor-pointer"
+											>
+												<input type="checkbox" :checked="premium" class="sr-only peer"/>
+												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
+											</div>
+										}
+										@table.Cell() {
+											<div
+												x-data={ fmt.Sprintf("{ active: %t, productId: '%s' }", product.Product.IsActive.Valid && product.Product.IsActive.Bool, product.Product.ID) }
+												@click="
+													active = !active;
+													fetch(`/admin/product/${productId}/toggle-active`, {
+														method: 'POST',
+														headers: {
+															'Content-Type': 'application/json',
+														},
+													})
+													.then(response => response.json())
+													.then(data => {
+														if (data.success) {
+															active = data.is_active;
+														} else {
+															active = !active;
+															alert('Failed to update active status');
+														}
+													})
+													.catch(error => {
+														active = !active;
+														console.error('Error:', error);
+														alert('Failed to update active status');
+													});
+												"
+												class="relative inline-flex items-center cursor-pointer"
+											>
+												<input type="checkbox" :checked="active" class="sr-only peer"/>
+												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+											</div>
+										}
+										@table.Cell() {
+											<div class="flex space-x-2">
+												<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) }>
+													@button.Button(button.Props{
+														Variant: button.VariantSecondary,
+														Size: button.SizeSm,
+													}) {
+														Edit
+													}
+												</a>
+												<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/product/%s/delete", product.Product.ID)) }
+													  onsubmit="return confirm('Are you sure you want to delete this product?');" class="inline">
+													@button.Button(button.Props{
+														Variant: button.VariantDestructive,
+														Size: button.SizeSm,
+														Type: "submit",
+													}) {
+														Delete
+													}
+												</form>
+											</div>
+										}
+									}
+								}
+							}
+						}
+					</div>
+				}
+			}
+		}
+	}
+}
+
+func getSortURL(field, currentSort, currentOrder string) string {
+	order := "asc"
+
+	// If clicking the same field, toggle the order
+	if currentSort == field {
+		if currentOrder == "asc" {
+			order = "desc"
+		} else {
+			order = "asc"
+		}
+	}
+
+	return fmt.Sprintf("?sort=%s&order=%s", field, order)
+}

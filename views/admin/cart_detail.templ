@@ -127,6 +127,20 @@ templ CartDetailPage(
 									</div>
 								</div>
 
+								<!-- View User Profile Button -->
+								if cart.UserID != "" {
+									<div class="pt-4 border-t border-gray-700">
+										<a href={ templ.URL("/admin/users/" + cart.UserID) }>
+											@button.Button(button.Props{
+												Variant: button.VariantDefault,
+												Size:    button.SizeSm,
+											}) {
+												View User Profile
+											}
+										</a>
+									</div>
+								}
+
 								<!-- Session/User ID -->
 								<div class="pt-1">
 									<div class="flex justify-between items-center">

@@ -6,19 +6,19 @@
 :root {
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  
+
   /* Admin Dark Theme Colors */
   --admin-bg-primary: #0f172a;     /* slate-900 */
   --admin-bg-secondary: #1e293b;   /* slate-800 */
   --admin-bg-tertiary: #334155;    /* slate-700 */
   --admin-bg-card: #1e293b;        /* slate-800 */
-  
+
   /* Admin Text Colors - High Contrast */
   --admin-text-primary: #f8fafc;   /* slate-50 - pure white text */
   --admin-text-secondary: #e2e8f0; /* slate-200 - bright secondary text */
   --admin-text-muted: #cbd5e1;     /* slate-300 - muted but readable */
   --admin-text-disabled: #94a3b8;  /* slate-400 - disabled state */
-  
+
   /* Admin Brand Colors */
   --admin-primary: #3b82f6;        /* blue-500 */
   --admin-primary-hover: #2563eb;  /* blue-600 */
@@ -26,22 +26,27 @@
   --admin-success: #10b981;        /* emerald-500 */
   --admin-warning: #f59e0b;        /* amber-500 */
   --admin-error: #ef4444;          /* red-500 */
-  
+
   /* Admin Status Colors - Bright for visibility */
   --admin-status-active: #22d3ee;  /* cyan-400 - bright cyan for active */
   --admin-status-inactive: #f87171; /* red-400 - bright red for inactive */
   --admin-status-featured: #fbbf24; /* amber-400 - bright amber for featured */
   --admin-status-pending: #a78bfa;  /* violet-400 - bright violet for pending */
-  
+
   /* Admin Borders and Accents */
   --admin-border: #374151;         /* gray-700 */
   --admin-border-light: #4b5563;   /* gray-600 */
   --admin-accent: #1f2937;         /* gray-800 */
-  
+
   /* Admin Shadows */
   --admin-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --admin-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --admin-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* TemplUI Component Colors - Required for TemplUI components */
+  --card: #1e293b;                  /* slate-800 - card background */
+  --card-foreground: #f8fafc;       /* slate-50 - card text */
+  --muted-foreground: #cbd5e1;      /* slate-300 - muted text */
 }
 
 @layer base {

@@ -134,6 +134,77 @@ When creating a new migration:
 - **Tested**: Always test both up and down before committing
 - **No direct schema changes**: Never use `ALTER TABLE` or similar commands outside of migrations
 
+### SQLite Date/Time Handling with Go
+
+**CRITICAL: Understanding how go-sqlite3 stores time.Time is essential to avoid query bugs.**
+
+#### How go-sqlite3 Stores time.Time
+
+When Go's `time.Time` is inserted into SQLite using the `mattn/go-sqlite3` driver:
+
+- **Storage Format**: TEXT as ISO8601 string WITH TIMEZONE SUFFIX
+- **Example**: `2025-10-27 21:23:41 +0000 UTC` (NOT standard ISO8601)
+- **Problem**: SQLite's `DATE()`, `datetime()`, and `strftime()` functions CANNOT parse the timezone suffix
+
+#### The Recurring Bug Pattern
+
+**WRONG - This will return NULL/empty dates:**
+```sql
+SELECT DATE(abandoned_at) as date FROM abandoned_carts
+-- Returns empty because DATE() can't parse "2025-10-27 21:23:41 +0000 UTC"
+```
+
+**CORRECT - Strip timezone first:**
+```sql
+SELECT DATE(substr(abandoned_at, 1, 10)) as date FROM abandoned_carts
+-- Returns "2025-10-27" correctly
+
+SELECT strftime('%Y-%m-%d', substr(abandoned_at, 1, 19)) as date FROM abandoned_carts
+-- Returns "2025-10-27" correctly (handles time portion too)
+```
+
+#### Best Practices for SQLite Date/Time Queries
+
+1. **Always strip timezone info when using SQLite date functions:**
+   - Use `substr(column_name, 1, 10)` for date-only: `YYYY-MM-DD`
+   - Use `substr(column_name, 1, 19)` for datetime: `YYYY-MM-DD HH:MM:SS`
+
+2. **Common query patterns:**
+   ```sql
+   -- Extract date for grouping
+   GROUP BY DATE(substr(created_at, 1, 10))
+
+   -- Extract hour for time-of-day analysis
+   strftime('%H', substr(created_at, 1, 19))
+
+   -- Format for display
+   strftime('%Y-%m-%d %H:%M', substr(created_at, 1, 19))
+
+   -- Date range queries (these work fine without substr)
+   WHERE created_at >= datetime('now', '-7 days')
+   WHERE created_at BETWEEN '2025-01-01' AND '2025-12-31'
+   ```
+
+3. **Schema design:**
+   - Use `DATETIME` or `TIMESTAMP` as column type (for documentation, SQLite treats as TEXT)
+   - Always store times in UTC (Go: `time.Now().UTC()`)
+   - Convert to local timezone only in application/display layer
+
+4. **Testing queries:**
+   ```bash
+   # Always test date extraction queries in sqlite3 CLI first
+   sqlite3 ./data/database.db "SELECT substr(created_at, 1, 10), created_at FROM table LIMIT 5;"
+   ```
+
+#### Why This Matters
+
+**Impact**: Every time you use `DATE()`, `strftime()`, or time-based grouping without `substr()`, you get NULL/empty results, breaking:
+- Analytics charts (empty labels)
+- Time-based aggregations (wrong groupings)
+- Date filtering (no results)
+
+**Remember**: Go stores with timezone → SQLite functions need clean ISO8601 → Use `substr()` to strip timezone
+
 ## Configuration Management
 
 **CRITICAL: ALL application configuration MUST be stored in the database.**

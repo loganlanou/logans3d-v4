@@ -113,13 +113,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-gray-600">Abandoned (24h)</p>
+								<p class="text-sm font-medium text-slate-300">Abandoned (24h)</p>
 								<span class="text-2xl">🛒</span>
 							</div>
-							<p class="text-3xl font-bold text-gray-900">
+							<p class="text-3xl font-bold text-white">
 								{ fmt.Sprintf("%d", metrics.TotalAbandoned24h) }
 							</p>
-							<p class="text-xs text-gray-500">
+							<p class="text-xs text-slate-400">
 								Last 24 hours
 							</p>
 						</div>
@@ -131,13 +131,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-gray-600">Abandonment Rate</p>
+								<p class="text-sm font-medium text-slate-300">Abandonment Rate</p>
 								<span class="text-2xl">📉</span>
 							</div>
-							<p class="text-3xl font-bold text-gray-900">
+							<p class="text-3xl font-bold text-white">
 								{ fmt.Sprintf("%.1f%%", metrics.AbandonmentRate) }
 							</p>
-							<p class="text-xs text-gray-500">
+							<p class="text-xs text-slate-400">
 								Industry avg: 69.9%
 							</p>
 						</div>
@@ -149,13 +149,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-gray-600">Lost Revenue</p>
+								<p class="text-sm font-medium text-slate-300">Lost Revenue</p>
 								<span class="text-2xl">💰</span>
 							</div>
-							<p class="text-3xl font-bold text-red-600">
+							<p class="text-3xl font-bold text-red-400">
 								${ fmt.Sprintf("%.2f", float64(metrics.LostRevenueCents)/100) }
 							</p>
-							<p class="text-xs text-gray-500">
+							<p class="text-xs text-slate-400">
 								Active abandoned carts
 							</p>
 						</div>
@@ -167,13 +167,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-gray-600">Recovery Rate</p>
+								<p class="text-sm font-medium text-slate-300">Recovery Rate</p>
 								<span class="text-2xl">✅</span>
 							</div>
-							<p class="text-3xl font-bold text-green-600">
+							<p class="text-3xl font-bold text-green-400">
 								{ fmt.Sprintf("%.1f%%", metrics.RecoveryRate) }
 							</p>
-							<p class="text-xs text-gray-500">
+							<p class="text-xs text-slate-400">
 								{ fmt.Sprintf("%d carts / $%.2f", metrics.TotalRecovered, float64(metrics.RecoveredValueCents)/100) }
 							</p>
 						</div>
@@ -340,7 +340,18 @@ templ AbandonedCartsDashboard(
 										for _, cart := range activeCarts {
 											@table.Row() {
 												@table.Cell() {
-													<div class="font-medium text-gray-900">{ cart.CustomerName }</div>
+													<div class="font-medium text-gray-900">
+														if cart.UserID != "" {
+															<a
+																href={ templ.URL("/admin/users/" + cart.UserID) }
+																class="text-blue-600 hover:text-blue-800"
+															>
+																{ cart.CustomerName }
+															</a>
+														} else {
+															{ cart.CustomerName }
+														}
+													</div>
 													if cart.CustomerEmail != "Guest" {
 														<div class="text-sm text-gray-500">{ cart.CustomerEmail }</div>
 													} else {
@@ -447,7 +458,16 @@ templ AbandonedCartsDashboard(
 									<tr class="hover:bg-gray-50">
 										<td>
 											<div class="font-medium text-gray-900">
-												{ getCartCustomerName(cartDetail.Cart) }
+												if cartDetail.Cart.UserID.Valid && cartDetail.Cart.UserID.String != "" {
+													<a
+														href={ templ.URL("/admin/users/" + cartDetail.Cart.UserID.String) }
+														class="text-blue-600 hover:text-blue-800"
+													>
+														{ getCartCustomerName(cartDetail.Cart) }
+													</a>
+												} else {
+													{ getCartCustomerName(cartDetail.Cart) }
+												}
 											</div>
 											<div class="text-sm text-gray-500">
 												{ getCartCustomerEmail(cartDetail.Cart) }

@@ -485,7 +485,21 @@ func (h *AdminHandler) getTrendChartData(ctx context.Context, period string) (ad
 	values := make([]float64, len(trends))
 
 	for i, trend := range trends {
-		labels[i] = fmt.Sprintf("%v", trend.Date)
+		// Convert the interface{} date to a readable string
+		dateStr := "Unknown"
+		if trend.Date != nil {
+			if dateString, ok := trend.Date.(string); ok {
+				// Parse the date string (format: "YYYY-MM-DD") and format it nicely
+				if t, err := time.Parse("2006-01-02", dateString); err == nil {
+					dateStr = t.Format("Jan 2")
+				} else {
+					dateStr = dateString
+				}
+			} else {
+				dateStr = fmt.Sprintf("%v", trend.Date)
+			}
+		}
+		labels[i] = dateStr
 		values[i] = float64(trend.CartCount)
 	}
 

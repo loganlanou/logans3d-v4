@@ -239,7 +239,15 @@ templ CartsList(
 												}
 												<div>
 													<div class="font-medium text-white">
-														if cart.CustomerName != "" {
+														if cart.UserID != "" && cart.CustomerName != "" {
+															<a
+																href={ templ.URL("/admin/users/" + cart.UserID) }
+																class="text-blue-400 hover:text-blue-300"
+																onclick="event.stopPropagation()"
+															>
+																{ cart.CustomerName }
+															</a>
+														} else if cart.CustomerName != "" {
 															{ cart.CustomerName }
 														} else {
 															Guest

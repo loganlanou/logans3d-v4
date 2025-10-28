@@ -42,6 +42,164 @@ func NewAdminHandler(storage *storage.Storage, shippingService *shipping.Shippin
 }
 
 func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	revenueToday, err := h.storage.Queries.GetDashboardRevenueToday(ctx)
+	if err != nil {
+		slog.Error("failed to get today's revenue", "error", err)
+	}
+
+	revenueWeek, err := h.storage.Queries.GetDashboardRevenueWeek(ctx)
+	if err != nil {
+		slog.Error("failed to get week revenue", "error", err)
+	}
+
+	revenueMonth, err := h.storage.Queries.GetDashboardRevenueMonth(ctx)
+	if err != nil {
+		slog.Error("failed to get month revenue", "error", err)
+	}
+
+	revenuePrevMonth, err := h.storage.Queries.GetDashboardRevenuePreviousMonth(ctx)
+	if err != nil {
+		slog.Error("failed to get previous month revenue", "error", err)
+	}
+
+	// Type assert revenue values
+	var revMonthCents, revPrevMonthCents int64
+	if revenueMonth.RevenueCents != nil {
+		if val, ok := revenueMonth.RevenueCents.(int64); ok {
+			revMonthCents = val
+		} else if val, ok := revenueMonth.RevenueCents.(float64); ok {
+			revMonthCents = int64(val)
+		}
+	}
+	if revenuePrevMonth.RevenueCents != nil {
+		if val, ok := revenuePrevMonth.RevenueCents.(int64); ok {
+			revPrevMonthCents = val
+		} else if val, ok := revenuePrevMonth.RevenueCents.(float64); ok {
+			revPrevMonthCents = int64(val)
+		}
+	}
+
+	revenueGrowth := 0.0
+	if revPrevMonthCents > 0 {
+		revenueGrowth = float64(revMonthCents-revPrevMonthCents) / float64(revPrevMonthCents) * 100
+	}
+
+	avgOrderValue, err := h.storage.Queries.GetDashboardAverageOrderValue(ctx)
+	if err != nil {
+		slog.Error("failed to get average order value", "error", err)
+	}
+
+	ordersByStatus, err := h.storage.Queries.GetDashboardOrdersByStatus(ctx)
+	if err != nil {
+		slog.Error("failed to get orders by status", "error", err)
+	}
+
+	productStats, err := h.storage.Queries.GetDashboardProductStats(ctx)
+	if err != nil {
+		slog.Error("failed to get product stats", "error", err)
+	}
+
+	lowStockProducts, err := h.storage.Queries.GetDashboardLowStockProducts(ctx)
+	if err != nil {
+		slog.Error("failed to get low stock products", "error", err)
+		lowStockProducts = []db.GetDashboardLowStockProductsRow{}
+	}
+
+	customerStats, err := h.storage.Queries.GetDashboardCustomerStats(ctx)
+	if err != nil {
+		slog.Error("failed to get customer stats", "error", err)
+	}
+
+	cartStats, err := h.storage.Queries.GetDashboardCartStats(ctx)
+	if err != nil {
+		slog.Error("failed to get cart stats", "error", err)
+	}
+
+	abandonedCartStats, err := h.storage.Queries.GetDashboardAbandonedCartStats(ctx)
+	if err != nil {
+		slog.Error("failed to get abandoned cart stats", "error", err)
+	}
+
+	quoteStats, err := h.storage.Queries.GetDashboardQuoteStats(ctx)
+	if err != nil {
+		slog.Error("failed to get quote stats", "error", err)
+	}
+
+	contactStats, err := h.storage.Queries.GetDashboardContactStats(ctx)
+	if err != nil {
+		slog.Error("failed to get contact stats", "error", err)
+	}
+
+	recentOrders, err := h.storage.Queries.GetDashboardRecentOrders(ctx)
+	if err != nil {
+		slog.Error("failed to get recent orders", "error", err)
+		recentOrders = []db.GetDashboardRecentOrdersRow{}
+	}
+
+	cartRecoveryRate := 0.0
+	if abandonedCartStats.TotalAbandoned > 0 {
+		cartRecoveryRate = float64(abandonedCartStats.RecoveredCarts) / float64(abandonedCartStats.TotalAbandoned) * 100
+	}
+
+	// Type assert revenue values for stats
+	var revTodayCents, revWeekCents int64
+	if revenueToday.RevenueCents != nil {
+		if val, ok := revenueToday.RevenueCents.(int64); ok {
+			revTodayCents = val
+		} else if val, ok := revenueToday.RevenueCents.(float64); ok {
+			revTodayCents = int64(val)
+		}
+	}
+	if revenueWeek.RevenueCents != nil {
+		if val, ok := revenueWeek.RevenueCents.(int64); ok {
+			revWeekCents = val
+		} else if val, ok := revenueWeek.RevenueCents.(float64); ok {
+			revWeekCents = int64(val)
+		}
+	}
+
+	// Type assert average order value (it's interface{} directly, not a struct field)
+	var avgOrderValueCents int64
+	if avgOrderValue != nil {
+		if val, ok := avgOrderValue.(int64); ok {
+			avgOrderValueCents = val
+		} else if val, ok := avgOrderValue.(float64); ok {
+			avgOrderValueCents = int64(val)
+		}
+	}
+
+	stats := admin.DashboardStats{
+		RevenueToday:       revTodayCents,
+		RevenueWeek:        revWeekCents,
+		RevenueMonth:       revMonthCents,
+		RevenueMonthGrowth: revenueGrowth,
+		OrdersToday:        revenueToday.OrderCount,
+		OrdersWeek:         revenueWeek.OrderCount,
+		OrdersMonth:        revenueMonth.OrderCount,
+		AverageOrderValue:  avgOrderValueCents,
+		TotalProducts:      productStats.TotalProducts,
+		LowStockCount:      productStats.LowStockProducts,
+		OutOfStockCount:    productStats.OutOfStockProducts,
+		ActiveCartsCount:   cartStats.ActiveCarts,
+		AbandonedCarts24h:  abandonedCartStats.Abandoned24h,
+		AbandonedCarts7d:   abandonedCartStats.Abandoned7d,
+		AbandonedCarts30d:  abandonedCartStats.Abandoned30d,
+		CartRecoveryRate:   cartRecoveryRate,
+		NewCustomersWeek:   customerStats.NewCustomersWeek,
+		NewCustomersMonth:  customerStats.NewCustomersMonth,
+		PendingQuotes:      quoteStats.PendingQuotes,
+		NewContactsCount:   contactStats.NewContacts,
+		OrdersByStatus:     ordersByStatus,
+		LowStockProducts:   lowStockProducts,
+		RecentOrders:       recentOrders,
+	}
+
+	return Render(c, admin.Dashboard(c, stats))
+}
+
+func (h *AdminHandler) HandleProductsList(c echo.Context) error {
 	// Get query parameters for filtering and sorting
 	categoryFilter := c.QueryParam("category")
 	featuredFilter := c.QueryParam("featured")
@@ -77,7 +235,7 @@ func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
 	}
 
-	return Render(c, admin.Dashboard(c, sortedProducts, categories, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter, sortBy, sortOrder))
+	return Render(c, admin.Products(c, sortedProducts, categories, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter, sortBy, sortOrder))
 }
 
 func filterProducts(products []types.ProductWithImage, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter string) []types.ProductWithImage {

@@ -165,7 +165,19 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 										</div>
 									</td>
 									<td>
-										<div class="admin-text-primary admin-font-medium">{ order.CustomerName }</div>
+										<div class="admin-text-primary admin-font-medium">
+											if order.UserID != "" {
+												<a
+													href={ templ.URL("/admin/users/" + order.UserID) }
+													class="text-blue-600 hover:text-blue-800"
+													onclick="event.stopPropagation()"
+												>
+													{ order.CustomerName }
+												</a>
+											} else {
+												{ order.CustomerName }
+											}
+										</div>
 										<div class="admin-text-muted admin-text-sm">{ order.CustomerEmail }</div>
 									</td>
 									<td>
@@ -513,7 +525,18 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 					<div class="p-6 space-y-3">
 						<div>
 							<p class="text-sm admin-text-muted">Name</p>
-							<p class="admin-text-primary admin-font-medium">{ order.CustomerName }</p>
+							<p class="admin-text-primary admin-font-medium">
+								if order.UserID != "" {
+									<a
+										href={ templ.URL("/admin/users/" + order.UserID) }
+										class="text-blue-600 hover:text-blue-800"
+									>
+										{ order.CustomerName }
+									</a>
+								} else {
+									{ order.CustomerName }
+								}
+							</p>
 						</div>
 						<div>
 							<p class="text-sm admin-text-muted">Email</p>
@@ -523,6 +546,13 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 							<div>
 								<p class="text-sm admin-text-muted">Phone</p>
 								<p class="admin-text-primary">{ order.CustomerPhone.String }</p>
+							</div>
+						}
+						if order.UserID != "" {
+							<div class="pt-3 border-t border-gray-200">
+								<a href={ templ.URL("/admin/users/" + order.UserID) } class="admin-btn admin-btn-sm admin-btn-primary">
+									View User Profile
+								</a>
 							</div>
 						}
 					</div>

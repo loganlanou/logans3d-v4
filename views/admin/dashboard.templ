@@ -3,502 +3,470 @@ package admin
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/internal/types"
-	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/button"
 	"github.com/loganlanou/logans3d-v4/components/card"
-	switchcomp "github.com/loganlanou/logans3d-v4/components/switch"
+	"github.com/loganlanou/logans3d-v4/components/button"
 	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/storage/db"
 )
 
-templ Dashboard(c echo.Context, products []types.ProductWithImage, categories []db.Category, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter, sortBy, sortOrder string) {
-	@layout.AdminBase(c, "Products") {
+type DashboardStats struct {
+	RevenueToday         int64
+	RevenueWeek          int64
+	RevenueMonth         int64
+	RevenueMonthGrowth   float64
+	OrdersToday          int64
+	OrdersWeek           int64
+	OrdersMonth          int64
+	AverageOrderValue    int64
+	TotalProducts        int64
+	LowStockCount        int64
+	OutOfStockCount      int64
+	ActiveCartsCount     int64
+	AbandonedCarts24h    int64
+	AbandonedCarts7d     int64
+	AbandonedCarts30d    int64
+	CartRecoveryRate     float64
+	NewCustomersWeek     int64
+	NewCustomersMonth    int64
+	PendingQuotes        int64
+	NewContactsCount     int64
+	OrdersByStatus       db.GetDashboardOrdersByStatusRow
+	LowStockProducts     []db.GetDashboardLowStockProductsRow
+	RecentOrders         []db.GetDashboardRecentOrdersRow
+}
+
+templ Dashboard(c echo.Context, stats DashboardStats) {
+	@layout.AdminBase(c, "Dashboard") {
 		@layout.AdminContainer() {
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-2xl font-bold text-gray-100">Products</h1>
-				<div class="flex space-x-3">
-					<a href="/admin/categories">
-						@button.Button(button.Props{
-							Variant: button.VariantOutline,
-							Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600",
-						}) {
-							Manage Categories
-						}
-					</a>
-					<a href="/admin/product/new">
-						@button.Button(button.Props{
-							Variant: button.VariantDefault,
-							Class: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
-						}) {
-							+ Add Product
-						}
-					</a>
+				<h1 class="text-2xl font-bold text-gray-100">Dashboard</h1>
+				<div class="text-sm text-gray-400">
+					Last updated: <span id="last-updated">Just now</span>
 				</div>
 			</div>
 
-			<!-- Search and Filter Bar -->
-			<div class="mb-6 space-y-4">
-				<!-- Type-ahead Search -->
-				<div class="relative" x-data="{
-					search: '',
-					results: [],
-					showResults: false,
-					loading: false,
-					async searchProducts() {
-						if (this.search.length < 2) {
-							this.results = [];
-							this.showResults = false;
-							return;
-						}
-						this.loading = true;
-						try {
-							const response = await fetch(`/admin/product/search?q=${encodeURIComponent(this.search)}`);
-							this.results = await response.json();
-							this.showResults = true;
-						} catch (error) {
-							console.error('Search error:', error);
-						} finally {
-							this.loading = false;
+			<!-- Revenue Overview Cards -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+				<!-- Today's Revenue -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">Today's Revenue</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									${ fmt.Sprintf("%.2f", float64(stats.RevenueToday)/100) }
+								</h3>
+								<p class="text-xs text-gray-500 mt-1">
+									{ fmt.Sprintf("%d orders", stats.OrdersToday) }
+								</p>
+							</div>
+							<div class="p-3 bg-green-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+								</svg>
+							</div>
+						</div>
+					}
+				}
+
+				<!-- Week Revenue -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">This Week</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									${ fmt.Sprintf("%.2f", float64(stats.RevenueWeek)/100) }
+								</h3>
+								<p class="text-xs text-gray-500 mt-1">
+									{ fmt.Sprintf("%d orders", stats.OrdersWeek) }
+								</p>
+							</div>
+							<div class="p-3 bg-blue-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+								</svg>
+							</div>
+						</div>
+					}
+				}
+
+				<!-- Month Revenue -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">This Month</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									${ fmt.Sprintf("%.2f", float64(stats.RevenueMonth)/100) }
+								</h3>
+								<div class="flex items-center gap-2 mt-1">
+									<p class="text-xs text-gray-500">
+										{ fmt.Sprintf("%d orders", stats.OrdersMonth) }
+									</p>
+									if stats.RevenueMonthGrowth > 0 {
+										<span class="text-xs text-green-400 flex items-center">
+											↑ { fmt.Sprintf("%.1f%%", stats.RevenueMonthGrowth) }
+										</span>
+									} else if stats.RevenueMonthGrowth < 0 {
+										<span class="text-xs text-red-400 flex items-center">
+											↓ { fmt.Sprintf("%.1f%%", -stats.RevenueMonthGrowth) }
+										</span>
+									}
+								</div>
+							</div>
+							<div class="p-3 bg-purple-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+								</svg>
+							</div>
+						</div>
+					}
+				}
+
+				<!-- Average Order Value -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">Avg. Order Value</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									${ fmt.Sprintf("%.2f", float64(stats.AverageOrderValue)/100) }
+								</h3>
+								<p class="text-xs text-gray-500 mt-1">Last 30 days</p>
+							</div>
+							<div class="p-3 bg-yellow-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+								</svg>
+							</div>
+						</div>
+					}
+				}
+			</div>
+
+			<!-- Orders & Inventory Section -->
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+				<!-- Orders by Status -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Orders by Status
 						}
 					}
-				}">
-					<input
-						type="text"
-						x-model="search"
-						@input.debounce.300ms="searchProducts()"
-						@focus="if(results.length > 0) showResults = true"
-						@click.outside="showResults = false"
-						placeholder="Search products by name..."
-						class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-gray-700 transition-colors"
-					/>
-					<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto">
-						<template x-for="result in results" :key="result.id">
-							<a
-								:href="`/admin/product/edit?id=${result.id}`"
-								class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
-								@click="showResults = false"
-							>
-								<img
-									:src="result.image || '/public/images/placeholder.png'"
-									:alt="result.name"
-									class="w-12 h-12 object-cover rounded"
-								/>
-								<div class="flex-1">
-									<div class="font-medium text-gray-100" x-text="result.name"></div>
-									<div class="text-sm text-gray-400" x-text="`$${result.price.toFixed(2)}`"></div>
+					@card.Content() {
+						<div class="space-y-3">
+							<div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+								<div class="flex items-center gap-3">
+									<div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
+									<span class="text-sm text-gray-300">Pending</span>
 								</div>
-							</a>
-						</template>
-					</div>
-				</div>
-
-				<!-- Filters -->
-				<div class="flex gap-3 flex-wrap items-center">
-					<select
-						name="category"
-						class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm font-medium text-gray-200 hover:bg-gray-700 hover:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
-						onchange="window.location.href = updateQueryParam('category', this.value)"
-					>
-						<option value="">All Categories</option>
-						for _, cat := range categories {
-							if categoryFilter == cat.ID {
-								<option value={ cat.ID } selected>{ cat.Name }</option>
-							} else {
-								<option value={ cat.ID }>{ cat.Name }</option>
-							}
-						}
-					</select>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${newFilter == "true" ? "bg-green-900/30 border-green-600/50 hover:bg-green-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "new-filter",
-								Checked: newFilter == "true",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('new', this.checked ? 'true' : '')"},
-							})
+								<span class="text-sm font-medium text-gray-100">{ fmt.Sprintf("%d", stats.OrdersByStatus.PendingOrders) }</span>
+							</div>
+							<div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+								<div class="flex items-center gap-3">
+									<div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+									<span class="text-sm text-gray-300">Received</span>
+								</div>
+								<span class="text-sm font-medium text-gray-100">{ fmt.Sprintf("%d", stats.OrdersByStatus.ReceivedOrders) }</span>
+							</div>
+							<div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+								<div class="flex items-center gap-3">
+									<div class="w-2 h-2 bg-purple-400 rounded-full"></div>
+									<span class="text-sm text-gray-300">In Production</span>
+								</div>
+								<span class="text-sm font-medium text-gray-100">{ fmt.Sprintf("%d", stats.OrdersByStatus.InProductionOrders) }</span>
+							</div>
+							<div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+								<div class="flex items-center gap-3">
+									<div class="w-2 h-2 bg-orange-400 rounded-full"></div>
+									<span class="text-sm text-gray-300">Ready to Ship</span>
+								</div>
+								<span class="text-sm font-medium text-gray-100">{ fmt.Sprintf("%d", stats.OrdersByStatus.ReadyToShipOrders) }</span>
+							</div>
+							<div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+								<div class="flex items-center gap-3">
+									<div class="w-2 h-2 bg-cyan-400 rounded-full"></div>
+									<span class="text-sm text-gray-300">Shipped</span>
+								</div>
+								<span class="text-sm font-medium text-gray-100">{ fmt.Sprintf("%d", stats.OrdersByStatus.ShippedOrders) }</span>
+							</div>
+							<div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+								<div class="flex items-center gap-3">
+									<div class="w-2 h-2 bg-green-400 rounded-full"></div>
+									<span class="text-sm text-gray-300">Delivered</span>
+								</div>
+								<span class="text-sm font-medium text-gray-100">{ fmt.Sprintf("%d", stats.OrdersByStatus.DeliveredOrders) }</span>
+							</div>
 						</div>
-						<span class={ `text-sm font-medium ${newFilter == "true" ? "text-green-400" : "text-gray-200"}` }>New</span>
-					</div>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${featuredFilter == "true" ? "bg-blue-900/30 border-blue-600/50 hover:bg-blue-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "featured-filter",
-								Checked: featuredFilter == "true",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('featured', this.checked ? 'true' : '')"},
-							})
-						</div>
-						<span class={ `text-sm font-medium ${featuredFilter == "true" ? "text-blue-400" : "text-gray-200"}` }>Featured</span>
-					</div>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${premiumFilter == "true" ? "bg-yellow-900/30 border-yellow-600/50 hover:bg-yellow-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "premium-filter",
-								Checked: premiumFilter == "true",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('premium', this.checked ? 'true' : '')"},
-							})
-						</div>
-						<span class={ `text-sm font-medium ${premiumFilter == "true" ? "text-yellow-400" : "text-gray-200"}` }>Premium</span>
-					</div>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${statusFilter == "inactive" ? "bg-red-900/30 border-red-600/50 hover:bg-red-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "inactive-filter",
-								Checked: statusFilter == "inactive",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('status', this.checked ? 'inactive' : '')"},
-							})
-						</div>
-						<span class={ `text-sm font-medium ${statusFilter == "inactive" ? "text-red-400" : "text-gray-200"}` }>Inactive</span>
-					</div>
-
-					if categoryFilter != "" || featuredFilter != "" || premiumFilter != "" || newFilter != "" || statusFilter != "" || sortBy != "" {
-						<a href="/admin">
+					}
+					@card.Footer(card.FooterProps{Class: "flex justify-end"}) {
+						<a href="/admin/orders">
 							@button.Button(button.Props{
-								Variant: button.VariantOutline,
+								Variant: button.VariantSecondary,
 								Size: button.SizeSm,
-								Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600 hover:text-gray-100",
 							}) {
-								Clear Filters
+								View All Orders →
 							}
 						</a>
 					}
-				</div>
+				}
+
+				<!-- Inventory Alerts -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Inventory Alerts
+						}
+					}
+					@card.Content() {
+						<div class="space-y-4">
+							<!-- Stock Summary -->
+							<div class="grid grid-cols-3 gap-4">
+								<div class="text-center p-4 bg-gray-800 rounded-lg">
+									<p class="text-2xl font-bold text-gray-100">{ fmt.Sprintf("%d", stats.TotalProducts) }</p>
+									<p class="text-xs text-gray-400 mt-1">Total Products</p>
+								</div>
+								<div class="text-center p-4 bg-yellow-900/30 rounded-lg border border-yellow-600/30">
+									<p class="text-2xl font-bold text-yellow-400">{ fmt.Sprintf("%d", stats.LowStockCount) }</p>
+									<p class="text-xs text-yellow-400 mt-1">Low Stock</p>
+								</div>
+								<div class="text-center p-4 bg-red-900/30 rounded-lg border border-red-600/30">
+									<p class="text-2xl font-bold text-red-400">{ fmt.Sprintf("%d", stats.OutOfStockCount) }</p>
+									<p class="text-xs text-red-400 mt-1">Out of Stock</p>
+								</div>
+							</div>
+
+							<!-- Low Stock Products -->
+							if len(stats.LowStockProducts) > 0 {
+								<div class="mt-4">
+									<p class="text-sm font-medium text-gray-300 mb-3">Products Needing Attention:</p>
+									<div class="space-y-2">
+										for _, product := range stats.LowStockProducts {
+											<div class="flex items-center justify-between p-2 bg-gray-800 rounded-lg hover:bg-gray-700 transition-colors">
+												<div class="flex-1 min-w-0">
+													<p class="text-sm text-gray-200 truncate">{ product.Name }</p>
+													if product.Sku.Valid {
+														<p class="text-xs text-gray-500">SKU: { product.Sku.String }</p>
+													}
+												</div>
+												<div class="flex items-center gap-3">
+													<span class="text-sm font-medium text-yellow-400">
+														{ fmt.Sprintf("%d left", product.StockQuantity.Int64) }
+													</span>
+													<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.ID)) } class="text-blue-400 hover:text-blue-300">
+														<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+														</svg>
+													</a>
+												</div>
+											</div>
+										}
+									</div>
+								</div>
+							}
+						</div>
+					}
+					@card.Footer(card.FooterProps{Class: "flex justify-end"}) {
+						<a href="/admin/products">
+							@button.Button(button.Props{
+								Variant: button.VariantSecondary,
+								Size: button.SizeSm,
+							}) {
+								Manage Products →
+							}
+						</a>
+					}
+				}
 			</div>
 
-			<style>
-				/* Custom switch styles for dark theme */
-				.switch-wrapper label > div {
-					background-color: #4B5563 !important; /* gray-600 */
-					border: 1px solid #6B7280 !important; /* gray-500 */
-				}
-				.switch-wrapper input:checked + div {
-					background-color: #10B981 !important; /* green-600 for default */
-					border-color: #059669 !important;
-				}
-				.switch-wrapper input:checked + div::after {
-					background-color: white !important;
-				}
-				.switch-wrapper input + div::after {
-					background-color: white !important;
-				}
-				/* Specific colors for each filter */
-				#featured-filter:checked + div {
-					background-color: #2563EB !important; /* blue-600 */
-					border-color: #1D4ED8 !important;
-				}
-				#premium-filter:checked + div {
-					background-color: #F59E0B !important; /* yellow-600 */
-					border-color: #D97706 !important;
-				}
-				#inactive-filter:checked + div {
-					background-color: #DC2626 !important; /* red-600 */
-					border-color: #B91C1C !important;
-				}
-				#new-filter:checked + div {
-					background-color: #10B981 !important; /* green-600 */
-					border-color: #059669 !important;
-				}
-			</style>
-			<script>
-				function updateQueryParam(key, value) {
-					const url = new URL(window.location);
-					if (value) {
-						url.searchParams.set(key, value);
-					} else {
-						url.searchParams.delete(key);
+			<!-- Carts & Customers Section -->
+			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+				<!-- Active Carts -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">Active Carts</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									{ fmt.Sprintf("%d", stats.ActiveCartsCount) }
+								</h3>
+								<a href="/admin/carts" class="text-xs text-blue-400 hover:text-blue-300 mt-1 inline-block">
+									View all carts →
+								</a>
+							</div>
+							<div class="p-3 bg-blue-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+								</svg>
+							</div>
+						</div>
 					}
-					return url.toString();
 				}
-			</script>
 
-			<!-- Products Table -->
+				<!-- Abandoned Carts -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">Abandoned (7d)</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									{ fmt.Sprintf("%d", stats.AbandonedCarts7d) }
+								</h3>
+								<a href="/admin/abandoned-carts" class="text-xs text-orange-400 hover:text-orange-300 mt-1 inline-block">
+									Recovery dashboard →
+								</a>
+							</div>
+							<div class="p-3 bg-orange-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+								</svg>
+							</div>
+						</div>
+					}
+				}
+
+				<!-- New Customers -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">New Customers</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									{ fmt.Sprintf("%d", stats.NewCustomersWeek) }
+								</h3>
+								<p class="text-xs text-gray-500 mt-1">This week</p>
+							</div>
+							<div class="p-3 bg-green-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+								</svg>
+							</div>
+						</div>
+					}
+				}
+
+				<!-- Pending Quotes -->
+				@card.Card() {
+					@card.Content(card.ContentProps{Class: "p-6"}) {
+						<div class="flex items-center justify-between">
+							<div>
+								<p class="text-sm font-medium text-gray-400">Pending Quotes</p>
+								<h3 class="text-2xl font-bold text-gray-100 mt-2">
+									{ fmt.Sprintf("%d", stats.PendingQuotes) }
+								</h3>
+								<a href="/admin/quotes" class="text-xs text-purple-400 hover:text-purple-300 mt-1 inline-block">
+									View quotes →
+								</a>
+							</div>
+							<div class="p-3 bg-purple-900/30 rounded-lg">
+								<svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+								</svg>
+							</div>
+						</div>
+					}
+				}
+			</div>
+
+			<!-- Recent Orders -->
 			@card.Card() {
 				@card.Header() {
 					@card.Title() {
-						Products ({ fmt.Sprintf("%d", len(products)) })
+						Recent Orders
 					}
 				}
-				@card.Content(card.ContentProps{
-					Class: "p-0",
-				}) {
+				@card.Content(card.ContentProps{Class: "p-0"}) {
 					<div class="overflow-x-auto">
 						@table.Table() {
 							@table.Header() {
 								@table.Row() {
-									@table.Head() { Image }
-									@table.Head() {
-										<a
-											href={ templ.SafeURL(getSortURL("name", sortBy, sortOrder)) }
-											class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
-											title="Click to sort by name"
-										>
-											Name
-											if sortBy == "name" {
-												if sortOrder == "asc" {
-													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-													</svg>
-												} else {
-													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-													</svg>
-												}
-											} else {
-												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-												</svg>
-											}
-										</a>
-									}
-									@table.Head() { SKU }
-									@table.Head() {
-										<a
-											href={ templ.SafeURL(getSortURL("price", sortBy, sortOrder)) }
-											class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
-											title="Click to sort by price"
-										>
-											Price
-											if sortBy == "price" {
-												if sortOrder == "asc" {
-													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-													</svg>
-												} else {
-													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-													</svg>
-												}
-											} else {
-												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-												</svg>
-											}
-										</a>
-									}
-									@table.Head() { Stock }
-									@table.Head() { New }
-									@table.Head() { Featured }
-									@table.Head() { Premium }
+									@table.Head() { Order ID }
+									@table.Head() { Customer }
+									@table.Head() { Items }
+									@table.Head() { Total }
 									@table.Head() { Status }
-									@table.Head() { Actions }
+									@table.Head() { Date }
 								}
 							}
 							@table.Body() {
-								for _, product := range products {
+								for _, order := range stats.RecentOrders {
 									@table.Row() {
 										@table.Cell() {
-											<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) } class="block">
-												if product.ImageURL != "" {
-													<img src={ product.ImageURL } alt={ product.Product.Name } class="w-12 h-12 object-cover rounded-lg hover:opacity-80 transition-opacity" />
-												} else {
-													<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors">
-														<span class="admin-text-muted text-xs">No Image</span>
-													</div>
-												}
+											<a href={ templ.SafeURL(fmt.Sprintf("/admin/orders/%s", order.ID)) } class="text-blue-400 hover:text-blue-300 font-mono text-sm">
+												{ order.ID[:8] }...
 											</a>
 										}
 										@table.Cell() {
-											<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) } class="admin-text-primary admin-font-medium hover:text-blue-600">
-												{ product.Product.Name }
-											</a>
+											<div class="min-w-0">
+												<p class="text-sm text-gray-200 truncate">{ order.CustomerName }</p>
+												<p class="text-xs text-gray-500 truncate">{ order.CustomerEmail }</p>
+											</div>
 										}
 										@table.Cell() {
-											if product.Product.Sku.Valid {
-												{ product.Product.Sku.String }
-											} else {
-												<span class="admin-text-disabled">-</span>
-											}
+											<span class="text-sm text-gray-300">
+												{ fmt.Sprintf("%d", order.ItemCount) }
+											</span>
 										}
 										@table.Cell() {
-											${ fmt.Sprintf("%.2f", float64(product.Product.PriceCents)/100) }
+											<span class="text-sm font-medium text-gray-100">
+												${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }
+											</span>
 										}
 										@table.Cell() {
-											if product.Product.StockQuantity.Valid {
-												if product.Product.StockQuantity.Int64 <= 5 {
-													<span class="admin-text-warning admin-font-medium">{ fmt.Sprintf("%d", product.Product.StockQuantity.Int64) }</span>
-												} else {
-													{ fmt.Sprintf("%d", product.Product.StockQuantity.Int64) }
+											<span class={ fmt.Sprintf("px-2 py-1 text-xs font-medium rounded-full %s", getDashboardOrderStatusClass(order.Status.String)) }>
+												if order.Status.Valid {
+													{ order.Status.String }
 												}
-											} else {
-												<span class="admin-text-disabled">-</span>
-											}
+											</span>
 										}
 										@table.Cell() {
-											<div
-												x-data={ fmt.Sprintf("{ isNew: %t, productId: '%s' }", product.IsNew, product.Product.ID) }
-												@click="
-													isNew = !isNew;
-													fetch(`/admin/product/${productId}/toggle-new`, {
-														method: 'POST',
-														headers: {
-															'Content-Type': 'application/json',
-														},
-													})
-													.then(response => response.json())
-													.then(data => {
-														if (data.success) {
-															isNew = data.is_new;
-														} else {
-															isNew = !isNew;
-															alert('Failed to update new status');
-														}
-													})
-													.catch(error => {
-														isNew = !isNew;
-														console.error('Error:', error);
-														alert('Failed to update new status');
-													});
-												"
-												class="relative inline-flex items-center cursor-pointer"
-											>
-												<input type="checkbox" :checked="isNew" class="sr-only peer"/>
-												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-											</div>
-										}
-										@table.Cell() {
-											<div
-												x-data={ fmt.Sprintf("{ featured: %t, productId: '%s' }", product.Product.IsFeatured.Valid && product.Product.IsFeatured.Bool, product.Product.ID) }
-												@click="
-													featured = !featured;
-													fetch(`/admin/product/${productId}/toggle-featured`, {
-														method: 'POST',
-														headers: {
-															'Content-Type': 'application/json',
-														},
-													})
-													.then(response => response.json())
-													.then(data => {
-														if (data.success) {
-															featured = data.is_featured;
-														} else {
-															featured = !featured;
-															alert('Failed to update featured status');
-														}
-													})
-													.catch(error => {
-														featured = !featured;
-														console.error('Error:', error);
-														alert('Failed to update featured status');
-													});
-												"
-												class="relative inline-flex items-center cursor-pointer"
-											>
-												<input type="checkbox" :checked="featured" class="sr-only peer"/>
-												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-											</div>
-										}
-										@table.Cell() {
-											<div
-												x-data={ fmt.Sprintf("{ premium: %t, productId: '%s' }", product.Product.IsPremium.Valid && product.Product.IsPremium.Bool, product.Product.ID) }
-												@click="
-													premium = !premium;
-													fetch(`/admin/product/${productId}/toggle-premium`, {
-														method: 'POST',
-														headers: {
-															'Content-Type': 'application/json',
-														},
-													})
-													.then(response => response.json())
-													.then(data => {
-														if (data.success) {
-															premium = data.is_premium;
-														} else {
-															premium = !premium;
-															alert('Failed to update premium status');
-														}
-													})
-													.catch(error => {
-														premium = !premium;
-														console.error('Error:', error);
-														alert('Failed to update premium status');
-													});
-												"
-												class="relative inline-flex items-center cursor-pointer"
-											>
-												<input type="checkbox" :checked="premium" class="sr-only peer"/>
-												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
-											</div>
-										}
-										@table.Cell() {
-											<div
-												x-data={ fmt.Sprintf("{ active: %t, productId: '%s' }", product.Product.IsActive.Valid && product.Product.IsActive.Bool, product.Product.ID) }
-												@click="
-													active = !active;
-													fetch(`/admin/product/${productId}/toggle-active`, {
-														method: 'POST',
-														headers: {
-															'Content-Type': 'application/json',
-														},
-													})
-													.then(response => response.json())
-													.then(data => {
-														if (data.success) {
-															active = data.is_active;
-														} else {
-															active = !active;
-															alert('Failed to update active status');
-														}
-													})
-													.catch(error => {
-														active = !active;
-														console.error('Error:', error);
-														alert('Failed to update active status');
-													});
-												"
-												class="relative inline-flex items-center cursor-pointer"
-											>
-												<input type="checkbox" :checked="active" class="sr-only peer"/>
-												<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-											</div>
-										}
-										@table.Cell() {
-											<div class="flex space-x-2">
-												<a href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.Product.ID)) }>
-													@button.Button(button.Props{
-														Variant: button.VariantSecondary,
-														Size: button.SizeSm,
-													}) {
-														Edit
-													}
-												</a>
-												<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/product/%s/delete", product.Product.ID)) }
-													  onsubmit="return confirm('Are you sure you want to delete this product?');" class="inline">
-													@button.Button(button.Props{
-														Variant: button.VariantDestructive,
-														Size: button.SizeSm,
-														Type: "submit",
-													}) {
-														Delete
-													}
-												</form>
-											</div>
+											<span class="text-sm text-gray-400">
+												if order.CreatedAt.Valid {
+													{ order.CreatedAt.Time.Format("Jan 2, 3:04 PM") }
+												}
+											</span>
 										}
 									}
 								}
 							}
 						}
 					</div>
+				}
+				@card.Footer(card.FooterProps{Class: "flex justify-end"}) {
+					<a href="/admin/orders">
+						@button.Button(button.Props{
+							Variant: button.VariantSecondary,
+							Size: button.SizeSm,
+						}) {
+							View All Orders →
+						}
+					</a>
 				}
 			}
 		}
 	}
 }
 
-func getSortURL(field, currentSort, currentOrder string) string {
-	order := "asc"
-
-	// If clicking the same field, toggle the order
-	if currentSort == field {
-		if currentOrder == "asc" {
-			order = "desc"
-		} else {
-			order = "asc"
-		}
+func getDashboardOrderStatusClass(status string) string {
+	switch status {
+	case "pending":
+		return "bg-yellow-900/30 text-yellow-400 border border-yellow-600/30"
+	case "received":
+		return "bg-blue-900/30 text-blue-400 border border-blue-600/30"
+	case "in_production":
+		return "bg-purple-900/30 text-purple-400 border border-purple-600/30"
+	case "ready_to_ship":
+		return "bg-orange-900/30 text-orange-400 border border-orange-600/30"
+	case "shipped":
+		return "bg-cyan-900/30 text-cyan-400 border border-cyan-600/30"
+	case "delivered":
+		return "bg-green-900/30 text-green-400 border border-green-600/30"
+	case "cancelled":
+		return "bg-red-900/30 text-red-400 border border-red-600/30"
+	default:
+		return "bg-gray-800 text-gray-400"
 	}
-
-	return fmt.Sprintf("?sort=%s&order=%s", field, order)
 }

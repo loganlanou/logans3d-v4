@@ -202,6 +202,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 	admin := withAuth.Group("/admin", auth.RequireAdmin())
 	admin.GET("", adminHandler.HandleAdminDashboard)
+	admin.GET("/products", adminHandler.HandleProductsList)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
 	admin.GET("/product/new", adminHandler.HandleProductForm)
 	admin.POST("/product", adminHandler.HandleCreateProduct)
@@ -266,6 +267,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	cartHandler := handlers.NewCartHandler(s.storage)
 	admin.GET("/carts", cartHandler.HandleCartsList)
 	admin.GET("/carts/:id", cartHandler.HandleCartDetail)
+
+	// User management routes
+	userHandler := handlers.NewUserHandler(s.storage)
+	admin.GET("/users", userHandler.HandleUsersList)
+	admin.GET("/users/:id", userHandler.HandleUserDetail)
 
 	// Shipping management routes
 	admin.GET("/shipping/boxes", adminHandler.HandleShippingTab)
