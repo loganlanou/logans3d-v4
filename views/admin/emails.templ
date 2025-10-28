@@ -1,0 +1,139 @@
+package admin
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/templui/templui/internal/components/card"
+	"github.com/templui/templui/internal/components/table"
+	"github.com/templui/templui/internal/components/badge"
+	"fmt"
+)
+
+templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCount int) {
+	@layout.AdminBase(c, "Email History") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<div>
+					<h1 class="text-2xl font-bold text-gray-900">Email History</h1>
+					<p class="text-gray-600 mt-1">All emails sent by the system</p>
+				</div>
+				<div class="text-sm text-gray-600">
+					Total: { fmt.Sprintf("%d", totalCount) } emails
+				</div>
+			</div>
+
+			<!-- Email List -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Recent Emails ({ fmt.Sprintf("%d", len(emails)) })
+					}
+				}
+				@card.Content() {
+					if len(emails) == 0 {
+						<div class="text-center py-12 text-gray-500">
+							<p>No emails sent yet</p>
+						</div>
+					} else {
+						@table.Table() {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() { Sent At }
+									@table.Head() { Recipient }
+									@table.Head() { Type }
+									@table.Head() { Subject }
+									@table.Head() { Status }
+								}
+							}
+							@table.Body() {
+								for _, email := range emails {
+									@table.Row() {
+										@table.Cell() {
+											<span class="text-sm text-gray-900">
+												if email.SentAt.Valid {
+													{ email.SentAt.Time.Format("Jan 2, 2006 3:04 PM") }
+												}
+											</span>
+										}
+										@table.Cell() {
+											<span class="font-medium text-gray-900">{ email.RecipientEmail }</span>
+										}
+										@table.Cell() {
+											@emailTypeBadge(email.EmailType)
+										}
+										@table.Cell() {
+											<span class="text-gray-700">{ email.Subject }</span>
+										}
+										@table.Cell() {
+											@emailStatusBadges(email)
+										}
+									}
+								}
+							}
+						}
+
+						<!-- Pagination -->
+						if totalCount > 50 {
+							<div class="mt-4 flex justify-center gap-2">
+								if page > 1 {
+									<a href={ templ.SafeURL(fmt.Sprintf("/admin/emails?page=%d", page-1)) } class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+										Previous
+									</a>
+								}
+								<span class="px-4 py-2">
+									Page { fmt.Sprintf("%d", page) }
+								</span>
+								if page * 50 < totalCount {
+									<a href={ templ.SafeURL(fmt.Sprintf("/admin/emails?page=%d", page+1)) } class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+										Next
+									</a>
+								}
+							</div>
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+templ emailTypeBadge(emailType string) {
+	switch emailType {
+		case "transactional":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				Transactional
+			}
+		case "abandoned_cart":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				Abandoned Cart
+			}
+		case "promotional":
+			@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
+				Promotional
+			}
+		case "newsletter":
+			@badge.Badge(badge.Props{Variant: badge.VariantOutline}) {
+				Newsletter
+			}
+		default:
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				{ emailType }
+			}
+	}
+}
+
+templ emailStatusBadges(email db.EmailHistory) {
+	<div class="flex gap-1">
+		if email.OpenedAt.Valid {
+			<span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded">Opened</span>
+		}
+		if email.ClickedAt.Valid {
+			<span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">Clicked</span>
+		}
+		if !email.OpenedAt.Valid && !email.ClickedAt.Valid {
+			<span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">Sent</span>
+		}
+	}
+}

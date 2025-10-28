@@ -269,6 +269,10 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/abandoned-carts/:id/notes", adminHandler.HandleUpdateCartNotes)
 	admin.POST("/abandoned-carts/:id/recover", adminHandler.HandleMarkCartRecovered)
 
+	// Email management routes
+	emailHandler := handlers.NewAdminEmailsHandler(s.storage.Queries)
+	admin.GET("/emails", emailHandler.HandleEmailHistory)
+
 	// Cart management routes
 	cartHandler := handlers.NewCartHandler(s.storage)
 	admin.GET("/carts", cartHandler.HandleCartsList)
