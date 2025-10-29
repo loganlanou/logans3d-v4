@@ -31,6 +31,12 @@ jobs:
           npm ci
           go mod download
 
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Generate sqlc code
+        run: sqlc generate -f storage/sqlc.yaml
+
       - name: Run tests
         run: make test
 
