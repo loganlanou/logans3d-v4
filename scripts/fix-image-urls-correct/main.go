@@ -46,7 +46,7 @@ func main() {
 
 	if count > 0 {
 		fmt.Println("Converting image URLs to just filenames...")
-		
+
 		// Get all rows that need updating
 		updateRows, err := db.Query("SELECT id, image_url FROM product_images WHERE image_url LIKE '%/%'")
 		if err != nil {
@@ -65,14 +65,14 @@ func main() {
 
 			// Extract just the filename from the URL
 			filename := filepath.Base(imageUrl)
-			
+
 			// Update the database
 			_, err = db.Exec("UPDATE product_images SET image_url = ? WHERE id = ?", filename, id)
 			if err != nil {
 				log.Printf("Failed to update row %s: %v", id, err)
 				continue
 			}
-			
+
 			fmt.Printf("Updated: %s -> %s\n", imageUrl, filename)
 			updates++
 		}

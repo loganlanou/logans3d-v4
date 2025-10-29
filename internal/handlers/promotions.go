@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -90,14 +91,14 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 
 	// Create promotion code in database
 	promoCode, err := h.queries.CreatePromotionCode(ctx, db.CreatePromotionCodeParams{
-		ID:                   ulid.Make().String(),
-		CampaignID:           campaign.ID,
-		Code:                 codeStr,
+		ID:                    ulid.Make().String(),
+		CampaignID:            campaign.ID,
+		Code:                  codeStr,
 		StripePromotionCodeID: sql.NullString{String: stripePromoCode.ID, Valid: true},
-		Email:                sql.NullString{String: req.Email, Valid: true},
-		UserID:               sql.NullString{},
-		MaxUses:              sql.NullInt64{Int64: 1, Valid: true},
-		ExpiresAt:            sql.NullTime{Time: time.Now().AddDate(0, 0, 30), Valid: true},
+		Email:                 sql.NullString{String: req.Email, Valid: true},
+		UserID:                sql.NullString{},
+		MaxUses:               sql.NullInt64{Int64: 1, Valid: true},
+		ExpiresAt:             sql.NullTime{Time: time.Now().AddDate(0, 0, 30), Valid: true},
 	})
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to save promotion code"})
@@ -142,11 +143,11 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 	// Ensure promotional emails are enabled
 	if prefs != nil {
 		_ = h.queries.UpdateEmailPreferences(ctx, db.UpdateEmailPreferencesParams{
-			ID:            prefs.ID,
-			Transactional: sql.NullInt64{Int64: 1, Valid: true},
-			Promotional:   sql.NullInt64{Int64: 1, Valid: true},
-			AbandonedCart: sql.NullInt64{Int64: 1, Valid: true},
-			Newsletter:    sql.NullInt64{Int64: 0, Valid: true},
+			ID:             prefs.ID,
+			Transactional:  sql.NullInt64{Int64: 1, Valid: true},
+			Promotional:    sql.NullInt64{Int64: 1, Valid: true},
+			AbandonedCart:  sql.NullInt64{Int64: 1, Valid: true},
+			Newsletter:     sql.NullInt64{Int64: 0, Valid: true},
 			ProductUpdates: sql.NullInt64{Int64: 0, Valid: true},
 		})
 	}
@@ -290,10 +291,14 @@ func (h *PromotionsHandler) sendWelcomeEmail(emailAddr, firstName, code string) 
 		IsHTML:  true,
 	}
 
-	h.emailService.Send(emailMsg)
+	if err := h.emailService.Send(emailMsg); err != nil {
+		slog.Error("failed to send welcome email", "error", err, "email", emailAddr)
+	}
 
 	// Log the send
-	h.emailService.LogEmailSend(ctx, emailAddr, "promotional", emailMsg.Subject, "welcome_coupon", "", map[string]interface{}{
+	if err := h.emailService.LogEmailSend(ctx, emailAddr, "promotional", emailMsg.Subject, "welcome_coupon", "", map[string]interface{}{
 		"promo_code": code,
-	})
+	}); err != nil {
+		slog.Error("failed to log email send", "error", err, "email", emailAddr)
+	}
 }

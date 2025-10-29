@@ -8,18 +8,18 @@ import (
 )
 
 type ShippingOption struct {
-	RateID          string  `json:"rate_id"`
-	ShipmentID      string  `json:"shipment_id"`      // EasyPost shipment ID for label purchase
-	CarrierName     string  `json:"carrier_name"`
-	ServiceName     string  `json:"service_name"`
-	Price           float64 `json:"price"`
-	Currency        string  `json:"currency"`
-	DeliveryDays    int     `json:"delivery_days"`
-	EstimatedDate   string  `json:"estimated_date,omitempty"`
-	BoxSKU          string  `json:"box_sku"`
-	BoxCost         float64 `json:"box_cost"`
-	HandlingCost    float64 `json:"handling_cost"`
-	TotalCost       float64 `json:"total_cost"`
+	RateID          string           `json:"rate_id"`
+	ShipmentID      string           `json:"shipment_id"` // EasyPost shipment ID for label purchase
+	CarrierName     string           `json:"carrier_name"`
+	ServiceName     string           `json:"service_name"`
+	Price           float64          `json:"price"`
+	Currency        string           `json:"currency"`
+	DeliveryDays    int              `json:"delivery_days"`
+	EstimatedDate   string           `json:"estimated_date,omitempty"`
+	BoxSKU          string           `json:"box_sku"`
+	BoxCost         float64          `json:"box_cost"`
+	HandlingCost    float64          `json:"handling_cost"`
+	TotalCost       float64          `json:"total_cost"`
 	PackingSolution *PackingSolution `json:"packing_solution,omitempty"`
 }
 
@@ -29,17 +29,17 @@ type ShippingQuoteRequest struct {
 }
 
 type ShippingQuoteResponse struct {
-	Options      []ShippingOption `json:"options"`
-	DefaultOption *ShippingOption `json:"default_option,omitempty"`
-	Error        string           `json:"error,omitempty"`
+	Options       []ShippingOption `json:"options"`
+	DefaultOption *ShippingOption  `json:"default_option,omitempty"`
+	Error         string           `json:"error,omitempty"`
 }
 
 type ShippingService struct {
-	config       *ShippingConfig
-	client       *EasyPostClient
-	packer       *Packer
-	carrierIDs   []string
-	carrierMap   map[string]Carrier // Maps carrier ID to carrier info
+	config     *ShippingConfig
+	client     *EasyPostClient
+	packer     *Packer
+	carrierIDs []string
+	carrierMap map[string]Carrier // Maps carrier ID to carrier info
 }
 
 func NewShippingService(config *ShippingConfig) (*ShippingService, error) {
@@ -285,7 +285,7 @@ func (s *ShippingService) getRatesForCarriers(carrierIDs []string, boxSelection 
 				"requested_carriers", carrierIDs)
 
 			if carrierSet[rate.CarrierCode] || carrierSet[rate.CarrierID] ||
-			   carrierSet[strings.ToUpper(rate.CarrierCode)] || carrierSet[strings.ToUpper(rate.CarrierID)] {
+				carrierSet[strings.ToUpper(rate.CarrierCode)] || carrierSet[strings.ToUpper(rate.CarrierID)] {
 				filteredRates = append(filteredRates, rate)
 				slog.Debug("getRatesForCarriers: Rate PASSED filter", "carrier", rate.CarrierCode)
 			} else {

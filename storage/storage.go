@@ -74,7 +74,7 @@ func ensureDir(dir string) error {
 	if dir == "." || dir == "" {
 		return nil
 	}
-	
+
 	// For now, assume directory exists (created by make setup)
 	// In production, this would use os.MkdirAll(dir, 0755)
 	return nil

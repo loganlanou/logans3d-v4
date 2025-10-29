@@ -204,7 +204,6 @@ func extractSessionToken(r *http.Request) string {
 	return ""
 }
 
-
 // getOrCreateUser fetches user from Clerk API and syncs to DB (pattern from corp project)
 func getOrCreateUser(ctx context.Context, storage *storage.Storage, clerkUserID string) (*db.User, error) {
 	// Try to find user by Clerk ID first (fastest path)

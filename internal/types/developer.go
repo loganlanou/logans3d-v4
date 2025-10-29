@@ -3,26 +3,26 @@ package types
 import "time"
 
 type SystemInfo struct {
-	AppName        string    `json:"app_name"`
-	Version        string    `json:"version"`
-	Environment    string    `json:"environment"`
-	StartTime      time.Time `json:"start_time"`
-	Uptime         string    `json:"uptime"`
-	GoVersion      string    `json:"go_version"`
-	Architecture   string    `json:"architecture"`
-	OS             string    `json:"os"`
-	CPUCount       string    `json:"cpu_count"`
-	PID            int       `json:"pid"`
-	DBPath         string    `json:"db_path"`
-	Port           string    `json:"port"`
+	AppName      string    `json:"app_name"`
+	Version      string    `json:"version"`
+	Environment  string    `json:"environment"`
+	StartTime    time.Time `json:"start_time"`
+	Uptime       string    `json:"uptime"`
+	GoVersion    string    `json:"go_version"`
+	Architecture string    `json:"architecture"`
+	OS           string    `json:"os"`
+	CPUCount     string    `json:"cpu_count"`
+	PID          int       `json:"pid"`
+	DBPath       string    `json:"db_path"`
+	Port         string    `json:"port"`
 }
 
 type DatabaseStats struct {
-	ProductCount   int64  `json:"product_count"`
-	CategoryCount  int64  `json:"category_count"`
-	OrderCount     int64  `json:"order_count"`
-	UserCount      int64  `json:"user_count"`
-	DatabaseSize   string `json:"database_size"`
+	ProductCount  int64  `json:"product_count"`
+	CategoryCount int64  `json:"category_count"`
+	OrderCount    int64  `json:"order_count"`
+	UserCount     int64  `json:"user_count"`
+	DatabaseSize  string `json:"database_size"`
 }
 
 type MemoryStats struct {

@@ -71,14 +71,14 @@ func main() {
 			continue
 		}
 		categoryName := strings.TrimSpace(record[5]) // category column
-		
+
 		if processedCategories[categoryName] {
 			continue
 		}
 		processedCategories[categoryName] = true
 
 		slug := strings.ToLower(strings.ReplaceAll(categoryName, " ", "-"))
-		
+
 		// Check if category exists
 		existingCategory, err := queries.GetCategoryByName(ctx, categoryName)
 		if err != nil && err != sql.ErrNoRows {
@@ -174,7 +174,7 @@ func main() {
 		// Check if product exists
 		existingProduct, err := queries.GetProductByName(ctx, name)
 		isNew := err == sql.ErrNoRows
-		
+
 		var productID string
 		if isNew {
 			productID = uuid.New().String()
@@ -206,7 +206,7 @@ func main() {
 		if imagePath != "" {
 			// Check if primary image exists
 			existingImage, err := queries.GetPrimaryProductImage(ctx, product.ID)
-			
+
 			switch err {
 			case sql.ErrNoRows:
 				// No primary image exists, create one

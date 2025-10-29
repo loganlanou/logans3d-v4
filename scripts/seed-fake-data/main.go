@@ -15,19 +15,19 @@ import (
 
 const (
 	// Configuration
-	numUsers           = 25
-	numOrders          = 45
-	numActiveCarts     = 8
-	numAbandonedCarts  = 15
-	numContactRequests = 20
+	numUsers            = 25
+	numOrders           = 45
+	numActiveCarts      = 8
+	numAbandonedCarts   = 15
+	numContactRequests  = 20
 	numFavoritesPerUser = 3
-	numCollections     = 10
+	numCollections      = 10
 )
 
 var (
-	db *sql.DB
+	db         *sql.DB
 	productIDs []string
-	userIDs []string
+	userIDs    []string
 	sessionIDs []string
 )
 
@@ -45,23 +45,23 @@ type User struct {
 }
 
 type Order struct {
-	ID                     string
-	UserID                 string
-	CustomerName           string
-	CustomerEmail          string
-	CustomerPhone          string
-	ShippingAddressLine1   string
-	ShippingAddressLine2   string
-	ShippingCity           string
-	ShippingState          string
-	ShippingPostalCode     string
-	ShippingCountry        string
-	SubtotalCents          int64
-	TaxCents               int64
-	ShippingCents          int64
-	TotalCents             int64
-	Status                 string
-	CreatedAt              time.Time
+	ID                   string
+	UserID               string
+	CustomerName         string
+	CustomerEmail        string
+	CustomerPhone        string
+	ShippingAddressLine1 string
+	ShippingAddressLine2 string
+	ShippingCity         string
+	ShippingState        string
+	ShippingPostalCode   string
+	ShippingCountry      string
+	SubtotalCents        int64
+	TaxCents             int64
+	ShippingCents        int64
+	TotalCents           int64
+	Status               string
+	CreatedAt            time.Time
 }
 
 func main() {
@@ -370,8 +370,8 @@ func generateOrder(userID string, now time.Time) Order {
 
 	address := gofakeit.Address()
 	subtotal := int64(1000 + rand.Intn(15000)) // $10 - $160
-	tax := subtotal * 8 / 100                   // 8% tax
-	shipping := int64(500 + rand.Intn(1500))    // $5 - $20
+	tax := subtotal * 8 / 100                  // 8% tax
+	shipping := int64(500 + rand.Intn(1500))   // $5 - $20
 
 	return Order{
 		ID:                   uuid.New().String(),

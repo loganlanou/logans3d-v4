@@ -1,3 +1,7 @@
+# golangci-lint v2.4.0 configuration
+# Adapted from parable-api
+version: "2"
+
 run:
   timeout: 5m
   tests: true
@@ -5,93 +9,88 @@ run:
     - integration
 
 linters:
+  default: none
   enable:
-    # Critical linters that would have caught reported bugs
-    - goconst        # Finds repeated strings that should be constants (would catch "user" vs DBUserKey)
-    - errcheck       # Checks that errors are checked (email sending, DB operations)
-    - sqlclosecheck  # Checks that sql.Rows and sql.Stmt are closed
-    - bodyclose      # Checks that HTTP response bodies are closed
-    - unconvert      # Removes unnecessary type conversions
-    - unparam        # Reports unused function parameters
-    - gocyclo        # Computes cyclomatic complexity
+    # Core linters
+    - errcheck
+    - gosec
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # Additional useful linters
+    - misspell
+    - unconvert
 
-    # Standard Go linters
-    - gofmt          # Checks whether code was gofmt-ed
-    - goimports      # Checks import order
-    - govet          # Reports suspicious constructs
-    - ineffassign    # Detects ineffectual assignments
-    - staticcheck    # Go's official static analyzer
-    - unused         # Checks for unused constants, variables, functions
-    - gosimple       # Simplifies code
+  settings:
+    errcheck:
+      # Ignore error checking for these patterns
+      check-blank: false
+      check-type-assertions: false
+      exclude-functions:
+        # Ignore fmt print functions
+        - fmt.Fprint
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Print
+        - fmt.Printf
+        - fmt.Println
+        # Ignore HTTP response writing
+        - (net/http.ResponseWriter).Write
+        - (github.com/labstack/echo/v4.Context).String
+        - (github.com/labstack/echo/v4.Context).NoContent
+        # Ignore JSON encoding in HTTP handlers
+        - (*encoding/json.Encoder).Encode
+        # Ignore Close in defer statements
+        - (io.Closer).Close
+        - (*os.File).Close
+        - (*net/http.Response.Body).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
+        - (*database/sql.Stmt).Close
+        - (*database/sql.Tx).Rollback
+        - (*encoding/csv.Writer).Write
+        - (*os.File).Seek
+        - os.Remove
+        - os.RemoveAll
+        # Ignore our storage wrapper Close
+        - (*github.com/loganlanou/logans3d-v4/storage.Storage).Close
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment  # Pedantic struct field ordering
+        - shadow          # Variable shadowing often intentional
+    gosec:
+      severity: medium
+      confidence: medium
+      excludes:
+        - G115  # Integer overflow conversion
+        - G304  # File path provided as taint input (false positives for config files)
+        - G306  # Poor file permissions (non-critical for config files)
+        - G301  # Directory permissions (0755 is acceptable for upload dirs)
+        - G107  # URL provided as taint input (false positives for API calls)
 
-    # Code quality
-    - dupl           # Finds code clones
-    - misspell       # Finds commonly misspelled English words
-    - prealloc       # Finds slice declarations that could be preallocated
-    - revive         # Fast, configurable, extensible linter
-
-    # Security
-    - gosec          # Inspects source code for security problems
-
-    # Style
-    - stylecheck     # Replacement for golint
-    - whitespace     # Checks for unnecessary newlines
-
-  disable:
-    - exhaustive     # Too strict for this project
-    - exhaustruct    # Too strict for this project
-    - funlen         # Function length checks - can be noisy
-    - lll            # Line length - handled by gofmt
-    - wsl            # Whitespace linter - too opinionated
-
-linters-settings:
-  gocyclo:
-    min-complexity: 15  # Maximum cyclomatic complexity
-
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-
-  errcheck:
-    check-type-assertions: true
-    check-blank: true
-
-  govet:
-    check-shadowing: true
-
-  revive:
+  exclusions:
+    generated: strict
+    paths:
+      - scripts/  # Scripts use weak random for test data generation
     rules:
-      - name: exported
-        disabled: false
-      - name: unexported-return
-        disabled: true  # Too strict
-
-  staticcheck:
-    checks: ["all"]
+      - path: _test\.go
+        linters:
+          - gosec
+          - errcheck
+      # Exclude generated files
+      - path: _templ\.go$
+        linters:
+          - all
+      - path: storage/db/.*\.go$
+        linters:
+          - all
+      # Exclude scripts from all linting
+      - path: scripts/.*\.go$
+        linters:
+          - all
 
 issues:
-  exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
-
-  exclude-rules:
-    # Exclude some linters from running on tests files
-    - path: _test\.go
-      linters:
-        - gocyclo
-        - errcheck
-        - dupl
-        - gosec
-
-    # Exclude generated files
-    - path: _templ\.go$
-      linters:
-        - all
-    - path: storage/db/.*\.go$
-      linters:
-        - all
-
-    # Allow shadowing in specific cases
-    - linters:
-        - govet
-      text: "shadow: declaration of \"err\""

@@ -42,11 +42,11 @@ func main() {
 		priceCents int64
 		slug       string
 	}{
-		{"Test Dragon Model", 2999, "test-dragon-model"},         // $29.99 -> $30.00
-		{"Tiny Toothless", 499, "tiny-toothless"},               // $4.99 -> $5.00
-		{"Crystal Dragon", 12500, "crystal-dragon"},             // $125.00 -> $125.00 (no change)
-		{"Sample Fidget", 751, "sample-fidget"},                 // $7.51 -> $8.00
-		{"Demo Product", 1234, "demo-product"},                  // $12.34 -> $12.00
+		{"Test Dragon Model", 2999, "test-dragon-model"}, // $29.99 -> $30.00
+		{"Tiny Toothless", 499, "tiny-toothless"},        // $4.99 -> $5.00
+		{"Crystal Dragon", 12500, "crystal-dragon"},      // $125.00 -> $125.00 (no change)
+		{"Sample Fidget", 751, "sample-fidget"},          // $7.51 -> $8.00
+		{"Demo Product", 1234, "demo-product"},           // $12.34 -> $12.00
 	}
 
 	for _, p := range products {

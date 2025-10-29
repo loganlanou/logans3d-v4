@@ -30,7 +30,7 @@ func (s *StripeService) CreateCustomer(email, name string) (*stripe.Customer, er
 		Email: stripe.String(email),
 		Name:  stripe.String(name),
 	}
-	
+
 	return customer.New(params)
 }
 
@@ -39,17 +39,17 @@ func (s *StripeService) CreateProduct(name, description string) (*stripe.Product
 		Name:        stripe.String(name),
 		Description: stripe.String(description),
 	}
-	
+
 	return product.New(params)
 }
 
 func (s *StripeService) CreatePrice(productID string, unitAmount int64, currency string) (*stripe.Price, error) {
 	params := &stripe.PriceParams{
-		Product:     stripe.String(productID),
-		UnitAmount:  stripe.Int64(unitAmount),
-		Currency:    stripe.String(currency),
+		Product:    stripe.String(productID),
+		UnitAmount: stripe.Int64(unitAmount),
+		Currency:   stripe.String(currency),
 	}
-	
+
 	return price.New(params)
 }
 
@@ -62,7 +62,7 @@ func (s *StripeService) CreatePaymentIntent(amount int64, currency string, custo
 			Enabled: stripe.Bool(true),
 		},
 	}
-	
+
 	return paymentintent.New(params)
 }
 
@@ -73,16 +73,16 @@ func (s *StripeService) GetCustomer(customerID string) (*stripe.Customer, error)
 func (s *StripeService) ListCustomers(limit int64) ([]*stripe.Customer, error) {
 	params := &stripe.CustomerListParams{}
 	params.Limit = stripe.Int64(limit)
-	
+
 	var customers []*stripe.Customer
 	i := customer.List(params)
 	for i.Next() {
 		customers = append(customers, i.Customer())
 	}
-	
+
 	if err := i.Err(); err != nil {
 		return nil, fmt.Errorf("error listing customers: %w", err)
 	}
-	
+
 	return customers, nil
 }

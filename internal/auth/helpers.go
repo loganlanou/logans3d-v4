@@ -142,48 +142,6 @@ func buildFullName(firstName, lastName, username, email string) string {
 	return "User"
 }
 
-// syncUserFromClaims upserts user data from custom session claims to local database
-func syncUserFromClaims(ctx context.Context, storage *storage.Storage, clerkUserID string, claims *CustomSessionClaims) (*db.User, error) {
-	// Generate or use existing UUID
-	userID := uuid.New().String()
-
-	// Check if user exists
-	existingUser, err := storage.Queries.GetUserByClerkID(ctx, toNullString(clerkUserID))
-	if err == nil {
-		// User exists, use their ID
-		userID = existingUser.ID
-	}
-
-	// Upsert user using data from custom claims
-	dbUser, err := storage.Queries.UpsertUserByClerkID(ctx, db.UpsertUserByClerkIDParams{
-		ID:              userID,
-		ClerkID:         toNullString(clerkUserID),
-		Email:           claims.PrimaryEmailAddress,
-		FirstName:       toNullString(claims.FirstName),
-		LastName:        toNullString(claims.LastName),
-		FullName:        claims.FullName,
-		Username:        toNullString(claims.Username),
-		ProfileImageUrl: toNullString(claims.ImageURL),
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	// Associate any existing email history records with this user
-	rowsAffected, err := storage.Queries.AssociateEmailHistoryWithUser(ctx, db.AssociateEmailHistoryWithUserParams{
-		UserID:         toNullString(dbUser.ID),
-		RecipientEmail: claims.PrimaryEmailAddress,
-	})
-	if err != nil {
-		slog.Error("failed to associate email history with user", "error", err, "user_id", dbUser.ID, "email", claims.PrimaryEmailAddress)
-	} else if rowsAffected > 0 {
-		slog.Info("associated email history with user", "user_id", dbUser.ID, "email", claims.PrimaryEmailAddress, "rows_affected", rowsAffected)
-	}
-
-	return &dbUser, nil
-}
-
 // syncUserToDatabase upserts Clerk user data to local database (legacy - uses Clerk API)
 func syncUserToDatabase(ctx context.Context, storage *storage.Storage, clerkUser *clerk.User) (*db.User, error) {
 	// Extract user data

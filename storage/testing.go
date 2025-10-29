@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/loganlanou/logans3d-v4/storage/db"
-	"github.com/pressly/goose/v3"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/pressly/goose/v3"
 )
 
 //go:embed migrations/*.sql

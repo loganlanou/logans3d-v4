@@ -9,9 +9,9 @@ import (
 	emailutil "github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/oklog/ulid/v2"
-	stripe "github.com/stripe/stripe-go/v80"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	stripe "github.com/stripe/stripe-go/v80"
 )
 
 // createMockCheckoutSession creates a mock Stripe checkout session for testing
@@ -47,7 +47,7 @@ func createMockCheckoutSession(promoCode string, discountAmount int64) *stripe.C
 						Amount: discountAmount,
 						Discount: &stripe.Discount{
 							Coupon: &stripe.Coupon{
-								AmountOff: int64(discountAmount),
+								AmountOff: discountAmount,
 								Currency:  "usd",
 							},
 							PromotionCode: &stripe.PromotionCode{
@@ -58,50 +58,6 @@ func createMockCheckoutSession(promoCode string, discountAmount int64) *stripe.C
 				},
 			},
 		}
-	}
-
-	return session
-}
-
-// createMockCheckoutSessionPercentOff creates a mock session with percent-off discount
-func createMockCheckoutSessionPercentOff(promoCode string, percentOff int64) *stripe.CheckoutSession {
-	session := &stripe.CheckoutSession{
-		ID:          "cs_test_123",
-		AmountTotal: 1275, // $12.75 (after 15% discount)
-		CustomerDetails: &stripe.CheckoutSessionCustomerDetails{
-			Email: "test@example.com",
-			Name:  "Test User",
-		},
-		LineItems: &stripe.LineItemList{
-			Data: []*stripe.LineItem{
-				{
-					Price: &stripe.Price{
-						Product: &stripe.Product{
-							ID: "prod_test",
-						},
-					},
-					Quantity: 1,
-				},
-			},
-		},
-		TotalDetails: &stripe.CheckoutSessionTotalDetails{
-			AmountDiscount: 225, // $2.25 discount (15% of $15)
-			Breakdown: &stripe.CheckoutSessionTotalDetailsBreakdown{
-				Discounts: []*stripe.CheckoutSessionTotalDetailsBreakdownDiscount{
-					{
-						Amount: 225,
-						Discount: &stripe.Discount{
-							Coupon: &stripe.Coupon{
-								PercentOff: float64(percentOff),
-							},
-							PromotionCode: &stripe.PromotionCode{
-								Code: promoCode,
-							},
-						},
-					},
-				},
-			},
-		},
 	}
 
 	return session
@@ -284,11 +240,11 @@ func TestCampaignNaming(t *testing.T) {
 	ctx := context.Background()
 
 	testCases := []struct {
-		name           string
-		discount       *stripe.CheckoutSessionTotalDetailsBreakdownDiscount
-		expectedName   string
-		expectedType   string
-		expectedValue  int64
+		name          string
+		discount      *stripe.CheckoutSessionTotalDetailsBreakdownDiscount
+		expectedName  string
+		expectedType  string
+		expectedValue int64
 	}{
 		{
 			name: "Fixed $10 discount",
@@ -380,20 +336,20 @@ func TestPromotionCodeInOrderCreation(t *testing.T) {
 
 	// Create an order with the promotion code
 	order, err := queries.CreateOrder(ctx, db.CreateOrderParams{
-		ID:                     ulid.Make().String(),
-		UserID:                 user.ID,
-		CustomerEmail:          "customer@example.com",
-		CustomerName:           "Test Customer",
-		SubtotalCents:          1275,  // $12.75 after discount
-		OriginalSubtotalCents:  sql.NullInt64{Int64: 1500, Valid: true}, // $15.00 original
-		DiscountCents:          sql.NullInt64{Int64: 225, Valid: true},  // $2.25 discount
-		PromotionCode:          sql.NullString{String: "ORDER123", Valid: true},
-		PromotionCodeID:        sql.NullString{String: promoCode.ID, Valid: true},
-		TaxCents:               0,
-		ShippingCents:          0,
-		TotalCents:             1275,
+		ID:                      ulid.Make().String(),
+		UserID:                  user.ID,
+		CustomerEmail:           "customer@example.com",
+		CustomerName:            "Test Customer",
+		SubtotalCents:           1275,                                    // $12.75 after discount
+		OriginalSubtotalCents:   sql.NullInt64{Int64: 1500, Valid: true}, // $15.00 original
+		DiscountCents:           sql.NullInt64{Int64: 225, Valid: true},  // $2.25 discount
+		PromotionCode:           sql.NullString{String: "ORDER123", Valid: true},
+		PromotionCodeID:         sql.NullString{String: promoCode.ID, Valid: true},
+		TaxCents:                0,
+		ShippingCents:           0,
+		TotalCents:              1275,
 		StripeCheckoutSessionID: sql.NullString{String: "cs_test", Valid: true},
-		Status:                 sql.NullString{String: "pending", Valid: true},
+		Status:                  sql.NullString{String: "pending", Valid: true},
 	})
 	require.NoError(t, err)
 
@@ -424,10 +380,9 @@ func TestBreakdownExpansion(t *testing.T) {
 	t.Run("Without breakdown expanded (simulated)", func(t *testing.T) {
 		// Simulate what Stripe returns when breakdown is NOT expanded
 		session := &stripe.CheckoutSession{
-			ID: "cs_test_123",
 			TotalDetails: &stripe.CheckoutSessionTotalDetails{
 				AmountDiscount: 500, // Discount amount is present
-				Breakdown:      nil,  // But breakdown is nil!
+				Breakdown:      nil, // But breakdown is nil!
 			},
 		}
 

@@ -112,10 +112,10 @@ func TestTier3_APIRoutes(t *testing.T) {
 	e, _ := setupTestEcho(t)
 
 	tests := []struct {
-		name           string
-		method         string
-		path           string
-		wantStatusOK   bool   // If true, expect 200. If false, expect anything but 404
+		name            string
+		method          string
+		path            string
+		wantStatusOK    bool  // If true, expect 200. If false, expect anything but 404
 		allowedStatuses []int // Status codes that are acceptable
 	}{
 		// Cart API - These may return various statuses depending on session/data

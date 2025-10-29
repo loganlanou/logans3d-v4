@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -181,18 +182,18 @@ func (h *ShippingHandler) compareSnapshots(current, stored *CartSnapshot) bool {
 
 // SaveShippingSelectionRequest - Updated to include all shipping details with breakdown
 type SaveShippingSelectionRequest struct {
-	RateID               string                 `json:"rate_id"`
-	ShipmentID           string                 `json:"shipment_id"`
-	CarrierName          string                 `json:"carrier_name"`
-	ServiceName          string                 `json:"service_name"`
-	PriceCents           int64                  `json:"price_cents"`            // Total price (for backwards compatibility)
-	ShippingAmountCents  int64                  `json:"shipping_amount_cents"`  // Carrier shipping rate only
-	BoxCostCents         int64                  `json:"box_cost_cents"`         // Box/packaging cost
-	HandlingCostCents    int64                  `json:"handling_cost_cents"`    // Handling cost
-	BoxSKU               string                 `json:"box_sku"`                // Box SKU used
-	DeliveryDays         int64                  `json:"delivery_days"`
-	EstimatedDate        string                 `json:"estimated_date"`
-	ShippingAddress      map[string]interface{} `json:"shipping_address"`
+	RateID              string                 `json:"rate_id"`
+	ShipmentID          string                 `json:"shipment_id"`
+	CarrierName         string                 `json:"carrier_name"`
+	ServiceName         string                 `json:"service_name"`
+	PriceCents          int64                  `json:"price_cents"`           // Total price (for backwards compatibility)
+	ShippingAmountCents int64                  `json:"shipping_amount_cents"` // Carrier shipping rate only
+	BoxCostCents        int64                  `json:"box_cost_cents"`        // Box/packaging cost
+	HandlingCostCents   int64                  `json:"handling_cost_cents"`   // Handling cost
+	BoxSKU              string                 `json:"box_sku"`               // Box SKU used
+	DeliveryDays        int64                  `json:"delivery_days"`
+	EstimatedDate       string                 `json:"estimated_date"`
+	ShippingAddress     map[string]interface{} `json:"shipping_address"`
 }
 
 func (h *ShippingHandler) SaveShippingSelection(c echo.Context) error {
@@ -340,7 +341,9 @@ func (h *ShippingHandler) GetShippingSelection(c echo.Context) error {
 	var storedSnapshot CartSnapshot
 	if err := json.Unmarshal([]byte(selection.CartSnapshotJson), &storedSnapshot); err != nil {
 		// Invalid snapshot, invalidate selection
-		h.queries.InvalidateSessionShipping(ctx, sessionID)
+		if err := h.queries.InvalidateSessionShipping(ctx, sessionID); err != nil {
+			slog.Error("failed to invalidate shipping selection", "error", err, "session_id", sessionID)
+		}
 		return c.JSON(http.StatusOK, GetShippingSelectionResponse{
 			ShippingAddress: shippingAddress,
 		})
@@ -352,7 +355,9 @@ func (h *ShippingHandler) GetShippingSelection(c echo.Context) error {
 
 	// If cart changed, invalidate the selection in database
 	if !isValid && selectionIsValid {
-		h.queries.InvalidateSessionShipping(ctx, sessionID)
+		if err := h.queries.InvalidateSessionShipping(ctx, sessionID); err != nil {
+			slog.Error("failed to invalidate shipping selection", "error", err, "session_id", sessionID)
+		}
 	}
 
 	deliveryDays := int64(0)

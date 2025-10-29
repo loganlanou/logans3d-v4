@@ -31,8 +31,23 @@ jobs:
           npm ci
           go mod download
 
+      - name: Install templ
+        run: go install github.com/a-h/templ/cmd/templ@latest
+
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Generate templ files
+        run: templ generate
+
+      - name: Generate sqlc code
+        run: sqlc generate -f storage/sqlc.yaml
+
       - name: Run tests
         run: make test
+
+      - name: Check integration tests compile
+        run: go test -tags integration -run '^$' ./...
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -70,10 +85,22 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
+      - name: Install templ
+        run: go install github.com/a-h/templ/cmd/templ@latest
+
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Generate templ files
+        run: templ generate
+
+      - name: Generate sqlc code
+        run: sqlc generate -f storage/sqlc.yaml
+
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v4
+        uses: golangci/golangci-lint-action@v8
         with:
-          version: latest
+          version: v2.4.0
           args: --timeout=5m
 
   format:
@@ -125,6 +152,12 @@ jobs:
 
       - name: Install templ
         run: go install github.com/a-h/templ/cmd/templ@latest
+
+      - name: Install sqlc
+        run: go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+
+      - name: Generate sqlc code
+        run: sqlc generate -f storage/sqlc.yaml
 
       - name: Generate templ files
         run: templ generate

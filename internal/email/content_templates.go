@@ -423,8 +423,6 @@ const contactRequestContentTemplate = `
 </div>
 `
 
-
-
 // welcomeCouponContentTemplate is the content section for welcome coupon emails
 const welcomeCouponContentTemplate = `
 <div style="text-align: center; margin-bottom: 30px;">
