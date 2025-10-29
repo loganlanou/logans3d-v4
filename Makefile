@@ -63,6 +63,8 @@ build:
 .PHONY: test
 test:
 	go test ./... || echo "No tests found. Skipping."
+	@echo "Checking integration tests compile..."
+	go test -tags integration -run '^$$' ./...
 
 .PHONY: test-coverage
 test-coverage:

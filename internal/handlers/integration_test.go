@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"testing"
+	"time"
 
 	emailutil "github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -20,10 +21,10 @@ import (
 // - Bug #2: Email preferences are created with promotional=1
 // - Bug #4: No orphaned promotion codes
 func TestEmailCaptureFlow_Complete(t *testing.T) {
-	database, queries, cleanup := NewTestDB()
+	_, queries, cleanup := NewTestDB()
 	defer cleanup()
 
-	emailService := emailutil.NewService(queries, database, "")
+	emailService := emailutil.NewService(queries)
 	ctx := context.Background()
 
 	email := "integration@example.com"
@@ -32,9 +33,14 @@ func TestEmailCaptureFlow_Complete(t *testing.T) {
 	campaign, err := queries.CreatePromotionCampaign(ctx, db.CreatePromotionCampaignParams{
 		ID:                ulid.Make().String(),
 		Name:              "First Time 15%",
-		DiscountPercent:   sql.NullInt64{Int64: 15, Valid: true},
-		Active:            sql.NullInt64{Int64: 1, Valid: true},
+		Description:       sql.NullString{String: "15% off for first time users", Valid: true},
+		DiscountType:      "percentage",
+		DiscountValue:     15,
 		StripePromotionID: sql.NullString{String: "promo_integration", Valid: true},
+		StartDate:         time.Now(),
+		EndDate:           sql.NullTime{Valid: false},
+		MaxUses:           sql.NullInt64{Valid: false},
+		Active:            sql.NullInt64{Int64: 1, Valid: true},
 	})
 	require.NoError(t, err)
 
@@ -97,7 +103,7 @@ func TestEmailCaptureFlow_Complete(t *testing.T) {
 // TestEmailCaptureFlow_WithExisting tests the flow when contact already exists
 // This verifies Bug #4 fix: existing contacts without codes get updated, not orphaned
 func TestEmailCaptureFlow_WithExisting(t *testing.T) {
-	database, queries, cleanup := NewTestDB()
+	_, queries, cleanup := NewTestDB()
 	defer cleanup()
 
 	ctx := context.Background()
@@ -119,9 +125,14 @@ func TestEmailCaptureFlow_WithExisting(t *testing.T) {
 	campaign, err := queries.CreatePromotionCampaign(ctx, db.CreatePromotionCampaignParams{
 		ID:                ulid.Make().String(),
 		Name:              "First Time 15%",
-		DiscountPercent:   sql.NullInt64{Int64: 15, Valid: true},
-		Active:            sql.NullInt64{Int64: 1, Valid: true},
+		Description:       sql.NullString{String: "15% off for first time users", Valid: true},
+		DiscountType:      "percentage",
+		DiscountValue:     15,
 		StripePromotionID: sql.NullString{String: "promo_existing", Valid: true},
+		StartDate:         time.Now(),
+		EndDate:           sql.NullTime{Valid: false},
+		MaxUses:           sql.NullInt64{Valid: false},
+		Active:            sql.NullInt64{Int64: 1, Valid: true},
 	})
 	require.NoError(t, err)
 
@@ -158,10 +169,10 @@ func TestEmailCaptureFlow_WithExisting(t *testing.T) {
 
 // TestEmailPreferencesFlow_OptOut tests opt-out flow
 func TestEmailPreferencesFlow_OptOut(t *testing.T) {
-	database, queries, cleanup := NewTestDB()
+	_, queries, cleanup := NewTestDB()
 	defer cleanup()
 
-	emailService := emailutil.NewService(queries, database, "")
+	emailService := emailutil.NewService(queries)
 	ctx := context.Background()
 
 	email := "optout@example.com"
@@ -214,7 +225,7 @@ func TestEmailPreferencesFlow_OptOut(t *testing.T) {
 // TestEmailPreferencesUniqueConstraint tests Bug #5 fix
 // Email should be unique across all preferences, even with NULL user_id
 func TestEmailPreferencesUniqueConstraint(t *testing.T) {
-	database, queries, cleanup := NewTestDB()
+	_, queries, cleanup := NewTestDB()
 	defer cleanup()
 
 	ctx := context.Background()
