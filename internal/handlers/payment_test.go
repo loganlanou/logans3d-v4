@@ -47,7 +47,7 @@ func createMockCheckoutSession(promoCode string, discountAmount int64) *stripe.C
 						Amount: discountAmount,
 						Discount: &stripe.Discount{
 							Coupon: &stripe.Coupon{
-								AmountOff: int64(discountAmount),
+								AmountOff: discountAmount,
 								Currency:  "usd",
 							},
 							PromotionCode: &stripe.PromotionCode{
@@ -380,7 +380,6 @@ func TestBreakdownExpansion(t *testing.T) {
 	t.Run("Without breakdown expanded (simulated)", func(t *testing.T) {
 		// Simulate what Stripe returns when breakdown is NOT expanded
 		session := &stripe.CheckoutSession{
-			ID: "cs_test_123",
 			TotalDetails: &stripe.CheckoutSessionTotalDetails{
 				AmountDiscount: 500, // Discount amount is present
 				Breakdown:      nil, // But breakdown is nil!

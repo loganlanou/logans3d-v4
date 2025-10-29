@@ -66,4 +66,3 @@ func setupTestEcho(t *testing.T) (*echo.Echo, *Service) {
 
 	return e, svc
 }
-

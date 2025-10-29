@@ -1593,7 +1593,9 @@ func (s *Service) handleAddToCart(c echo.Context) error {
 
 	// Invalidate shipping selection when cart changes
 	if s.shippingHandler != nil {
-		s.shippingHandler.InvalidateShipping(c, sessionID)
+		if err := s.shippingHandler.InvalidateShipping(c, sessionID); err != nil {
+			slog.Error("failed to invalidate shipping after cart change", "error", err, "session_id", sessionID)
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{
@@ -1622,7 +1624,9 @@ func (s *Service) handleRemoveFromCart(c echo.Context) error {
 
 	// Invalidate shipping selection when cart changes
 	if s.shippingHandler != nil {
-		s.shippingHandler.InvalidateShipping(c, sessionID)
+		if err := s.shippingHandler.InvalidateShipping(c, sessionID); err != nil {
+			slog.Error("failed to invalidate shipping after cart change", "error", err, "session_id", sessionID)
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{
@@ -1676,7 +1680,9 @@ func (s *Service) handleUpdateCartItem(c echo.Context) error {
 
 	// Invalidate shipping selection when cart changes
 	if s.shippingHandler != nil {
-		s.shippingHandler.InvalidateShipping(c, sessionID)
+		if err := s.shippingHandler.InvalidateShipping(c, sessionID); err != nil {
+			slog.Error("failed to invalidate shipping after cart change", "error", err, "session_id", sessionID)
+		}
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{
@@ -1783,7 +1789,6 @@ func (s *Service) getOrCreateSessionID(c echo.Context) (string, error) {
 
 	return cookie.Value, nil
 }
-
 
 // Render renders a templ component and writes it to the response
 func Render(c echo.Context, component templ.Component) error {

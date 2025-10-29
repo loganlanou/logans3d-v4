@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -340,7 +341,9 @@ func (h *ShippingHandler) GetShippingSelection(c echo.Context) error {
 	var storedSnapshot CartSnapshot
 	if err := json.Unmarshal([]byte(selection.CartSnapshotJson), &storedSnapshot); err != nil {
 		// Invalid snapshot, invalidate selection
-		h.queries.InvalidateSessionShipping(ctx, sessionID)
+		if err := h.queries.InvalidateSessionShipping(ctx, sessionID); err != nil {
+			slog.Error("failed to invalidate shipping selection", "error", err, "session_id", sessionID)
+		}
 		return c.JSON(http.StatusOK, GetShippingSelectionResponse{
 			ShippingAddress: shippingAddress,
 		})
@@ -352,7 +355,9 @@ func (h *ShippingHandler) GetShippingSelection(c echo.Context) error {
 
 	// If cart changed, invalidate the selection in database
 	if !isValid && selectionIsValid {
-		h.queries.InvalidateSessionShipping(ctx, sessionID)
+		if err := h.queries.InvalidateSessionShipping(ctx, sessionID); err != nil {
+			slog.Error("failed to invalidate shipping selection", "error", err, "session_id", sessionID)
+		}
 	}
 
 	deliveryDays := int64(0)

@@ -126,7 +126,7 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 
 	if code == http.StatusUnauthorized {
 		// Render custom 401 page with auto-refresh capability
-		attemptedPath := "/"
+		var attemptedPath string
 		if path, ok := c.Get("attempted_path").(string); ok && path != "" {
 			attemptedPath = path
 		} else {

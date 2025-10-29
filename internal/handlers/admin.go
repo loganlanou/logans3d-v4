@@ -694,6 +694,11 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 
 			// Check if there are existing images
 			existingImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+			if err != nil {
+				// Log error but assume no existing images
+				fmt.Printf("Failed to get existing product images: %v\n", err)
+				existingImages = []db.ProductImage{}
+			}
 			isPrimary := len(existingImages) == 0 // First image is primary
 
 			// Get next display order

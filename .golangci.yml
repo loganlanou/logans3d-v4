@@ -50,9 +50,11 @@ linters:
         - (*database/sql.Stmt).Close
         - (*database/sql.Tx).Rollback
         - (*encoding/csv.Writer).Write
-        - (*io.File).Seek
+        - (*os.File).Seek
         - os.Remove
         - os.RemoveAll
+        # Ignore our storage wrapper Close
+        - (*github.com/loganlanou/logans3d-v4/storage.Storage).Close
     govet:
       enable-all: true
       disable:

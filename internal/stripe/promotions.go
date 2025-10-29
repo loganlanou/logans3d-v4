@@ -15,12 +15,13 @@ func CreatePromotionCampaign(name string, discountType string, discountValue int
 	params.Name = stripe.String(name)
 	params.Duration = stripe.String(string(stripe.CouponDurationOnce)) // One-time use
 
-	if discountType == "percentage" {
+	switch discountType {
+	case "percentage":
 		params.PercentOff = stripe.Float64(float64(discountValue))
-	} else if discountType == "fixed_amount" {
+	case "fixed_amount":
 		params.AmountOff = stripe.Int64(discountValue)
 		params.Currency = stripe.String(string(stripe.CurrencyUSD))
-	} else {
+	default:
 		return nil, fmt.Errorf("invalid discount type: %s", discountType)
 	}
 

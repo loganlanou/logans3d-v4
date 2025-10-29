@@ -333,11 +333,12 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 				if code != "" {
 					// Try to find this code in our promotion_codes table
 					promoRecord, err := h.queries.GetPromotionCodeByCode(ctx, code)
-					if err == nil {
+					switch err {
+					case nil:
 						// Code exists in our database
 						promotionCodeID = sql.NullString{String: promoRecord.ID, Valid: true}
 						slog.Debug("promotion code matched to database", "promotion_code_id", promoRecord.ID, "order_id", orderID)
-					} else if err == sql.ErrNoRows {
+					case sql.ErrNoRows:
 						// Code doesn't exist in our database - create it
 						slog.Debug("promotion code not found in database, creating external promotion code", "code", code, "order_id", orderID)
 						promoRecord, createErr := h.createExternalPromotionCode(ctx, code, firstDiscount)
@@ -348,7 +349,7 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 							promotionCodeID = sql.NullString{String: promoRecord.ID, Valid: true}
 							slog.Debug("created and linked external promotion code", "promotion_code_id", promoRecord.ID, "code", code, "order_id", orderID)
 						}
-					} else {
+					default:
 						// Some other error occurred during lookup
 						slog.Warn("failed to lookup promotion code in database", "error", err, "code", code)
 					}

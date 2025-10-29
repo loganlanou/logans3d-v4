@@ -312,7 +312,7 @@ func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandon
 
 		for _, item := range cartItems {
 			snapshotID := uuid.New().String()
-			totalPrice := item.PriceCents * int64(item.Quantity)
+			totalPrice := item.PriceCents * item.Quantity
 
 			err = d.storage.Queries.CreateCartSnapshot(ctx, db.CreateCartSnapshotParams{
 				ID:              snapshotID,
@@ -321,7 +321,7 @@ func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandon
 				ProductName:     item.Name,
 				ProductSku:      sql.NullString{}, // TODO: Get SKU from product
 				ProductImageUrl: sql.NullString{String: item.ImageUrl, Valid: item.ImageUrl != ""},
-				Quantity:        int64(item.Quantity),
+				Quantity:        item.Quantity,
 				UnitPriceCents:  item.PriceCents,
 				TotalPriceCents: totalPrice,
 			})
@@ -339,7 +339,7 @@ func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandon
 
 		for _, item := range cartItems {
 			snapshotID := uuid.New().String()
-			totalPrice := item.PriceCents * int64(item.Quantity)
+			totalPrice := item.PriceCents * item.Quantity
 
 			err = d.storage.Queries.CreateCartSnapshot(ctx, db.CreateCartSnapshotParams{
 				ID:              snapshotID,
@@ -348,7 +348,7 @@ func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandon
 				ProductName:     item.Name,
 				ProductSku:      sql.NullString{}, // TODO: Get SKU from product
 				ProductImageUrl: sql.NullString{String: item.ImageUrl, Valid: item.ImageUrl != ""},
-				Quantity:        int64(item.Quantity),
+				Quantity:        item.Quantity,
 				UnitPriceCents:  item.PriceCents,
 				TotalPriceCents: totalPrice,
 			})

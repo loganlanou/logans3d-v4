@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -290,10 +291,14 @@ func (h *PromotionsHandler) sendWelcomeEmail(emailAddr, firstName, code string) 
 		IsHTML:  true,
 	}
 
-	h.emailService.Send(emailMsg)
+	if err := h.emailService.Send(emailMsg); err != nil {
+		slog.Error("failed to send welcome email", "error", err, "email", emailAddr)
+	}
 
 	// Log the send
-	h.emailService.LogEmailSend(ctx, emailAddr, "promotional", emailMsg.Subject, "welcome_coupon", "", map[string]interface{}{
+	if err := h.emailService.LogEmailSend(ctx, emailAddr, "promotional", emailMsg.Subject, "welcome_coupon", "", map[string]interface{}{
 		"promo_code": code,
-	})
+	}); err != nil {
+		slog.Error("failed to log email send", "error", err, "email", emailAddr)
+	}
 }
