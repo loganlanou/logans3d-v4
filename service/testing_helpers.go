@@ -7,6 +7,8 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/loganlanou/logans3d-v4/internal/email"
+	"github.com/loganlanou/logans3d-v4/internal/handlers"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/oklog/ulid/v2"
@@ -29,15 +31,21 @@ func setupTestService(t *testing.T) *Service {
 		Queries: queries,
 	}
 
+	// Initialize email service for tests
+	emailService := email.NewService(queries)
+
 	// Create service with minimal config
 	svc := &Service{
-		storage: store,
+		storage:         store,
+		emailService:    emailService,
+		paymentHandler:  handlers.NewPaymentHandler(queries, emailService),
+		authHandler:     handlers.NewAuthHandler(),
+		shippingService: nil, // Not needed for route testing
+		shippingHandler: nil, // Not needed for route testing
 		config: &Config{
 			Environment: "test",
 			Port:        "8080",
-			// Other fields can be empty for route testing
 		},
-		// Other fields can be nil/empty for route testing
 	}
 
 	return svc

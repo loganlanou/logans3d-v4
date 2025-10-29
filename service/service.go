@@ -100,12 +100,9 @@ func New(storage *storage.Storage, config *Config) *Service {
 
 func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Initialize Clerk SDK with secret key - this configures the default backend
+	// Note: CLERK_SECRET_KEY is validated in main.go before app starts
+	// Tests don't need this key since they don't call Clerk APIs
 	clerkSecretKey := os.Getenv("CLERK_SECRET_KEY")
-	if clerkSecretKey == "" {
-		slog.Error("CLERK_SECRET_KEY is not set!")
-	} else {
-		slog.Debug("Clerk SDK initialized", "secret_key_prefix", clerkSecretKey[:min(len(clerkSecretKey), 10)])
-	}
 	clerk.SetKey(clerkSecretKey)
 
 	// Static files - no auth middleware
