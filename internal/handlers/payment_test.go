@@ -63,50 +63,6 @@ func createMockCheckoutSession(promoCode string, discountAmount int64) *stripe.C
 	return session
 }
 
-// createMockCheckoutSessionPercentOff creates a mock session with percent-off discount
-func createMockCheckoutSessionPercentOff(promoCode string, percentOff int64) *stripe.CheckoutSession {
-	session := &stripe.CheckoutSession{
-		ID:          "cs_test_123",
-		AmountTotal: 1275, // $12.75 (after 15% discount)
-		CustomerDetails: &stripe.CheckoutSessionCustomerDetails{
-			Email: "test@example.com",
-			Name:  "Test User",
-		},
-		LineItems: &stripe.LineItemList{
-			Data: []*stripe.LineItem{
-				{
-					Price: &stripe.Price{
-						Product: &stripe.Product{
-							ID: "prod_test",
-						},
-					},
-					Quantity: 1,
-				},
-			},
-		},
-		TotalDetails: &stripe.CheckoutSessionTotalDetails{
-			AmountDiscount: 225, // $2.25 discount (15% of $15)
-			Breakdown: &stripe.CheckoutSessionTotalDetailsBreakdown{
-				Discounts: []*stripe.CheckoutSessionTotalDetailsBreakdownDiscount{
-					{
-						Amount: 225,
-						Discount: &stripe.Discount{
-							Coupon: &stripe.Coupon{
-								PercentOff: float64(percentOff),
-							},
-							PromotionCode: &stripe.PromotionCode{
-								Code: promoCode,
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	return session
-}
-
 // TestGetOrCreateCampaignForDiscount_AmountOff tests creating campaign for fixed amount discount
 func TestGetOrCreateCampaignForDiscount_AmountOff(t *testing.T) {
 	_, queries, cleanup := NewTestDB()
