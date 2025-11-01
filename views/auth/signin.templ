@@ -35,17 +35,10 @@ templ SignIn(publishableKey string, redirectURL string) {
 						return;
 					}
 
-					// Listen for sign-in completion to force full page reload
-					window.Clerk.addListener((event) => {
-						if (event.type === 'session' && event.session) {
-							// Force full page reload to update server-side nav
-							window.location.href = redirectUrl;
-						}
-					});
-
 					// Mount the Clerk sign-in component
 					window.Clerk.mountSignIn(signInElement, {
 						afterSignInUrl: redirectUrl,
+						afterSignUpUrl: redirectUrl,
 						signUpUrl: '/signup'
 					});
 				} catch (err) {
