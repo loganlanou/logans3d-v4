@@ -201,6 +201,13 @@ func extractSessionToken(r *http.Request) string {
 	}
 
 	slog.Debug("=== EXTRACT: No session token found in any source ===")
+	if cookies := r.Cookies(); len(cookies) > 0 {
+		cookieNames := make([]string, 0, len(cookies))
+		for _, cookie := range cookies {
+			cookieNames = append(cookieNames, cookie.Name)
+		}
+		slog.Debug("=== EXTRACT: Cookies present on unauthenticated request ===", "cookies", cookieNames)
+	}
 	return ""
 }
 
