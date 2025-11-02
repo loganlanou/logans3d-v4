@@ -34,17 +34,26 @@ func ClerkHandshakeMiddleware() echo.MiddlewareFunc {
 			handshake := c.QueryParam("__clerk_handshake")
 			if handshake == "" {
 				if cookie, err := c.Cookie("__clerk_handshake"); err == nil && cookie.Value != "" {
-					slog.Debug("=== HANDSHAKE: Found handshake cookie, processing ===")
-					handshake = cookie.Value
+					if sessionCookie, err := c.Request().Cookie("__session"); err == nil && sessionCookie.Value != "" {
+						slog.Debug("=== HANDSHAKE: Handshake cookie present but session exists, skipping ===")
+					} else {
+						slog.Debug("=== HANDSHAKE: Found handshake cookie, processing ===")
+						handshake = cookie.Value
+					}
 					// Clear the cookie so it doesn't keep triggering
+					secure := isSecureRequest(c)
+					sameSite := http.SameSiteLaxMode
+					if secure {
+						sameSite = http.SameSiteNoneMode
+					}
 					c.SetCookie(&http.Cookie{
 						Name:     "__clerk_handshake",
 						Value:    "",
 						Path:     "/",
 						MaxAge:   -1,
-						HttpOnly: true,
-						Secure:   true,
-						SameSite: http.SameSiteLaxMode,
+						HttpOnly: false,
+						Secure:   secure,
+						SameSite: sameSite,
 					})
 				}
 			}
@@ -133,6 +142,19 @@ func ClerkAuthMiddleware(storage *storage.Storage) echo.MiddlewareFunc {
 	}
 }
 
+func isSecureRequest(c echo.Context) bool {
+	if c.Request().TLS != nil {
+		return true
+	}
+	if strings.EqualFold(c.Scheme(), "https") {
+		return true
+	}
+	if proto := c.Request().Header.Get("X-Forwarded-Proto"); strings.EqualFold(proto, "https") {
+		return true
+	}
+	return false
+}
+
 // processClerkHandshake extracts session JWT from Clerk's handshake and sets it as a cookie
 func processClerkHandshake(c echo.Context, handshakeJWT string) error {
 	// Decode the handshake JWT to extract cookie instructions
@@ -168,18 +190,24 @@ func processClerkHandshake(c echo.Context, handshakeJWT string) error {
 
 			slog.Debug("=== HANDSHAKE: Extracted session token ===", "token_prefix", sessionToken[:min(len(sessionToken), 20)])
 
-			// Set the __session cookie with Secure: false for localhost
+			// Set the __session cookie with appropriate security attributes
+			secure := isSecureRequest(c)
+			sameSite := http.SameSiteLaxMode
+			if secure {
+				sameSite = http.SameSiteNoneMode
+			}
+
 			c.SetCookie(&http.Cookie{
 				Name:     "__session",
 				Value:    sessionToken,
 				Path:     "/",
 				HttpOnly: true,
-				Secure:   false, // Allow on HTTP for localhost
-				SameSite: http.SameSiteLaxMode,
+				Secure:   secure,
+				SameSite: sameSite,
 				MaxAge:   31536000, // 1 year (same as Clerk's default)
 			})
 
-			slog.Info("=== HANDSHAKE: Set __session cookie for localhost ===")
+			slog.Info("=== HANDSHAKE: Set __session cookie ===")
 			return nil
 		}
 	}
