@@ -32,6 +32,22 @@ func ClerkHandshakeMiddleware() echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			// Check for __clerk_handshake parameter (Clerk's cookie-setting mechanism)
 			handshake := c.QueryParam("__clerk_handshake")
+			if handshake == "" {
+				if cookie, err := c.Cookie("__clerk_handshake"); err == nil && cookie.Value != "" {
+					slog.Debug("=== HANDSHAKE: Found handshake cookie, processing ===")
+					handshake = cookie.Value
+					// Clear the cookie so it doesn't keep triggering
+					c.SetCookie(&http.Cookie{
+						Name:     "__clerk_handshake",
+						Value:    "",
+						Path:     "/",
+						MaxAge:   -1,
+						HttpOnly: true,
+						Secure:   true,
+						SameSite: http.SameSiteLaxMode,
+					})
+				}
+			}
 			if handshake != "" {
 				slog.Debug("=== HANDSHAKE: Processing Clerk handshake ===")
 				// Extract and manually set session cookie without Secure flag for localhost
