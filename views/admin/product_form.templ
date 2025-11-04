@@ -32,11 +32,10 @@ templ ProductForm(c echo.Context, product *db.Product, categories []db.Category,
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8" x-data="{ submitting: false }">
 				<div class="bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700 p-6">
 					<form
+						method="POST"
 						if product != nil {
-							method="POST"
 							action={ templ.SafeURL(fmt.Sprintf("/admin/product/%s", product.ID)) }
 						} else {
-							method="POST"
 							action="/admin/product"
 						}
 						enctype="multipart/form-data"
