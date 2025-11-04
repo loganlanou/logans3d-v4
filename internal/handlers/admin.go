@@ -606,6 +606,8 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	productID := c.Param("id")
 
+	slog.Debug("product update form submitted", "product_id", productID)
+
 	name := c.FormValue("name")
 	description := c.FormValue("description")
 	shortDescription := c.FormValue("short_description")
@@ -614,11 +616,13 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
 	isActiveStr := c.FormValue("is_active")
+	isFeaturedStr := c.FormValue("is_featured")
 	isPremiumCollectionStr := c.FormValue("is_premium_collection")
 
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
-		return c.String(http.StatusBadRequest, "Invalid price")
+		slog.Error("failed to parse product price", "error", err, "price_str", priceStr, "product_id", productID)
+		return c.String(http.StatusBadRequest, "Invalid price format. Please enter a valid number.")
 	}
 
 	stockQuantity := int64(0)
@@ -630,15 +634,12 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	}
 
 	isActive := isActiveStr == "on" || isActiveStr == "true"
+	isFeatured := isFeaturedStr == "on" || isFeaturedStr == "true"
 	isPremiumCollection := isPremiumCollectionStr == "on" || isPremiumCollectionStr == "true"
 
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 
-	// Get current product to preserve is_featured
-	currentProduct, err := h.storage.Queries.GetProduct(c.Request().Context(), productID)
-	if err != nil {
-		return c.String(http.StatusInternalServerError, "Failed to get product")
-	}
+	slog.Debug("parsed form values", "name", name, "price", price, "is_active", isActive, "is_featured", isFeatured, "is_premium", isPremiumCollection)
 
 	params := db.UpdateProductParams{
 		ID:               productID,
@@ -653,14 +654,17 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Valid: false},
 		IsActive:         sql.NullBool{Bool: isActive, Valid: true},
-		IsFeatured:       currentProduct.IsFeatured,
+		IsFeatured:       sql.NullBool{Bool: isFeatured, Valid: true},
 		IsPremium:        sql.NullBool{Bool: isPremiumCollection, Valid: true},
 	}
 
 	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)
 	if err != nil {
+		slog.Error("failed to update product in database", "error", err, "product_id", productID, "product_name", name)
 		return c.String(http.StatusInternalServerError, "Failed to update product: "+err.Error())
 	}
+
+	slog.Debug("product updated successfully in database", "product_id", productID, "product_name", name)
 
 	// Handle image upload
 	file, err := c.FormFile("image")
@@ -696,7 +700,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 			existingImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
 			if err != nil {
 				// Log error but assume no existing images
-				fmt.Printf("Failed to get existing product images: %v\n", err)
+				slog.Error("failed to get existing product images", "error", err, "product_id", productID)
 				existingImages = []db.ProductImage{}
 			}
 			isPrimary := len(existingImages) == 0 // First image is primary
@@ -717,12 +721,15 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 			_, err = h.storage.Queries.CreateProductImage(c.Request().Context(), imageParams)
 			if err != nil {
 				// Log error but don't fail the product update
-				fmt.Printf("Failed to save product image to database: %v\n", err)
+				slog.Error("failed to save product image to database", "error", err, "product_id", productID, "filename", imageFilename)
+			} else {
+				slog.Debug("product image saved successfully", "product_id", productID, "filename", imageFilename)
 			}
 		}
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/admin")
+	slog.Debug("product update completed, redirecting to edit page", "product_id", productID)
+	return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID)
 }
 
 func (h *AdminHandler) HandleDeleteProduct(c echo.Context) error {
