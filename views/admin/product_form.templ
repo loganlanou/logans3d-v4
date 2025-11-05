@@ -125,7 +125,7 @@ templ ProductForm(c echo.Context, product *db.Product, categories []db.Category,
 									<input
 										type="checkbox"
 										name="is_premium_collection"
-										if product != nil && product.IsFeatured.Valid && product.IsFeatured.Bool {
+										if product != nil && product.IsPremium.Valid && product.IsPremium.Bool {
 											checked
 										}
 										class="w-4 h-4 text-emerald-600 bg-slate-900 border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
