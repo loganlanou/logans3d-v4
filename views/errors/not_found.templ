@@ -6,10 +6,15 @@ import (
 )
 
 templ NotFound(c echo.Context, path string) {
-	@layout.Base(c, layout.Meta{
-		Title:       "Page Not Found - Logan's 3D Creations",
-		Description: "The page you're looking for could not be found.",
-		Keywords:    "3D printing, custom creations",
+	@layout.Base(c, layout.PageMeta{
+		Title:        "Page Not Found - Logan's 3D Creations",
+		Description:  "The page you're looking for could not be found.",
+		Keywords:     []string{"3D printing", "custom creations"},
+		OGType:       "website",
+		OGTitle:      "Page Not Found",
+		OGDescription: "The page you're looking for could not be found.",
+		OGSiteName:   "Logan's 3D Creations",
+		TwitterCard:  "summary",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden flex items-center justify-center">
 			<!-- Animated Background Elements -->

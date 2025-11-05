@@ -6,10 +6,10 @@ import (
 )
 
 templ Terms(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Terms of Service - Logan's 3D Creations",
 		Description: "Terms of service and user agreement for Logan's 3D Creations.",
-		Keywords:    "terms of service, user agreement, legal terms",
+		Keywords:     []string{"terms of service, user agreement, legal terms"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

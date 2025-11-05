@@ -6,10 +6,10 @@ import (
 )
 
 templ CustomPolicy(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Custom Work Policy - Logan's 3D Creations",
 		Description: "Learn about our custom 3D printing services, design requirements, pricing, timelines, and policies for bespoke projects and prototyping.",
-		Keywords:    "custom 3D printing, bespoke design, prototype policy, custom work terms",
+		Keywords:     []string{"custom 3D printing, bespoke design, prototype policy, custom work terms"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

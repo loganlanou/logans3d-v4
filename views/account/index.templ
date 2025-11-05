@@ -9,7 +9,7 @@ import (
 )
 
 templ Index(c echo.Context, user *db.User, orders []db.Order) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "My Account - Logan's 3D Creations",
 		Description: "Manage your account and view order history",
 	}) {

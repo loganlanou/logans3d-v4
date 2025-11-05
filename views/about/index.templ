@@ -6,10 +6,10 @@ import (
 )
 
 templ Index(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "About - Logan's 3D Creations",
 		Description: "Learn about Logan's 3D printing journey",
-		Keywords:    "3D printing, Logan, about us",
+		Keywords:     []string{"3D printing, Logan, about us"},
 	}) {
 		@AboutContent()
 	}

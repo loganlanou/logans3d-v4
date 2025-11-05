@@ -6,10 +6,10 @@ import (
 )
 
 templ Shipping(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Shipping & Returns - Logan's 3D Creations",
 		Description: "Learn about our shipping methods, delivery times, return policy, and refund procedures for 3D printed products and custom orders.",
-		Keywords:    "shipping, returns, refunds, delivery, policy, 3D printing",
+		Keywords:     []string{"shipping, returns, refunds, delivery, policy, 3D printing"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

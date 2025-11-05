@@ -8,7 +8,7 @@ import (
 )
 
 templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       fmt.Sprintf("Order #%s - Logan's 3D Creations", order.ID[:8]),
 		Description: "View order details and tracking information",
 	}) {

@@ -6,10 +6,10 @@ import (
 )
 
 templ Index(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Contact Us - Logan's 3D Creations",
 		Description: "Get in touch with Logan's 3D Creations. Contact us for custom quotes, project consultations, or general questions about our 3D printing services.",
-		Keywords:    "contact, 3D printing services, custom quotes, consultations, support",
+		Keywords:     []string{"contact, 3D printing services, custom quotes, consultations, support"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->

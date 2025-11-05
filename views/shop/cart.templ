@@ -6,10 +6,10 @@ import (
 )
 
 templ Cart(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Shopping Cart - Logan's 3D Creations",
 		Description: "Review your items and proceed to checkout",
-		Keywords:    "shopping cart, checkout, 3D printed items",
+		Keywords:     []string{"shopping cart, checkout, 3D printed items"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->

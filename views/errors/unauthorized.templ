@@ -6,10 +6,15 @@ import (
 )
 
 templ Unauthorized(c echo.Context, hasClientCookie bool, attemptedPath string) {
-	@layout.Base(c, layout.Meta{
-		Title:       "Authentication Required - Logan's 3D Creations",
-		Description: "Please sign in to access this page.",
-		Keywords:    "3D printing, custom creations",
+	@layout.Base(c, layout.PageMeta{
+		Title:        "Authentication Required - Logan's 3D Creations",
+		Description:  "Please sign in to access this page.",
+		Keywords:     []string{"3D printing", "custom creations"},
+		OGType:       "website",
+		OGTitle:      "Authentication Required",
+		OGDescription: "Please sign in to access this page.",
+		OGSiteName:   "Logan's 3D Creations",
+		TwitterCard:  "summary",
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden flex items-center justify-center">
 			<!-- Animated Background Elements -->

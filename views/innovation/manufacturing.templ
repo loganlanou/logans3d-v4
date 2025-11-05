@@ -6,10 +6,10 @@ import (
 )
 
 templ Manufacturing(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Advanced Manufacturing - Logan's 3D Creations",
 		Description: "Explore our advanced manufacturing capabilities including multi-material printing, precision engineering, and state-of-the-art 3D printing technology.",
-		Keywords:    "advanced manufacturing, 3D printing technology, multi-material printing, precision engineering, digital fabrication",
+		Keywords:     []string{"advanced manufacturing, 3D printing technology, multi-material printing, precision engineering, digital fabrication"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Background Elements -->

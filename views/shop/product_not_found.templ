@@ -8,10 +8,10 @@ import (
 )
 
 templ ProductNotFound(c echo.Context, slug string, categories []db.Category, relatedProducts []ProductWithImage) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Product Not Available - Logan's 3D Creations",
 		Description: "This product is no longer available. Browse our other amazing 3D printed creations.",
-		Keywords:    "3D printed, collectibles, custom printing",
+		Keywords:     []string{"3D printed, collectibles, custom printing"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->

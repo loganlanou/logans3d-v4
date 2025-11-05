@@ -6,10 +6,10 @@ import (
 )
 
 templ Index(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Innovation & Quality - Logan's 3D Creations",
 		Description: "Discover our commitment to innovation and quality through state-of-the-art 3D printing technology, precision engineering, and creative excellence.",
-		Keywords:    "3D printing innovation, quality assurance, precision manufacturing, technology excellence, creative solutions",
+		Keywords:     []string{"3D printing innovation, quality assurance, precision manufacturing, technology excellence, creative solutions"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Metal Modern Background Elements -->

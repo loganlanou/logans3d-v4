@@ -8,10 +8,10 @@ import (
 )
 
 templ Product(c echo.Context, product db.Product, category db.Category, images []db.ProductImage, relatedProducts []ProductWithImage) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       fmt.Sprintf("%s - Logan's 3D Creations", product.Name),
 		Description: product.Description.String,
-		Keywords:    fmt.Sprintf("3D printed, %s, collectible, custom printing", product.Name),
+		Keywords:    []string{"3D printed", product.Name, "collectible", "custom printing"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->

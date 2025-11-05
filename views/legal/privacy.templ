@@ -6,10 +6,10 @@ import (
 )
 
 templ Privacy(c echo.Context) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Privacy Policy - Logan's 3D Creations",
 		Description: "Our privacy policy explains how Logan's 3D Creations collects, uses, and protects your personal information when you use our website and services.",
-		Keywords:    "privacy policy, data protection, personal information, GDPR compliance",
+		Keywords:     []string{"privacy policy, data protection, personal information, GDPR compliance"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

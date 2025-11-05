@@ -23,10 +23,10 @@ type CollectionTier struct {
 }
 
 templ Premium(c echo.Context, collections []CollectionTier, featuredProducts []ProductWithImage) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Premium Collections - Logan's 3D Creations",
 		Description: "Discover our premium collection tiers with the most detailed models, bundled discounts, and exclusive variations.",
-		Keywords:    "premium 3D prints, collector items, detailed models, bundle discounts, exclusive collections",
+		Keywords:     []string{"premium 3D prints, collector items, detailed models, bundle discounts, exclusive collections"},
 	}) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Enhanced Animated Background Elements -->

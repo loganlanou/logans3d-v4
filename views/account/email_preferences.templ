@@ -7,7 +7,7 @@ import (
 )
 
 templ EmailPreferences(c echo.Context, prefs *db.EmailPreference) {
-	@layout.Base(c, layout.Meta{
+	@layout.Base(c, layout.PageMeta{
 		Title:       "Email Preferences - Logan's 3D Creations",
 		Description: "Manage your email preferences",
 	}) {
