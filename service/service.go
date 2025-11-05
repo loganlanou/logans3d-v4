@@ -230,8 +230,8 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/product/:id/toggle-premium", adminHandler.HandleToggleProductPremium)
 	admin.POST("/product/:id/toggle-active", adminHandler.HandleToggleProductActive)
 	admin.POST("/product/:id/toggle-new", adminHandler.HandleToggleProductNew)
-	admin.POST("/product/image/:imageId/delete", adminHandler.HandleDeleteProductImage)
-	admin.POST("/product/image/:imageId/set-primary", adminHandler.HandleSetPrimaryProductImage)
+	admin.DELETE("/product/image/:imageId/delete", adminHandler.HandleDeleteProductImage)
+	admin.PUT("/product/image/:imageId/set-primary", adminHandler.HandleSetPrimaryProductImage)
 	admin.GET("/product/search", adminHandler.HandleProductSearch)
 
 	// Category management routes

@@ -71,6 +71,9 @@ templ AdminBase(c echo.Context, title string) {
 			<!-- templUI dialog component -->
 			@dialog.Script()
 			<script defer nonce={ templ.GetNonce(ctx) } src="/public/js/chart.min.js"></script>
+
+			<!-- Admin JavaScript (toast notifications, etc.) -->
+			<script defer src="/public/js/admin.js"></script>
 		</head>
 		<body class="admin-root" x-data={ getAlpineData(c) }>
 			<!-- Sidebar -->

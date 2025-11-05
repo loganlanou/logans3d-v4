@@ -43,10 +43,28 @@
   --admin-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
   --admin-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
 
-  /* TemplUI Component Colors - Required for TemplUI components */
-  --card: #1e293b;                  /* slate-800 - card background */
-  --card-foreground: #f8fafc;       /* slate-50 - card text */
-  --muted-foreground: #cbd5e1;      /* slate-300 - muted text */
+}
+
+/* TemplUI Component Colors - Tailwind v4 @theme directive */
+@theme {
+  --color-card: #1e293b;                  /* slate-800 - card background */
+  --color-card-foreground: #f8fafc;       /* slate-50 - card text */
+  --color-muted-foreground: #cbd5e1;      /* slate-300 - muted text */
+
+  /* Additional TemplUI Theme Variables */
+  --color-background: #0f172a;            /* slate-900 - page background */
+  --color-foreground: #f8fafc;            /* slate-50 - main text */
+  --color-primary: #3b82f6;               /* blue-500 - primary buttons */
+  --color-primary-foreground: #ffffff;    /* white - text on primary */
+  --color-secondary: #334155;             /* slate-700 - secondary buttons */
+  --color-secondary-foreground: #f8fafc;  /* slate-50 - text on secondary */
+  --color-destructive: #ef4444;           /* red-500 - destructive buttons */
+  --color-destructive-foreground: #ffffff; /* white - text on destructive */
+  --color-accent: #1e293b;                /* slate-800 - accent background */
+  --color-accent-foreground: #f8fafc;     /* slate-50 - accent text */
+  --color-border: #374151;                /* gray-700 - borders */
+  --color-input: #1e293b;                 /* slate-800 - input background */
+  --color-ring: #3b82f6;                  /* blue-500 - focus ring */
 }
 
 @layer base {
@@ -730,4 +748,36 @@
 /* Dialog overlay backdrop */
 [data-tui-dialog-backdrop] {
   background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ===================================
+   HTMX Loading States
+   =================================== */
+
+/* HTMX Indicator - Hidden by default */
+.htmx-indicator {
+  opacity: 0;
+  transition: opacity 200ms ease-in-out;
+}
+
+/* Show indicator when request is in progress */
+.htmx-request .htmx-indicator {
+  opacity: 1;
+}
+
+/* Custom visibility classes for HTMX states */
+.htmx-indicator\:hidden {
+  display: inline;
+}
+
+.htmx-request .htmx-indicator\:hidden {
+  display: none;
+}
+
+.htmx-indicator\:block {
+  display: none;
+}
+
+.htmx-request .htmx-indicator\:block {
+  display: inline-block;
 }

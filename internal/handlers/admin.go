@@ -496,7 +496,7 @@ func (h *AdminHandler) HandleProductForm(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
 	}
 
-	return Render(c, admin.ProductForm(c, product, categories, productImages))
+	return Render(c, admin.ProductFormPage(c, product, categories, productImages))
 }
 
 func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
@@ -600,7 +600,15 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 		}
 	}
 
-	return c.Redirect(http.StatusSeeOther, "/admin")
+	// Check if this is an HTMX request
+	if c.Request().Header.Get("HX-Request") == "true" {
+		// Trigger toast notification and redirect
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Product created successfully!", "type": "success"}}`)
+		c.Response().Header().Set("HX-Redirect", "/admin/products")
+		return c.NoContent(http.StatusOK)
+	}
+
+	return c.Redirect(http.StatusSeeOther, "/admin/products")
 }
 
 func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
@@ -615,14 +623,24 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	categoryID := c.FormValue("category_id")
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
-	isActiveStr := c.FormValue("is_active")
-	isFeaturedStr := c.FormValue("is_featured")
-	isPremiumCollectionStr := c.FormValue("is_premium_collection")
 
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
 		slog.Error("failed to parse product price", "error", err, "price_str", priceStr, "product_id", productID)
-		return c.String(http.StatusBadRequest, "Invalid price format. Please enter a valid number.")
+		errMsg := "Invalid price format. Please enter a valid number."
+		// Check if this is an HTMX request
+		if c.Request().Header.Get("HX-Request") == "true" {
+			errorHTML := fmt.Sprintf(`
+				<div class="mb-6 p-4 bg-red-600/20 border border-red-600 rounded-lg text-red-400 flex items-center gap-2">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+					<span>%s</span>
+				</div>
+			`, errMsg)
+			return c.HTML(http.StatusBadRequest, errorHTML)
+		}
+		return c.String(http.StatusBadRequest, errMsg)
 	}
 
 	stockQuantity := int64(0)
@@ -633,13 +651,9 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		}
 	}
 
-	isActive := isActiveStr == "on" || isActiveStr == "true"
-	isFeatured := isFeaturedStr == "on" || isFeaturedStr == "true"
-	isPremiumCollection := isPremiumCollectionStr == "on" || isPremiumCollectionStr == "true"
-
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 
-	slog.Debug("parsed form values", "name", name, "price", price, "is_active", isActive, "is_featured", isFeatured, "is_premium", isPremiumCollection)
+	slog.Debug("parsed form values", "name", name, "price", price, "slug", slug)
 
 	params := db.UpdateProductParams{
 		ID:               productID,
@@ -653,82 +667,162 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		StockQuantity:    sql.NullInt64{Int64: stockQuantity, Valid: true},
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Valid: false},
-		IsActive:         sql.NullBool{Bool: isActive, Valid: true},
-		IsFeatured:       sql.NullBool{Bool: isFeatured, Valid: true},
-		IsPremium:        sql.NullBool{Bool: isPremiumCollection, Valid: true},
+		IsActive:         sql.NullBool{Valid: false},
+		IsFeatured:       sql.NullBool{Valid: false},
+		IsPremium:        sql.NullBool{Valid: false},
 	}
 
 	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)
 	if err != nil {
 		slog.Error("failed to update product in database", "error", err, "product_id", productID, "product_name", name)
-		return c.String(http.StatusInternalServerError, "Failed to update product: "+err.Error())
+		errMsg := "Failed to update product: " + err.Error()
+		// Check if this is an HTMX request
+		if c.Request().Header.Get("HX-Request") == "true" {
+			errorHTML := fmt.Sprintf(`
+				<div class="mb-6 p-4 bg-red-600/20 border border-red-600 rounded-lg text-red-400 flex items-center gap-2">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+					<span>%s</span>
+				</div>
+			`, errMsg)
+			return c.HTML(http.StatusInternalServerError, errorHTML)
+		}
+		return c.String(http.StatusInternalServerError, errMsg)
 	}
 
 	slog.Debug("product updated successfully in database", "product_id", productID, "product_name", name)
 
-	// Handle image upload
-	file, err := c.FormFile("image")
-	if err == nil && file != nil {
-		src, err := file.Open()
-		if err == nil {
-			defer src.Close()
+	// Handle multiple image uploads
+	form, err := c.MultipartForm()
+	if err == nil && form != nil {
+		files := form.File["images"]
+		if len(files) > 0 {
+			slog.Debug("processing multiple image uploads", "count", len(files), "product_id", productID)
 
 			uploadDir := "public/images/products"
 			if err := os.MkdirAll(uploadDir, 0755); err != nil {
+				slog.Error("failed to create images directory", "error", err)
+				if c.Request().Header.Get("HX-Request") == "true" {
+					errorHTML := `
+						<div class="mb-6 p-4 bg-red-600/20 border border-red-600 rounded-lg text-red-400 flex items-center gap-2">
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+							<span>Failed to create images directory</span>
+						</div>
+					`
+					return c.HTML(http.StatusInternalServerError, errorHTML)
+				}
 				return c.String(http.StatusInternalServerError, "Failed to create images directory")
 			}
 
-			ext := filepath.Ext(file.Filename)
-			filename := fmt.Sprintf("%s_%d%s", productID, time.Now().Unix(), ext)
-			filepath := filepath.Join(uploadDir, filename)
-
-			dst, err := os.Create(filepath)
-			if err != nil {
-				return c.String(http.StatusInternalServerError, "Failed to save image")
-			}
-			defer dst.Close()
-
-			if _, err = io.Copy(dst, src); err != nil {
-				return c.String(http.StatusInternalServerError, "Failed to save image")
-			}
-
-			// Save only the filename to database
-			// The view layer will build the full path
-			imageFilename := filename
-
-			// Check if there are existing images
+			// Check if there are existing images to determine primary and display order
 			existingImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
 			if err != nil {
-				// Log error but assume no existing images
 				slog.Error("failed to get existing product images", "error", err, "product_id", productID)
 				existingImages = []db.ProductImage{}
 			}
-			isPrimary := len(existingImages) == 0 // First image is primary
 
-			// Get next display order
-			displayOrder := int64(len(existingImages))
+			// Process each uploaded file
+			uploadedCount := 0
+			for i, file := range files {
+				slog.Debug("processing image file", "filename", file.Filename, "size", file.Size, "index", i)
 
-			// Save new image to database
-			imageParams := db.CreateProductImageParams{
-				ID:           uuid.New().String(),
-				ProductID:    productID,
-				ImageUrl:     imageFilename,
-				AltText:      sql.NullString{String: name, Valid: true},
-				DisplayOrder: sql.NullInt64{Int64: displayOrder, Valid: true},
-				IsPrimary:    sql.NullBool{Bool: isPrimary, Valid: true},
+				src, err := file.Open()
+				if err != nil {
+					slog.Error("failed to open uploaded file", "error", err, "filename", file.Filename)
+					continue
+				}
+
+				ext := filepath.Ext(file.Filename)
+				filename := fmt.Sprintf("%s_%d_%d%s", productID, time.Now().Unix(), i, ext)
+				filepath := filepath.Join(uploadDir, filename)
+
+				dst, err := os.Create(filepath)
+				if err != nil {
+					src.Close()
+					slog.Error("failed to create destination file", "error", err, "filepath", filepath)
+					continue
+				}
+
+				if _, err = io.Copy(dst, src); err != nil {
+					src.Close()
+					dst.Close()
+					os.Remove(filepath)
+					slog.Error("failed to copy file data", "error", err, "filename", filename)
+					continue
+				}
+
+				src.Close()
+				dst.Close()
+
+				// Save only the filename to database
+				imageFilename := filename
+
+				// First uploaded image becomes primary if no existing images
+				isPrimary := len(existingImages) == 0 && i == 0
+
+				// Display order continues from existing images
+				displayOrder := int64(len(existingImages) + i)
+
+				// Save new image to database
+				imageParams := db.CreateProductImageParams{
+					ID:           uuid.New().String(),
+					ProductID:    productID,
+					ImageUrl:     imageFilename,
+					AltText:      sql.NullString{String: name, Valid: true},
+					DisplayOrder: sql.NullInt64{Int64: displayOrder, Valid: true},
+					IsPrimary:    sql.NullBool{Bool: isPrimary, Valid: true},
+				}
+
+				_, err = h.storage.Queries.CreateProductImage(c.Request().Context(), imageParams)
+				if err != nil {
+					slog.Error("failed to save product image to database", "error", err, "product_id", productID, "filename", imageFilename)
+					// Don't delete the file, just continue
+				} else {
+					uploadedCount++
+					slog.Debug("product image saved successfully", "product_id", productID, "filename", imageFilename, "is_primary", isPrimary)
+				}
 			}
 
-			_, err = h.storage.Queries.CreateProductImage(c.Request().Context(), imageParams)
-			if err != nil {
-				// Log error but don't fail the product update
-				slog.Error("failed to save product image to database", "error", err, "product_id", productID, "filename", imageFilename)
-			} else {
-				slog.Debug("product image saved successfully", "product_id", productID, "filename", imageFilename)
-			}
+			slog.Debug("image upload completed", "product_id", productID, "uploaded_count", uploadedCount, "total_files", len(files))
 		}
 	}
 
-	slog.Debug("product update completed, redirecting to edit page", "product_id", productID)
+	slog.Debug("product update completed", "product_id", productID)
+
+	// Check if this is an HTMX request
+	if c.Request().Header.Get("HX-Request") == "true" {
+		// Fetch fresh data from database to show updated state
+		product, err := h.storage.Queries.GetProduct(c.Request().Context(), productID)
+		if err != nil {
+			slog.Error("failed to fetch updated product", "error", err, "product_id", productID)
+			c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Failed to fetch updated product", "type": "error"}}`)
+			return c.String(http.StatusInternalServerError, "Failed to fetch updated product")
+		}
+
+		productImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+		if err != nil {
+			slog.Error("failed to fetch product images", "error", err, "product_id", productID)
+			productImages = []db.ProductImage{}
+		}
+
+		categories, err := h.storage.Queries.ListCategories(c.Request().Context())
+		if err != nil {
+			slog.Error("failed to fetch categories", "error", err)
+			c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Failed to fetch categories", "type": "error"}}`)
+			return c.String(http.StatusInternalServerError, "Failed to fetch categories")
+		}
+
+		// Trigger toast notification
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Product updated successfully!", "type": "success"}}`)
+
+		// Return the updated form partial with fresh data
+		return Render(c, admin.ProductFormPartial(c, &product, categories, productImages))
+	}
+
+	// Standard form submission - redirect
 	return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID)
 }
 
@@ -747,25 +841,86 @@ func (h *AdminHandler) HandleDeleteProductImage(c echo.Context) error {
 	imageID := c.Param("imageId")
 	productID := c.QueryParam("product_id")
 
+	slog.Debug("deleting product image", "image_id", imageID, "product_id", productID)
+
 	// Get the image before deleting to remove file
-	image, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+	images, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
 	if err == nil {
 		// Find and delete the file
-		for _, img := range image {
+		for _, img := range images {
 			if img.ID == imageID {
 				uploadDir := "public/images/products"
 				filepath := filepath.Join(uploadDir, img.ImageUrl)
 				os.Remove(filepath)
+				slog.Debug("deleted image file from filesystem", "filepath", filepath)
 				break
 			}
 		}
 	}
 
+	// Delete from database
 	err = h.storage.Queries.DeleteProductImage(c.Request().Context(), imageID)
 	if err != nil {
+		slog.Error("failed to delete product image from database", "error", err, "image_id", imageID)
+		if c.Request().Header.Get("HX-Request") == "true" {
+			errorHTML := `
+				<div class="mb-6 p-4 bg-red-600/20 border border-red-600 rounded-lg text-red-400 flex items-center gap-2">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+					<span>Failed to delete image</span>
+				</div>
+			`
+			return c.HTML(http.StatusInternalServerError, errorHTML)
+		}
 		return c.String(http.StatusInternalServerError, "Failed to delete image")
 	}
 
+	slog.Debug("product image deleted successfully", "image_id", imageID)
+
+	// Re-query images for this product
+	updatedImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+	if err != nil {
+		slog.Error("failed to re-query product images after delete", "error", err, "product_id", productID)
+		if c.Request().Header.Get("HX-Request") == "true" {
+			return c.String(http.StatusInternalServerError, "Failed to refresh images")
+		}
+		return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID)
+	}
+
+	// Check if there's no primary image and we have images remaining
+	if len(updatedImages) > 0 {
+		hasPrimary := false
+		for _, img := range updatedImages {
+			if img.IsPrimary.Valid && img.IsPrimary.Bool {
+				hasPrimary = true
+				break
+			}
+		}
+
+		// If no primary image, set the first (oldest) image as primary
+		if !hasPrimary {
+			slog.Debug("no primary image found after delete, setting oldest image as primary", "image_id", updatedImages[0].ID)
+			err = h.storage.Queries.SetPrimaryProductImage(c.Request().Context(), updatedImages[0].ID)
+			if err != nil {
+				slog.Error("failed to set new primary image after delete", "error", err, "image_id", updatedImages[0].ID)
+			} else {
+				// Re-query again to get updated primary status
+				updatedImages, err = h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+				if err != nil {
+					slog.Error("failed to re-query images after setting new primary", "error", err, "product_id", productID)
+				}
+			}
+		}
+	}
+
+	// Check if this is an HTMX request
+	if c.Request().Header.Get("HX-Request") == "true" {
+		// Render the ProductImagesGrid component
+		return admin.ProductImagesGrid(productID, updatedImages).Render(c.Request().Context(), c.Response().Writer)
+	}
+
+	// Fallback redirect for non-HTMX requests
 	if productID != "" {
 		return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID)
 	}
@@ -776,14 +931,60 @@ func (h *AdminHandler) HandleSetPrimaryProductImage(c echo.Context) error {
 	imageID := c.Param("imageId")
 	productID := c.QueryParam("product_id")
 
-	err := h.storage.Queries.SetPrimaryProductImage(c.Request().Context(), db.SetPrimaryProductImageParams{
-		ID:        imageID,
-		ProductID: productID,
-	})
+	slog.Debug("setting primary product image", "image_id", imageID, "product_id", productID)
+
+	// First, unset all primary images for this product
+	err := h.storage.Queries.UnsetAllPrimaryProductImages(c.Request().Context(), productID)
 	if err != nil {
+		slog.Error("failed to unset primary product images", "error", err, "product_id", productID)
+		if c.Request().Header.Get("HX-Request") == "true" {
+			errorHTML := `
+				<div class="mb-6 p-4 bg-red-600/20 border border-red-600 rounded-lg text-red-400 flex items-center gap-2">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+					<span>Failed to update primary image</span>
+				</div>
+			`
+			return c.HTML(http.StatusInternalServerError, errorHTML)
+		}
+		return c.String(http.StatusInternalServerError, "Failed to update primary image")
+	}
+
+	// Then set the new primary image
+	err = h.storage.Queries.SetPrimaryProductImage(c.Request().Context(), imageID)
+	if err != nil {
+		slog.Error("failed to set primary product image", "error", err, "image_id", imageID, "product_id", productID)
+		if c.Request().Header.Get("HX-Request") == "true" {
+			errorHTML := `
+				<div class="mb-6 p-4 bg-red-600/20 border border-red-600 rounded-lg text-red-400 flex items-center gap-2">
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+					</svg>
+					<span>Failed to set primary image</span>
+				</div>
+			`
+			return c.HTML(http.StatusInternalServerError, errorHTML)
+		}
 		return c.String(http.StatusInternalServerError, "Failed to set primary image")
 	}
 
+	slog.Debug("primary image set successfully", "image_id", imageID)
+
+	// Check if this is an HTMX request
+	if c.Request().Header.Get("HX-Request") == "true" {
+		// Re-query images for this product
+		updatedImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
+		if err != nil {
+			slog.Error("failed to re-query product images after setting primary", "error", err, "product_id", productID)
+			return c.String(http.StatusInternalServerError, "Failed to refresh images")
+		}
+
+		// Render the ProductImagesGrid component
+		return Render(c, admin.ProductImagesGrid(productID, updatedImages))
+	}
+
+	// Fallback redirect for non-HTMX requests
 	if productID != "" {
 		return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID)
 	}

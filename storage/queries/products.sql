@@ -101,10 +101,15 @@ WHERE id = ?;
 -- name: DeleteProductImage :exec
 DELETE FROM product_images WHERE id = ?;
 
+-- name: UnsetAllPrimaryProductImages :exec
+UPDATE product_images
+SET is_primary = FALSE
+WHERE product_id = ?;
+
 -- name: SetPrimaryProductImage :exec
 UPDATE product_images
-SET is_primary = CASE WHEN id = ? THEN TRUE ELSE FALSE END
-WHERE product_id = ?;
+SET is_primary = TRUE
+WHERE id = ?;
 
 -- name: UpdateProductPrice :exec
 UPDATE products
