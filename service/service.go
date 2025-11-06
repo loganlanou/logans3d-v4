@@ -19,6 +19,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
 	"github.com/loganlanou/logans3d-v4/internal/jobs"
+	"github.com/loganlanou/logans3d-v4/internal/recaptcha"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -1508,6 +1509,19 @@ func (s *Service) handleContactSubmit(c echo.Context) error {
 	subject := c.FormValue("subject")
 	message := c.FormValue("message")
 	newsletter := c.FormValue("newsletter") == "true"
+	recaptchaToken := c.FormValue("g-recaptcha-response")
+
+	// Validate reCAPTCHA
+	valid, score, err := recaptcha.IsValid(recaptchaToken)
+	if err != nil {
+		slog.Error("recaptcha verification error", "error", err)
+		return c.HTML(http.StatusBadRequest, `<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">reCAPTCHA verification failed. Please try again.</div>`)
+	}
+
+	if !valid {
+		slog.Debug("recaptcha verification failed", "score", score)
+		return c.HTML(http.StatusBadRequest, `<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">reCAPTCHA verification failed. Please try again.</div>`)
+	}
 
 	if strings.TrimSpace(firstName) == "" || strings.TrimSpace(lastName) == "" {
 		return c.HTML(http.StatusBadRequest, `<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">First and last name are required.</div>`)
@@ -1537,7 +1551,7 @@ func (s *Service) handleContactSubmit(c echo.Context) error {
 		phoneNull = sql.NullString{String: phone, Valid: true}
 	}
 
-	_, err := s.storage.Queries.CreateContactRequest(ctx, db.CreateContactRequestParams{
+	_, err = s.storage.Queries.CreateContactRequest(ctx, db.CreateContactRequestParams{
 		ID:                  id,
 		FirstName:           firstName,
 		LastName:            lastName,
@@ -1551,6 +1565,7 @@ func (s *Service) handleContactSubmit(c echo.Context) error {
 		Referrer:            sql.NullString{String: referrer, Valid: true},
 		Status:              sql.NullString{String: "new", Valid: true},
 		Priority:            sql.NullString{String: "normal", Valid: true},
+		RecaptchaScore:      sql.NullFloat64{Float64: score, Valid: true},
 	})
 
 	if err != nil {
@@ -1579,7 +1594,7 @@ func (s *Service) handleContactSubmit(c echo.Context) error {
 		}
 	}()
 
-	return c.HTML(http.StatusOK, `<div class="mb-4 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-emerald-300 text-sm">Thank you for your message! We'll get back to you soon.</div>`)
+	return c.HTML(http.StatusOK, `<div class="mb-4 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-emerald-300 text-sm">Thank you! We've received your request and will get back to you soon.</div>`)
 }
 
 func (s *Service) handlePortfolio(c echo.Context) error {

@@ -12,8 +12,9 @@ INSERT INTO contact_requests (
     user_agent,
     referrer,
     status,
-    priority
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    priority,
+    recaptcha_score
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: GetContactRequest :one

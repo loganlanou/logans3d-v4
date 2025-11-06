@@ -1,6 +1,7 @@
 package contact
 
 import (
+	"os"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
@@ -21,6 +22,8 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 						<div class="grid lg:grid-cols-2 gap-16 lg:gap-20">
 							<!-- Contact Form -->
 							<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+								<!-- reCAPTCHA v3 Script -->
+								<script src={ "https://www.google.com/recaptcha/api.js?render=" + os.Getenv("RECAPTCHA_SITE_KEY") }></script>
 								<h2 class="text-3xl font-bold text-white mb-8 group-hover:text-emerald-400 transition-colors duration-300">Send Us a Message</h2>
 								<div id="contact-form-messages"></div>
 								<form
@@ -28,10 +31,7 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 									class="space-y-6"
 									method="post"
 									action="/contact/submit"
-									hx-post="/contact/submit"
-									hx-target="#contact-form-messages"
-									hx-swap="innerHTML"
-									hx-on::after-request="if(event.detail.successful) document.getElementById('contact-form').reset()"
+									data-recaptcha-key={ os.Getenv("RECAPTCHA_SITE_KEY") }
 								>
 									<div class="grid md:grid-cols-2 gap-6">
 										<div>
@@ -116,24 +116,74 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 											Subscribe to our newsletter for updates and special offers
 										</label>
 									</div>
+									<!-- reCAPTCHA Privacy Notice -->
+									<p class="text-xs text-slate-400 text-center leading-relaxed">
+										This site is protected by reCAPTCHA and the Google
+										<a href="https://policies.google.com/privacy" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and
+										<a href="https://policies.google.com/terms" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Terms of Service</a> apply.
+									</p>
 									<button
 										type="submit"
-										class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-4 px-8 rounded-xl font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
+										id="submit-btn"
+										class="w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-4 px-8 rounded-xl font-semibold hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
 									>
-										<span class="htmx-indicator:hidden">Send Message</span>
-										<span class="htmx-indicator hidden">Sending...</span>
+										<span id="submit-text">Send Message</span>
 									</button>
 								</form>
 								<script>
-									document.getElementById('contact-form').addEventListener('submit', function(e) {
+									const form = document.getElementById('contact-form');
+									const siteKey = form.dataset.recaptchaKey;
+									const submitBtn = document.getElementById('submit-btn');
+									const submitText = document.getElementById('submit-text');
+									const messagesDiv = document.getElementById('contact-form-messages');
+
+									form.addEventListener('submit', async function(e) {
+										e.preventDefault();
+
+										// Validate email/phone requirement
 										const email = document.getElementById('email').value.trim();
 										const phone = document.getElementById('phone').value.trim();
 
 										if (!email && !phone) {
-											e.preventDefault();
-											const messages = document.getElementById('contact-form-messages');
-											messages.innerHTML = '<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">Please provide at least an email address or phone number.</div>';
+											messagesDiv.innerHTML = '<div class="mb-4 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">Please provide at least an email address or phone number.</div>';
 											return false;
+										}
+
+										try {
+											// Disable submit button
+											submitBtn.disabled = true;
+											submitText.textContent = 'Verifying...';
+
+											// Generate reCAPTCHA token
+											const token = await grecaptcha.execute(siteKey, {action: 'submit'});
+
+											// Update button text
+											submitText.textContent = 'Sending...';
+
+											// Add token to form data
+											const formData = new FormData(form);
+											formData.append('g-recaptcha-response', token);
+
+											// Submit form
+											const response = await fetch('/contact/submit', {
+												method: 'POST',
+												body: formData
+											});
+
+											const html = await response.text();
+											messagesDiv.innerHTML = html;
+
+											// Reset form on success
+											if (response.ok && html.includes('received your request')) {
+												form.reset();
+											}
+										} catch (error) {
+											console.error('Error submitting form:', error);
+											messagesDiv.innerHTML = '<div class="p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm">An error occurred. Please try again.</div>';
+										} finally {
+											// Re-enable submit button
+											submitBtn.disabled = false;
+											submitText.textContent = 'Send Message';
 										}
 									});
 								</script>
