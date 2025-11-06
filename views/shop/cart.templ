@@ -5,12 +5,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Cart(c echo.Context) {
-	@layout.Base(c, layout.PageMeta{
-		Title:       "Shopping Cart - Logan's 3D Creations",
-		Description: "Review your items and proceed to checkout",
-		Keywords:     []string{"shopping cart, checkout, 3D printed items"},
-	}) {
+templ Cart(c echo.Context, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

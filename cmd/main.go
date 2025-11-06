@@ -12,7 +12,9 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/loganlanou/logans3d-v4/service"
 	"github.com/loganlanou/logans3d-v4/storage"
+	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/errors"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
 func main() {
@@ -42,7 +44,7 @@ func main() {
 	e.HidePort = true
 
 	// Custom error handler for 404 and other errors
-	e.HTTPErrorHandler = customHTTPErrorHandler
+	e.HTTPErrorHandler = customHTTPErrorHandler(db.Queries)
 
 	// Middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -106,57 +108,71 @@ func main() {
 	}
 }
 
-func customHTTPErrorHandler(err error, c echo.Context) {
-	code := http.StatusInternalServerError
-	if he, ok := err.(*echo.HTTPError); ok {
-		code = he.Code
-	}
-
-	if code == http.StatusNotFound {
-		// Render custom 404 page
-		path := c.Request().URL.Path
-		slog.Info("404 not found", "path", path)
-		c.Response().Status = http.StatusNotFound
-		if renderErr := errors.NotFound(c, path).Render(c.Request().Context(), c.Response()); renderErr != nil {
-			slog.Error("failed to render 404 page", "error", renderErr)
-			c.String(http.StatusNotFound, "Page not found")
+func customHTTPErrorHandler(queries *db.Queries) echo.HTTPErrorHandler {
+	return func(err error, c echo.Context) {
+		code := http.StatusInternalServerError
+		if he, ok := err.(*echo.HTTPError); ok {
+			code = he.Code
 		}
-		return
-	}
 
-	if code == http.StatusUnauthorized {
-		// Render custom 401 page with auto-refresh capability
-		var attemptedPath string
-		if path, ok := c.Get("attempted_path").(string); ok && path != "" {
-			attemptedPath = path
-		} else {
-			attemptedPath = c.Request().URL.Path
-			if c.Request().URL.RawQuery != "" {
-				attemptedPath += "?" + c.Request().URL.RawQuery
+		if code == http.StatusNotFound {
+			// Render custom 404 page
+			path := c.Request().URL.Path
+			slog.Info("404 not found", "path", path)
+			c.Response().Status = http.StatusNotFound
+
+			// Build page metadata
+			meta := layout.NewPageMeta(c, queries)
+			meta.Title = "Page Not Found - Logan's 3D Creations"
+			meta.Description = "The page you're looking for could not be found."
+
+			if renderErr := errors.NotFound(c, path, meta).Render(c.Request().Context(), c.Response()); renderErr != nil {
+				slog.Error("failed to render 404 page", "error", renderErr)
+				c.String(http.StatusNotFound, "Page not found")
 			}
+			return
 		}
 
-		hasClientCookie := false
-		if val, ok := c.Get("has_client_cookie").(bool); ok {
-			hasClientCookie = val
+		if code == http.StatusUnauthorized {
+			// Render custom 401 page with auto-refresh capability
+			var attemptedPath string
+			if path, ok := c.Get("attempted_path").(string); ok && path != "" {
+				attemptedPath = path
+			} else {
+				attemptedPath = c.Request().URL.Path
+				if c.Request().URL.RawQuery != "" {
+					attemptedPath += "?" + c.Request().URL.RawQuery
+				}
+			}
+
+			hasClientCookie := false
+			if val, ok := c.Get("has_client_cookie").(bool); ok {
+				hasClientCookie = val
+			}
+
+			slog.Info("401 unauthorized", "path", attemptedPath, "has_client_cookie", hasClientCookie)
+			c.Response().Status = http.StatusUnauthorized
+
+			// Build page metadata
+			meta := layout.NewPageMeta(c, queries)
+			meta.Title = "Unauthorized - Logan's 3D Creations"
+			meta.Description = "You need to be logged in to access this page."
+
+			if renderErr := errors.Unauthorized(c, hasClientCookie, attemptedPath, meta).Render(c.Request().Context(), c.Response()); renderErr != nil {
+				slog.Error("failed to render 401 page", "error", renderErr)
+				c.String(http.StatusUnauthorized, "Unauthorized")
+			}
+			return
 		}
 
-		slog.Info("401 unauthorized", "path", attemptedPath, "has_client_cookie", hasClientCookie)
-		c.Response().Status = http.StatusUnauthorized
-		if renderErr := errors.Unauthorized(c, hasClientCookie, attemptedPath).Render(c.Request().Context(), c.Response()); renderErr != nil {
-			slog.Error("failed to render 401 page", "error", renderErr)
-			c.String(http.StatusUnauthorized, "Unauthorized")
-		}
-		return
-	}
-
-	// For other errors, use Echo's default error handler
-	c.Logger().Error(err)
-	if !c.Response().Committed {
-		if c.Request().Method == http.MethodHead {
-			c.NoContent(code)
-		} else {
-			c.String(code, http.StatusText(code))
+		// For other errors, use Echo's default error handler
+		c.Logger().Error(err)
+		if !c.Response().Committed {
+			if c.Request().Method == http.MethodHead {
+				c.NoContent(code)
+			} else {
+				c.String(code, http.StatusText(code))
+			}
 		}
 	}
 }

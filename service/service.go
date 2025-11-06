@@ -680,7 +680,13 @@ func (s *Service) handlePremium(c echo.Context) error {
 		count++
 	}
 
-	return Render(c, shop.Premium(c, collections, featuredProducts))
+	// Build page metadata
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Premium Collections - Logan's 3D Creations"
+	meta.Description = "Discover our premium collection tiers with the most detailed models, bundled discounts, and exclusive variations."
+	meta.Keywords = []string{"premium 3D prints", "collector items", "detailed models", "bundle discounts", "exclusive collections"}
+
+	return Render(c, shop.Premium(c, collections, featuredProducts, meta))
 }
 
 func (s *Service) handleProduct(c echo.Context) error {
@@ -822,8 +828,14 @@ func (s *Service) handleProductNotFound(c echo.Context, slug string) error {
 		}
 	}
 
+	// Build page metadata
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Product Not Available - Logan's 3D Creations"
+	meta.Description = "This product is no longer available. Browse our other amazing 3D printed creations."
+	meta.Keywords = []string{"3D printed", "collectibles", "custom printing"}
+
 	c.Response().Status = http.StatusNotFound
-	return Render(c, shop.ProductNotFound(c, slug, categories, relatedProducts))
+	return Render(c, shop.ProductNotFound(c, slug, categories, relatedProducts, meta))
 }
 
 func (s *Service) handleCategory(c echo.Context) error {
@@ -1053,7 +1065,13 @@ func (s *Service) handleCheckoutSuccess(c echo.Context) error {
 
 // handleCart renders the shopping cart page
 func (s *Service) handleCart(c echo.Context) error {
-	return Render(c, shop.Cart(c))
+	// Build page metadata
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Shopping Cart - Logan's 3D Creations"
+	meta.Description = "Review your items and proceed to checkout"
+	meta.Keywords = []string{"shopping cart", "checkout", "3D printed items"}
+
+	return Render(c, shop.Cart(c, meta))
 }
 
 // handleAccount renders the account page with profile and order history
@@ -1081,8 +1099,13 @@ func (s *Service) handleAccount(c echo.Context) error {
 		orders = []db.Order{}
 	}
 
+	// Build page metadata
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "My Account - Logan's 3D Creations"
+	meta.Description = "Manage your account and view order history"
+
 	// Render account page
-	return Render(c, account.Index(c, user, orders))
+	return Render(c, account.Index(c, user, orders, meta))
 }
 
 func (s *Service) handleAccountOrderDetail(c echo.Context) error {
@@ -1121,8 +1144,13 @@ func (s *Service) handleAccountOrderDetail(c echo.Context) error {
 		orderItems = []db.OrderItem{}
 	}
 
+	// Build page metadata
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = fmt.Sprintf("Order #%s - Logan's 3D Creations", order.ID[:8])
+	meta.Description = "View order details and tracking information"
+
 	// Render order detail page
-	return Render(c, account.OrderDetail(c, order, orderItems))
+	return Render(c, account.OrderDetail(c, order, orderItems, meta))
 }
 
 // handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)

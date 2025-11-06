@@ -9,7 +9,9 @@ templ ProductSchema(meta PageMeta) {
 
 // OrganizationSchema renders Schema.org Organization JSON-LD
 templ OrganizationSchema(meta PageMeta) {
-	@templ.Raw("<script type=\"application/ld+json\">" + meta.OrganizationSchemaJSON() + "</script>")
+	if meta.SiteURL != "" {
+		@templ.Raw("<script type=\"application/ld+json\">" + meta.OrganizationSchemaJSON() + "</script>")
+	}
 }
 
 // BreadcrumbItem represents a breadcrumb link

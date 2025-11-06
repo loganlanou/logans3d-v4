@@ -7,11 +7,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem) {
-	@layout.Base(c, layout.PageMeta{
-		Title:       fmt.Sprintf("Order #%s - Logan's 3D Creations", order.ID[:8]),
-		Description: "View order details and tracking information",
-	}) {
+templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
 			<!-- Animated background orbs -->
 			<div class="fixed inset-0 overflow-hidden pointer-events-none">

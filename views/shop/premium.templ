@@ -22,12 +22,8 @@ type CollectionTier struct {
 	Products      []ProductWithImage
 }
 
-templ Premium(c echo.Context, collections []CollectionTier, featuredProducts []ProductWithImage) {
-	@layout.Base(c, layout.PageMeta{
-		Title:       "Premium Collections - Logan's 3D Creations",
-		Description: "Discover our premium collection tiers with the most detailed models, bundled discounts, and exclusive variations.",
-		Keywords:     []string{"premium 3D prints, collector items, detailed models, bundle discounts, exclusive collections"},
-	}) {
+templ Premium(c echo.Context, collections []CollectionTier, featuredProducts []ProductWithImage, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Enhanced Animated Background Elements -->
 			<div class="absolute inset-0 opacity-15">

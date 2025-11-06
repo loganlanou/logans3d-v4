@@ -11,6 +11,7 @@ import (
 	emailutil "github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/account"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -216,5 +217,10 @@ func (h *EmailPreferencesHandler) HandleEmailPreferencesPage(c echo.Context) err
 		}
 	}
 
-	return account.EmailPreferences(c, &prefs).Render(c.Request().Context(), c.Response().Writer)
+	// Build page metadata
+	meta := layout.NewPageMeta(c, h.queries)
+	meta.Title = "Email Preferences - Logan's 3D Creations"
+	meta.Description = "Manage your email preferences"
+
+	return account.EmailPreferences(c, &prefs, meta).Render(c.Request().Context(), c.Response().Writer)
 }
