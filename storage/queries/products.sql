@@ -33,15 +33,15 @@ ORDER BY created_at DESC;
 INSERT INTO products (
     id, name, slug, description, short_description, price_cents,
     category_id, sku, stock_quantity, weight_grams, lead_time_days,
-    is_active, is_featured, is_premium
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    is_active, is_featured, is_premium, disclaimer
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateProduct :one
 UPDATE products
 SET name = ?, slug = ?, description = ?, short_description = ?,
     price_cents = ?, category_id = ?, sku = ?, stock_quantity = ?,
-    weight_grams = ?, lead_time_days = ?, is_active = ?, is_featured = ?, is_premium = ?,
+    weight_grams = ?, lead_time_days = ?, is_active = ?, is_featured = ?, is_premium = ?, disclaimer = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
