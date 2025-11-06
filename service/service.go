@@ -29,6 +29,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/events"
 	"github.com/loganlanou/logans3d-v4/views/home"
 	"github.com/loganlanou/logans3d-v4/views/innovation"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 	"github.com/loganlanou/logans3d-v4/views/legal"
 	"github.com/loganlanou/logans3d-v4/views/portfolio"
 	"github.com/loganlanou/logans3d-v4/views/shop"
@@ -383,11 +384,23 @@ func (s *Service) handleHome(c echo.Context) error {
 		})
 	}
 
-	return Render(c, home.Index(c, productsWithImages))
+	// Build PageMeta for home page
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Logan's 3D Creations - Custom 3D Printed Collectibles & Dinosaurs"
+	meta.Description = "Discover unique 3D printed collectibles, dinosaurs, and custom creations. High-quality prints with expert craftsmanship and attention to detail."
+	meta.Keywords = []string{"3D printing", "custom collectibles", "dinosaur models", "3D printed art", "collectible figurines"}
+	meta.OGType = "website"
+
+	return Render(c, home.Index(c, meta, productsWithImages))
 }
 
 func (s *Service) handleAbout(c echo.Context) error {
-	return Render(c, about.Index(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "About - Logan's 3D Creations"
+	meta.Description = "Learn about Logan's 3D Creations, our mission to bring creativity to life through 3D printing, and our commitment to quality craftsmanship."
+	meta.Keywords = []string{"about us", "3D printing company", "Logan's 3D Creations story", "mission"}
+	meta.OGType = "website"
+	return Render(c, about.Index(c, meta))
 }
 
 func (s *Service) handleShop(c echo.Context) error {
@@ -443,7 +456,14 @@ func (s *Service) handleShop(c echo.Context) error {
 		})
 	}
 
-	return Render(c, shop.Index(c, productsWithImages, categories, nil))
+	// Build PageMeta for shop page
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Shop - 3D Printed Collectibles & Dinosaurs | Logan's 3D Creations"
+	meta.Description = "Browse our collection of unique 3D printed collectibles, dinosaurs, and custom creations. High-quality prints available for purchase."
+	meta.Keywords = []string{"buy 3D prints", "3D printed collectibles", "dinosaur models for sale", "custom 3D printing", "collectible figurines shop"}
+	meta.OGType = "website"
+
+	return Render(c, shop.Index(c, meta, productsWithImages, categories, nil))
 }
 
 func (s *Service) handlePremium(c echo.Context) error {
@@ -723,7 +743,30 @@ func (s *Service) handleProduct(c echo.Context) error {
 		}
 	}
 
-	return Render(c, shop.Product(c, product, category, images, relatedProducts))
+	// Build complete PageMeta with SEO data
+	meta := layout.NewPageMeta(c, s.storage.Queries).
+		FromProduct(product)
+
+	// Add primary product image if available
+	if len(images) > 0 {
+		// Find primary image or use first one
+		primaryImageFilename := ""
+		for _, img := range images {
+			if img.IsPrimary.Valid && img.IsPrimary.Bool {
+				primaryImageFilename = img.ImageUrl
+				break
+			}
+		}
+		if primaryImageFilename == "" {
+			primaryImageFilename = images[0].ImageUrl
+		}
+		meta = meta.WithProductImage(primaryImageFilename)
+	}
+
+	// Add category for breadcrumbs and schema
+	meta = meta.WithCategories([]db.Category{category})
+
+	return Render(c, shop.Product(c, meta, product, category, images, relatedProducts))
 }
 
 func (s *Service) handleProductNotFound(c echo.Context, slug string) error {
@@ -842,13 +885,29 @@ func (s *Service) handleCategory(c echo.Context) error {
 		})
 	}
 
-	return Render(c, shop.Index(c, productsWithImages, categories, &category))
+	// Build PageMeta for category page
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = fmt.Sprintf("%s - 3D Printed Collectibles | Logan's 3D Creations", category.Name)
+	if category.Description.Valid {
+		meta.Description = category.Description.String
+	} else {
+		meta.Description = fmt.Sprintf("Browse our collection of 3D printed %s. High-quality prints with expert craftsmanship.", category.Name)
+	}
+	meta.Keywords = []string{"3D printed " + category.Name, category.Name + " collectibles", "buy 3D prints", "custom 3D printing"}
+	meta.OGType = "website"
+
+	return Render(c, shop.Index(c, meta, productsWithImages, categories, &category))
 }
 
 // Cart handlers removed - replaced with Stripe Checkout
 
 func (s *Service) handleCustom(c echo.Context) error {
-	return Render(c, custom.Index(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Custom 3D Printing Services | Logan's 3D Creations"
+	meta.Description = "Request custom 3D printing services. We bring your ideas to life with precision and quality craftsmanship."
+	meta.Keywords = []string{"custom 3D printing", "personalized printing", "custom designs", "3D print service"}
+	meta.OGType = "website"
+	return Render(c, custom.Index(c, meta))
 }
 
 func (s *Service) handleCustomQuote(c echo.Context) error {
@@ -1394,11 +1453,21 @@ func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 }
 
 func (s *Service) handleEvents(c echo.Context) error {
-	return Render(c, events.Index(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Events & Workshops | Logan's 3D Creations"
+	meta.Description = "Join us for 3D printing workshops, events, and educational programs. Learn hands-on 3D printing skills."
+	meta.Keywords = []string{"3D printing events", "workshops", "educational programs", "maker events"}
+	meta.OGType = "website"
+	return Render(c, events.Index(c, meta))
 }
 
 func (s *Service) handleContact(c echo.Context) error {
-	return Render(c, contact.Index(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Contact Us | Logan's 3D Creations"
+	meta.Description = "Get in touch with Logan's 3D Creations. We're here to answer your questions about our 3D printing services."
+	meta.Keywords = []string{"contact", "get in touch", "3D printing questions", "customer support"}
+	meta.OGType = "website"
+	return Render(c, contact.Index(c, meta))
 }
 
 func (s *Service) handleContactSubmit(c echo.Context) error {
@@ -1486,31 +1555,66 @@ func (s *Service) handleContactSubmit(c echo.Context) error {
 }
 
 func (s *Service) handlePortfolio(c echo.Context) error {
-	return Render(c, portfolio.Index(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Portfolio | Logan's 3D Creations"
+	meta.Description = "Explore our portfolio of 3D printing projects, custom designs, and creative works."
+	meta.Keywords = []string{"3D printing portfolio", "project gallery", "custom designs"}
+	meta.OGType = "website"
+	return Render(c, portfolio.Index(c, meta))
 }
 
 func (s *Service) handleInnovation(c echo.Context) error {
-	return Render(c, innovation.Index(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Innovation | Logan's 3D Creations"
+	meta.Description = "Discover the innovative technologies and techniques we use in 3D printing."
+	meta.Keywords = []string{"3D printing innovation", "technology", "advanced printing"}
+	meta.OGType = "website"
+	return Render(c, innovation.Index(c, meta))
 }
 
 func (s *Service) handleManufacturing(c echo.Context) error {
-	return Render(c, innovation.Manufacturing(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Manufacturing | Logan's 3D Creations"
+	meta.Description = "Learn about our manufacturing process and capabilities for 3D printing projects."
+	meta.Keywords = []string{"3D printing manufacturing", "production", "capabilities"}
+	meta.OGType = "website"
+	return Render(c, innovation.Manufacturing(c, meta))
 }
 
 func (s *Service) handlePrivacy(c echo.Context) error {
-	return Render(c, legal.Privacy(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Privacy Policy | Logan's 3D Creations"
+	meta.Description = "Read our privacy policy to understand how we protect and handle your personal information."
+	meta.Keywords = []string{"privacy policy", "data protection", "user privacy"}
+	meta.OGType = "website"
+	return Render(c, legal.Privacy(c, meta))
 }
 
 func (s *Service) handleTerms(c echo.Context) error {
-	return Render(c, legal.Terms(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Terms of Service | Logan's 3D Creations"
+	meta.Description = "Review our terms of service for using Logan's 3D Creations website and services."
+	meta.Keywords = []string{"terms of service", "terms and conditions", "user agreement"}
+	meta.OGType = "website"
+	return Render(c, legal.Terms(c, meta))
 }
 
 func (s *Service) handleShipping(c echo.Context) error {
-	return Render(c, legal.Shipping(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Shipping Policy | Logan's 3D Creations"
+	meta.Description = "Learn about our shipping policies, delivery times, and shipping costs."
+	meta.Keywords = []string{"shipping policy", "delivery", "shipping costs"}
+	meta.OGType = "website"
+	return Render(c, legal.Shipping(c, meta))
 }
 
 func (s *Service) handleCustomPolicy(c echo.Context) error {
-	return Render(c, legal.CustomPolicy(c))
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Custom Order Policy | Logan's 3D Creations"
+	meta.Description = "Understand our custom order policy, lead times, and requirements for custom 3D printing projects."
+	meta.Keywords = []string{"custom order policy", "custom printing terms", "order requirements"}
+	meta.OGType = "website"
+	return Render(c, legal.CustomPolicy(c, meta))
 }
 
 func (s *Service) handleHealth(c echo.Context) error {

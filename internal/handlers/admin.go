@@ -509,6 +509,10 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
 	isPremiumCollectionStr := c.FormValue("is_premium_collection")
+	seoTitle := c.FormValue("seo_title")
+	seoDescription := c.FormValue("seo_description")
+	seoKeywords := c.FormValue("seo_keywords")
+	ogImageUrl := c.FormValue("og_image_url")
 
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
@@ -543,6 +547,10 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 		IsFeatured:       sql.NullBool{Bool: false, Valid: true},
 		IsPremium:        sql.NullBool{Bool: isPremiumCollection, Valid: true},
 		Disclaimer:       sql.NullString{String: disclaimer, Valid: disclaimer != ""},
+		SeoTitle:         sql.NullString{String: seoTitle, Valid: seoTitle != ""},
+		SeoDescription:   sql.NullString{String: seoDescription, Valid: seoDescription != ""},
+		SeoKeywords:      sql.NullString{String: seoKeywords, Valid: seoKeywords != ""},
+		OgImageUrl:       sql.NullString{String: ogImageUrl, Valid: ogImageUrl != ""},
 	}
 
 	_, err = h.storage.Queries.CreateProduct(c.Request().Context(), params)
@@ -626,6 +634,10 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	categoryID := c.FormValue("category_id")
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
+	seoTitle := c.FormValue("seo_title")
+	seoDescription := c.FormValue("seo_description")
+	seoKeywords := c.FormValue("seo_keywords")
+	ogImageUrl := c.FormValue("og_image_url")
 
 	price, err := strconv.ParseFloat(priceStr, 64)
 	if err != nil {
@@ -674,6 +686,10 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		IsFeatured:       sql.NullBool{Valid: false},
 		IsPremium:        sql.NullBool{Valid: false},
 		Disclaimer:       sql.NullString{String: disclaimer, Valid: disclaimer != ""},
+		SeoTitle:         sql.NullString{String: seoTitle, Valid: seoTitle != ""},
+		SeoDescription:   sql.NullString{String: seoDescription, Valid: seoDescription != ""},
+		SeoKeywords:      sql.NullString{String: seoKeywords, Valid: seoKeywords != ""},
+		OgImageUrl:       sql.NullString{String: ogImageUrl, Valid: ogImageUrl != ""},
 	}
 
 	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)

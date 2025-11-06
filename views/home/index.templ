@@ -12,12 +12,8 @@ type ProductWithImage struct {
 	ImageURL string
 }
 
-templ Index(c echo.Context, featuredProducts []ProductWithImage) {
-	@layout.Base(c, layout.PageMeta{
-		Title:       "Logan's 3D Creations - Custom 3D Printing & Educational Workshops",
-		Description: "Professional 3D printing services, custom designs, and educational workshops. Bringing innovation to life through precision 3D printing technology.",
-		Keywords:     []string{"3D printing, custom design, prototyping, education, workshops, maker, technology, innovation"},
-	}) {
+templ Index(c echo.Context, meta layout.PageMeta, featuredProducts []ProductWithImage) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

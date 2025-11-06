@@ -158,6 +158,9 @@ func (pm PageMeta) FromProduct(product db.Product) PageMeta {
 	// Store product for schema generation
 	pm.Product = &product
 
+	// Generate product schema JSON (will be regenerated if categories are added via WithCategories)
+	pm.ProductSchemaJSON = pm.generateProductSchemaJSON(product, pm.Categories)
+
 	return pm
 }
 
@@ -313,7 +316,7 @@ func (pm PageMeta) OrganizationSchemaData() map[string]interface{} {
 	}
 
 	// Add logo if available
-	logoPath := "/public/images/social/logo-square.jpg"
+	logoPath := "/public/images/social/logo-square.png"
 	schema["logo"] = BuildAbsoluteURL(pm.SiteURL, logoPath)
 
 	// Add social media URLs if available (currently commented out - add when handles are provided)
@@ -329,6 +332,20 @@ func (pm PageMeta) OrganizationSchemaData() map[string]interface{} {
 	// }
 
 	return schema
+}
+
+// OrganizationSchemaJSON returns the organization schema as a JSON string
+func (pm PageMeta) OrganizationSchemaJSON() string {
+	data := pm.OrganizationSchemaData()
+	if data == nil {
+		return "{}"
+	}
+
+	bytes, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return "{}"
+	}
+	return string(bytes)
 }
 
 // getConfigValue retrieves a config value from the database with a fallback default

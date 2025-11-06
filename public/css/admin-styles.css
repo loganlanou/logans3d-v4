@@ -3077,6 +3077,18 @@
   .whitespace-pre-wrap {
     white-space: pre-wrap;
   }
+  .text-\[\#25D366\] {
+    color: #25D366;
+  }
+  .text-\[\#1877F2\] {
+    color: #1877F2;
+  }
+  .text-\[\#E60023\] {
+    color: #E60023;
+  }
+  .text-\[\#FF4500\] {
+    color: #FF4500;
+  }
   .text-accent-foreground {
     color: var(--color-accent-foreground);
   }
@@ -3136,6 +3148,9 @@
   }
   .text-emerald-400 {
     color: var(--color-emerald-400);
+  }
+  .text-emerald-500 {
+    color: var(--color-emerald-500);
   }
   .text-emerald-600 {
     color: var(--color-emerald-600);

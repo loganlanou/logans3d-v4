@@ -3,10 +3,10 @@ package admin
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/card"
-	"github.com/loganlanou/logans3d-v4/components/button"
 )
 
 // ProductFormPage - Full page with layout wrappers (used for initial GET request)
@@ -22,235 +22,340 @@ templ ProductFormPage(c echo.Context, product *db.Product, categories []db.Categ
 templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Category, productImages []db.ProductImage) {
 	<!-- Product Form Container - wraps header + form for HTMX targeting -->
 	<div id="product-form-container">
-				<!-- Header -->
-				<div class="flex justify-between items-center mb-6">
-					<h1 class="text-2xl font-bold text-white">
-						{ productFormTitle(product) }
-					</h1>
-					<a href="/admin/products" class="text-slate-400 hover:text-white transition-colors duration-200">
-						← Back to Products
-					</a>
-				</div>
-				<!-- Form -->
-				<form
-					id="product-form"
-					hx-post={ productFormAction(product) }
-					hx-target="#product-form-container"
-					hx-swap="outerHTML"
-					hx-encoding="multipart/form-data"
-					hx-indicator="#submit-btn"
-					hx-disabled-elt="#submit-btn"
-				>
-				<div class="space-y-6">
-					<!-- Basic Information Section -->
-					@card.Card() {
-						@card.Header() {
-							@card.Title() {
-								Basic Information
-							}
-						}
-						@card.Content() {
-							<div class="space-y-4">
-								<!-- Name -->
-								<div>
-									<label for="name" class="block text-sm font-medium text-slate-200 mb-2">
-										Product Name <span class="text-red-400">*</span>
-									</label>
-									<input
-										type="text"
-										id="name"
-										name="name"
-										required
-										value={ productName(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-										placeholder="Enter product name"
-									/>
-								</div>
-								<!-- Description -->
-								<div>
-									<label for="description" class="block text-sm font-medium text-slate-200 mb-2">
-										Description
-									</label>
-									<textarea
-										id="description"
-										name="description"
-										rows="4"
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
-										placeholder="Detailed product description"
-									>{ productDescription(product) }</textarea>
-								</div>
-								<!-- Short Description -->
-								<div>
-									<label for="short_description" class="block text-sm font-medium text-slate-200 mb-2">
-										Short Description
-									</label>
-									<input
-										type="text"
-										id="short_description"
-										name="short_description"
-										value={ productShortDescription(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-										placeholder="Brief product description"
-									/>
-								</div>
-								<!-- Disclaimer/Warning -->
-								<div>
-									<label for="disclaimer" class="block text-sm font-medium text-amber-400 mb-2">
-										⚠️ Safety Warning / Disclaimer
-									</label>
-									<textarea
-										id="disclaimer"
-										name="disclaimer"
-										rows="3"
-										class="w-full px-4 py-2.5 bg-amber-900/10 border border-amber-600/50 rounded-lg text-white placeholder-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all resize-vertical"
-										placeholder="e.g., Not recommended for rough play; designed for gentle handling and display"
-									>{ productDisclaimer(product) }</textarea>
-									<p class="mt-2 text-xs text-amber-400/80">
-										Important safety information or warnings that will be prominently displayed on the product page
-									</p>
-								</div>
-								<!-- Category -->
-								<div>
-									<label for="category_id" class="block text-sm font-medium text-slate-200 mb-2">
-										Category
-									</label>
-									<select
-										id="category_id"
-										name="category_id"
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-									>
-										<option value="">No Category</option>
-										for _, category := range categories {
-											<option
-												value={ category.ID }
-												selected?={ isSelectedCategory(product, category.ID) }
-											>
-												{ category.Name }
-											</option>
-										}
-									</select>
-								</div>
-							</div>
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-2xl font-bold text-white">
+				{ productFormTitle(product) }
+			</h1>
+			<a href="/admin/products" class="text-slate-400 hover:text-white transition-colors duration-200">
+				← Back to Products
+			</a>
+		</div>
+		<!-- Form -->
+		<form
+			id="product-form"
+			hx-post={ productFormAction(product) }
+			hx-target="#product-form-container"
+			hx-swap="outerHTML"
+			hx-encoding="multipart/form-data"
+			hx-indicator="#submit-btn"
+			hx-disabled-elt="#submit-btn"
+		>
+			<div class="space-y-6">
+				<!-- Basic Information Section -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Basic Information
 						}
 					}
-					<!-- Pricing & Inventory Section -->
-					@card.Card() {
-						@card.Header() {
-							@card.Title() {
-								Pricing & Inventory
-							}
-						}
-						@card.Content() {
-							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-								<!-- Price -->
-								<div>
-									<label for="price" class="block text-sm font-medium text-slate-200 mb-2">
-										Price ($) <span class="text-red-400">*</span>
-									</label>
-									<input
-										type="number"
-										id="price"
-										name="price"
-										step="0.01"
-										min="0"
-										required
-										value={ productPrice(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-										placeholder="0.00"
-									/>
-								</div>
-								<!-- SKU -->
-								<div>
-									<label for="sku" class="block text-sm font-medium text-slate-200 mb-2">
-										SKU
-									</label>
-									<input
-										type="text"
-										id="sku"
-										name="sku"
-										value={ productSKU(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-										placeholder="SKU-001"
-									/>
-								</div>
-								<!-- Stock Quantity -->
-								<div>
-									<label for="stock_quantity" class="block text-sm font-medium text-slate-200 mb-2">
-										Stock Quantity
-									</label>
-									<input
-										type="number"
-										id="stock_quantity"
-										name="stock_quantity"
-										min="0"
-										value={ productStockQuantity(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-										placeholder="0"
-									/>
-								</div>
-							</div>
-						}
-					}
-					<!-- Product Images Section -->
-					if product != nil {
-						@card.Card() {
-							@card.Header() {
-								@card.Title() {
-									Product Images
-								}
-								@card.Description() {
-									Manage product images - mark one as primary and delete unwanted images
-								}
-							}
-							@card.Content() {
-								@ProductImagesGrid(product.ID, productImages)
-							}
-						}
-					}
-					<!-- Image Upload Section -->
-					@card.Card() {
-						@card.Header() {
-							@card.Title() {
-								if product != nil {
-									Add New Images
-								} else {
-									Upload Images
-								}
-							}
-							@card.Description() {
-								Select one or multiple images to upload
-							}
-						}
-						@card.Content() {
+					@card.Content() {
+						<div class="space-y-4">
+							<!-- Name -->
 							<div>
+								<label for="name" class="block text-sm font-medium text-slate-200 mb-2">
+									Product Name <span class="text-red-400">*</span>
+								</label>
 								<input
-									type="file"
-									id="images"
-									name="images"
-									multiple
-									accept="image/*"
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer transition-all"
+									type="text"
+									id="name"
+									name="name"
+									required
+									value={ productName(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder="Enter product name"
 								/>
-								<p class="mt-2 text-xs text-slate-400">
-									Supported formats: JPG, PNG, WebP (Max: 5MB per file)
+							</div>
+							<!-- Description -->
+							<div>
+								<label for="description" class="block text-sm font-medium text-slate-200 mb-2">
+									Description
+								</label>
+								<textarea
+									id="description"
+									name="description"
+									rows="4"
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
+									placeholder="Detailed product description"
+								>{ productDescription(product) }</textarea>
+							</div>
+							<!-- Short Description -->
+							<div>
+								<label for="short_description" class="block text-sm font-medium text-slate-200 mb-2">
+									Short Description
+								</label>
+								<input
+									type="text"
+									id="short_description"
+									name="short_description"
+									value={ productShortDescription(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder="Brief product description"
+								/>
+							</div>
+							<!-- Disclaimer/Warning -->
+							<div>
+								<label for="disclaimer" class="block text-sm font-medium text-amber-400 mb-2">
+									⚠️ Safety Warning / Disclaimer
+								</label>
+								<textarea
+									id="disclaimer"
+									name="disclaimer"
+									rows="3"
+									class="w-full px-4 py-2.5 bg-amber-900/10 border border-amber-600/50 rounded-lg text-white placeholder-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all resize-vertical"
+									placeholder="e.g., Not recommended for rough play; designed for gentle handling and display"
+								>{ productDisclaimer(product) }</textarea>
+								<p class="mt-2 text-xs text-amber-400/80">
+									Important safety information or warnings that will be prominently displayed on the product page
 								</p>
 							</div>
+							<!-- Category -->
+							<div>
+								<label for="category_id" class="block text-sm font-medium text-slate-200 mb-2">
+									Category
+								</label>
+								<select
+									id="category_id"
+									name="category_id"
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+								>
+									<option value="">No Category</option>
+									for _, category := range categories {
+										<option
+											value={ category.ID }
+											selected?={ isSelectedCategory(product, category.ID) }
+										>
+											{ category.Name }
+										</option>
+									}
+								</select>
+							</div>
+						</div>
+					}
+				}
+				<!-- Pricing & Inventory Section -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Pricing & Inventory
 						}
 					}
-					<!-- Status Options Section -->
+					@card.Content() {
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+							<!-- Price -->
+							<div>
+								<label for="price" class="block text-sm font-medium text-slate-200 mb-2">
+									Price ($) <span class="text-red-400">*</span>
+								</label>
+								<input
+									type="number"
+									id="price"
+									name="price"
+									step="0.01"
+									min="0"
+									required
+									value={ productPrice(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder="0.00"
+								/>
+							</div>
+							<!-- SKU -->
+							<div>
+								<label for="sku" class="block text-sm font-medium text-slate-200 mb-2">
+									SKU
+								</label>
+								<input
+									type="text"
+									id="sku"
+									name="sku"
+									value={ productSKU(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder="SKU-001"
+								/>
+							</div>
+							<!-- Stock Quantity -->
+							<div>
+								<label for="stock_quantity" class="block text-sm font-medium text-slate-200 mb-2">
+									Stock Quantity
+								</label>
+								<input
+									type="number"
+									id="stock_quantity"
+									name="stock_quantity"
+									min="0"
+									value={ productStockQuantity(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder="0"
+								/>
+							</div>
+						</div>
+					}
+				}
+				<!-- Product Images Section -->
+				if product != nil {
 					@card.Card() {
 						@card.Header() {
 							@card.Title() {
-								Product Status
+								Product Images
+							}
+							@card.Description() {
+								Manage product images - mark one as primary and delete unwanted images
 							}
 						}
 						@card.Content() {
-							<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-								<!-- Premium Collection Toggle -->
-								<div x-data={ fmt.Sprintf("{ isPremium: %t, productId: '%s' }", isPremiumCollection(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
-									<span class="text-sm font-medium text-slate-200">Premium</span>
-									<div
-										@click="
+							@ProductImagesGrid(product.ID, productImages)
+						}
+					}
+				}
+				<!-- Image Upload Section -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							if product != nil {
+								Add New Images
+							} else {
+								Upload Images
+							}
+						}
+						@card.Description() {
+							Select one or multiple images to upload
+						}
+					}
+					@card.Content() {
+						<div>
+							<input
+								type="file"
+								id="images"
+								name="images"
+								multiple
+								accept="image/*"
+								class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer transition-all"
+							/>
+							<p class="mt-2 text-xs text-slate-400">
+								Supported formats: JPG, PNG, WebP (Max: 5MB per file)
+							</p>
+						</div>
+					}
+				}
+				<!-- SEO Section -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Search Engine Optimization
+						}
+						@card.Description() {
+							Customize how this product appears in search results and social media. Leave blank to use defaults.
+						}
+					}
+					@card.Content() {
+						<div class="space-y-4">
+							<!-- SEO Title -->
+							<div>
+								<label for="seo_title" class="block text-sm font-medium text-slate-200 mb-2">
+									SEO Title
+									<span class="text-slate-400 text-xs ml-2">(50-60 characters recommended)</span>
+								</label>
+								<input
+									type="text"
+									id="seo_title"
+									name="seo_title"
+									maxlength="70"
+									value={ productSeoTitle(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder={ productName(product) }
+									oninput="updateSeoPreview()"
+								/>
+								<p class="text-xs text-slate-400 mt-1">
+									<span id="seo-title-count">0</span> / 70 characters
+								</p>
+							</div>
+							<!-- SEO Description -->
+							<div>
+								<label for="seo_description" class="block text-sm font-medium text-slate-200 mb-2">
+									SEO Description
+									<span class="text-slate-400 text-xs ml-2">(155-160 characters recommended)</span>
+								</label>
+								<textarea
+									id="seo_description"
+									name="seo_description"
+									rows="3"
+									maxlength="200"
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
+									placeholder={ productDescription(product) }
+									oninput="updateSeoPreview()"
+								>{ productSeoDescription(product) }</textarea>
+								<p class="text-xs text-slate-400 mt-1">
+									<span id="seo-desc-count">0</span> / 200 characters
+								</p>
+							</div>
+							<!-- SEO Keywords -->
+							<div>
+								<label for="seo_keywords" class="block text-sm font-medium text-slate-200 mb-2">
+									SEO Keywords
+									<span class="text-slate-400 text-xs ml-2">(comma-separated)</span>
+								</label>
+								<input
+									type="text"
+									id="seo_keywords"
+									name="seo_keywords"
+									value={ productSeoKeywords(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder="3D printed, collectible, custom printing"
+								/>
+								<p class="text-xs text-slate-400 mt-1">
+									Separate keywords with commas
+								</p>
+							</div>
+							<!-- Custom OG Image URL -->
+							<div>
+								<label for="og_image_url" class="block text-sm font-medium text-slate-200 mb-2">
+									Custom Social Share Image URL
+									<span class="text-slate-400 text-xs ml-2">(optional)</span>
+								</label>
+								<input
+									type="text"
+									id="og_image_url"
+									name="og_image_url"
+									value={ productOgImageUrl(product) }
+									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									placeholder="/public/images/products/custom-image.jpg"
+								/>
+								<p class="text-xs text-slate-400 mt-1">
+									Leave blank to use primary product image
+								</p>
+							</div>
+							<!-- Search Preview -->
+							<div class="p-4 border border-slate-600 rounded-lg bg-slate-900/30">
+								<p class="text-xs text-slate-400 mb-2">Search Result Preview:</p>
+								<div>
+									<div class="text-blue-400 text-lg hover:underline cursor-pointer" id="preview-title">
+										{ getPreviewTitle(product) }
+									</div>
+									<div class="text-emerald-500 text-xs mt-1">
+										www.logans3dcreations.com › shop › product › { productSlug(product) }
+									</div>
+									<div class="text-slate-300 text-sm mt-1" id="preview-desc">
+										{ getPreviewDescription(product) }
+									</div>
+								</div>
+							</div>
+						</div>
+					}
+				}
+				<!-- Status Options Section -->
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Product Status
+						}
+					}
+					@card.Content() {
+						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+							<!-- Premium Collection Toggle -->
+							<div x-data={ fmt.Sprintf("{ isPremium: %t, productId: '%s' }", isPremiumCollection(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
+								<span class="text-sm font-medium text-slate-200">Premium</span>
+								<div
+									@click="
 											isPremium = !isPremium;
 											fetch(`/admin/product/${productId}/toggle-premium`, {
 												method: 'POST',
@@ -272,17 +377,17 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 												window.showToast('Failed to update premium status', 'error');
 											});
 										"
-										class="relative inline-flex items-center cursor-pointer"
-									>
-										<input type="checkbox" :checked="isPremium" class="sr-only peer"/>
-										<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
-									</div>
+									class="relative inline-flex items-center cursor-pointer"
+								>
+									<input type="checkbox" :checked="isPremium" class="sr-only peer"/>
+									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
 								</div>
-								<!-- Active Toggle -->
-								<div x-data={ fmt.Sprintf("{ isActiveState: %t, productId: '%s' }", isActive(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
-									<span class="text-sm font-medium text-slate-200">Active</span>
-									<div
-										@click="
+							</div>
+							<!-- Active Toggle -->
+							<div x-data={ fmt.Sprintf("{ isActiveState: %t, productId: '%s' }", isActive(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
+								<span class="text-sm font-medium text-slate-200">Active</span>
+								<div
+									@click="
 											isActiveState = !isActiveState;
 											fetch(`/admin/product/${productId}/toggle-active`, {
 												method: 'POST',
@@ -304,17 +409,17 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 												window.showToast('Failed to update active status', 'error');
 											});
 										"
-										class="relative inline-flex items-center cursor-pointer"
-									>
-										<input type="checkbox" :checked="isActiveState" class="sr-only peer"/>
-										<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-									</div>
+									class="relative inline-flex items-center cursor-pointer"
+								>
+									<input type="checkbox" :checked="isActiveState" class="sr-only peer"/>
+									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
 								</div>
-								<!-- Featured Toggle -->
-								<div x-data={ fmt.Sprintf("{ isFeaturedState: %t, productId: '%s' }", isFeatured(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
-									<span class="text-sm font-medium text-slate-200">Featured</span>
-									<div
-										@click="
+							</div>
+							<!-- Featured Toggle -->
+							<div x-data={ fmt.Sprintf("{ isFeaturedState: %t, productId: '%s' }", isFeatured(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
+								<span class="text-sm font-medium text-slate-200">Featured</span>
+								<div
+									@click="
 											isFeaturedState = !isFeaturedState;
 											fetch(`/admin/product/${productId}/toggle-featured`, {
 												method: 'POST',
@@ -336,53 +441,118 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 												window.showToast('Failed to update featured status', 'error');
 											});
 										"
-										class="relative inline-flex items-center cursor-pointer"
-									>
-										<input type="checkbox" :checked="isFeaturedState" class="sr-only peer"/>
-										<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-									</div>
+									class="relative inline-flex items-center cursor-pointer"
+								>
+									<input type="checkbox" :checked="isFeaturedState" class="sr-only peer"/>
+									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
 								</div>
 							</div>
-						}
+						</div>
 					}
-					<!-- Form Actions -->
-					<div class="flex justify-end gap-3 mt-6">
-						<a href="/admin/products">
-							@button.Button(button.Props{
-								Variant: button.VariantOutline,
-							}) {
-								Cancel
-							}
-						</a>
+				}
+				<!-- Form Actions -->
+				<div class="flex justify-end gap-3 mt-6">
+					<a href="/admin/products">
 						@button.Button(button.Props{
-							ID:      "submit-btn",
-							Variant: button.VariantDefault,
-							Type:    button.TypeSubmit,
+							Variant: button.VariantOutline,
 						}) {
-							<span class="htmx-indicator:block hidden">
-								<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-								</svg>
-							</span>
-							<span class="htmx-indicator:hidden">
-								if product != nil {
-									Update Product
-								} else {
-									Create Product
-								}
-							</span>
-							<span class="htmx-indicator:block hidden">
-								if product != nil {
-									Updating...
-								} else {
-									Creating...
-								}
-							</span>
+							Cancel
 						}
-					</div>
+					</a>
+					@button.Button(button.Props{
+						ID:      "submit-btn",
+						Variant: button.VariantDefault,
+						Type:    button.TypeSubmit,
+					}) {
+						<span class="htmx-indicator:block hidden">
+							<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+						</span>
+						<span class="htmx-indicator:hidden">
+							if product != nil {
+								Update Product
+							} else {
+								Create Product
+							}
+						</span>
+						<span class="htmx-indicator:block hidden">
+							if product != nil {
+								Updating...
+							} else {
+								Creating...
+							}
+						</span>
+					}
 				</div>
+			</div>
 		</form>
+		<!-- JavaScript for SEO character counting and live preview -->
+		<script>
+			// Product data for JavaScript fallback - mirrors meta.go FromProduct() logic
+			const productData = {
+				name: {{ productName(product) }},
+				description: {{ productDescription(product) }},
+				shortDescription: {{ productShortDescription(product) }}
+			};
+
+			// Title fallback logic - mirrors meta.go lines 100-103
+			// title := product.SeoTitle.String
+			// if title == "" { title = product.Name }
+			// pm.Title = title + " - " + pm.OGSiteName
+			function getEffectiveTitle(seoTitleValue) {
+				let title = seoTitleValue && seoTitleValue.trim() !== '' ? seoTitleValue : productData.name;
+				return title + ' - Logan\'s 3D Creations';
+			}
+
+			// Description fallback logic - mirrors meta.go lines 105-112
+			// description := product.SeoDescription.String
+			// if description == "" {
+			//     if product.Description.Valid { description = product.Description.String }
+			//     else if product.ShortDescription.Valid { description = product.ShortDescription.String }
+			// }
+			function getEffectiveDescription(seoDescValue) {
+				if (seoDescValue && seoDescValue.trim() !== '') {
+					return seoDescValue;
+				}
+				if (productData.description && productData.description.trim() !== '') {
+					return productData.description;
+				}
+				if (productData.shortDescription && productData.shortDescription.trim() !== '') {
+					return productData.shortDescription;
+				}
+				return '';
+			}
+
+			function updateSeoPreview() {
+				const titleInput = document.getElementById('seo_title');
+				const descInput = document.getElementById('seo_description');
+				const titleCount = document.getElementById('seo-title-count');
+				const descCount = document.getElementById('seo-desc-count');
+				const previewTitle = document.getElementById('preview-title');
+				const previewDesc = document.getElementById('preview-desc');
+
+				if (titleInput && titleCount) {
+					titleCount.textContent = titleInput.value.length;
+					if (previewTitle) {
+						previewTitle.textContent = getEffectiveTitle(titleInput.value);
+					}
+				}
+
+				if (descInput && descCount) {
+					descCount.textContent = descInput.value.length;
+					if (previewDesc) {
+						previewDesc.textContent = getEffectiveDescription(descInput.value);
+					}
+				}
+			}
+
+			// Initialize counts and preview on page load
+			document.addEventListener('DOMContentLoaded', function() {
+				updateSeoPreview();
+			});
+		</script>
 	</div> <!-- Close product-form-container -->
 }
 
@@ -471,4 +641,81 @@ func productID(product *db.Product) string {
 		return product.ID
 	}
 	return ""
+}
+
+func productSeoTitle(product *db.Product) string {
+	if product != nil && product.SeoTitle.Valid {
+		return product.SeoTitle.String
+	}
+	return ""
+}
+
+func productSeoDescription(product *db.Product) string {
+	if product != nil && product.SeoDescription.Valid {
+		return product.SeoDescription.String
+	}
+	return ""
+}
+
+func productSeoKeywords(product *db.Product) string {
+	if product != nil && product.SeoKeywords.Valid {
+		return product.SeoKeywords.String
+	}
+	return ""
+}
+
+func productOgImageUrl(product *db.Product) string {
+	if product != nil && product.OgImageUrl.Valid {
+		return product.OgImageUrl.String
+	}
+	return ""
+}
+
+func productSlug(product *db.Product) string {
+	if product != nil {
+		return product.Slug
+	}
+	return ""
+}
+
+// getPreviewTitle mirrors the exact logic from views/layout/meta.go FromProduct() lines 100-103
+// title := product.SeoTitle.String
+// if title == "" { title = product.Name }
+// pm.Title = title + " - " + pm.OGSiteName
+func getPreviewTitle(product *db.Product) string {
+	if product == nil {
+		return "New Product - Logan's 3D Creations"
+	}
+
+	// Use SEO title if available, otherwise use product name
+	title := product.SeoTitle.String
+	if title == "" {
+		title = product.Name
+	}
+
+	return title + " - Logan's 3D Creations"
+}
+
+// getPreviewDescription mirrors the exact logic from views/layout/meta.go FromProduct() lines 105-112
+// description := product.SeoDescription.String
+// if description == "" {
+//     if product.Description.Valid { description = product.Description.String }
+//     else if product.ShortDescription.Valid { description = product.ShortDescription.String }
+// }
+func getPreviewDescription(product *db.Product) string {
+	if product == nil {
+		return ""
+	}
+
+	// Use SEO description if available, otherwise fallback to description or short_description
+	description := product.SeoDescription.String
+	if description == "" {
+		if product.Description.Valid {
+			description = product.Description.String
+		} else if product.ShortDescription.Valid {
+			description = product.ShortDescription.String
+		}
+	}
+
+	return description
 }

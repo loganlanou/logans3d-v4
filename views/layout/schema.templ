@@ -3,17 +3,13 @@ package layout
 // ProductSchema renders Schema.org Product JSON-LD
 templ ProductSchema(meta PageMeta) {
 	if meta.Product != nil {
-		<script type="application/ld+json">
-			{ templ.JSONString(meta.ProductSchemaData()) }
-		</script>
+		@templ.Raw("<script type=\"application/ld+json\">" + meta.ProductSchemaJSON + "</script>")
 	}
 }
 
 // OrganizationSchema renders Schema.org Organization JSON-LD
 templ OrganizationSchema(meta PageMeta) {
-	<script type="application/ld+json">
-		{ templ.JSONString(meta.OrganizationSchemaData()) }
-	</script>
+	@templ.Raw("<script type=\"application/ld+json\">" + meta.OrganizationSchemaJSON() + "</script>")
 }
 
 // BreadcrumbItem represents a breadcrumb link

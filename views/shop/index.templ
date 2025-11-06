@@ -7,12 +7,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index(c echo.Context, products []ProductWithImage, categories []db.Category, currentCategory *db.Category) {
-	@layout.Base(c, layout.PageMeta{
-		Title:       "Shop - Logan's 3D Creations",
-		Description: "Browse our collection of 3D printed collectibles, dinosaurs, dragons, animals and custom items.",
-		Keywords:     []string{"3D printed products, collectibles, dinosaurs, dragons, custom printing"},
-	}) {
+templ Index(c echo.Context, meta layout.PageMeta, products []ProductWithImage, categories []db.Category, currentCategory *db.Category) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

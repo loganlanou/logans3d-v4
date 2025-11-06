@@ -5,12 +5,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index(c echo.Context) {
-	@layout.Base(c, layout.PageMeta{
-		Title:       "About - Logan's 3D Creations",
-		Description: "Learn about Logan's 3D printing journey",
-		Keywords:     []string{"3D printing, Logan, about us"},
-	}) {
+templ Index(c echo.Context, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		@AboutContent()
 	}
 }
