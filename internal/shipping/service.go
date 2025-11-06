@@ -1,9 +1,12 @@
 package shipping
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"sort"
+
+	"github.com/loganlanou/logans3d-v4/storage/db"
 )
 
 type ShippingOption struct {
@@ -34,14 +37,16 @@ type ShippingQuoteResponse struct {
 }
 
 type ShippingService struct {
-	config     *ShippingConfig
-	client     *EasyPostClient
-	packer     *Packer
-	carrierIDs []string
-	carrierMap map[string]Carrier // Maps carrier ID to carrier info
+	config                     *ShippingConfig
+	client                     *EasyPostClient
+	packer                     *Packer
+	carrierIDs                 []string
+	carrierMap                 map[string]Carrier // Maps carrier ID to carrier info
+	carrierAccountsByCadott    []string           // USPS carrier account IDs for Cadott (54727)
+	carrierAccountsByEauClaire []string           // UPS/FedEx carrier account IDs for Eau Claire (54701)
 }
 
-func NewShippingService(config *ShippingConfig) (*ShippingService, error) {
+func NewShippingService(config *ShippingConfig, queries *db.Queries) (*ShippingService, error) {
 	client := NewEasyPostClient()
 	packer := NewPacker(config)
 
@@ -55,9 +60,17 @@ func NewShippingService(config *ShippingConfig) (*ShippingService, error) {
 		// In development mode without API credentials, use mock data
 		if client.IsUsingMockData() {
 			service.carrierIDs = []string{"usps", "ups", "fedex"}
+			// Load mock carrier accounts for local development
+			service.carrierAccountsByCadott = []string{"ca_mock_usps"}
+			service.carrierAccountsByEauClaire = []string{"ca_mock_ups", "ca_mock_fedex"}
 			return service, nil
 		}
 		return nil, fmt.Errorf("failed to load carrier IDs: %w", err)
+	}
+
+	// Load carrier accounts from database
+	if err := service.loadCarrierAccounts(queries); err != nil {
+		return nil, fmt.Errorf("failed to load carrier accounts: %w", err)
 	}
 
 	return service, nil
@@ -75,6 +88,34 @@ func (s *ShippingService) loadCarrierIDs() error {
 		s.carrierIDs = append(s.carrierIDs, carrier.CarrierID)
 		s.carrierMap[carrier.CarrierID] = carrier
 	}
+
+	return nil
+}
+
+func (s *ShippingService) loadCarrierAccounts(queries *db.Queries) error {
+	ctx := context.Background()
+
+	// Load carrier accounts for Cadott, WI (54727) - USPS
+	cadottAccounts, err := queries.GetCarrierAccountsByLocation(ctx, "54727")
+	if err != nil {
+		return fmt.Errorf("failed to get Cadott carrier accounts: %w", err)
+	}
+	s.carrierAccountsByCadott = make([]string, 0, len(cadottAccounts))
+	for _, account := range cadottAccounts {
+		s.carrierAccountsByCadott = append(s.carrierAccountsByCadott, account.EasypostID)
+	}
+	slog.Debug("loaded Cadott carrier accounts", "count", len(s.carrierAccountsByCadott), "accounts", s.carrierAccountsByCadott)
+
+	// Load carrier accounts for Eau Claire, WI (54701) - UPS/FedEx
+	eauClaireAccounts, err := queries.GetCarrierAccountsByLocation(ctx, "54701")
+	if err != nil {
+		return fmt.Errorf("failed to get Eau Claire carrier accounts: %w", err)
+	}
+	s.carrierAccountsByEauClaire = make([]string, 0, len(eauClaireAccounts))
+	for _, account := range eauClaireAccounts {
+		s.carrierAccountsByEauClaire = append(s.carrierAccountsByEauClaire, account.EasypostID)
+	}
+	slog.Debug("loaded Eau Claire carrier accounts", "count", len(s.carrierAccountsByEauClaire), "accounts", s.carrierAccountsByEauClaire)
 
 	return nil
 }
@@ -138,20 +179,13 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 	}
 
 	sortedOptions := s.sortShippingOptions(allOptions)
-	topN := s.config.Shipping.RatePreferences.PresentTopN
 
 	slog.Debug("GetShippingQuote: Rate preferences",
-		"configured_present_top_n", s.config.Shipping.RatePreferences.PresentTopN,
 		"sort_order", s.config.Shipping.RatePreferences.Sort,
-		"total_options_available", len(sortedOptions),
-		"will_return_top_n", topN)
-
-	if topN > len(sortedOptions) {
-		topN = len(sortedOptions)
-	}
+		"total_options_available", len(sortedOptions))
 
 	response := &ShippingQuoteResponse{
-		Options: sortedOptions[:topN],
+		Options: sortedOptions,
 	}
 
 	if len(response.Options) > 0 {
@@ -169,20 +203,17 @@ func (s *ShippingService) getRatesForBox(boxSelection BoxSelection, shipTo Addre
 
 	var allRates []Rate
 
-	// Separate carriers into USPS and non-USPS
-	uspsCarriers, otherCarriers := s.separateCarriersByType()
-
-	// Get rates for USPS carriers from Cadott, WI (54727)
-	if len(uspsCarriers) > 0 {
-		uspsRates, err := s.getRatesForCarriers(uspsCarriers, boxSelection, shipTo, s.addressFromConfigUSPS())
+	// Get rates for USPS from Cadott, WI (54727) using only USPS carrier accounts
+	if len(s.carrierAccountsByCadott) > 0 {
+		uspsRates, err := s.getRatesForCarriers(s.carrierAccountsByCadott, boxSelection, shipTo, s.addressFromConfigUSPS())
 		if err == nil {
 			allRates = append(allRates, uspsRates...)
 		}
 	}
 
-	// Get rates for non-USPS carriers from Eau Claire, WI (54701)
-	if len(otherCarriers) > 0 {
-		otherRates, err := s.getRatesForCarriers(otherCarriers, boxSelection, shipTo, s.addressFromConfigOther())
+	// Get rates for UPS/FedEx from Eau Claire, WI (54701) using only UPS/FedEx carrier accounts
+	if len(s.carrierAccountsByEauClaire) > 0 {
+		otherRates, err := s.getRatesForCarriers(s.carrierAccountsByEauClaire, boxSelection, shipTo, s.addressFromConfigOther())
 		if err == nil {
 			allRates = append(allRates, otherRates...)
 		}
@@ -259,8 +290,8 @@ func (s *ShippingService) getRatesForCarriers(carrierIDs []string, boxSelection 
 		},
 	}
 
-	// Get rates from EasyPost
-	rates, err := s.client.GetRates(shipFrom, shipTo, pkg)
+	// Get rates from EasyPost with specific carrier accounts
+	rates, err := s.client.GetRates(shipFrom, shipTo, pkg, carrierIDs)
 	if err != nil {
 		slog.Debug("getRatesForCarriers: Failed to get rates", "error", err)
 		return nil, fmt.Errorf("failed to get rates: %w", err)
@@ -512,7 +543,8 @@ func (s *ShippingService) ValidateAddress(addr Address) error {
 		Dimensions:  Dimensions{Length: 1, Width: 1, Height: 1, Unit: "inch"},
 	}
 
-	_, err := s.client.GetRates(s.addressFromConfig(), addr, pkg)
+	// Use empty carrier accounts list - we just want to validate the address
+	_, err := s.client.GetRates(s.addressFromConfig(), addr, pkg, []string{})
 	return err
 }
 

@@ -70,7 +70,7 @@ func (c *EasyPostClient) IsUsingMockData() bool {
 }
 
 // GetRates retrieves shipping rates for a given shipment
-func (c *EasyPostClient) GetRates(fromAddr Address, toAddr Address, pkg Package) ([]Rate, error) {
+func (c *EasyPostClient) GetRates(fromAddr Address, toAddr Address, pkg Package, carrierAccountIDs []string) ([]Rate, error) {
 	if c.IsUsingMockData() {
 		return c.getMockRates(pkg), nil
 	}
@@ -117,13 +117,12 @@ func (c *EasyPostClient) GetRates(fromAddr Address, toAddr Address, pkg Package)
 		Weight: weightLbs,
 	}
 
-	// Create shipment
-	// Note: EasyPost will automatically get rates from ALL configured carrier accounts
-	// We don't specify carriers here - that's done in the API settings
+	// Create shipment with specific carrier accounts to filter rates
 	shipment := &easypost.Shipment{
-		FromAddress: from,
-		ToAddress:   to,
-		Parcel:      parcel,
+		FromAddress:       from,
+		ToAddress:         to,
+		Parcel:            parcel,
+		CarrierAccountIDs: carrierAccountIDs, // Filter which carriers return rates
 	}
 
 	fmt.Printf("Creating EasyPost shipment: from=%s %s, to=%s %s, weight=%.2f lbs, dims=%.1fx%.1fx%.1f\n",

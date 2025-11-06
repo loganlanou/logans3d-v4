@@ -62,7 +62,7 @@ func New(storage *storage.Storage, config *Config) *Service {
 		slog.Info("loaded shipping configuration from database", "num_boxes", len(shippingConfig.Boxes))
 	}
 
-	shippingService, err := shipping.NewShippingService(shippingConfig)
+	shippingService, err := shipping.NewShippingService(shippingConfig, storage.Queries)
 	if err != nil {
 		slog.Error("failed to initialize shipping service", "error", err)
 		// Continue without shipping service for now

@@ -191,3 +191,14 @@ WHERE session_id = ?;
 
 -- name: DeleteSessionShippingSelection :exec
 DELETE FROM session_shipping_selection WHERE session_id = ?;
+
+-- Carrier Account Queries
+
+-- name: GetCarrierAccountsByLocation :many
+SELECT * FROM carrier_accounts WHERE origin_zip = ?;
+
+-- name: GetCarrierAccountByType :one
+SELECT * FROM carrier_accounts WHERE carrier_type = ? LIMIT 1;
+
+-- name: ListAllCarrierAccounts :many
+SELECT * FROM carrier_accounts ORDER BY carrier_type;
