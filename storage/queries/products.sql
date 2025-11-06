@@ -47,6 +47,16 @@ SET name = ?, slug = ?, description = ?, short_description = ?,
 WHERE id = ?
 RETURNING *;
 
+-- name: UpdateProductFields :one
+UPDATE products
+SET name = ?, slug = ?, description = ?, short_description = ?,
+    price_cents = ?, category_id = ?, sku = ?, stock_quantity = ?,
+    weight_grams = ?, lead_time_days = ?, disclaimer = ?,
+    seo_title = ?, seo_description = ?, seo_keywords = ?, og_image_url = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
+
 -- name: DeleteProduct :exec
 DELETE FROM products WHERE id = ?;
 

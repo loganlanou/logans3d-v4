@@ -670,7 +670,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 
 	slog.Debug("parsed form values", "name", name, "price", price, "slug", slug)
 
-	params := db.UpdateProductParams{
+	params := db.UpdateProductFieldsParams{
 		ID:               productID,
 		Name:             name,
 		Slug:             slug,
@@ -682,9 +682,6 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		StockQuantity:    sql.NullInt64{Int64: stockQuantity, Valid: true},
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Valid: false},
-		IsActive:         sql.NullBool{Valid: false},
-		IsFeatured:       sql.NullBool{Valid: false},
-		IsPremium:        sql.NullBool{Valid: false},
 		Disclaimer:       sql.NullString{String: disclaimer, Valid: disclaimer != ""},
 		SeoTitle:         sql.NullString{String: seoTitle, Valid: seoTitle != ""},
 		SeoDescription:   sql.NullString{String: seoDescription, Valid: seoDescription != ""},
@@ -692,7 +689,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		OgImageUrl:       sql.NullString{String: ogImageUrl, Valid: ogImageUrl != ""},
 	}
 
-	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)
+	_, err = h.storage.Queries.UpdateProductFields(c.Request().Context(), params)
 	if err != nil {
 		slog.Error("failed to update product in database", "error", err, "product_id", productID, "product_name", name)
 		errMsg := "Failed to update product: " + err.Error()
