@@ -287,10 +287,20 @@ function showToast(message, type = 'info') {
 }
 
 // Initialize event listeners when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Update cart count on page load
+document.addEventListener('DOMContentLoaded', async function() {
+    // Wait for Clerk authentication to be ready before checking cart
+    // This prevents race condition where cart API is called before auth token exists
+    if (window.Clerk) {
+        try {
+            await window.Clerk.load();
+        } catch (error) {
+            console.debug('Clerk load waited, proceeding with cart update');
+        }
+    }
+
+    // Update cart count on page load (now with auth ready)
     updateCartCount();
-    
+
     // Initialize interactive cart button
     initializeCartHoverEffects();
     
@@ -378,176 +388,178 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             proceedToCheckout();
         }
-        
-        // Cart preview modal button
-        if (e.target.classList.contains('cart-preview-btn') || e.target.closest('.cart-preview-btn')) {
-            e.preventDefault();
-            openCartModal();
-        }
-        
-        // Modal checkout button
-        if (e.target.classList.contains('modal-checkout-btn')) {
-            e.preventDefault();
-            proceedToCheckout();
-        }
+
+        // DISABLED: Cart preview modal button - now links directly to /cart page
+        // if (e.target.classList.contains('cart-preview-btn') || e.target.closest('.cart-preview-btn')) {
+        //     e.preventDefault();
+        //     openCartModal();
+        // }
+
+        // DISABLED: Modal checkout button - modal no longer used
+        // if (e.target.classList.contains('modal-checkout-btn')) {
+        //     e.preventDefault();
+        //     proceedToCheckout();
+        // }
     });
 });
 
-// Cart modal functions
-async function openCartModal() {
-    try {
-        // Fetch current cart data
-        const response = await fetch('/api/cart');
-        if (response.ok) {
-            const cart = await response.json();
-            renderCartModal(cart);
-            
-            // Dispatch event to open modal
-            window.dispatchEvent(new CustomEvent('cart-modal-open'));
-        }
-    } catch (error) {
-        console.error('Error opening cart modal:', error);
-    }
-}
+// DISABLED: Cart modal functions - Cart now uses dedicated /cart page instead of popup modal
+// Keeping these commented out for reference in case they're needed in the future
 
-function renderCartModal(cart) {
-    const items = cart.items || [];
-    const modalItems = document.getElementById('modal-cart-items');
-    const modalEmpty = document.getElementById('modal-empty-cart');
-    const modalFooter = document.getElementById('modal-cart-footer');
-    const modalShippingSection = document.getElementById('modal-shipping-section');
-    const modalTotal = document.getElementById('modal-cart-total');
-    const modalSubtotal = document.getElementById('modal-cart-subtotal');
+// async function openCartModal() {
+//     try {
+//         // Fetch current cart data
+//         const response = await fetch('/api/cart');
+//         if (response.ok) {
+//             const cart = await response.json();
+//             renderCartModal(cart);
+//
+//             // Dispatch event to open modal
+//             window.dispatchEvent(new CustomEvent('cart-modal-open'));
+//         }
+//     } catch (error) {
+//         console.error('Error opening cart modal:', error);
+//     }
+// }
 
-    if (items.length === 0) {
-        modalItems.innerHTML = '';
-        modalEmpty.classList.remove('hidden');
-        modalFooter.classList.add('hidden');
-        modalShippingSection.classList.add('hidden');
-        return;
-    }
+// function renderCartModal(cart) {
+//     const items = cart.items || [];
+//     const modalItems = document.getElementById('modal-cart-items');
+//     const modalEmpty = document.getElementById('modal-empty-cart');
+//     const modalFooter = document.getElementById('modal-cart-footer');
+//     const modalShippingSection = document.getElementById('modal-shipping-section');
+//     const modalTotal = document.getElementById('modal-cart-total');
+//     const modalSubtotal = document.getElementById('modal-cart-subtotal');
 
-    modalEmpty.classList.add('hidden');
-    modalFooter.classList.remove('hidden');
-    modalShippingSection.classList.remove('hidden');
-    
-    // Render cart items
-    modalItems.innerHTML = items.map(item => {
-        // Fix image URL - check if it already has the full path
-        let imageSrc = '';
-        if (item.image_url) {
-            if (item.image_url.startsWith('/public/')) {
-                imageSrc = item.image_url;
-            } else if (item.image_url.startsWith('/images/')) {
-                imageSrc = '/public' + item.image_url;
-            } else {
-                imageSrc = '/public/images/products/' + item.image_url;
-            }
-        }
+//     if (items.length === 0) {
+//         modalItems.innerHTML = '';
+//         modalEmpty.classList.remove('hidden');
+//         modalFooter.classList.add('hidden');
+//         modalShippingSection.classList.add('hidden');
+//         return;
+//     }
 
-        const imageHtml = imageSrc ?
-            `<img src="${imageSrc}" alt="${item.name}" class="w-16 h-16 rounded-lg object-cover bg-slate-700/50">` :
-            `<div class="w-16 h-16 rounded-lg bg-slate-700/50 flex items-center justify-center">
-                <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-            </div>`;
-            
-        return `<div class="flex items-center space-x-4 p-4 bg-slate-700/50 rounded-xl mb-3">
-            ${imageHtml}
-            <div class="flex-1">
-                <h4 class="font-semibold text-white">${item.name}</h4>
-                <p class="text-emerald-400">$${(item.price_cents / 100).toFixed(2)}</p>
-            </div>
-            <div class="flex items-center space-x-2">
-                <div class="flex items-center space-x-2">
-                    <span class="text-slate-300 text-sm">Qty:</span>
-                    <button class="cart-update-btn w-6 h-6 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center text-sm transition-colors duration-200" data-cart-item-id="${item.id}" data-quantity="${item.quantity - 1}">−</button>
-                    <span class="text-white font-semibold min-w-[1.5rem] text-center text-sm">${item.quantity}</span>
-                    <button class="cart-update-btn w-6 h-6 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center text-sm transition-colors duration-200" data-cart-item-id="${item.id}" data-quantity="${item.quantity + 1}">+</button>
-                </div>
-                <button class="cart-remove-btn text-red-400 hover:text-red-300 p-1" data-cart-item-id="${item.id}">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>`;
-    }).join('');
-    
-    // Update subtotal and initialize shipping
-    const subtotal = cart.totalCents || 0;
-    modalSubtotal.textContent = '$' + (subtotal / 100).toFixed(2);
-    modalTotal.textContent = '$' + (subtotal / 100).toFixed(2); // Initial total = subtotal
+//     modalEmpty.classList.add('hidden');
+//     modalFooter.classList.remove('hidden');
+//     modalShippingSection.classList.remove('hidden');
+//
+//     // Render cart items
+//     modalItems.innerHTML = items.map(item => {
+//         // Fix image URL - check if it already has the full path
+//         let imageSrc = '';
+//         if (item.image_url) {
+//             if (item.image_url.startsWith('/public/')) {
+//                 imageSrc = item.image_url;
+//             } else if (item.image_url.startsWith('/images/')) {
+//                 imageSrc = '/public' + item.image_url;
+//             } else {
+//                 imageSrc = '/public/images/products/' + item.image_url;
+//             }
+//         }
 
-    // Initialize shipping options
-    if (window.shippingManager) {
-        window.shippingManager.updateShippingUI('address-required');
-    }
-    
-    // Add event listeners to modal remove buttons after rendering
-    const modalRemoveButtons = document.querySelectorAll('#modal-cart-items .cart-remove-btn');
-    modalRemoveButtons.forEach(button => {
-        // Remove any existing listeners to avoid duplicates
-        button.removeEventListener('click', handleModalRemove);
-        button.addEventListener('click', handleModalRemove);
-    });
+//         const imageHtml = imageSrc ?
+//             `<img src="${imageSrc}" alt="${item.name}" class="w-16 h-16 rounded-lg object-cover bg-slate-700/50">` :
+//             `<div class="w-16 h-16 rounded-lg bg-slate-700/50 flex items-center justify-center">
+//                 <svg class="w-8 h-8 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+//                 </svg>
+//             </div>`;
+//
+//         return `<div class="flex items-center space-x-4 p-4 bg-slate-700/50 rounded-xl mb-3">
+//             ${imageHtml}
+//             <div class="flex-1">
+//                 <h4 class="font-semibold text-white">${item.name}</h4>
+//                 <p class="text-emerald-400">$${(item.price_cents / 100).toFixed(2)}</p>
+//             </div>
+//             <div class="flex items-center space-x-2">
+//                 <div class="flex items-center space-x-2">
+//                     <span class="text-slate-300 text-sm">Qty:</span>
+//                     <button class="cart-update-btn w-6 h-6 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center text-sm transition-colors duration-200" data-cart-item-id="${item.id}" data-quantity="${item.quantity - 1}">−</button>
+//                     <span class="text-white font-semibold min-w-[1.5rem] text-center text-sm">${item.quantity}</span>
+//                     <button class="cart-update-btn w-6 h-6 rounded-full bg-slate-600/50 hover:bg-slate-500/50 text-white flex items-center justify-center text-sm transition-colors duration-200" data-cart-item-id="${item.id}" data-quantity="${item.quantity + 1}">+</button>
+//                 </div>
+//                 <button class="cart-remove-btn text-red-400 hover:text-red-300 p-1" data-cart-item-id="${item.id}">
+//                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+//                     </svg>
+//                 </button>
+//             </div>
+//         </div>`;
+//     }).join('');
+//
+//     // Update subtotal and initialize shipping
+//     const subtotal = cart.totalCents || 0;
+//     modalSubtotal.textContent = '$' + (subtotal / 100).toFixed(2);
+//     modalTotal.textContent = '$' + (subtotal / 100).toFixed(2); // Initial total = subtotal
 
-    // Add event listeners to modal quantity update buttons
-    const modalUpdateButtons = document.querySelectorAll('#modal-cart-items .cart-update-btn');
-    modalUpdateButtons.forEach(button => {
-        // Remove any existing listeners to avoid duplicates
-        button.removeEventListener('click', handleModalQuantityUpdate);
-        button.addEventListener('click', handleModalQuantityUpdate);
-    });
+//     // Initialize shipping options
+//     if (window.shippingManager) {
+//         window.shippingManager.updateShippingUI('address-required');
+//     }
+//
+//     // Add event listeners to modal remove buttons after rendering
+//     const modalRemoveButtons = document.querySelectorAll('#modal-cart-items .cart-remove-btn');
+//     modalRemoveButtons.forEach(button => {
+//         // Remove any existing listeners to avoid duplicates
+//         button.removeEventListener('click', handleModalRemove);
+//         button.addEventListener('click', handleModalRemove);
+//     });
 
-    // Add event listener to modal checkout button
-    const modalCheckoutButton = document.querySelector('.modal-checkout-btn');
-    if (modalCheckoutButton) {
-        modalCheckoutButton.removeEventListener('click', handleModalCheckout);
-        modalCheckoutButton.addEventListener('click', handleModalCheckout);
-    }
-}
+//     // Add event listeners to modal quantity update buttons
+//     const modalUpdateButtons = document.querySelectorAll('#modal-cart-items .cart-update-btn');
+//     modalUpdateButtons.forEach(button => {
+//         // Remove any existing listeners to avoid duplicates
+//         button.removeEventListener('click', handleModalQuantityUpdate);
+//         button.addEventListener('click', handleModalQuantityUpdate);
+//     });
 
-// Handler specifically for modal remove buttons
-function handleModalRemove(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const button = e.currentTarget;
-    const cartItemId = button.dataset.cartItemId;
-    
-    console.log('Modal remove button clicked, ID:', cartItemId);
-    
-    if (cartItemId) {
-        removeFromCart(cartItemId);
-    }
-}
+//     // Add event listener to modal checkout button
+//     const modalCheckoutButton = document.querySelector('.modal-checkout-btn');
+//     if (modalCheckoutButton) {
+//         modalCheckoutButton.removeEventListener('click', handleModalCheckout);
+//         modalCheckoutButton.addEventListener('click', handleModalCheckout);
+//     }
+// }
 
-// Handler specifically for modal quantity update buttons
-function handleModalQuantityUpdate(e) {
-    e.preventDefault();
-    e.stopPropagation();
+// // Handler specifically for modal remove buttons
+// function handleModalRemove(e) {
+//     e.preventDefault();
+//     e.stopPropagation();
+//
+//     const button = e.currentTarget;
+//     const cartItemId = button.dataset.cartItemId;
+//
+//     console.log('Modal remove button clicked, ID:', cartItemId);
+//
+//     if (cartItemId) {
+//         removeFromCart(cartItemId);
+//     }
+// }
 
-    const button = e.currentTarget;
-    const cartItemId = button.dataset.cartItemId;
-    const quantity = parseInt(button.dataset.quantity);
+// // Handler specifically for modal quantity update buttons
+// function handleModalQuantityUpdate(e) {
+//     e.preventDefault();
+//     e.stopPropagation();
 
-    console.log('Modal quantity update button clicked, ID:', cartItemId, 'New quantity:', quantity);
+//     const button = e.currentTarget;
+//     const cartItemId = button.dataset.cartItemId;
+//     const quantity = parseInt(button.dataset.quantity);
 
-    if (cartItemId && !isNaN(quantity)) {
-        updateCartQuantity(cartItemId, quantity);
-    }
-}
+//     console.log('Modal quantity update button clicked, ID:', cartItemId, 'New quantity:', quantity);
 
-// Handler specifically for modal checkout button
-function handleModalCheckout(e) {
-    e.preventDefault();
-    e.stopPropagation();
+//     if (cartItemId && !isNaN(quantity)) {
+//         updateCartQuantity(cartItemId, quantity);
+//     }
+// }
 
-    console.log('Modal checkout button clicked');
-    proceedToCheckout();
-}
+// // Handler specifically for modal checkout button
+// function handleModalCheckout(e) {
+//     e.preventDefault();
+//     e.stopPropagation();
+
+//     console.log('Modal checkout button clicked');
+//     proceedToCheckout();
+// }
 
 // Interactive Cart Button Effects
 function initializeCartHoverEffects() {
@@ -605,10 +617,10 @@ function initializeCartHoverEffects() {
 function updateCartCountWithAnimation(newCount) {
     const cartCountElement = document.querySelector('#cart-count');
     const cartButton = document.querySelector('.chatgpt-cart-btn, .modern-cart-btn, .custom-cart-btn');
-    
+
     if (cartCountElement && cartButton) {
         const oldCount = parseInt(cartCountElement.textContent) || 0;
-        
+
         if (newCount > oldCount) {
             // Trigger pulse animation for new items
             cartButton.classList.add('cart-added');
@@ -616,7 +628,7 @@ function updateCartCountWithAnimation(newCount) {
                 cartButton.classList.remove('cart-added');
             }, 500);
         }
-        
+
         cartCountElement.textContent = newCount;
         if (newCount > 0) {
             cartCountElement.style.display = 'flex';
@@ -626,4 +638,21 @@ function updateCartCountWithAnimation(newCount) {
             cartCountElement.classList.remove('show');
         }
     }
+}
+
+// Fallback: Also update cart count when Clerk finishes loading
+// This handles the case where Clerk loads after DOMContentLoaded
+window.addEventListener('clerk:loaded', () => {
+    console.debug('Clerk loaded event fired, updating cart count');
+    updateCartCount();
+});
+
+// Additional fallback: Update cart count when Clerk session becomes available
+if (window.Clerk) {
+    window.Clerk.addListener((event) => {
+        if (event.session) {
+            console.debug('Clerk session available, updating cart count');
+            updateCartCount();
+        }
+    });
 }

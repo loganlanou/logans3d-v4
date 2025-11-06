@@ -192,7 +192,7 @@ templ Header(c echo.Context) {
 						</div>
 					}
 					<!-- Cart -->
-					<button class="cart-preview-btn text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2 relative cursor-pointer hover:cursor-pointer" title="View Cart">
+					<a href="/cart" class="text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2 relative cursor-pointer hover:cursor-pointer block" title="View Cart">
 						<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
 							<!-- Cart handle -->
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 3h3l.5 2h13.5a1 1 0 0 1 .98 1.2l-1 5A1 1 0 0 1 18 12H7.5"></path>
@@ -209,7 +209,7 @@ templ Header(c echo.Context) {
 						</svg>
 						<!-- Cart count badge -->
 						<span id="cart-count" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center" style="display: none;">0</span>
-					</button>
+					</a>
 					<!-- Mobile menu button -->
 					<div class="md:hidden">
 						<button class="text-gray-700 hover:text-3d-blue transition-colors duration-200 p-2" x-data @click="$dispatch('toggle-menu')" aria-label="Toggle mobile menu">
@@ -247,7 +247,7 @@ templ MobileMenu(c echo.Context) {
 				<li><a href="/portfolio" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Portfolio</a></li>
 				<li><a href="/about" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">About</a></li>
 				<li><a href="/contact" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">Contact</a></li>
-				<li><button class="cart-preview-btn block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded text-left w-full" @click="open = false">View Cart</button></li>
+				<li><a href="/cart" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">View Cart</a></li>
 				<li class="border-t border-gray-700 pt-2 mt-2">
 					if _, ok := auth.GetDBUser(c); ok {
 						<a href="/account" class="block px-4 py-2 text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150 rounded" @click="open = false">My Account</a>

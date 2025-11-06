@@ -22,24 +22,31 @@ document.addEventListener('DOMContentLoaded', function() {
     function renderCart(cart) {
         const items = cart.items || [];
         const emptyCart = document.getElementById('empty-cart');
+        const cartItemsSection = document.getElementById('cart-items-section');
         const cartItems = document.getElementById('cart-items');
         const cartSummary = document.getElementById('cart-summary');
         const cartShipping = document.getElementById('cart-shipping');
         const cartTotal = document.getElementById('cart-total');
         const cartSubtotal = document.getElementById('cart-subtotal');
+        const checkoutSteps = document.getElementById('checkout-steps');
 
         if (items.length === 0) {
             emptyCart.classList.remove('hidden');
-            cartItems.classList.add('hidden');
+            if (cartItemsSection) cartItemsSection.classList.add('hidden');
             cartSummary.classList.add('hidden');
             cartShipping.classList.add('hidden');
+            if (checkoutSteps) checkoutSteps.classList.add('hidden');
             return;
         }
 
         emptyCart.classList.add('hidden');
-        cartItems.classList.remove('hidden');
+        if (cartItemsSection) cartItemsSection.classList.remove('hidden');
         cartSummary.classList.remove('hidden');
         cartShipping.classList.remove('hidden');
+        if (checkoutSteps) checkoutSteps.classList.remove('hidden');
+
+        // Initialize checkout button in disabled state
+        initializeCheckoutButton();
         
         // Render cart items using string concatenation
         cartItems.innerHTML = items.map(item => {
@@ -98,9 +105,28 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Initialize checkout button in disabled state
+    function initializeCheckoutButton() {
+        const checkoutBtn = document.getElementById('proceed-checkout-btn');
+        const checkoutBtnText = document.getElementById('checkout-btn-text');
+
+        if (checkoutBtn) {
+            checkoutBtn.disabled = true;
+            checkoutBtn.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-emerald-600', 'hover:from-blue-700', 'hover:to-emerald-700', 'shadow-lg', 'hover:shadow-xl', 'hover:shadow-emerald-500/25', 'transform', 'hover:-translate-y-1');
+            checkoutBtn.classList.add('bg-slate-600', 'cursor-not-allowed', 'opacity-50');
+
+            if (checkoutBtnText) {
+                checkoutBtnText.textContent = 'Select Shipping to Continue';
+            }
+        }
+    }
+
+    // Make initializeCheckoutButton globally available
+    window.initializeCheckoutButton = initializeCheckoutButton;
+
     // Initial render
     fetchAndRenderCart();
-    
+
     // Make fetchAndRenderCart globally available for cart updates
     window.refreshCart = fetchAndRenderCart;
 });

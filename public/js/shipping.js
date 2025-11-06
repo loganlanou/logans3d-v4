@@ -64,6 +64,7 @@ class ShippingManager {
     // Save shipping selection to backend
     async saveShippingSelection(option) {
         try {
+            console.log('Saving shipping selection:', option);
             const response = await fetch('/api/shipping/selection', {
                 method: 'POST',
                 headers: {
@@ -85,14 +86,21 @@ class ShippingManager {
                 })
             });
 
+            console.log('Shipping selection response:', response.status, response.statusText);
+
             if (!response.ok) {
-                throw new Error('Failed to save shipping selection');
+                const errorText = await response.text();
+                console.error('Shipping selection failed:', response.status, errorText);
+                throw new Error(`Failed to save shipping selection: ${response.status} ${errorText}`);
             }
+
+            const result = await response.json();
+            console.log('Shipping selection saved successfully:', result);
 
             // Enable checkout button after successful save
             this.enableCheckoutButton();
 
-            return await response.json();
+            return result;
         } catch (error) {
             console.error('Error saving shipping selection:', error);
             throw error;
@@ -111,6 +119,13 @@ class ShippingManager {
             case 'rates':
                 shippingContainer.innerHTML = this.getShippingRatesHTML();
                 this.attachShippingEventListeners();
+                // Auto-select first rate after rendering
+                if (this.shippingRates && this.shippingRates.length > 0) {
+                    setTimeout(() => {
+                        console.log('Auto-selecting first shipping option:', this.shippingRates[0].rate_id);
+                        this.selectShippingOption(this.shippingRates[0].rate_id);
+                    }, 100);
+                }
                 break;
             case 'error':
                 shippingContainer.innerHTML = this.getErrorHTML(message);
@@ -155,9 +170,27 @@ class ShippingManager {
             .then(response => response.json())
             .then(cart => {
                 const subtotal = cart.totalCents || 0;
-                const shippingCost = this.selectedShippingOption ?
-                    Math.round(parseFloat(this.selectedShippingOption.total_cost) * 100) : 0;
+
+                // Handle both fresh rates (total_cost) and saved selections (price_cents)
+                let shippingCost = 0;
+                if (this.selectedShippingOption) {
+                    if (this.selectedShippingOption.price_cents !== undefined) {
+                        // Saved selection from database - already in cents
+                        shippingCost = this.selectedShippingOption.price_cents;
+                    } else if (this.selectedShippingOption.total_cost !== undefined) {
+                        // Fresh rate - need to convert from dollars to cents
+                        shippingCost = Math.round(parseFloat(this.selectedShippingOption.total_cost) * 100);
+                    }
+                }
+
                 const total = subtotal + shippingCost;
+
+                console.log('Cart total calculation:', {
+                    subtotal,
+                    shippingCost,
+                    total,
+                    selectedOption: this.selectedShippingOption
+                });
 
                 // Update display elements
                 if (subtotalElement) {
@@ -168,6 +201,9 @@ class ShippingManager {
                         '$' + (shippingCost / 100).toFixed(2) : 'TBD';
                 }
                 cartTotalElement.textContent = '$' + (total / 100).toFixed(2);
+
+                // Update checkout button text with new total
+                this.updateCheckoutButtonText();
             })
             .catch(error => {
                 console.error('Error updating cart total:', error);
@@ -477,6 +513,9 @@ class ShippingManager {
                     </div>
                 </div>
             `;
+
+            // Update step indicators when showing saved shipping
+            this.updateStepIndicators('shipping-selected');
         }
     }
 
@@ -487,20 +526,111 @@ class ShippingManager {
     }
 
     enableCheckoutButton() {
-        const checkoutBtn = document.querySelector('.proceed-checkout-btn');
+        console.log('Enabling checkout button');
+        const checkoutBtn = document.getElementById('proceed-checkout-btn');
+        const checkoutBtnText = document.getElementById('checkout-btn-text');
+
         if (checkoutBtn) {
+            console.log('Checkout button found, enabling...');
             checkoutBtn.disabled = false;
-            checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            // Remove disabled styling
+            checkoutBtn.classList.remove('bg-slate-600', 'cursor-not-allowed', 'opacity-50');
+
+            // Add enabled styling
+            checkoutBtn.classList.add('bg-gradient-to-r', 'from-blue-600', 'to-emerald-600', 'hover:from-blue-700', 'hover:to-emerald-700', 'shadow-lg', 'hover:shadow-xl', 'hover:shadow-emerald-500/25', 'transform', 'hover:-translate-y-1');
+
             checkoutBtn.title = '';
+
+            // Update button text with total
+            this.updateCheckoutButtonText();
+
+            console.log('Checkout button enabled successfully');
+        } else {
+            console.error('Checkout button not found!');
         }
+
+        // Update step indicators
+        this.updateStepIndicators('shipping-selected');
     }
 
     disableCheckoutButton() {
-        const checkoutBtn = document.querySelector('.proceed-checkout-btn');
+        const checkoutBtn = document.getElementById('proceed-checkout-btn');
+        const checkoutBtnText = document.getElementById('checkout-btn-text');
+
         if (checkoutBtn) {
             checkoutBtn.disabled = true;
-            checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Remove enabled styling
+            checkoutBtn.classList.remove('bg-gradient-to-r', 'from-blue-600', 'to-emerald-600', 'hover:from-blue-700', 'hover:to-emerald-700', 'shadow-lg', 'hover:shadow-xl', 'hover:shadow-emerald-500/25', 'transform', 'hover:-translate-y-1');
+
+            // Add disabled styling
+            checkoutBtn.classList.add('bg-slate-600', 'cursor-not-allowed', 'opacity-50');
+
             checkoutBtn.title = 'Please select shipping to continue';
+
+            if (checkoutBtnText) {
+                checkoutBtnText.textContent = 'Select Shipping to Continue';
+            }
+        }
+
+        // Update step indicators
+        this.updateStepIndicators('shipping-not-selected');
+    }
+
+    updateCheckoutButtonText() {
+        const checkoutBtnText = document.getElementById('checkout-btn-text');
+        const cartTotalElement = document.getElementById('cart-total');
+
+        if (checkoutBtnText && cartTotalElement) {
+            const totalText = cartTotalElement.textContent;
+            checkoutBtnText.textContent = `Checkout - ${totalText}`;
+        }
+    }
+
+    updateStepIndicators(state) {
+        const step2Indicator = document.getElementById('step-2-indicator');
+        const step2Label = document.getElementById('step-2-label');
+        const step3Indicator = document.getElementById('step-3-indicator');
+        const step3Label = document.getElementById('step-3-label');
+
+        if (!step2Indicator) return;
+
+        if (state === 'shipping-selected') {
+            // Mark step 2 as complete
+            step2Indicator.innerHTML = '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+            step2Indicator.classList.remove('bg-slate-700/50', 'border-slate-600', 'text-slate-400');
+            step2Indicator.classList.add('bg-green-500/20', 'border-green-500', 'text-green-400');
+            if (step2Label) {
+                step2Label.classList.remove('text-slate-400');
+                step2Label.classList.add('text-green-400');
+            }
+
+            // Activate step 3
+            step3Indicator.classList.remove('bg-slate-700/50', 'border-slate-600', 'text-slate-400');
+            step3Indicator.classList.add('bg-blue-500/20', 'border-blue-500', 'text-blue-400');
+            if (step3Label) {
+                step3Label.classList.remove('text-slate-400');
+                step3Label.classList.add('text-blue-400');
+            }
+        } else {
+            // Reset step 2 to pending
+            step2Indicator.textContent = '2';
+            step2Indicator.classList.remove('bg-green-500/20', 'border-green-500', 'text-green-400', 'bg-blue-500/20', 'border-blue-500', 'text-blue-400');
+            step2Indicator.classList.add('bg-slate-700/50', 'border-slate-600', 'text-slate-400');
+            if (step2Label) {
+                step2Label.classList.remove('text-green-400', 'text-blue-400');
+                step2Label.classList.add('text-slate-400');
+            }
+
+            // Reset step 3 to pending
+            step3Indicator.textContent = '3';
+            step3Indicator.classList.remove('bg-green-500/20', 'border-green-500', 'text-green-400', 'bg-blue-500/20', 'border-blue-500', 'text-blue-400');
+            step3Indicator.classList.add('bg-slate-700/50', 'border-slate-600', 'text-slate-400');
+            if (step3Label) {
+                step3Label.classList.remove('text-green-400', 'text-blue-400');
+                step3Label.classList.add('text-slate-400');
+            }
         }
     }
 }

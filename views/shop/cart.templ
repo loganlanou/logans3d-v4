@@ -48,6 +48,43 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 						Your Shopping Cart
 					</h1>
 
+					<!-- Progress Steps (hidden when empty) -->
+					<div id="checkout-steps" class="hidden mb-8">
+						<div class="flex items-center justify-center space-x-4">
+							<!-- Step 1: Review Items -->
+							<div class="flex items-center">
+								<div id="step-1-indicator" class="flex items-center justify-center w-10 h-10 rounded-full bg-green-500/20 border-2 border-green-500 text-green-400 font-bold">
+									<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+									</svg>
+								</div>
+								<span class="ml-2 text-sm font-medium text-green-400">Review Items</span>
+							</div>
+
+							<!-- Connector Line -->
+							<div class="w-16 h-0.5 bg-slate-600"></div>
+
+							<!-- Step 2: Select Shipping -->
+							<div class="flex items-center">
+								<div id="step-2-indicator" class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700/50 border-2 border-slate-600 text-slate-400 font-bold">
+									2
+								</div>
+								<span id="step-2-label" class="ml-2 text-sm font-medium text-slate-400">Select Shipping</span>
+							</div>
+
+							<!-- Connector Line -->
+							<div class="w-16 h-0.5 bg-slate-600"></div>
+
+							<!-- Step 3: Checkout -->
+							<div class="flex items-center">
+								<div id="step-3-indicator" class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700/50 border-2 border-slate-600 text-slate-400 font-bold">
+									3
+								</div>
+								<span id="step-3-label" class="ml-2 text-sm font-medium text-slate-400">Checkout</span>
+							</div>
+						</div>
+					</div>
+
 					<!-- Cart Items Container (populated by JavaScript) -->
 					<div id="cart-items-container">
 						<!-- Empty cart state -->
@@ -67,21 +104,43 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 							</div>
 						</div>
 
-						<!-- Cart items will be populated here by JavaScript -->
-						<div id="cart-items" class="hidden space-y-6">
-							<!-- Items will be inserted here -->
+						<!-- Cart items section with header -->
+						<div id="cart-items-section" class="hidden">
+							<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-8">
+								<h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+									<svg class="w-6 h-6 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+									</svg>
+									Step 1: Review Your Items
+								</h2>
+								<div id="cart-items" class="space-y-6">
+									<!-- Items will be inserted here -->
+								</div>
+							</div>
 						</div>
 					</div>
 
-					<!-- Shipping Options (hidden when empty) -->
+					<!-- Shipping Section with clear header -->
 					<div id="cart-shipping" class="hidden mt-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-8">
+						<h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+							<svg class="w-6 h-6 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h18v18H3zM3 9h18M9 21V9"></path>
+							</svg>
+							Step 2: Select Shipping Method
+						</h2>
 						<div id="shipping-options-container">
 							<!-- Shipping options will be populated by JavaScript -->
 						</div>
 					</div>
 
-					<!-- Cart Summary (hidden when empty) -->
+					<!-- Cart Summary with prominent checkout button -->
 					<div id="cart-summary" class="hidden mt-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-8">
+						<h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+							<svg class="w-6 h-6 mr-2 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+							</svg>
+							Order Summary
+						</h2>
 						<div class="space-y-4 mb-6 pb-6 border-b border-slate-600/50">
 							<div class="flex justify-between items-center">
 								<span class="text-lg text-slate-300">Subtotal:</span>
@@ -99,13 +158,13 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 								<span class="text-sm text-slate-400 italic">Tax calculated at checkout</span>
 							</div>
 						</div>
-						
+
 						<div class="flex flex-col sm:flex-row gap-4">
 							<a href="/shop" class="flex-1 bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-4 px-6 rounded-xl font-semibold text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm">
 								Continue Shopping
 							</a>
-							<button class="proceed-checkout-btn flex-1 bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-4 px-6 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1">
-								Proceed to Checkout
+							<button id="proceed-checkout-btn" class="proceed-checkout-btn flex-1 py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300">
+								<span id="checkout-btn-text">Select Shipping to Continue</span>
 							</button>
 						</div>
 					</div>
