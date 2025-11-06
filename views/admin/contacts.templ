@@ -3,6 +3,7 @@ package admin
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/components/button"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 	"time"
@@ -171,13 +172,13 @@ templ ContactsTable(contacts []db.ContactRequest) {
 					<table class="admin-table">
 						<thead>
 							<tr>
-								<th>Status</th>
-								<th>Priority</th>
-								<th>Name</th>
-								<th>Contact</th>
-								<th>Subject</th>
-								<th>Message</th>
-								<th>Received</th>
+								<th class="text-left">Status</th>
+								<th class="text-left">Priority</th>
+								<th class="text-left">Name</th>
+								<th class="text-left">Contact</th>
+								<th class="text-left">Subject</th>
+								<th class="text-left">Received</th>
+								<th class="text-right">Actions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -189,45 +190,72 @@ templ ContactsTable(contacts []db.ContactRequest) {
 								</tr>
 							}
 							for _, contact := range contacts {
-								<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;">
-									<td>
-										@StatusBadge(contact.Status.String)
-									</td>
-									<td>
-										@PriorityBadge(contact.Priority.String)
-									</td>
-									<td>
-										<div class="admin-text-primary admin-font-medium">{ contact.FirstName } { contact.LastName }</div>
-										if contact.NewsletterSubscribe.Bool {
-											<div class="text-xs text-green-600">📧 Newsletter</div>
-										}
-									</td>
-									<td>
-										if contact.Email.Valid {
-											<div class="text-sm">
-												<a href={ templ.URL("mailto:" + contact.Email.String) } class="text-blue-600 hover:text-blue-800" onclick="event.stopPropagation()">
-													{ contact.Email.String }
-												</a>
+								<tbody>
+									<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;" class="hover:bg-slate-800/50">
+										<td>
+											@StatusIcon(contact.Status.String)
+										</td>
+										<td>
+											@PriorityIcon(contact.Priority.String)
+										</td>
+										<td>
+											<div class="admin-text-primary admin-font-medium">{ contact.FirstName } { contact.LastName }</div>
+											if contact.NewsletterSubscribe.Bool {
+												<div class="text-xs text-green-600 mt-1">📧 Newsletter</div>
+											}
+										</td>
+										<td>
+											if contact.Email.Valid {
+												<div class="text-xs">
+													<a href={ templ.URL("mailto:" + contact.Email.String) } class="text-blue-500 hover:text-blue-400" onclick="event.stopPropagation()">
+														{ contact.Email.String }
+													</a>
+												</div>
+											}
+											if contact.Phone.Valid {
+												<div class="text-xs text-gray-400 mt-1">{ contact.Phone.String }</div>
+											}
+										</td>
+										<td>
+											<div class="text-sm text-gray-300">{ formatSubject(contact.Subject) }</div>
+										</td>
+										<td>
+											<div class="text-sm text-gray-400">
+												if contact.CreatedAt.Valid {
+													{ formatTime(contact.CreatedAt.Time) }
+												} else {
+													<span class="text-gray-500">Unknown</span>
+												}
 											</div>
-										}
-										if contact.Phone.Valid {
-											<div class="text-sm admin-text-muted">{ contact.Phone.String }</div>
-										}
-									</td>
-									<td>
-										{ formatSubject(contact.Subject) }
-									</td>
-									<td>
-										<div class="max-w-md truncate">{ contact.Message }</div>
-									</td>
-									<td>
-										if contact.CreatedAt.Valid {
-											{ formatTime(contact.CreatedAt.Time) }
-										} else {
-											<span class="admin-text-disabled">Unknown</span>
-										}
-									</td>
-								</tr>
+										</td>
+										<td class="text-right">
+											<div onclick="event.stopPropagation()">
+												@button.Button(button.Props{
+													Variant: button.VariantDestructive,
+													Size:    button.SizeSm,
+													Attributes: templ.Attributes{
+														"hx-post":   fmt.Sprintf("/admin/contacts/%s/status", contact.ID),
+														"hx-vals":   `{"status": "spam"}`,
+														"hx-target": "closest tbody",
+														"hx-swap":   "delete",
+													},
+												}) {
+													<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
+													</svg>
+													Spam
+												}
+											</div>
+										</td>
+									</tr>
+									<tr class="hover:bg-slate-800/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;">
+										<td colspan="7" class="px-6 py-3 text-sm text-gray-400 bg-slate-900/20 border-t border-slate-700/30">
+											<div class="pl-4 italic">
+												{ contact.Message }
+											</div>
+										</td>
+									</tr>
+								</tbody>
 							}
 						</tbody>
 					</table>
@@ -235,35 +263,87 @@ templ ContactsTable(contacts []db.ContactRequest) {
 			</div>
 }
 
-templ StatusBadge(status string) {
+templ StatusIcon(status string) {
+	<div class="flex items-center gap-2" title={ getStatusLabel(status) }>
+		switch status {
+			case "new":
+				<span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+				<span class="text-xs text-gray-300">New</span>
+			case "in_progress":
+				<span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+				<span class="text-xs text-gray-300">In Progress</span>
+			case "responded":
+				<span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+				<span class="text-xs text-gray-300">Responded</span>
+			case "resolved":
+				<span class="w-2.5 h-2.5 rounded-full bg-gray-500"></span>
+				<span class="text-xs text-gray-300">Resolved</span>
+			case "spam":
+				<span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+				<span class="text-xs text-gray-300">Spam</span>
+			default:
+				<span class="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
+				<span class="text-xs text-gray-300">{ status }</span>
+		}
+	</div>
+}
+
+templ PriorityIcon(priority string) {
+	<div class="flex items-center gap-1.5" title={ getPriorityLabel(priority) }>
+		switch priority {
+			case "urgent":
+				<svg class="w-3.5 h-3.5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+					<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+				</svg>
+				<span class="text-xs text-gray-400">Urgent</span>
+			case "high":
+				<svg class="w-3.5 h-3.5 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+					<path d="M10 2a.75.75 0 01.75.75v8.5a.75.75 0 01-1.5 0v-8.5A.75.75 0 0110 2z"></path>
+					<path fill-rule="evenodd" d="M10 15a5 5 0 100-10 5 5 0 000 10z" clip-rule="evenodd"></path>
+				</svg>
+				<span class="text-xs text-gray-400">High</span>
+			case "normal":
+				<span class="w-2 h-2 rounded-full bg-blue-500"></span>
+				<span class="text-xs text-gray-400">Normal</span>
+			case "low":
+				<span class="w-2 h-2 rounded-full bg-gray-500"></span>
+				<span class="text-xs text-gray-400">Low</span>
+			default:
+				<span class="w-2 h-2 rounded-full bg-gray-400"></span>
+				<span class="text-xs text-gray-400">{ priority }</span>
+		}
+	</div>
+}
+
+func getStatusLabel(status string) string {
 	switch status {
-		case "new":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">New</span>
-		case "in_progress":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">In Progress</span>
-		case "responded":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Responded</span>
-		case "resolved":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Resolved</span>
-		case "spam":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Spam</span>
-		default:
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">{ status }</span>
+	case "new":
+		return "New"
+	case "in_progress":
+		return "In Progress"
+	case "responded":
+		return "Responded"
+	case "resolved":
+		return "Resolved"
+	case "spam":
+		return "Spam"
+	default:
+		return status
 	}
 }
 
-templ PriorityBadge(priority string) {
+func getPriorityLabel(priority string) string {
 	switch priority {
-		case "urgent":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Urgent</span>
-		case "high":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">High</span>
-		case "normal":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Normal</span>
-		case "low":
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">Low</span>
-		default:
-			<span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-600">{ priority }</span>
+	case "urgent":
+		return "Urgent"
+	case "high":
+		return "High"
+	case "normal":
+		return "Normal"
+	case "low":
+		return "Low"
+	default:
+		return priority
 	}
 }
 
@@ -591,4 +671,73 @@ func formatTime(t time.Time) string {
 	}
 
 	return t.Format("Jan 2, 2006")
+}
+
+templ RenderContactRow(c echo.Context, contact db.ContactRequest) {
+	<tbody>
+		<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;" class="hover:bg-slate-800/50">
+			<td>
+				@StatusIcon(contact.Status.String)
+			</td>
+			<td>
+				@PriorityIcon(contact.Priority.String)
+			</td>
+			<td>
+				<div class="admin-text-primary admin-font-medium">{ contact.FirstName } { contact.LastName }</div>
+				if contact.NewsletterSubscribe.Bool {
+					<div class="text-xs text-green-600 mt-1">📧 Newsletter</div>
+				}
+			</td>
+			<td>
+				if contact.Email.Valid {
+					<div class="text-xs">
+						<a href={ templ.URL("mailto:" + contact.Email.String) } class="text-blue-500 hover:text-blue-400" onclick="event.stopPropagation()">
+							{ contact.Email.String }
+						</a>
+					</div>
+				}
+				if contact.Phone.Valid {
+					<div class="text-xs text-gray-400 mt-1">{ contact.Phone.String }</div>
+				}
+			</td>
+			<td>
+				<div class="text-sm text-gray-300">{ formatSubject(contact.Subject) }</div>
+			</td>
+			<td>
+				<div class="text-sm text-gray-400">
+					if contact.CreatedAt.Valid {
+						{ formatTime(contact.CreatedAt.Time) }
+					} else {
+						<span class="text-gray-500">Unknown</span>
+					}
+				</div>
+			</td>
+			<td class="text-right">
+				<div onclick="event.stopPropagation()">
+					@button.Button(button.Props{
+						Variant: button.VariantDestructive,
+						Size:    button.SizeSm,
+						Attributes: templ.Attributes{
+							"hx-post":   fmt.Sprintf("/admin/contacts/%s/status", contact.ID),
+							"hx-vals":   `{"status": "spam"}`,
+							"hx-target": "closest tbody",
+							"hx-swap":   "delete",
+						},
+					}) {
+						<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
+						</svg>
+						Spam
+					}
+				</div>
+			</td>
+		</tr>
+		<tr class="hover:bg-slate-800/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;">
+			<td colspan="7" class="px-6 py-3 text-sm text-gray-400 bg-slate-900/20 border-t border-slate-700/30">
+				<div class="pl-4 italic">
+					{ contact.Message }
+				</div>
+			</td>
+		</tr>
+	</tbody>
 }
