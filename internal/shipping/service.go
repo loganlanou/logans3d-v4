@@ -226,38 +226,6 @@ func (s *ShippingService) getRatesForBox(boxSelection BoxSelection, shipTo Addre
 	return allRates, nil
 }
 
-// separateCarriersByType separates carrier IDs into USPS and non-USPS groups
-func (s *ShippingService) separateCarriersByType() (usps []string, other []string) {
-	for _, carrierID := range s.carrierIDs {
-		// Check if this is a USPS carrier by checking if the carrier nickname or code contains "usps" or "stamps"
-		// We'll make an API call to get carrier details, but for now use a simple heuristic
-		// ShipStation USPS carrier IDs typically contain "stamps_com" or similar
-		if s.isUSPSCarrier(carrierID) {
-			usps = append(usps, carrierID)
-		} else {
-			other = append(other, carrierID)
-		}
-	}
-	return usps, other
-}
-
-// isUSPSCarrier checks if a carrier ID represents a USPS carrier
-func (s *ShippingService) isUSPSCarrier(carrierID string) bool {
-	carrier, exists := s.carrierMap[carrierID]
-	if !exists {
-		// Simple check if not in map
-		return carrierID == "usps" || carrierID == "USPS"
-	}
-
-	// Check carrier code and nickname for USPS identifiers
-	code := carrier.CarrierCode
-	nickname := carrier.CarrierNickname
-
-	// EasyPost uses "USPS" for USPS carrier
-	return code == "USPS" || code == "usps" ||
-		nickname == "USPS"
-}
-
 // getRatesForCarriers gets rates for specific carriers from a specific origin
 func (s *ShippingService) getRatesForCarriers(carrierIDs []string, boxSelection BoxSelection, shipTo Address, shipFrom Address) ([]Rate, error) {
 	slog.Debug("getRatesForCarriers: Requesting rates",
