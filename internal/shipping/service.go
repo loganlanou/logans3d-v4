@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strings"
 )
 
 type ShippingOption struct {
@@ -267,35 +266,7 @@ func (s *ShippingService) getRatesForCarriers(carrierIDs []string, boxSelection 
 		return nil, fmt.Errorf("failed to get rates: %w", err)
 	}
 
-	// Filter rates by requested carriers if not using mock data
-	if !s.client.IsUsingMockData() && len(carrierIDs) > 0 {
-		var filteredRates []Rate
-		carrierSet := make(map[string]bool)
-		for _, id := range carrierIDs {
-			carrierSet[id] = true
-			// Also add uppercase version for case-insensitive matching
-			carrierSet[strings.ToUpper(id)] = true
-		}
-
-		for _, rate := range rates {
-			slog.Debug("getRatesForCarriers: Checking rate for filtering",
-				"carrier_code", rate.CarrierCode,
-				"carrier_id", rate.CarrierID,
-				"carrier_nickname", rate.CarrierNickname,
-				"requested_carriers", carrierIDs)
-
-			if carrierSet[rate.CarrierCode] || carrierSet[rate.CarrierID] ||
-				carrierSet[strings.ToUpper(rate.CarrierCode)] || carrierSet[strings.ToUpper(rate.CarrierID)] {
-				filteredRates = append(filteredRates, rate)
-				slog.Debug("getRatesForCarriers: Rate PASSED filter", "carrier", rate.CarrierCode)
-			} else {
-				slog.Debug("getRatesForCarriers: Rate FILTERED OUT", "carrier", rate.CarrierCode)
-			}
-		}
-		rates = filteredRates
-	}
-
-	slog.Debug("getRatesForCarriers: Received rates",
+	slog.Debug("getRatesForCarriers: Received rates from EasyPost",
 		"rate_count", len(rates),
 		"box_sku", boxSelection.Box.SKU)
 

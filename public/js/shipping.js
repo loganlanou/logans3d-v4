@@ -239,7 +239,7 @@ class ShippingManager {
                         Change ZIP Code
                     </button>
                 </div>
-                <div class="space-y-3">
+                <div class="space-y-3 max-h-96 overflow-y-auto pr-2 shipping-rates-scroll">
                     ${this.shippingRates.map(rate => `
                         <div class="shipping-option bg-slate-700/30 rounded-xl p-4 border border-slate-600/50 hover:border-blue-500/50 transition-all duration-200 cursor-pointer" data-rate-id="${rate.rate_id}">
                             <label class="flex items-center justify-between cursor-pointer">

@@ -87,6 +87,12 @@ func (c *EasyPostClient) GetRates(fromAddr Address, toAddr Address, pkg Package)
 		Phone:   fromAddr.Phone,
 	}
 
+	// FedEx requires phone numbers for rate quotes. If not provided, use placeholder
+	toPhone := toAddr.Phone
+	if toPhone == "" {
+		toPhone = "555-555-5555" // Placeholder for rate quotes
+	}
+
 	to := &easypost.Address{
 		Name:    toAddr.Name,
 		Street1: toAddr.AddressLine1,
@@ -95,7 +101,7 @@ func (c *EasyPostClient) GetRates(fromAddr Address, toAddr Address, pkg Package)
 		State:   toAddr.StateProvince,
 		Zip:     toAddr.PostalCode,
 		Country: toAddr.CountryCode,
-		Phone:   toAddr.Phone,
+		Phone:   toPhone,
 	}
 
 	// Create parcel - EasyPost uses pounds for weight

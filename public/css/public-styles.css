@@ -354,9 +354,6 @@
   .collapse {
     visibility: collapse;
   }
-  .invisible {
-    visibility: hidden;
-  }
   .visible {
     visibility: visible;
   }
@@ -2889,6 +2886,9 @@
   }
   .pt-32 {
     padding-top: calc(var(--spacing) * 32);
+  }
+  .pr-2 {
+    padding-right: calc(var(--spacing) * 2);
   }
   .pr-8 {
     padding-right: calc(var(--spacing) * 8);
@@ -6635,6 +6635,20 @@
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: #0080CC;
+}
+.shipping-rates-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.shipping-rates-scroll::-webkit-scrollbar-track {
+  background: rgba(51, 65, 85, 0.3);
+  border-radius: 10px;
+}
+.shipping-rates-scroll::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.5);
+  border-radius: 10px;
+}
+.shipping-rates-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.7);
 }
 .nav-link {
   padding: 0.75rem 1rem;
