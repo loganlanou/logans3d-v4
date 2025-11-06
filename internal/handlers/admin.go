@@ -503,6 +503,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 	name := c.FormValue("name")
 	description := c.FormValue("description")
 	shortDescription := c.FormValue("short_description")
+	disclaimer := c.FormValue("disclaimer")
 	priceStr := c.FormValue("price")
 	categoryID := c.FormValue("category_id")
 	sku := c.FormValue("sku")
@@ -541,6 +542,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 		IsActive:         sql.NullBool{Bool: true, Valid: true},
 		IsFeatured:       sql.NullBool{Bool: false, Valid: true},
 		IsPremium:        sql.NullBool{Bool: isPremiumCollection, Valid: true},
+		Disclaimer:       sql.NullString{String: disclaimer, Valid: disclaimer != ""},
 	}
 
 	_, err = h.storage.Queries.CreateProduct(c.Request().Context(), params)
@@ -619,6 +621,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	name := c.FormValue("name")
 	description := c.FormValue("description")
 	shortDescription := c.FormValue("short_description")
+	disclaimer := c.FormValue("disclaimer")
 	priceStr := c.FormValue("price")
 	categoryID := c.FormValue("category_id")
 	sku := c.FormValue("sku")
@@ -670,6 +673,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		IsActive:         sql.NullBool{Valid: false},
 		IsFeatured:       sql.NullBool{Valid: false},
 		IsPremium:        sql.NullBool{Valid: false},
+		Disclaimer:       sql.NullString{String: disclaimer, Valid: disclaimer != ""},
 	}
 
 	_, err = h.storage.Queries.UpdateProduct(c.Request().Context(), params)

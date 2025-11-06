@@ -93,6 +93,22 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 										placeholder="Brief product description"
 									/>
 								</div>
+								<!-- Disclaimer/Warning -->
+								<div>
+									<label for="disclaimer" class="block text-sm font-medium text-amber-400 mb-2">
+										⚠️ Safety Warning / Disclaimer
+									</label>
+									<textarea
+										id="disclaimer"
+										name="disclaimer"
+										rows="3"
+										class="w-full px-4 py-2.5 bg-amber-900/10 border border-amber-600/50 rounded-lg text-white placeholder-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all resize-vertical"
+										placeholder="e.g., Not recommended for rough play; designed for gentle handling and display"
+									>{ productDisclaimer(product) }</textarea>
+									<p class="mt-2 text-xs text-amber-400/80">
+										Important safety information or warnings that will be prominently displayed on the product page
+									</p>
+								</div>
 								<!-- Category -->
 								<div>
 									<label for="category_id" class="block text-sm font-medium text-slate-200 mb-2">
@@ -402,6 +418,13 @@ func productDescription(product *db.Product) string {
 func productShortDescription(product *db.Product) string {
 	if product != nil && product.ShortDescription.Valid {
 		return product.ShortDescription.String
+	}
+	return ""
+}
+
+func productDisclaimer(product *db.Product) string {
+	if product != nil && product.Disclaimer.Valid {
+		return product.Disclaimer.String
 	}
 	return ""
 }
