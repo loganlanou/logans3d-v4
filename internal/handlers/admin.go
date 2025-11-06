@@ -2935,6 +2935,19 @@ func (h *AdminHandler) HandleUpdateContactStatus(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to update status")
 	}
 
+	// Check if this is an HTMX request
+	if c.Request().Header.Get("HX-Request") == "true" {
+		// Fetch the updated contact to render the row
+		contact, err := h.storage.Queries.GetContactRequest(ctx, id)
+		if err != nil {
+			slog.Error("failed to fetch updated contact", "error", err, "id", id)
+			return c.String(http.StatusInternalServerError, "Failed to fetch updated contact")
+		}
+
+		// Render the updated table row
+		return Render(c, admin.RenderContactRow(c, contact))
+	}
+
 	// Return updated contact or redirect
 	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
 }
