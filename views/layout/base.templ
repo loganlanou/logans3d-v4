@@ -6,6 +6,7 @@ import (
 	"time"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/loganlanou/logans3d-v4/components/dialog"
 )
 
 templ Base(c echo.Context, meta PageMeta) {
@@ -91,6 +92,8 @@ templ Base(c echo.Context, meta PageMeta) {
 			<script src="/public/js/shipping.js?v=1"></script>
 			<!-- Scroll speed control -->
 			<script src="/public/js/scroll-control.js"></script>
+			<!-- TemplUI Dialog Component -->
+			@dialog.Script()
 		</head>
 		<body class="min-h-screen bg-gray-50 custom-scrollbar flex flex-col">
 			@Header(c)

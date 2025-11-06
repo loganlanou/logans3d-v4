@@ -154,7 +154,7 @@ templ Content(props ...ContentProps) {
 	<!-- Overlay -->
 	<div
 		class={ utils.TwMerge(
-				"fixed inset-0 z-50 bg-black/50",
+				"fixed inset-0 z-50 bg-black/95",
 				"transition-opacity duration-300",
 				"data-[tui-dialog-open=false]:opacity-0",
 				"data-[tui-dialog-open=true]:opacity-100",
@@ -178,7 +178,7 @@ templ Content(props ...ContentProps) {
 				// Base positioning
 				"fixed z-50 left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%]",
 				// Style
-				"bg-background rounded-lg border shadow-lg",
+				"bg-white rounded-xl border border-gray-200 shadow-2xl",
 				// Layout
 				"grid gap-4 p-6",
 				// Size

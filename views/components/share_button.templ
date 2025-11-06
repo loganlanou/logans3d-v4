@@ -15,15 +15,14 @@ type ShareButtonProps struct {
 	ImageURL    string // Image for Pinterest (absolute URL)
 }
 
-// ShareButton renders a share button that opens a share dialog
-templ ShareButton(props ShareButtonProps) {
-	<!-- Share Button Trigger -->
+// ShareButton renders just the trigger button (can be placed anywhere)
+templ ShareButton() {
 	@dialog.Trigger(dialog.TriggerProps{
-		ID: "share-dialog",
+		For: "share-dialog",
 	}) {
 		@button.Button(button.Props{
 			Variant: button.VariantOutline,
-			Class:   "gap-2",
+			Class:   "gap-2 border-white/20 text-white hover:bg-white/10 hover:border-white/30",
 		}) {
 			<!-- Share Icon (heroicons outline/share) -->
 			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -32,7 +31,10 @@ templ ShareButton(props ShareButtonProps) {
 			Share
 		}
 	}
+}
 
+// ShareDialog renders the dialog content (must be placed at page root level)
+templ ShareDialog(props ShareButtonProps) {
 	<!-- Share Dialog -->
 	@dialog.Content(dialog.ContentProps{
 		ID:    "share-dialog",
@@ -174,7 +176,7 @@ templ ShareButton(props ShareButtonProps) {
 	<!-- JavaScript for copy functionality -->
 	<script>
 		function copyToClipboard() {
-			const url = { props.URL };
+			const url = {{ props.URL }};
 
 			// Try modern Clipboard API first
 			if (navigator.clipboard && window.isSecureContext) {

@@ -1620,6 +1620,12 @@
       border-color: color-mix(in oklab, var(--color-violet-500) 30%, transparent);
     }
   }
+  .border-white\/20 {
+    border-color: color-mix(in srgb, #fff 20%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-white) 20%, transparent);
+    }
+  }
   .border-yellow-200 {
     border-color: var(--color-yellow-200);
   }
@@ -1674,16 +1680,16 @@
   .bg-black {
     background-color: var(--color-black);
   }
-  .bg-black\/50 {
-    background-color: color-mix(in srgb, #000 50%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-black) 50%, transparent);
-    }
-  }
   .bg-black\/60 {
     background-color: color-mix(in srgb, #000 60%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
       background-color: color-mix(in oklab, var(--color-black) 60%, transparent);
+    }
+  }
+  .bg-black\/95 {
+    background-color: color-mix(in srgb, #000 95%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-black) 95%, transparent);
     }
   }
   .bg-blue-50 {
@@ -4591,6 +4597,16 @@
       }
     }
   }
+  .hover\:border-white\/30 {
+    &:hover {
+      @media (hover: hover) {
+        border-color: color-mix(in srgb, #fff 30%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          border-color: color-mix(in oklab, var(--color-white) 30%, transparent);
+        }
+      }
+    }
+  }
   .hover\:border-yellow-400 {
     &:hover {
       @media (hover: hover) {
@@ -4883,6 +4899,16 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-slate-900);
+      }
+    }
+  }
+  .hover\:bg-white\/10 {
+    &:hover {
+      @media (hover: hover) {
+        background-color: color-mix(in srgb, #fff 10%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+        }
       }
     }
   }
@@ -7423,9 +7449,6 @@
 }
 [data-tui-dialog-content] button {
   text-shadow: none !important;
-}
-[data-tui-dialog-backdrop] {
-  background: rgba(0, 0, 0, 0.5) !important;
 }
 .htmx-indicator {
   opacity: 0;

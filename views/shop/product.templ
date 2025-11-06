@@ -84,20 +84,7 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-5">
 							<div class="flex justify-between items-start mb-3">
 								<h1 class="text-2xl font-bold text-white bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">{ product.Name }</h1>
-								@components.ShareButton(components.ShareButtonProps{
-									URL:         fmt.Sprintf("https://www.logans3dcreations.com/shop/product/%s", product.Slug),
-									Title:       product.Name,
-									Description: func() string {
-										if product.ShortDescription.Valid {
-											return product.ShortDescription.String
-										}
-										if product.Description.Valid {
-											return product.Description.String
-										}
-										return fmt.Sprintf("Check out this amazing %s from Logan's 3D Creations!", product.Name)
-									}(),
-									ImageURL:    meta.OGImageURL,
-								})
+								@components.ShareButton()
 							</div>
 							<!-- Price -->
 							<div class="mb-3">
@@ -259,6 +246,21 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 				</div>
 			</div>
 		</div>
+		<!-- Share Dialog - Rendered at root level for fullscreen backdrop -->
+		@components.ShareDialog(components.ShareButtonProps{
+			URL:         fmt.Sprintf("https://www.logans3dcreations.com/shop/product/%s", product.Slug),
+			Title:       product.Name,
+			Description: func() string {
+				if product.ShortDescription.Valid {
+					return product.ShortDescription.String
+				}
+				if product.Description.Valid {
+					return product.Description.String
+				}
+				return fmt.Sprintf("Check out this amazing %s from Logan's 3D Creations!", product.Name)
+			}(),
+			ImageURL:    meta.OGImageURL,
+		})
 	}
 }
 
