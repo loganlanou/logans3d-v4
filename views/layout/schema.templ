@@ -1,0 +1,47 @@
+package layout
+
+// ProductSchema renders Schema.org Product JSON-LD
+templ ProductSchema(meta PageMeta) {
+	if meta.Product != nil {
+		@templ.Raw("<script type=\"application/ld+json\">" + meta.ProductSchemaJSON + "</script>")
+	}
+}
+
+// OrganizationSchema renders Schema.org Organization JSON-LD
+templ OrganizationSchema(meta PageMeta) {
+	if meta.SiteURL != "" {
+		@templ.Raw("<script type=\"application/ld+json\">" + meta.OrganizationSchemaJSON() + "</script>")
+	}
+}
+
+// BreadcrumbItem represents a breadcrumb link
+type BreadcrumbItem struct {
+	Name string
+	URL  string
+}
+
+// BreadcrumbListSchema renders Schema.org BreadcrumbList JSON-LD
+templ BreadcrumbListSchema(siteURL string, items []BreadcrumbItem) {
+	<script type="application/ld+json">
+		{ templ.JSONString(buildBreadcrumbSchema(siteURL, items)) }
+	</script>
+}
+
+// buildBreadcrumbSchema creates the breadcrumb schema data
+func buildBreadcrumbSchema(siteURL string, items []BreadcrumbItem) map[string]interface{} {
+	itemListElements := make([]map[string]interface{}, len(items))
+	for i, item := range items {
+		itemListElements[i] = map[string]interface{}{
+			"@type":    "ListItem",
+			"position": i + 1,
+			"name":     item.Name,
+			"item":     BuildAbsoluteURL(siteURL, item.URL),
+		}
+	}
+
+	return map[string]interface{}{
+		"@context":        "https://schema.org",
+		"@type":           "BreadcrumbList",
+		"itemListElement": itemListElements,
+	}
+}

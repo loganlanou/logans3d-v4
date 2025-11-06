@@ -1,0 +1,257 @@
+package components
+
+import (
+	"fmt"
+	"net/url"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/dialog"
+)
+
+// ShareButtonProps contains data for sharing
+type ShareButtonProps struct {
+	URL         string // Page URL to share
+	Title       string // Share title/text
+	Description string // Share description
+	ImageURL    string // Image for Pinterest (absolute URL)
+}
+
+// ShareButton renders just the trigger button (can be placed anywhere)
+templ ShareButton() {
+	@dialog.Trigger(dialog.TriggerProps{
+		For: "share-dialog",
+	}) {
+		@button.Button(button.Props{
+			Variant: button.VariantOutline,
+			Class:   "gap-2 border-white/20 text-white hover:bg-white/10 hover:border-white/30",
+		}) {
+			<!-- Share Icon (heroicons outline/share) -->
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
+			</svg>
+			Share
+		}
+	}
+}
+
+// ShareDialog renders the dialog content (must be placed at page root level)
+templ ShareDialog(props ShareButtonProps) {
+	<!-- Share Dialog -->
+	@dialog.Content(dialog.ContentProps{
+		ID:    "share-dialog",
+		Class: "max-w-md",
+	}) {
+		@dialog.Header() {
+			@dialog.Title() {
+				Share this product
+			}
+		}
+
+		<div class="p-6 space-y-3">
+			<!-- Copy Link (Primary Action) -->
+			<button
+				type="button"
+				onclick="copyToClipboard()"
+				class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<!-- Link Icon -->
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244"/>
+				</svg>
+				<div class="flex-1">
+					<div class="font-medium text-gray-900">Copy Link</div>
+					<div class="text-sm text-gray-500">Copy URL to clipboard</div>
+				</div>
+			</button>
+
+			<!-- Facebook -->
+			<a
+				href={ templ.URL(buildFacebookShareURL(props.URL)) }
+				target="_blank"
+				rel="noopener noreferrer"
+				class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<!-- Facebook Icon -->
+				<svg class="w-6 h-6 text-[#1877F2]" fill="currentColor" viewBox="0 0 24 24">
+					<path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+				</svg>
+				<div class="flex-1">
+					<div class="font-medium text-gray-900">Facebook</div>
+				</div>
+			</a>
+
+			<!-- Twitter/X -->
+			<a
+				href={ templ.URL(buildTwitterShareURL(props.URL, props.Title)) }
+				target="_blank"
+				rel="noopener noreferrer"
+				class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<!-- X/Twitter Icon -->
+				<svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+					<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+				</svg>
+				<div class="flex-1">
+					<div class="font-medium text-gray-900">Twitter / X</div>
+				</div>
+			</a>
+
+			<!-- Pinterest -->
+			<a
+				href={ templ.URL(buildPinterestShareURL(props.URL, props.ImageURL, props.Description)) }
+				target="_blank"
+				rel="noopener noreferrer"
+				class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<!-- Pinterest Icon -->
+				<svg class="w-6 h-6 text-[#E60023]" fill="currentColor" viewBox="0 0 24 24">
+					<path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z"/>
+				</svg>
+				<div class="flex-1">
+					<div class="font-medium text-gray-900">Pinterest</div>
+				</div>
+			</a>
+
+			<!-- WhatsApp -->
+			<a
+				href={ templ.URL(buildWhatsAppShareURL(props.URL, props.Title)) }
+				target="_blank"
+				rel="noopener noreferrer"
+				class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<!-- WhatsApp Icon -->
+				<svg class="w-6 h-6 text-[#25D366]" fill="currentColor" viewBox="0 0 24 24">
+					<path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+				</svg>
+				<div class="flex-1">
+					<div class="font-medium text-gray-900">WhatsApp</div>
+				</div>
+			</a>
+
+			<!-- Email -->
+			<a
+				href={ templ.URL(buildEmailShareURL(props.Title, props.URL)) }
+				class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<!-- Email Icon -->
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 text-gray-600">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+				</svg>
+				<div class="flex-1">
+					<div class="font-medium text-gray-900">Email</div>
+				</div>
+			</a>
+
+			<!-- Reddit -->
+			<a
+				href={ templ.URL(buildRedditShareURL(props.URL, props.Title)) }
+				target="_blank"
+				rel="noopener noreferrer"
+				class="w-full flex items-center gap-3 px-4 py-3 text-left border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+			>
+				<!-- Reddit Icon -->
+				<svg class="w-6 h-6 text-[#FF4500]" fill="currentColor" viewBox="0 0 24 24">
+					<path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/>
+				</svg>
+				<div class="flex-1">
+					<div class="font-medium text-gray-900">Reddit</div>
+				</div>
+			</a>
+		</div>
+	}
+
+	<!-- Toast notification for copy success -->
+	<div
+		id="copy-toast"
+		class="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg hidden transition-opacity z-50"
+		role="alert"
+	>
+		<div class="flex items-center gap-2">
+			<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+				<path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+			</svg>
+			<span>Link copied to clipboard!</span>
+		</div>
+	</div>
+
+	<!-- JavaScript for copy functionality -->
+	<script>
+		function copyToClipboard() {
+			const url = {{ props.URL }};
+
+			// Try modern Clipboard API first
+			if (navigator.clipboard && window.isSecureContext) {
+				navigator.clipboard.writeText(url).then(() => {
+					showToast();
+				}).catch((err) => {
+					console.error('Failed to copy:', err);
+					fallbackCopy(url);
+				});
+			} else {
+				// Fallback for older browsers
+				fallbackCopy(url);
+			}
+		}
+
+		function fallbackCopy(text) {
+			const textArea = document.createElement('textarea');
+			textArea.value = text;
+			textArea.style.position = 'fixed';
+			textArea.style.left = '-999999px';
+			document.body.appendChild(textArea);
+			textArea.select();
+			try {
+				document.execCommand('copy');
+				showToast();
+			} catch (err) {
+				console.error('Fallback copy failed:', err);
+			}
+			document.body.removeChild(textArea);
+		}
+
+		function showToast() {
+			const toast = document.getElementById('copy-toast');
+			toast.classList.remove('hidden');
+			setTimeout(() => {
+				toast.classList.add('hidden');
+			}, 3000);
+		}
+	</script>
+}
+
+// Helper functions to build share URLs
+
+func buildFacebookShareURL(pageURL string) string {
+	return fmt.Sprintf("https://www.facebook.com/sharer/sharer.php?u=%s",
+		url.QueryEscape(pageURL))
+}
+
+func buildTwitterShareURL(pageURL, text string) string {
+	return fmt.Sprintf("https://twitter.com/intent/tweet?url=%s&text=%s",
+		url.QueryEscape(pageURL),
+		url.QueryEscape(text))
+}
+
+func buildPinterestShareURL(pageURL, imageURL, description string) string {
+	return fmt.Sprintf("https://pinterest.com/pin/create/button/?url=%s&media=%s&description=%s",
+		url.QueryEscape(pageURL),
+		url.QueryEscape(imageURL),
+		url.QueryEscape(description))
+}
+
+func buildWhatsAppShareURL(pageURL, text string) string {
+	message := fmt.Sprintf("%s %s", text, pageURL)
+	return fmt.Sprintf("https://wa.me/?text=%s",
+		url.QueryEscape(message))
+}
+
+func buildEmailShareURL(subject, body string) string {
+	return fmt.Sprintf("mailto:?subject=%s&body=%s",
+		url.QueryEscape(subject),
+		url.QueryEscape(body))
+}
+
+func buildRedditShareURL(pageURL, title string) string {
+	return fmt.Sprintf("https://reddit.com/submit?url=%s&title=%s",
+		url.QueryEscape(pageURL),
+		url.QueryEscape(title))
+}

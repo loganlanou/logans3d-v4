@@ -11,12 +11,8 @@ type CustomOrderData struct {
 	TotalSteps  int
 }
 
-templ Index(c echo.Context) {
-	@layout.Base(c, layout.Meta{
-		Title:       "Custom 3D Printing - Logan's 3D Creations",
-		Description: "Design your custom 3D printed item with our easy-to-use configurator. Upload models, choose materials, and get instant quotes.",
-		Keywords:    "custom 3D printing, personalized products, custom models, 3D print configurator",
-	}) {
+templ Index(c echo.Context, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

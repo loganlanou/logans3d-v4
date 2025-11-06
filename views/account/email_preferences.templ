@@ -6,11 +6,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/storage/db"
 )
 
-templ EmailPreferences(c echo.Context, prefs *db.EmailPreference) {
-	@layout.Base(c, layout.Meta{
-		Title:       "Email Preferences - Logan's 3D Creations",
-		Description: "Manage your email preferences",
-	}) {
+templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
 			<!-- Animated background orbs -->
 			<div class="fixed inset-0 overflow-hidden pointer-events-none">

@@ -8,11 +8,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index(c echo.Context, user *db.User, orders []db.Order) {
-	@layout.Base(c, layout.Meta{
-		Title:       "My Account - Logan's 3D Creations",
-		Description: "Manage your account and view order history",
-	}) {
+templ Index(c echo.Context, user *db.User, orders []db.Order, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
 			<!-- Animated background orbs -->
 			<div class="fixed inset-0 overflow-hidden pointer-events-none">

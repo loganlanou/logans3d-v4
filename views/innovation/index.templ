@@ -5,12 +5,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index(c echo.Context) {
-	@layout.Base(c, layout.Meta{
-		Title:       "Innovation & Quality - Logan's 3D Creations",
-		Description: "Discover our commitment to innovation and quality through state-of-the-art 3D printing technology, precision engineering, and creative excellence.",
-		Keywords:    "3D printing innovation, quality assurance, precision manufacturing, technology excellence, creative solutions",
-	}) {
+templ Index(c echo.Context, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Metal Modern Background Elements -->
 			<div class="absolute inset-0 opacity-15">

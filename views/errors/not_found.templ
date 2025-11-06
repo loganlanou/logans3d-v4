@@ -5,12 +5,8 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ NotFound(c echo.Context, path string) {
-	@layout.Base(c, layout.Meta{
-		Title:       "Page Not Found - Logan's 3D Creations",
-		Description: "The page you're looking for could not be found.",
-		Keywords:    "3D printing, custom creations",
-	}) {
+templ NotFound(c echo.Context, path string, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden flex items-center justify-center">
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">

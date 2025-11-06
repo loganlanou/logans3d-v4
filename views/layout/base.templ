@@ -6,31 +6,63 @@ import (
 	"time"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/loganlanou/logans3d-v4/components/dialog"
 )
 
-type Meta struct {
-	Title        string
-	Description  string
-	Keywords     string
-	OGImage      string
-	CanonicalURL string
-}
-
-templ Base(c echo.Context, meta Meta) {
+templ Base(c echo.Context, meta PageMeta) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+			<!-- Primary Meta Tags -->
 			<title>{ meta.Title }</title>
 			<meta name="description" content={ meta.Description }/>
-			<meta name="keywords" content={ meta.Keywords }/>
-			<!-- Open Graph -->
-			<meta property="og:title" content={ meta.Title }/>
-			<meta property="og:description" content={ meta.Description }/>
-			if meta.OGImage != "" {
-				<meta property="og:image" content={ meta.OGImage }/>
+			if len(meta.Keywords) > 0 {
+				<meta name="keywords" content={ meta.KeywordsString() }/>
 			}
+
+			<!-- Canonical URL -->
+			if meta.CanonicalURL != "" {
+				<link rel="canonical" href={ meta.CanonicalURL }/>
+			}
+
+			<!-- Open Graph / Facebook -->
+			<meta property="og:type" content={ meta.OGType }/>
+			<meta property="og:url" content={ meta.OGURL }/>
+			<meta property="og:title" content={ meta.OGTitle }/>
+			<meta property="og:description" content={ meta.OGDescription }/>
+			<meta property="og:site_name" content={ meta.OGSiteName }/>
+			if meta.OGImageURL != "" {
+				<meta property="og:image" content={ meta.OGImageURL }/>
+				<meta property="og:image:width" content="1200"/>
+				<meta property="og:image:height" content="630"/>
+			}
+			if meta.FacebookAppID != "" {
+				<meta property="fb:app_id" content={ meta.FacebookAppID }/>
+			}
+			if meta.FacebookPageID != "" {
+				<meta property="fb:pages" content={ meta.FacebookPageID }/>
+			}
+
+			<!-- Twitter Cards -->
+			<meta name="twitter:card" content={ meta.TwitterCard }/>
+			<meta name="twitter:title" content={ meta.TwitterTitle }/>
+			<meta name="twitter:description" content={ meta.TwitterDescription }/>
+			if meta.TwitterImageURL != "" {
+				<meta name="twitter:image" content={ meta.TwitterImageURL }/>
+			}
+			if meta.TwitterSite != "" {
+				<meta name="twitter:site" content={ meta.TwitterSite }/>
+			}
+
+			<!-- Schema.org JSON-LD -->
+			if meta.Product != nil {
+				@ProductSchema(meta)
+			}
+			@OrganizationSchema(meta)
+
 			<!-- Google Analytics -->
 			<script async src="https://www.googletagmanager.com/gtag/js?id=G-0DMM8W9JY7"></script>
 			<script>
@@ -60,6 +92,8 @@ templ Base(c echo.Context, meta Meta) {
 			<script src="/public/js/shipping.js?v=1"></script>
 			<!-- Scroll speed control -->
 			<script src="/public/js/scroll-control.js"></script>
+			<!-- TemplUI Dialog Component -->
+			@dialog.Script()
 		</head>
 		<body class="min-h-screen bg-gray-50 custom-scrollbar flex flex-col">
 			@Header(c)

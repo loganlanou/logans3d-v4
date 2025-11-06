@@ -745,11 +745,6 @@
   text-shadow: none !important;
 }
 
-/* Dialog overlay backdrop */
-[data-tui-dialog-backdrop] {
-  background: rgba(0, 0, 0, 0.5) !important;
-}
-
 /* ===================================
    HTMX Loading States
    =================================== */
