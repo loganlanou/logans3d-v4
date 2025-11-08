@@ -41,6 +41,10 @@ data/*.backup-*
 .env.local
 .env.production
 
+# Server environment files (should NEVER be in git)
+deployed-configs/*/environment
+/etc/logans3d/environment
+
 # IDE and editor files
 .vscode/
 .idea/

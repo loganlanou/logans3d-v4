@@ -169,34 +169,44 @@ setup: install-tools tidy setup-hooks
 ssh:
 	ssh -A apprunner@jarvis.digitaldrywood.com
 
-.PHONY: deploy-staging
-deploy-staging:
-	@echo "🚀 Deploying to staging (logans3dcreations.digitaldrywood.com)..."
-	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d-staging && git pull && /usr/local/go/bin/go generate ./... && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d-staging"
-	@echo "✅ Staging deployment complete!"
-
-.PHONY: deploy
-deploy:
+.PHONY: deploy-production
+deploy-production:
 	@echo "🚀 Deploying to production (www.logans3dcreations.com)..."
 	@read -p "⚠️  Are you sure you want to deploy to PRODUCTION? (y/N): " confirm && [ "$$confirm" = "y" ] || (echo "Deployment cancelled." && exit 1)
 	ssh -A apprunner@jarvis.digitaldrywood.com "cd /home/apprunner/sites/logans3d && git pull && /usr/local/go/bin/go generate ./... && /usr/local/go/bin/go build -o logans3d ./cmd && sudo systemctl restart logans3d"
 	@echo "✅ Production deployment complete!"
 
-.PHONY: log-staging
-log-staging:
-	ssh -A apprunner@jarvis.digitaldrywood.com "sudo journalctl -u logans3d-staging -f"
+.PHONY: deploy
+deploy: deploy-production
 
 .PHONY: log-production
 log-production:
 	ssh -A apprunner@jarvis.digitaldrywood.com "sudo journalctl -u logans3d -f"
 
-.PHONY: log-web-staging
-log-web-staging:
-	ssh -A apprunner@jarvis.digitaldrywood.com "sudo tail -f /var/log/logans3d-staging/logans3d-staging.log"
-
 .PHONY: log-web-production
 log-web-production:
 	ssh -A apprunner@jarvis.digitaldrywood.com "sudo tail -f /var/log/logans3d/logans3d.log"
+
+.PHONY: env-view
+env-view:
+	@echo "📋 Production environment variables:"
+	@ssh -A apprunner@jarvis.digitaldrywood.com "sudo cat /etc/logans3d/environment"
+
+.PHONY: env-set
+env-set:
+	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
+		echo "❌ Usage: make env-set KEY=VALUE"; \
+		echo "Example: make env-set EMAIL_FROM=prints@logans3dcreations.com"; \
+		exit 1; \
+	fi
+	@KEY_VALUE='$(filter-out $@,$(MAKECMDGOALS))'; \
+	echo "🔧 Setting environment variable on production server..."; \
+	ssh -A apprunner@jarvis.digitaldrywood.com "echo $$KEY_VALUE | sudo tee -a /etc/logans3d/environment > /dev/null && sudo systemctl restart logans3d"; \
+	echo "✅ Variable set: $$KEY_VALUE"; \
+	echo "✅ Service restarted"
+
+%:
+	@:
 
 .PHONY: help
 help:
@@ -224,10 +234,12 @@ help:
 	@echo "  clean        - Clean build artifacts and generated files"
 	@echo ""
 	@echo "Deployment:"
-	@echo "  ssh          - SSH to the deployment server"
-	@echo "  deploy       - Deploy to staging environment"
-	@echo "  deploy-staging - Deploy to staging (logans3dcreations.digitaldrywood.com)"
-	@echo "  log-staging  - View staging logs (journalctl)"
-	@echo "  log-production - View production logs (journalctl)"
-	@echo "  log-web-staging - View staging web logs"
+	@echo "  ssh              - SSH to the deployment server"
+	@echo "  deploy           - Deploy to production (same as deploy-production)"
+	@echo "  deploy-production - Deploy to production (www.logans3dcreations.com)"
+	@echo "  log-production   - View production logs (journalctl)"
 	@echo "  log-web-production - View production web logs"
+	@echo ""
+	@echo "Environment Management:"
+	@echo "  env-view         - View production environment variables"
+	@echo "  env-set KEY=VALUE - Set production environment variable (restarts service)"

@@ -40,10 +40,51 @@ go install github.com/a-h/templ/cmd/templ@latest
 git clone <repo-url>
 cd logans3d-v4
 
-# Setup environment variables
-cp .envrc.example .envrc
-# Edit .envrc with your actual values (see Environment Variables section below)
-direnv allow  # Load environment variables
+# Setup environment variables for local development
+# Create .envrc from scratch with your development values
+cat > .envrc << 'EOF'
+# Go environment
+export LOG_LEVEL="DEBUG"
+# Application settings
+export ENVIRONMENT="development"
+export PORT="8000"
+export BASE_URL="http://localhost:8000"
+# Database
+export DB_PATH="./data/database.db"
+# Clerk Authentication (use test keys from Clerk dashboard)
+export CLERK_PUBLISHABLE_KEY="pk_test_..."
+export CLERK_SECRET_KEY="sk_test_..."
+# JWT Security
+export JWT_SECRET="development-jwt-secret-key-change-in-production"
+# Stripe Payment Processing (use test keys from Stripe dashboard)
+export STRIPE_PUBLISHABLE_KEY="pk_test_..."
+export STRIPE_SECRET_KEY="sk_test_..."
+export STRIPE_WEBHOOK_SECRET=""
+# Email (Brevo SMTP)
+export EMAIL_FROM="prints@logans3dcreations.com"
+export EMAIL_TO_INTERNAL="prints@logans3dcreations.com"
+export BREVO_SMTP_HOST="smtp-relay.brevo.com"
+export BREVO_SMTP_PORT="587"
+export BREVO_SMTP_LOGIN="your-brevo-login@example.com"
+export BREVO_SMTP_KEY="your-brevo-api-key"
+# Google reCAPTCHA v3 (use localhost keys from Google reCAPTCHA admin)
+export RECAPTCHA_SITE_KEY="..."
+export RECAPTCHA_SECRET_KEY="..."
+export RECAPTCHA_MIN_SCORE="0.5"
+# EasyPost API (use test key from EasyPost dashboard)
+export EASYPOST_API_KEY="EZTK..."
+# File Uploads
+export UPLOAD_MAX_SIZE="104857600"
+export UPLOAD_DIR="./public/uploads"
+# Admin Access (development only)
+export ADMIN_USERNAME="admin"
+export ADMIN_PASSWORD="dev-admin-password"
+# Development tools
+export AIR_LOG_LEVEL="info"
+EOF
+
+# Load environment variables
+direnv allow
 
 # Install dependencies and setup database
 go mod tidy
@@ -99,6 +140,38 @@ make lint        # Run linter
 make clean       # Clean build artifacts
 make help        # Show all commands
 ```
+
+## 🚀 Deployment
+
+This project is deployed to **production only** on a self-hosted VPS.
+
+For detailed deployment instructions, secrets management, and environment variable configuration, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+
+### Quick Deployment Commands
+
+```bash
+# View production environment variables
+make env-view
+
+# Set a single environment variable on production
+make env-set KEY=VALUE
+
+# SSH to production server
+make ssh
+
+# Deploy code changes to production
+make deploy  # (asks for confirmation)
+
+# View production logs
+make log-production
+make log-web-production
+```
+
+**⚠️ Important**: Environment files (`.envrc`, `/etc/logans3d/environment`) are **NEVER committed to git**. They contain secrets and are managed separately:
+- **Local development**: `.envrc` (managed by direnv, not in git)
+- **Production**: `/etc/logans3d/environment` (on server only, not in git)
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete deployment documentation.
 
 ## 🏗️ Architecture
 

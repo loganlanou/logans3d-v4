@@ -1,6 +1,0 @@
-# Environment variables for Logan's 3D Staging
-# Port 8006 - staging environment
-PORT=8006
-DB_PATH=/home/apprunner/sites/logans3d-staging/data/database.db
-ENV=staging
-LOG_LEVEL=debug

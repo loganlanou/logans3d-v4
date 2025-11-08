@@ -33,9 +33,18 @@ fi
 # Copy configuration files
 echo "Installing configuration files..."
 sudo cp deployed-configs/production/systemd/logans3d.service /etc/systemd/system/
-sudo cp deployed-configs/production/environment /etc/logans3d/
 sudo cp deployed-configs/production/nginx/logans3d.conf /etc/nginx/sites-available/
 sudo cp deployed-configs/production/logrotate/logans3d.conf /etc/logrotate.d/
+
+# Create environment file (must be configured manually with actual secrets)
+echo "⚠️  Creating /etc/logans3d/environment file..."
+echo "⚠️  IMPORTANT: You must manually edit /etc/logans3d/environment with real secrets"
+echo "⚠️  Do NOT commit environment files to git"
+sudo touch /etc/logans3d/environment
+sudo chmod 600 /etc/logans3d/environment
+sudo chown root:root /etc/logans3d/environment
+echo "⚠️  After setup completes, edit the environment file with:"
+echo "⚠️  sudo nano /etc/logans3d/environment"
 
 # Enable nginx site
 echo "Enabling nginx configuration..."
