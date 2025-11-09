@@ -270,6 +270,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/contacts/table", adminHandler.HandleContactsTable)
 	admin.GET("/contacts/:id", adminHandler.HandleContactDetail)
 	admin.POST("/contacts/:id/status", adminHandler.HandleUpdateContactStatus)
+	admin.POST("/contacts/bulk/status", adminHandler.HandleBulkUpdateContactStatus)
 	admin.POST("/contacts/:id/priority", adminHandler.HandleUpdateContactPriority)
 	admin.POST("/contacts/:id/notes", adminHandler.HandleAddContactNotes)
 	admin.POST("/contacts/:id/notes/delete", adminHandler.HandleDeleteContactNotes)

@@ -2995,6 +2995,71 @@ func (h *AdminHandler) HandleAddContactNotes(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
 }
 
+// HandleBulkUpdateContactStatus updates the status of multiple contact requests at once
+func (h *AdminHandler) HandleBulkUpdateContactStatus(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	// Parse JSON body
+	var request struct {
+		ContactIDs []string `json:"contact_ids"`
+		Status     string   `json:"status"`
+	}
+
+	if err := c.Bind(&request); err != nil {
+		slog.Error("failed to parse bulk update request", "error", err)
+		return c.String(http.StatusBadRequest, "Invalid request format")
+	}
+
+	// Validate inputs
+	if len(request.ContactIDs) == 0 {
+		return c.String(http.StatusBadRequest, "No contacts selected")
+	}
+
+	if request.Status == "" {
+		return c.String(http.StatusBadRequest, "Status is required")
+	}
+
+	// Validate status value
+	validStatuses := []string{"new", "in_progress", "responded", "resolved", "spam"}
+	isValid := false
+	for _, validStatus := range validStatuses {
+		if request.Status == validStatus {
+			isValid = true
+			break
+		}
+	}
+	if !isValid {
+		return c.String(http.StatusBadRequest, "Invalid status value")
+	}
+
+	// Perform bulk update
+	err := h.storage.Queries.UpdateContactRequestsStatusBulk(ctx, db.UpdateContactRequestsStatusBulkParams{
+		Status:     sql.NullString{String: request.Status, Valid: true},
+		ContactIds: request.ContactIDs,
+	})
+
+	if err != nil {
+		slog.Error("failed to bulk update contact statuses",
+			"error", err,
+			"contact_ids", request.ContactIDs,
+			"status", request.Status)
+		return c.String(http.StatusInternalServerError, "Failed to update contacts")
+	}
+
+	slog.Debug("bulk updated contact statuses",
+		"count", len(request.ContactIDs),
+		"status", request.Status)
+
+	// Check if this is an HTMX request
+	if c.Request().Header.Get("HX-Request") == "true" {
+		// Return success message
+		return c.String(http.StatusOK, "Contacts updated successfully")
+	}
+
+	// For regular requests, redirect back to contacts list
+	return c.Redirect(http.StatusSeeOther, "/admin/contacts")
+}
+
 func (h *AdminHandler) HandleDeleteContactNotes(c echo.Context) error {
 	ctx := c.Request().Context()
 	id := c.Param("id")

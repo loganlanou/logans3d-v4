@@ -56,6 +56,11 @@ UPDATE contact_requests
 SET status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
 
+-- name: UpdateContactRequestsStatusBulk :exec
+UPDATE contact_requests
+SET status = sqlc.arg('status'), updated_at = CURRENT_TIMESTAMP
+WHERE id IN (sqlc.slice('contact_ids'));
+
 -- name: UpdateContactRequestPriority :exec
 UPDATE contact_requests
 SET priority = ?, updated_at = CURRENT_TIMESTAMP

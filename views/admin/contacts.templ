@@ -3,7 +3,6 @@ package admin
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/components/button"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 	"time"
@@ -69,6 +68,7 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 				</div>
 
 				<script>
+					// Existing functions
 					function toggleClearButton() {
 						const input = document.getElementById('contact-search');
 						const btn = document.getElementById('clear-search-btn');
@@ -93,6 +93,150 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 						// Trigger HTMX update on the status dropdown to reload table
 						htmx.trigger('select[name="status"]', 'change');
 					}
+
+					// Checkbox selection management
+					let selectedContacts = new Set();
+
+					function toggleSelectAll() {
+						const selectAllCheckbox = document.getElementById('select-all-checkbox');
+						const checkboxes = document.querySelectorAll('.contact-checkbox');
+
+						checkboxes.forEach(checkbox => {
+							checkbox.checked = selectAllCheckbox.checked;
+							if (selectAllCheckbox.checked) {
+								selectedContacts.add(checkbox.dataset.contactId);
+							} else {
+								selectedContacts.delete(checkbox.dataset.contactId);
+							}
+						});
+
+						updateBulkActionsToolbar();
+					}
+
+					function toggleContact(checkbox) {
+						if (checkbox.checked) {
+							selectedContacts.add(checkbox.dataset.contactId);
+						} else {
+							selectedContacts.delete(checkbox.dataset.contactId);
+						}
+
+						// Update select-all checkbox state
+						const selectAllCheckbox = document.getElementById('select-all-checkbox');
+						const allCheckboxes = document.querySelectorAll('.contact-checkbox');
+						const checkedCheckboxes = document.querySelectorAll('.contact-checkbox:checked');
+
+						if (checkedCheckboxes.length === 0) {
+							selectAllCheckbox.checked = false;
+							selectAllCheckbox.indeterminate = false;
+						} else if (checkedCheckboxes.length === allCheckboxes.length) {
+							selectAllCheckbox.checked = true;
+							selectAllCheckbox.indeterminate = false;
+						} else {
+							selectAllCheckbox.checked = false;
+							selectAllCheckbox.indeterminate = true;
+						}
+
+						updateBulkActionsToolbar();
+					}
+
+					function updateBulkActionsToolbar() {
+						const toolbar = document.getElementById('bulk-actions-toolbar');
+						const selectedCountSpan = document.getElementById('selected-count');
+
+						if (selectedContacts.size > 0) {
+							toolbar.classList.remove('hidden');
+							selectedCountSpan.textContent = selectedContacts.size;
+						} else {
+							toolbar.classList.add('hidden');
+						}
+					}
+
+					function clearSelection() {
+						selectedContacts.clear();
+						document.querySelectorAll('.contact-checkbox').forEach(checkbox => {
+							checkbox.checked = false;
+						});
+						document.getElementById('select-all-checkbox').checked = false;
+						document.getElementById('select-all-checkbox').indeterminate = false;
+						updateBulkActionsToolbar();
+					}
+
+					function applyBulkStatus() {
+						const statusSelect = document.getElementById('bulk-status-select');
+						const status = statusSelect.value;
+
+						if (!status) {
+							alert('Please select a status to apply.');
+							return;
+						}
+
+						if (selectedContacts.size === 0) {
+							alert('No contacts selected.');
+							return;
+						}
+
+						// Confirm action
+						const statusLabels = {
+							'new': 'New',
+							'in_progress': 'In Progress',
+							'responded': 'Responded',
+							'resolved': 'Resolved',
+							'spam': 'Spam'
+						};
+
+						if (!confirm(`Are you sure you want to mark ${selectedContacts.size} contact(s) as "${statusLabels[status]}"?`)) {
+							return;
+						}
+
+						// Send bulk update request
+						const contactIds = Array.from(selectedContacts);
+
+						fetch('/admin/contacts/bulk/status', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'HX-Request': 'true'
+							},
+							body: JSON.stringify({
+								contact_ids: contactIds,
+								status: status
+							})
+						})
+						.then(response => {
+							if (response.ok) {
+								// Clear selection
+								clearSelection();
+								// Reset dropdown
+								statusSelect.value = '';
+								// Trigger table refresh via HTMX
+								htmx.trigger('#contacts-table-container', 'refresh-table');
+								// Or reload the table
+								location.reload();
+							} else {
+								alert('Failed to update contacts. Please try again.');
+							}
+						})
+						.catch(error => {
+							console.error('Error:', error);
+							alert('An error occurred. Please try again.');
+						});
+					}
+
+					function handleRowClick(event, url) {
+						// Only navigate if not clicking on checkbox or link
+						if (!event.target.closest('input[type="checkbox"]') && !event.target.closest('a')) {
+							window.location.href = url;
+						}
+					}
+
+					// Re-initialize checkboxes after HTMX updates
+					document.body.addEventListener('htmx:afterSwap', function(evt) {
+						if (evt.detail.target.id === 'contacts-table-container') {
+							// Clear selection state after table refresh
+							selectedContacts.clear();
+							updateBulkActionsToolbar();
+						}
+					});
 				</script>
 
 				<!-- Filters -->
@@ -155,6 +299,46 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 				</div>
 			</div>
 
+			<!-- Bulk Actions Toolbar (hidden by default) -->
+			<div id="bulk-actions-toolbar" class="mb-4 p-4 bg-slate-800 border border-slate-600 rounded-lg hidden">
+				<div class="flex items-center justify-between">
+					<div class="flex items-center gap-4">
+						<span class="text-sm text-gray-300">
+							<span id="selected-count">0</span> contact(s) selected
+						</span>
+						<div class="flex items-center gap-2">
+							<label class="text-sm text-gray-400">Change status to:</label>
+							<select
+								id="bulk-status-select"
+								name="bulk_status"
+								class="px-3 py-1.5 bg-slate-700 border border-slate-600 text-gray-200 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+							>
+								<option value="">Select status...</option>
+								<option value="new">New</option>
+								<option value="in_progress">In Progress</option>
+								<option value="responded">Responded</option>
+								<option value="resolved">Resolved</option>
+								<option value="spam">Spam</option>
+							</select>
+							<button
+								type="button"
+								onclick="applyBulkStatus()"
+								class="px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm font-medium transition-colors"
+							>
+								Apply
+							</button>
+						</div>
+					</div>
+					<button
+						type="button"
+						onclick="clearSelection()"
+						class="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+					>
+						Clear Selection
+					</button>
+				</div>
+			</div>
+
 			<!-- Contacts Table -->
 			<div id="contacts-table-container">
 				@ContactsTable(contacts)
@@ -172,13 +356,20 @@ templ ContactsTable(contacts []db.ContactRequest) {
 					<table class="admin-table">
 						<thead>
 							<tr>
+								<th class="text-center" style="width: 40px;">
+									<input
+										type="checkbox"
+										id="select-all-checkbox"
+										onclick="toggleSelectAll()"
+										class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+									/>
+								</th>
 								<th class="text-left">Status</th>
 								<th class="text-left">Priority</th>
 								<th class="text-left">Name</th>
 								<th class="text-left">Contact</th>
 								<th class="text-left">Subject</th>
 								<th class="text-left">Received</th>
-								<th class="text-right">Actions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -190,8 +381,16 @@ templ ContactsTable(contacts []db.ContactRequest) {
 								</tr>
 							}
 							for _, contact := range contacts {
-								<tbody>
-									<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;" class="hover:bg-slate-800/50">
+								<tbody data-contact-id={ contact.ID }>
+									<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;" class="hover:bg-slate-800/50">
+										<td class="text-center" onclick="event.stopPropagation()">
+											<input
+												type="checkbox"
+												class="contact-checkbox w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+												data-contact-id={ contact.ID }
+												onclick="toggleContact(this)"
+											/>
+										</td>
 										<td>
 											@StatusIcon(contact.Status.String)
 										</td>
@@ -228,27 +427,8 @@ templ ContactsTable(contacts []db.ContactRequest) {
 												}
 											</div>
 										</td>
-										<td class="text-right">
-											<div onclick="event.stopPropagation()">
-												@button.Button(button.Props{
-													Variant: button.VariantDestructive,
-													Size:    button.SizeSm,
-													Attributes: templ.Attributes{
-														"hx-post":   fmt.Sprintf("/admin/contacts/%s/status", contact.ID),
-														"hx-vals":   `{"status": "spam"}`,
-														"hx-target": "closest tbody",
-														"hx-swap":   "delete",
-													},
-												}) {
-													<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
-													</svg>
-													Spam
-												}
-											</div>
-										</td>
 									</tr>
-									<tr class="hover:bg-slate-800/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;">
+									<tr class="hover:bg-slate-800/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;">
 										<td colspan="7" class="px-6 py-3 text-sm text-gray-400 bg-slate-900/20 border-t border-slate-700/30">
 											<div class="pl-4 italic">
 												{ contact.Message }
@@ -674,8 +854,16 @@ func formatTime(t time.Time) string {
 }
 
 templ RenderContactRow(c echo.Context, contact db.ContactRequest) {
-	<tbody>
-		<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;" class="hover:bg-slate-800/50">
+	<tbody data-contact-id={ contact.ID }>
+		<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;" class="hover:bg-slate-800/50">
+			<td class="text-center" onclick="event.stopPropagation()">
+				<input
+					type="checkbox"
+					class="contact-checkbox w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+					data-contact-id={ contact.ID }
+					onclick="toggleContact(this)"
+				/>
+			</td>
 			<td>
 				@StatusIcon(contact.Status.String)
 			</td>
@@ -712,27 +900,8 @@ templ RenderContactRow(c echo.Context, contact db.ContactRequest) {
 					}
 				</div>
 			</td>
-			<td class="text-right">
-				<div onclick="event.stopPropagation()">
-					@button.Button(button.Props{
-						Variant: button.VariantDestructive,
-						Size:    button.SizeSm,
-						Attributes: templ.Attributes{
-							"hx-post":   fmt.Sprintf("/admin/contacts/%s/status", contact.ID),
-							"hx-vals":   `{"status": "spam"}`,
-							"hx-target": "closest tbody",
-							"hx-swap":   "delete",
-						},
-					}) {
-						<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"></path>
-						</svg>
-						Spam
-					}
-				</div>
-			</td>
 		</tr>
-		<tr class="hover:bg-slate-800/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/contacts/%s'", contact.ID)} } style="cursor: pointer;">
+		<tr class="hover:bg-slate-800/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;">
 			<td colspan="7" class="px-6 py-3 text-sm text-gray-400 bg-slate-900/20 border-t border-slate-700/30">
 				<div class="pl-4 italic">
 					{ contact.Message }
