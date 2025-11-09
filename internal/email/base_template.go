@@ -13,6 +13,7 @@ type BaseEmailData struct {
 }
 
 // baseEmailTemplate is the reusable wrapper for all emails
+// Uses table-based layout with inline styles for email client compatibility
 const baseEmailTemplate = `
 <!DOCTYPE html>
 <html lang="en">
@@ -20,200 +21,84 @@ const baseEmailTemplate = `
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Subject}}</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f5f5;
-        }
-        .email-wrapper {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-        }
-        .header {
-            background-color: #E85D5D;
-            padding: 20px 30px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .header-left {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        .logo-circle {
-            width: 50px;
-            height: 50px;
-            background-color: #3D3D3D;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .logo-circle img {
-            width: 35px;
-            height: auto;
-            filter: brightness(0) invert(1);
-        }
-        .brand-info {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .brand-name {
-            font-size: 20px;
-            font-weight: 700;
-            color: #ffffff;
-            margin: 0;
-            line-height: 1;
-        }
-        .brand-tagline {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.9);
-            margin: 0;
-        }
-        .header-right {
-            text-align: right;
-        }
-        .website-link {
-            color: #ffffff;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            background-color: #3D3D3D;
-            padding: 8px 16px;
-            border-radius: 4px;
-            display: inline-block;
-        }
-        .website-link:hover {
-            background-color: #2a2a2a;
-        }
-        .content {
-            padding: 30px 20px;
-        }
-        .footer {
-            background-color: #3D3D3D;
-            color: #cccccc;
-            padding: 30px 20px;
-            text-align: center;
-            font-size: 13px;
-            position: relative;
-        }
-        .footer-dinos {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-end;
-            padding: 0 30px;
-            pointer-events: none;
-            opacity: 0.3;
-        }
-        .footer-dinos img {
-            height: 60px;
-            width: auto;
-        }
-        .footer-content {
-            position: relative;
-            z-index: 1;
-        }
-        .footer a {
-            color: #E85D5D;
-            text-decoration: none;
-        }
-        .footer a:hover {
-            text-decoration: underline;
-        }
-        .footer-divider {
-            height: 1px;
-            background-color: #555;
-            margin: 15px 0;
-        }
-        @media only screen and (max-width: 600px) {
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-                padding: 15px 20px;
-            }
-            .header-left {
-                width: 100%;
-            }
-            .header-right {
-                width: 100%;
-                text-align: left;
-            }
-            .brand-name {
-                font-size: 18px;
-            }
-            .content {
-                padding: 20px 15px;
-            }
-        }
-    </style>
 </head>
-<body>
-    <div class="email-wrapper">
-        <!-- Modern Horizontal Header -->
-        <div class="header">
-            <div class="header-left">
-                <div class="logo-circle">
-                    <img src="https://www.logans3dcreations.com/public/images/favicon.png" alt="Logan's 3D Creations Logo" />
-                </div>
-                <div class="brand-info">
-                    <div class="brand-name">Logan's 3D Creations</div>
-                    <div class="brand-tagline">Quality 3D Prints & Designs</div>
-                </div>
-            </div>
-            <div class="header-right">
-                <a href="https://www.logans3dcreations.com" class="website-link">Visit Store →</a>
-            </div>
-        </div>
+<body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
+    <!-- Outer wrapper table for background -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #f5f5f5;">
+        <tr>
+            <td align="center" style="padding: 20px 0;">
+                <!-- Main email wrapper - 600px max width -->
+                <table width="600" cellpadding="0" cellspacing="0" border="0" style="width: 600px; background-color: #ffffff;">
+                    <!-- Header -->
+                    <tr>
+                        <td bgcolor="#2d2d2d" style="background-color: #2d2d2d; padding: 20px 30px;">
+                            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%;">
+                                <tr>
+                                    <!-- Logo and Brand Info -->
+                                    <td align="left" style="vertical-align: middle;">
+                                        <table cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td style="padding-right: 15px; vertical-align: middle;">
+                                                    <img src="https://www.logans3dcreations.com/public/images/favicon.png" alt="Logan's 3D Creations Logo" width="40" height="40" style="display: block; width: 40px; height: auto;" />
+                                                </td>
+                                                <td style="padding-left: 0;">
+                                                    <div style="font-size: 20px; font-weight: bold; color: #ffffff; margin: 0; line-height: 1.1;">Logan's 3D Creations</div>
+                                                    <div style="font-size: 12px; color: rgba(255, 255, 255, 0.9); margin: 2px 0 0 0;">Quality 3D Prints & Designs</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                    <!-- Visit Store Button -->
+                                    <td align="right" style="vertical-align: middle; padding-left: 20px;">
+                                        <table cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td bgcolor="#E85D5D" style="background-color: #E85D5D; padding: 8px 16px; border-radius: 4px;">
+                                                    <a href="https://www.logans3dcreations.com" style="color: #ffffff; text-decoration: none; font-weight: 600; font-size: 14px; display: block; white-space: nowrap;">Visit Store →</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-        <!-- Email Content -->
-        <div class="content">
-            {{.Content}}
-        </div>
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 30px 20px;">
+                            {{.Content}}
+                        </td>
+                    </tr>
 
-        <!-- Footer -->
-        <div class="footer">
-            <!-- Subtle Flexi Dinos as Background -->
-            <div class="footer-dinos">
-                <img src="https://www.logans3dcreations.com/public/images/flexi-trex.png" alt="" style="transform: scaleX(-1);" />
-                <img src="https://www.logans3dcreations.com/public/images/flexi-trex.png" alt="" />
-            </div>
-
-            <!-- Footer Content -->
-            <div class="footer-content">
-                <strong style="color: #fff; font-size: 15px;">Logan's 3D Creations</strong>
-                <div class="footer-divider"></div>
-                <a href="mailto:prints@logans3dcreations.com">prints@logans3dcreations.com</a>
-                <span style="color: #666; margin: 0 8px;">•</span>
-                <a href="https://www.logans3dcreations.com">www.logans3dcreations.com</a>
-                <div style="margin-top: 10px; font-size: 11px; color: #888;">
-                    25580 County Highway S, Cadott WI 54727
-                </div>
-                {{if .UnsubscribeToken}}
-                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #555;">
-                    <a href="https://www.logans3dcreations.com/unsubscribe/{{.UnsubscribeToken}}" style="color: #999; font-size: 11px;">
-                        Unsubscribe from marketing emails
-                    </a>
-                </div>
-                {{end}}
-                <div style="margin-top: 20px; font-size: 11px; color: #888;">
-                    © 2025 Logan's 3D Creations. All rights reserved.
-                </div>
-            </div>
-        </div>
-    </div>
+                    <!-- Footer -->
+                    <tr>
+                        <td bgcolor="#3D3D3D" style="background-color: #3D3D3D; color: #cccccc; padding: 30px 20px; text-align: center; font-size: 13px;">
+                            <strong style="color: #ffffff; font-size: 15px; display: block; margin-bottom: 15px;">Logan's 3D Creations</strong>
+                            <div style="height: 1px; background-color: #555; margin: 15px 0;"></div>
+                            <div style="margin-bottom: 10px;">
+                                <a href="mailto:prints@logans3dcreations.com" style="color: #E85D5D; text-decoration: none;">prints@logans3dcreations.com</a>
+                                <span style="color: #666; margin: 0 8px;">•</span>
+                                <a href="https://www.logans3dcreations.com" style="color: #E85D5D; text-decoration: none;">www.logans3dcreations.com</a>
+                            </div>
+                            <div style="font-size: 11px; color: #999; margin-bottom: 15px;">
+                                25580 County Highway S, Cadott WI 54727
+                            </div>
+                            {{if .UnsubscribeToken}}
+                            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #555; font-size: 11px;">
+                                <a href="https://www.logans3dcreations.com/unsubscribe/{{.UnsubscribeToken}}" style="color: #999; text-decoration: none;">
+                                    Unsubscribe from marketing emails
+                                </a>
+                            </div>
+                            {{end}}
+                            <div style="margin-top: 20px; font-size: 11px; color: #999;">
+                                © 2025 Logan's 3D Creations. All rights reserved.
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
 </body>
 </html>
 `
