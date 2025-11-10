@@ -9,234 +9,232 @@ import (
 
 templ ShippingSettings(c echo.Context, config *shipping.ShippingConfig) {
 	@layout.AdminBase(c, "Shipping Settings") {
-		@layout.AdminContainer() {
-			<!-- Header -->
-			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Shipping Settings</h1>
-				<button
-					type="submit"
-					form="settings-form"
-					class="admin-btn admin-btn-primary"
-				>
-					Save Changes
-				</button>
-			</div>
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-2xl font-bold text-gray-900 dark:text-white">Shipping Settings</h1>
+			<button
+				type="submit"
+				form="settings-form"
+				class="admin-btn admin-btn-primary"
+			>
+				Save Changes
+			</button>
+		</div>
 
-			<form id="settings-form" method="POST" action="/admin/shipping/settings" class="space-y-6">
-				<!-- Ship From Addresses Section -->
-				<div class="admin-card">
-					<div class="admin-card-header">
-						<h2 class="admin-card-title">Ship From Addresses</h2>
-						<p class="text-sm text-slate-400 mt-1">Configure origin addresses for different carriers</p>
-					</div>
-					<div class="admin-card-body space-y-6">
-						<!-- USPS Address -->
-						<div class="border border-slate-600 rounded-lg p-4 bg-slate-700/50">
-							<h3 class="text-lg font-semibold text-white mb-4">USPS Origin Address</h3>
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Name</label>
-									<input
-										type="text"
-										name="ship_from_usps_name"
-										value={ config.Shipping.ShipFromUSPS.Name }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Phone</label>
-									<input
-										type="text"
-										name="ship_from_usps_phone"
-										value={ config.Shipping.ShipFromUSPS.Phone }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div class="md:col-span-2">
-									<label class="block text-sm font-medium text-slate-200 mb-1">Address Line 1</label>
-									<input
-										type="text"
-										name="ship_from_usps_address_line1"
-										value={ config.Shipping.ShipFromUSPS.AddressLine1 }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">City</label>
-									<input
-										type="text"
-										name="ship_from_usps_city_locality"
-										value={ config.Shipping.ShipFromUSPS.CityLocality }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">State</label>
-									<input
-										type="text"
-										name="ship_from_usps_state_province"
-										value={ config.Shipping.ShipFromUSPS.StateProvince }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Postal Code</label>
-									<input
-										type="text"
-										name="ship_from_usps_postal_code"
-										value={ config.Shipping.ShipFromUSPS.PostalCode }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Country Code</label>
-									<input
-										type="text"
-										name="ship_from_usps_country_code"
-										value={ config.Shipping.ShipFromUSPS.CountryCode }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-							</div>
-						</div>
-
-						<!-- Other Carriers Address -->
-						<div class="border border-slate-600 rounded-lg p-4 bg-slate-700/50">
-							<h3 class="text-lg font-semibold text-white mb-4">Other Carriers Origin Address</h3>
-							<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Name</label>
-									<input
-										type="text"
-										name="ship_from_other_name"
-										value={ config.Shipping.ShipFromOther.Name }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Phone</label>
-									<input
-										type="text"
-										name="ship_from_other_phone"
-										value={ config.Shipping.ShipFromOther.Phone }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div class="md:col-span-2">
-									<label class="block text-sm font-medium text-slate-200 mb-1">Address Line 1</label>
-									<input
-										type="text"
-										name="ship_from_other_address_line1"
-										value={ config.Shipping.ShipFromOther.AddressLine1 }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">City</label>
-									<input
-										type="text"
-										name="ship_from_other_city_locality"
-										value={ config.Shipping.ShipFromOther.CityLocality }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">State</label>
-									<input
-										type="text"
-										name="ship_from_other_state_province"
-										value={ config.Shipping.ShipFromOther.StateProvince }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Postal Code</label>
-									<input
-										type="text"
-										name="ship_from_other_postal_code"
-										value={ config.Shipping.ShipFromOther.PostalCode }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-								<div>
-									<label class="block text-sm font-medium text-slate-200 mb-1">Country Code</label>
-									<input
-										type="text"
-										name="ship_from_other_country_code"
-										value={ config.Shipping.ShipFromOther.CountryCode }
-										class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-									/>
-								</div>
-							</div>
-						</div>
-					</div>
+		<form id="settings-form" method="POST" action="/admin/shipping/settings" class="space-y-6">
+			<!-- Ship From Addresses Section -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Ship From Addresses</h2>
+					<p class="text-sm text-slate-400 mt-1">Configure origin addresses for different carriers</p>
 				</div>
-
-				<!-- Rate Preferences Section -->
-				<div class="admin-card">
-					<div class="admin-card-header">
-						<h2 class="admin-card-title">Rate Preferences</h2>
-						<p class="text-sm text-slate-400 mt-1">Configure how shipping rates are displayed to customers</p>
-					</div>
-					<div class="admin-card-body">
+				<div class="admin-card-body space-y-6">
+					<!-- USPS Address -->
+					<div class="border border-slate-600 rounded-lg p-4 bg-slate-700/50">
+						<h3 class="text-lg font-semibold text-white mb-4">USPS Origin Address</h3>
 						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div>
-								<label class="block text-sm font-medium text-slate-200 mb-1">
-									Number of Rates to Present
-								</label>
+								<label class="block text-sm font-medium text-slate-200 mb-1">Name</label>
 								<input
-									type="number"
-									name="present_top_n"
-									value={ fmt.Sprintf("%d", config.Shipping.RatePreferences.PresentTopN) }
-									min="1"
-									max="10"
+									type="text"
+									name="ship_from_usps_name"
+									value={ config.Shipping.ShipFromUSPS.Name }
 									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
 								/>
-								<p class="text-xs text-slate-400 mt-1">Show top N shipping options to customers</p>
 							</div>
 							<div>
-								<label class="block text-sm font-medium text-slate-200 mb-1">
-									Sort Order
-								</label>
-								<select
-									name="sort"
+								<label class="block text-sm font-medium text-slate-200 mb-1">Phone</label>
+								<input
+									type="text"
+									name="ship_from_usps_phone"
+									value={ config.Shipping.ShipFromUSPS.Phone }
 									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-								>
-									<option value="price_then_days" selected?={ config.Shipping.RatePreferences.Sort == "price_then_days" }>Price (then Days)</option>
-									<option value="days_then_price" selected?={ config.Shipping.RatePreferences.Sort == "days_then_price" }>Days (then Price)</option>
-									<option value="price" selected?={ config.Shipping.RatePreferences.Sort == "price" }>Price Only</option>
-									<option value="days" selected?={ config.Shipping.RatePreferences.Sort == "days" }>Days Only</option>
-								</select>
-								<p class="text-xs text-slate-400 mt-1">How to sort shipping options</p>
+								/>
+							</div>
+							<div class="md:col-span-2">
+								<label class="block text-sm font-medium text-slate-200 mb-1">Address Line 1</label>
+								<input
+									type="text"
+									name="ship_from_usps_address_line1"
+									value={ config.Shipping.ShipFromUSPS.AddressLine1 }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">City</label>
+								<input
+									type="text"
+									name="ship_from_usps_city_locality"
+									value={ config.Shipping.ShipFromUSPS.CityLocality }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">State</label>
+								<input
+									type="text"
+									name="ship_from_usps_state_province"
+									value={ config.Shipping.ShipFromUSPS.StateProvince }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">Postal Code</label>
+								<input
+									type="text"
+									name="ship_from_usps_postal_code"
+									value={ config.Shipping.ShipFromUSPS.PostalCode }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">Country Code</label>
+								<input
+									type="text"
+									name="ship_from_usps_country_code"
+									value={ config.Shipping.ShipFromUSPS.CountryCode }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+						</div>
+					</div>
+
+					<!-- Other Carriers Address -->
+					<div class="border border-slate-600 rounded-lg p-4 bg-slate-700/50">
+						<h3 class="text-lg font-semibold text-white mb-4">Other Carriers Origin Address</h3>
+						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">Name</label>
+								<input
+									type="text"
+									name="ship_from_other_name"
+									value={ config.Shipping.ShipFromOther.Name }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">Phone</label>
+								<input
+									type="text"
+									name="ship_from_other_phone"
+									value={ config.Shipping.ShipFromOther.Phone }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div class="md:col-span-2">
+								<label class="block text-sm font-medium text-slate-200 mb-1">Address Line 1</label>
+								<input
+									type="text"
+									name="ship_from_other_address_line1"
+									value={ config.Shipping.ShipFromOther.AddressLine1 }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">City</label>
+								<input
+									type="text"
+									name="ship_from_other_city_locality"
+									value={ config.Shipping.ShipFromOther.CityLocality }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">State</label>
+								<input
+									type="text"
+									name="ship_from_other_state_province"
+									value={ config.Shipping.ShipFromOther.StateProvince }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">Postal Code</label>
+								<input
+									type="text"
+									name="ship_from_other_postal_code"
+									value={ config.Shipping.ShipFromOther.PostalCode }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-slate-200 mb-1">Country Code</label>
+								<input
+									type="text"
+									name="ship_from_other_country_code"
+									value={ config.Shipping.ShipFromOther.CountryCode }
+									class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
 							</div>
 						</div>
 					</div>
 				</div>
+			</div>
 
-				<!-- Label Settings Section -->
-				<div class="admin-card">
-					<div class="admin-card-header">
-						<h2 class="admin-card-title">Label Settings</h2>
-						<p class="text-sm text-slate-400 mt-1">Configure shipping label format</p>
-					</div>
-					<div class="admin-card-body">
+			<!-- Rate Preferences Section -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Rate Preferences</h2>
+					<p class="text-sm text-slate-400 mt-1">Configure how shipping rates are displayed to customers</p>
+				</div>
+				<div class="admin-card-body">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
 							<label class="block text-sm font-medium text-slate-200 mb-1">
-								Label Format
+								Number of Rates to Present
+							</label>
+							<input
+								type="number"
+								name="present_top_n"
+								value={ fmt.Sprintf("%d", config.Shipping.RatePreferences.PresentTopN) }
+								min="1"
+								max="10"
+								class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+							<p class="text-xs text-slate-400 mt-1">Show top N shipping options to customers</p>
+						</div>
+						<div>
+							<label class="block text-sm font-medium text-slate-200 mb-1">
+								Sort Order
 							</label>
 							<select
-								name="label_format"
+								name="sort"
 								class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
-								<option value="pdf" selected?={ config.Shipping.Labels.Format == "pdf" }>PDF</option>
-								<option value="png" selected?={ config.Shipping.Labels.Format == "png" }>PNG</option>
-								<option value="zpl" selected?={ config.Shipping.Labels.Format == "zpl" }>ZPL</option>
+								<option value="price_then_days" selected?={ config.Shipping.RatePreferences.Sort == "price_then_days" }>Price (then Days)</option>
+								<option value="days_then_price" selected?={ config.Shipping.RatePreferences.Sort == "days_then_price" }>Days (then Price)</option>
+								<option value="price" selected?={ config.Shipping.RatePreferences.Sort == "price" }>Price Only</option>
+								<option value="days" selected?={ config.Shipping.RatePreferences.Sort == "days" }>Days Only</option>
 							</select>
-							<p class="text-xs text-slate-400 mt-1">Format for downloaded shipping labels</p>
+							<p class="text-xs text-slate-400 mt-1">How to sort shipping options</p>
 						</div>
 					</div>
 				</div>
-			</form>
-		}
+			</div>
+
+			<!-- Label Settings Section -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Label Settings</h2>
+					<p class="text-sm text-slate-400 mt-1">Configure shipping label format</p>
+				</div>
+				<div class="admin-card-body">
+					<div>
+						<label class="block text-sm font-medium text-slate-200 mb-1">
+							Label Format
+						</label>
+						<select
+							name="label_format"
+							class="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+						>
+							<option value="pdf" selected?={ config.Shipping.Labels.Format == "pdf" }>PDF</option>
+							<option value="png" selected?={ config.Shipping.Labels.Format == "png" }>PNG</option>
+							<option value="zpl" selected?={ config.Shipping.Labels.Format == "zpl" }>ZPL</option>
+						</select>
+						<p class="text-xs text-slate-400 mt-1">Format for downloaded shipping labels</p>
+					</div>
+				</div>
+			</div>
+		</form>
 	}
 }

@@ -14,304 +14,302 @@ import (
 
 templ Products(c echo.Context, products []types.ProductWithImage, categories []db.Category, categoryFilter, featuredFilter, premiumFilter, newFilter, statusFilter, sortBy, sortOrder string) {
 	@layout.AdminBase(c, "Products") {
-		@layout.AdminContainer() {
-			<!-- Header -->
-			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-2xl font-bold text-gray-100">Products</h1>
-				<div class="flex space-x-3">
-					<a href="/admin/categories">
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="text-2xl font-bold text-gray-100">Products</h1>
+			<div class="flex space-x-3">
+				<a href="/admin/categories">
+					@button.Button(button.Props{
+						Variant: button.VariantOutline,
+						Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600",
+					}) {
+						Manage Categories
+					}
+				</a>
+				<a href="/admin/product/new">
+					@button.Button(button.Props{
+						Variant: button.VariantDefault,
+						Class: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
+					}) {
+						+ Add Product
+					}
+				</a>
+			</div>
+		</div>
+
+		<!-- Search and Filter Bar -->
+		<div class="mb-6 space-y-4">
+			<!-- Type-ahead Search -->
+			<div class="relative" x-data="{
+				search: '',
+				results: [],
+				showResults: false,
+				loading: false,
+				async searchProducts() {
+					if (this.search.length < 2) {
+						this.results = [];
+						this.showResults = false;
+						return;
+					}
+					this.loading = true;
+					try {
+						const response = await fetch(`/admin/product/search?q=${encodeURIComponent(this.search)}`);
+						this.results = await response.json();
+						this.showResults = true;
+					} catch (error) {
+						console.error('Search error:', error);
+					} finally {
+						this.loading = false;
+					}
+				}
+			}">
+				<input
+					type="text"
+					x-model="search"
+					@input.debounce.300ms="searchProducts()"
+					@focus="if(results.length > 0) showResults = true"
+					@click.outside="showResults = false"
+					placeholder="Search products by name..."
+					class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-gray-700 transition-colors"
+				/>
+				<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto">
+					<template x-for="result in results" :key="result.id">
+						<a
+							:href="`/admin/product/edit?id=${result.id}`"
+							class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
+							@click="showResults = false"
+						>
+							<img
+								:src="result.image || '/public/images/placeholder.png'"
+								:alt="result.name"
+								class="w-12 h-12 object-cover rounded"
+							/>
+							<div class="flex-1">
+								<div class="font-medium text-gray-100" x-text="result.name"></div>
+								<div class="text-sm text-gray-400" x-text="`$${result.price.toFixed(2)}`"></div>
+							</div>
+						</a>
+					</template>
+				</div>
+			</div>
+
+			<!-- Filters -->
+			<div class="flex gap-3 flex-wrap items-center">
+				<select
+					name="category"
+					class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm font-medium text-gray-200 hover:bg-gray-700 hover:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
+					onchange="window.location.href = updateQueryParam('category', this.value)"
+				>
+					<option value="">All Categories</option>
+					for _, cat := range categories {
+						if categoryFilter == cat.ID {
+							<option value={ cat.ID } selected>{ cat.Name }</option>
+						} else {
+							<option value={ cat.ID }>{ cat.Name }</option>
+						}
+					}
+				</select>
+
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${newFilter == "true" ? "bg-green-900/30 border-green-600/50 hover:bg-green-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+					<div class="switch-wrapper">
+						@switchcomp.Switch(switchcomp.Props{
+							ID: "new-filter",
+							Checked: newFilter == "true",
+							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('new', this.checked ? 'true' : '')"},
+						})
+					</div>
+					<span class={ `text-sm font-medium ${newFilter == "true" ? "text-green-400" : "text-gray-200"}` }>New</span>
+				</div>
+
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${featuredFilter == "true" ? "bg-blue-900/30 border-blue-600/50 hover:bg-blue-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+					<div class="switch-wrapper">
+						@switchcomp.Switch(switchcomp.Props{
+							ID: "featured-filter",
+							Checked: featuredFilter == "true",
+							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('featured', this.checked ? 'true' : '')"},
+						})
+					</div>
+					<span class={ `text-sm font-medium ${featuredFilter == "true" ? "text-blue-400" : "text-gray-200"}` }>Featured</span>
+				</div>
+
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${premiumFilter == "true" ? "bg-yellow-900/30 border-yellow-600/50 hover:bg-yellow-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+					<div class="switch-wrapper">
+						@switchcomp.Switch(switchcomp.Props{
+							ID: "premium-filter",
+							Checked: premiumFilter == "true",
+							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('premium', this.checked ? 'true' : '')"},
+						})
+					</div>
+					<span class={ `text-sm font-medium ${premiumFilter == "true" ? "text-yellow-400" : "text-gray-200"}` }>Premium</span>
+				</div>
+
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${statusFilter == "inactive" ? "bg-red-900/30 border-red-600/50 hover:bg-red-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+					<div class="switch-wrapper">
+						@switchcomp.Switch(switchcomp.Props{
+							ID: "inactive-filter",
+							Checked: statusFilter == "inactive",
+							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('status', this.checked ? 'inactive' : '')"},
+						})
+					</div>
+					<span class={ `text-sm font-medium ${statusFilter == "inactive" ? "text-red-400" : "text-gray-200"}` }>Inactive</span>
+				</div>
+
+				if categoryFilter != "" || featuredFilter != "" || premiumFilter != "" || newFilter != "" || statusFilter != "" || sortBy != "" {
+					<a href="/admin">
 						@button.Button(button.Props{
 							Variant: button.VariantOutline,
-							Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600",
+							Size: button.SizeSm,
+							Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600 hover:text-gray-100",
 						}) {
-							Manage Categories
+							Clear Filters
 						}
 					</a>
-					<a href="/admin/product/new">
-						@button.Button(button.Props{
-							Variant: button.VariantDefault,
-							Class: "bg-blue-600 hover:bg-blue-700 text-white border-blue-600",
-						}) {
-							+ Add Product
-						}
-					</a>
-				</div>
+				}
 			</div>
+		</div>
 
-			<!-- Search and Filter Bar -->
-			<div class="mb-6 space-y-4">
-				<!-- Type-ahead Search -->
-				<div class="relative" x-data="{
-					search: '',
-					results: [],
-					showResults: false,
-					loading: false,
-					async searchProducts() {
-						if (this.search.length < 2) {
-							this.results = [];
-							this.showResults = false;
-							return;
-						}
-						this.loading = true;
-						try {
-							const response = await fetch(`/admin/product/search?q=${encodeURIComponent(this.search)}`);
-							this.results = await response.json();
-							this.showResults = true;
-						} catch (error) {
-							console.error('Search error:', error);
-						} finally {
-							this.loading = false;
-						}
-					}
-				}">
-					<input
-						type="text"
-						x-model="search"
-						@input.debounce.300ms="searchProducts()"
-						@focus="if(results.length > 0) showResults = true"
-						@click.outside="showResults = false"
-						placeholder="Search products by name..."
-						class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-gray-700 transition-colors"
-					/>
-					<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto">
-						<template x-for="result in results" :key="result.id">
-							<a
-								:href="`/admin/product/edit?id=${result.id}`"
-								class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
-								@click="showResults = false"
-							>
-								<img
-									:src="result.image || '/public/images/placeholder.png'"
-									:alt="result.name"
-									class="w-12 h-12 object-cover rounded"
-								/>
-								<div class="flex-1">
-									<div class="font-medium text-gray-100" x-text="result.name"></div>
-									<div class="text-sm text-gray-400" x-text="`$${result.price.toFixed(2)}`"></div>
-								</div>
-							</a>
-						</template>
-					</div>
-				</div>
-
-				<!-- Filters -->
-				<div class="flex gap-3 flex-wrap items-center">
-					<select
-						name="category"
-						class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm font-medium text-gray-200 hover:bg-gray-700 hover:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
-						onchange="window.location.href = updateQueryParam('category', this.value)"
-					>
-						<option value="">All Categories</option>
-						for _, cat := range categories {
-							if categoryFilter == cat.ID {
-								<option value={ cat.ID } selected>{ cat.Name }</option>
-							} else {
-								<option value={ cat.ID }>{ cat.Name }</option>
-							}
-						}
-					</select>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${newFilter == "true" ? "bg-green-900/30 border-green-600/50 hover:bg-green-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "new-filter",
-								Checked: newFilter == "true",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('new', this.checked ? 'true' : '')"},
-							})
-						</div>
-						<span class={ `text-sm font-medium ${newFilter == "true" ? "text-green-400" : "text-gray-200"}` }>New</span>
-					</div>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${featuredFilter == "true" ? "bg-blue-900/30 border-blue-600/50 hover:bg-blue-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "featured-filter",
-								Checked: featuredFilter == "true",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('featured', this.checked ? 'true' : '')"},
-							})
-						</div>
-						<span class={ `text-sm font-medium ${featuredFilter == "true" ? "text-blue-400" : "text-gray-200"}` }>Featured</span>
-					</div>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${premiumFilter == "true" ? "bg-yellow-900/30 border-yellow-600/50 hover:bg-yellow-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "premium-filter",
-								Checked: premiumFilter == "true",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('premium', this.checked ? 'true' : '')"},
-							})
-						</div>
-						<span class={ `text-sm font-medium ${premiumFilter == "true" ? "text-yellow-400" : "text-gray-200"}` }>Premium</span>
-					</div>
-
-					<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${statusFilter == "inactive" ? "bg-red-900/30 border-red-600/50 hover:bg-red-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
-						<div class="switch-wrapper">
-							@switchcomp.Switch(switchcomp.Props{
-								ID: "inactive-filter",
-								Checked: statusFilter == "inactive",
-								Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('status', this.checked ? 'inactive' : '')"},
-							})
-						</div>
-						<span class={ `text-sm font-medium ${statusFilter == "inactive" ? "text-red-400" : "text-gray-200"}` }>Inactive</span>
-					</div>
-
-					if categoryFilter != "" || featuredFilter != "" || premiumFilter != "" || newFilter != "" || statusFilter != "" || sortBy != "" {
-						<a href="/admin">
-							@button.Button(button.Props{
-								Variant: button.VariantOutline,
-								Size: button.SizeSm,
-								Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600 hover:text-gray-100",
-							}) {
-								Clear Filters
-							}
-						</a>
-					}
-				</div>
-			</div>
-
-			<style>
-				/* Custom switch styles for dark theme */
-				.switch-wrapper label > div {
-					background-color: #4B5563 !important; /* gray-600 */
-					border: 1px solid #6B7280 !important; /* gray-500 */
-				}
-				.switch-wrapper input:checked + div {
-					background-color: #10B981 !important; /* green-600 for default */
-					border-color: #059669 !important;
-				}
-				.switch-wrapper input:checked + div::after {
-					background-color: white !important;
-				}
-				.switch-wrapper input + div::after {
-					background-color: white !important;
-				}
-				/* Specific colors for each filter */
-				#featured-filter:checked + div {
-					background-color: #2563EB !important; /* blue-600 */
-					border-color: #1D4ED8 !important;
-				}
-				#premium-filter:checked + div {
-					background-color: #F59E0B !important; /* yellow-600 */
-					border-color: #D97706 !important;
-				}
-				#inactive-filter:checked + div {
-					background-color: #DC2626 !important; /* red-600 */
-					border-color: #B91C1C !important;
-				}
-				#new-filter:checked + div {
-					background-color: #10B981 !important; /* green-600 */
-					border-color: #059669 !important;
-				}
-			</style>
-			<script>
-				function updateQueryParam(key, value) {
-					const url = new URL(window.location);
-					if (value) {
-						url.searchParams.set(key, value);
-					} else {
-						url.searchParams.delete(key);
-					}
-					return url.toString();
-				}
-			</script>
-
-			<!-- Mobile Collapsed Row Layout (< 640px) -->
-			<div class="sm:hidden space-y-1 mb-6" x-data="{ expandedProducts: new Set() }">
-				if len(products) == 0 {
-					<div class="text-center py-8 text-gray-400">
-						No products found
-					</div>
+		<style>
+			/* Custom switch styles for dark theme */
+			.switch-wrapper label > div {
+				background-color: #4B5563 !important; /* gray-600 */
+				border: 1px solid #6B7280 !important; /* gray-500 */
+			}
+			.switch-wrapper input:checked + div {
+				background-color: #10B981 !important; /* green-600 for default */
+				border-color: #059669 !important;
+			}
+			.switch-wrapper input:checked + div::after {
+				background-color: white !important;
+			}
+			.switch-wrapper input + div::after {
+				background-color: white !important;
+			}
+			/* Specific colors for each filter */
+			#featured-filter:checked + div {
+				background-color: #2563EB !important; /* blue-600 */
+				border-color: #1D4ED8 !important;
+			}
+			#premium-filter:checked + div {
+				background-color: #F59E0B !important; /* yellow-600 */
+				border-color: #D97706 !important;
+			}
+			#inactive-filter:checked + div {
+				background-color: #DC2626 !important; /* red-600 */
+				border-color: #B91C1C !important;
+			}
+			#new-filter:checked + div {
+				background-color: #10B981 !important; /* green-600 */
+				border-color: #059669 !important;
+			}
+		</style>
+		<script>
+			function updateQueryParam(key, value) {
+				const url = new URL(window.location);
+				if (value) {
+					url.searchParams.set(key, value);
 				} else {
-					for _, product := range products {
-						@ProductRowCollapsed(c, &product)
+					url.searchParams.delete(key);
+				}
+				return url.toString();
+			}
+		</script>
+
+		<!-- Mobile Collapsed Row Layout (< 640px) -->
+		<div class="sm:hidden space-y-1 mb-6" x-data="{ expandedProducts: new Set() }">
+			if len(products) == 0 {
+				<div class="text-center py-8 text-gray-400">
+					No products found
+				</div>
+			} else {
+				for _, product := range products {
+					@ProductRowCollapsed(c, &product)
+				}
+			}
+		</div>
+
+		<!-- Desktop Table Layout (≥ 640px) -->
+		<div class="hidden sm:block">
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Products ({ fmt.Sprintf("%d", len(products)) })
 					}
 				}
-			</div>
-
-			<!-- Desktop Table Layout (≥ 640px) -->
-			<div class="hidden sm:block">
-				@card.Card() {
-					@card.Header() {
-						@card.Title() {
-							Products ({ fmt.Sprintf("%d", len(products)) })
-						}
-					}
-					@card.Content(card.ContentProps{
-						Class: "p-0",
-					}) {
-						<div class="overflow-x-auto">
-							@table.Table() {
-								@table.Header() {
-									@table.Row() {
-										@table.Head() { Image }
-										@table.Head() {
-											<a
-												href={ templ.SafeURL(getSortURL("name", sortBy, sortOrder)) }
-												class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
-												title="Click to sort by name"
-											>
-												Name
-												if sortBy == "name" {
-													if sortOrder == "asc" {
-														<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-														</svg>
-													} else {
-														<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-														</svg>
-													}
+				@card.Content(card.ContentProps{
+					Class: "p-0",
+				}) {
+					<div class="overflow-x-auto">
+						@table.Table() {
+							@table.Header() {
+								@table.Row() {
+									@table.Head() { Image }
+									@table.Head() {
+										<a
+											href={ templ.SafeURL(getSortURL("name", sortBy, sortOrder)) }
+											class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+											title="Click to sort by name"
+										>
+											Name
+											if sortBy == "name" {
+												if sortOrder == "asc" {
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+													</svg>
 												} else {
-													<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 													</svg>
 												}
-											</a>
-										}
-										@table.Head() { SKU }
-										@table.Head() {
-											<a
-												href={ templ.SafeURL(getSortURL("price", sortBy, sortOrder)) }
-												class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
-												title="Click to sort by price"
-											>
-												Price
-												if sortBy == "price" {
-													if sortOrder == "asc" {
-														<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
-														</svg>
-													} else {
-														<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-														</svg>
-													}
+											} else {
+												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+												</svg>
+											}
+										</a>
+									}
+									@table.Head() { SKU }
+									@table.Head() {
+										<a
+											href={ templ.SafeURL(getSortURL("price", sortBy, sortOrder)) }
+											class="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+											title="Click to sort by price"
+										>
+											Price
+											if sortBy == "price" {
+												if sortOrder == "asc" {
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path>
+													</svg>
 												} else {
-													<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+													<svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 													</svg>
 												}
-											</a>
-										}
-										@table.Head() { Stock }
-										@table.Head() { New }
-										@table.Head() { Featured }
-										@table.Head() { Premium }
-										@table.Head() { Status }
-										@table.Head() { Actions }
+											} else {
+												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+												</svg>
+											}
+										</a>
 									}
-								}
-								@table.Body() {
-									for _, product := range products {
-										@ProductTableRowDisplay(c, &product)
-									}
+									@table.Head() { Stock }
+									@table.Head() { New }
+									@table.Head() { Featured }
+									@table.Head() { Premium }
+									@table.Head() { Status }
+									@table.Head() { Actions }
 								}
 							}
-						</div>
-					}
+							@table.Body() {
+								for _, product := range products {
+									@ProductTableRowDisplay(c, &product)
+								}
+							}
+						}
+					</div>
 				}
-			</div>
-		}
+			}
+		</div>
 	}
 }
 
@@ -834,10 +832,8 @@ templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithIma
 				<!-- Full Edit -->
 				<a
 					href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", productWithImage.Product.ID)) }
-					target="_blank"
-					rel="noopener noreferrer"
 					class="flex-1 inline-flex items-center justify-center py-1.5 px-2 rounded bg-purple-600 hover:bg-purple-700 text-white font-medium transition-colors text-xs"
-					title="Open full edit page in new tab"
+					title="Open full edit page"
 				>
 					Edit
 				</a>

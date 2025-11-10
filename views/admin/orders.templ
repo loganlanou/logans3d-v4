@@ -13,949 +13,945 @@ import (
 
 templ OrdersList(c echo.Context, orders []db.Order) {
 	@layout.AdminBase(c, "Orders") {
-		@layout.AdminContainer() {
-			<!-- Header -->
-			<div class="flex justify-between items-center mb-6">
-				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Orders</h1>
-			</div>
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-6">
+			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Orders</h1>
+		</div>
 
-			<!-- Search and Filter Bar -->
-			<div class="mb-6 space-y-4">
-				<!-- Type-ahead Search -->
-				<div class="relative" x-data="{
-					search: '',
-					results: [],
-					showResults: false,
-					loading: false,
-					async searchOrders() {
-						if (this.search.length < 2) {
-							this.results = [];
-							this.showResults = false;
-							return;
-						}
-						this.loading = true;
-						try {
-							const response = await fetch(`/admin/orders/search?q=${encodeURIComponent(this.search)}`);
-							this.results = await response.json();
-							this.showResults = true;
-						} catch (error) {
-							console.error('Search error:', error);
-						} finally {
-							this.loading = false;
-						}
-					},
-					clearSearch() {
-						this.search = '';
+		<!-- Search and Filter Bar -->
+		<div class="mb-6 space-y-4">
+			<!-- Type-ahead Search -->
+			<div class="relative" x-data="{
+				search: '',
+				results: [],
+				showResults: false,
+				loading: false,
+				async searchOrders() {
+					if (this.search.length < 2) {
 						this.results = [];
 						this.showResults = false;
-					}
-				}">
-					<input
-						type="text"
-						x-model="search"
-						@input.debounce.300ms="searchOrders()"
-						@focus="if(results.length > 0) showResults = true"
-						@click.outside="showResults = false"
-						@keydown.escape="clearSearch()"
-						placeholder="Search orders by customer name..."
-						class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-					/>
-					<!-- Clear button -->
-					<button
-						type="button"
-						x-show="search.length > 0"
-						@click="clearSearch()"
-						class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-						</svg>
-					</button>
-					<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
-						<template x-for="result in results" :key="result.id">
-							<a
-								:href="`/admin/orders/${result.id}`"
-								class="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
-								@click="showResults = false"
-							>
-								<div class="flex items-start justify-between gap-4">
-									<!-- Left: Customer Info -->
-									<div class="flex-1 min-w-0">
-										<div class="flex items-center gap-2 mb-1">
-											<span class="font-mono text-sm font-semibold text-blue-600" x-text="`#${result.order_number}`"></span>
-											<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded" x-text="result.status"></span>
-										</div>
-										<div class="font-medium text-gray-900 truncate" x-text="result.customer_name"></div>
-										<div class="text-sm text-gray-500 truncate" x-text="result.customer_email"></div>
-									</div>
-									<!-- Right: Order Details -->
-									<div class="text-right shrink-0">
-										<div class="font-bold text-gray-900" x-text="`$${(result.total_cents / 100).toFixed(2)}`"></div>
-										<div class="text-xs text-gray-500" x-text="`${result.item_count} item${result.item_count !== 1 ? 's' : ''}`"></div>
-										<div class="text-xs text-gray-500" x-text="result.created_at"></div>
-									</div>
-								</div>
-							</a>
-						</template>
-					</div>
-				</div>
-
-				<!-- Filters -->
-				<div class="flex gap-4 flex-wrap items-center">
-					<!-- Date Filter -->
-					<input
-						type="date"
-						name="date"
-						class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						onchange="window.location.href = updateQueryParam('date', this.value)"
-					/>
-
-					<!-- Status Filters -->
-					<a href="/admin/orders" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors">All Orders</a>
-					<a href="/admin/orders?status=received" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Received</a>
-					<a href="/admin/orders?status=in_production" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 transition-colors">In Production</a>
-					<a href="/admin/orders?status=shipped" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">Shipped</a>
-					<a href="/admin/orders?status=delivered" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-green-100 hover:border-green-400 hover:text-green-900 transition-colors">Delivered</a>
-					<a href="/admin/orders?status=cancelled" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-red-100 hover:border-red-400 hover:text-red-900 transition-colors">Cancelled</a>
-				</div>
-			</div>
-
-			<script>
-				function updateQueryParam(key, value) {
-					const url = new URL(window.location);
-					if (value) {
-						url.searchParams.set(key, value);
-					} else {
-						url.searchParams.delete(key);
-					}
-					return url.toString();
-				}
-			</script>
-
-			<!-- Orders Table -->
-			<div class="admin-card">
-				<div class="admin-card-header">
-					<h2 class="admin-card-title">Orders ({ fmt.Sprintf("%d", len(orders)) })</h2>
-				</div>
-				<div class="overflow-x-auto">
-					<table class="admin-table">
-						<thead>
-							<tr>
-								<th>Order ID</th>
-								<th>Customer</th>
-								<th>Total</th>
-								<th>Status</th>
-								<th>Date</th>
-								<th></th>
-							</tr>
-						</thead>
-						<tbody>
-							if len(orders) == 0 {
-								<tr>
-									<td colspan="6" class="text-center admin-text-muted py-8">
-										No orders found
-									</td>
-								</tr>
-							}
-							for _, order := range orders {
-								<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/orders/%s'", order.ID)} } style="cursor: pointer;">
-									<td>
-										<div class="admin-text-primary admin-font-mono admin-text-sm">
-											{ order.ID[:8] }...
-										</div>
-									</td>
-									<td>
-										<div class="admin-text-primary admin-font-medium">
-											if order.UserID != "" {
-												<a
-													href={ templ.URL("/admin/users/" + order.UserID) }
-													class="text-blue-600 hover:text-blue-800"
-													onclick="event.stopPropagation()"
-												>
-													{ order.CustomerName }
-												</a>
-											} else {
-												{ order.CustomerName }
-											}
-										</div>
-										<div class="admin-text-muted admin-text-sm">{ order.CustomerEmail }</div>
-									</td>
-									<td>
-										<div class="admin-text-primary admin-font-semibold">
-											${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }
-										</div>
-										<div class="admin-text-muted admin-text-sm">
-											Subtotal: ${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }
-										</div>
-									</td>
-									<td>
-										@OrderStatusBadge(getOrderStatusString(order.Status))
-									</td>
-									<td>
-										<div class="admin-text-sm">
-											{ formatOrderDate(getOrderCreatedAt(order.CreatedAt)) }
-										</div>
-									</td>
-									<td>
-										if getNextStatus(getOrderStatusString(order.Status)) != "" {
-											<button
-												onclick={ templ.ComponentScript{Call: fmt.Sprintf("event.stopPropagation(); advanceStatus(event, '%s', '%s', '%s')", order.ID, getNextStatus(getOrderStatusString(order.Status)), getNextStatusButtonText(getOrderStatusString(order.Status)))} }
-												class="admin-btn admin-btn-sm admin-btn-primary">
-												{ getNextStatusButtonText(getOrderStatusString(order.Status)) }
-											</button>
-										}
-									</td>
-								</tr>
-							}
-						</tbody>
-					</table>
-				</div>
-			</div>
-
-			<!-- Shipping Info Modal for List Page -->
-			@dialog.Content(dialog.ContentProps{
-				ID: "shippingModalList",
-				Class: "max-w-md",
-			}) {
-				@dialog.Header() {
-					@dialog.Title() {
-						Enter Shipping Information
-					}
-				}
-				<form id="shippingFormList" class="space-y-4">
-					<div>
-						<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
-						<input type="text" id="carrierList" name="carrier" required
-							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="e.g., USPS, UPS, FedEx"/>
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
-						<input type="text" id="trackingNumberList" name="trackingNumber" required
-							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="Enter tracking number"/>
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
-						<input type="url" id="trackingUrlList" name="trackingUrl"
-							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="https://..."/>
-					</div>
-				</form>
-				@dialog.Footer() {
-					@button.Button(button.Props{
-						Variant: button.VariantOutline,
-						Attributes: templ.Attributes{
-							"onclick": "window.tui.dialog.close('filterDateModal')",
-						},
-					}) {
-						Cancel
-					}
-					@button.Button(button.Props{
-						Attributes: templ.Attributes{
-							"type":    "submit",
-							"form":    "shippingFormList",
-						},
-					}) {
-						Ship Order
-					}
-				}
-			}
-
-			<script>
-				let currentOrderIDList = '';
-
-				function advanceStatus(event, orderID, nextStatus, buttonText) {
-					event.stopPropagation();
-
-					// If advancing to shipped, show modal for shipping info
-					if (nextStatus === 'shipped') {
-						currentOrderIDList = orderID;
-						window.tui.dialog.open('shippingModalList');
 						return;
 					}
-
-					if (confirm('Change order status to "' + buttonText + '"?')) {
-						fetch('/admin/orders/' + orderID + '/status', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({ status: nextStatus })
-						})
-						.then(response => {
-							if (response.ok) {
-								location.reload();
-							} else {
-								alert('Failed to update status');
-							}
-						})
-						.catch(error => {
-							alert('Failed to update status: ' + error);
-						});
+					this.loading = true;
+					try {
+						const response = await fetch(`/admin/orders/search?q=${encodeURIComponent(this.search)}`);
+						this.results = await response.json();
+						this.showResults = true;
+					} catch (error) {
+						console.error('Search error:', error);
+					} finally {
+						this.loading = false;
 					}
+				},
+				clearSearch() {
+					this.search = '';
+					this.results = [];
+					this.showResults = false;
+				}
+			}">
+				<input
+					type="text"
+					x-model="search"
+					@input.debounce.300ms="searchOrders()"
+					@focus="if(results.length > 0) showResults = true"
+					@click.outside="showResults = false"
+					@keydown.escape="clearSearch()"
+					placeholder="Search orders by customer name..."
+					class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+				/>
+				<!-- Clear button -->
+				<button
+					type="button"
+					x-show="search.length > 0"
+					@click="clearSearch()"
+					class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+					</svg>
+				</button>
+				<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+					<template x-for="result in results" :key="result.id">
+						<a
+							:href="`/admin/orders/${result.id}`"
+							class="block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+							@click="showResults = false"
+						>
+							<div class="flex items-start justify-between gap-4">
+								<!-- Left: Customer Info -->
+								<div class="flex-1 min-w-0">
+									<div class="flex items-center gap-2 mb-1">
+										<span class="font-mono text-sm font-semibold text-blue-600" x-text="`#${result.order_number}`"></span>
+										<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded" x-text="result.status"></span>
+									</div>
+									<div class="font-medium text-gray-900 truncate" x-text="result.customer_name"></div>
+									<div class="text-sm text-gray-500 truncate" x-text="result.customer_email"></div>
+								</div>
+								<!-- Right: Order Details -->
+								<div class="text-right shrink-0">
+									<div class="font-bold text-gray-900" x-text="`$${(result.total_cents / 100).toFixed(2)}`"></div>
+									<div class="text-xs text-gray-500" x-text="`${result.item_count} item${result.item_count !== 1 ? 's' : ''}`"></div>
+									<div class="text-xs text-gray-500" x-text="result.created_at"></div>
+								</div>
+							</div>
+						</a>
+					</template>
+				</div>
+			</div>
+
+			<!-- Filters -->
+			<div class="flex gap-4 flex-wrap items-center">
+				<!-- Date Filter -->
+				<input
+					type="date"
+					name="date"
+					class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					onchange="window.location.href = updateQueryParam('date', this.value)"
+				/>
+
+				<!-- Status Filters -->
+				<a href="/admin/orders" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors">All Orders</a>
+				<a href="/admin/orders?status=received" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Received</a>
+				<a href="/admin/orders?status=in_production" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 transition-colors">In Production</a>
+				<a href="/admin/orders?status=shipped" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">Shipped</a>
+				<a href="/admin/orders?status=delivered" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-green-100 hover:border-green-400 hover:text-green-900 transition-colors">Delivered</a>
+				<a href="/admin/orders?status=cancelled" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-red-100 hover:border-red-400 hover:text-red-900 transition-colors">Cancelled</a>
+			</div>
+		</div>
+
+		<script>
+			function updateQueryParam(key, value) {
+				const url = new URL(window.location);
+				if (value) {
+					url.searchParams.set(key, value);
+				} else {
+					url.searchParams.delete(key);
+				}
+				return url.toString();
+			}
+		</script>
+
+		<!-- Orders Table -->
+		<div class="admin-card">
+			<div class="admin-card-header">
+				<h2 class="admin-card-title">Orders ({ fmt.Sprintf("%d", len(orders)) })</h2>
+			</div>
+			<div class="overflow-x-auto">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>Order ID</th>
+							<th>Customer</th>
+							<th>Total</th>
+							<th>Status</th>
+							<th>Date</th>
+							<th></th>
+						</tr>
+					</thead>
+					<tbody>
+						if len(orders) == 0 {
+							<tr>
+								<td colspan="6" class="text-center admin-text-muted py-8">
+									No orders found
+								</td>
+							</tr>
+						}
+						for _, order := range orders {
+							<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/orders/%s'", order.ID)} } style="cursor: pointer;">
+								<td>
+									<div class="admin-text-primary admin-font-mono admin-text-sm">
+										{ order.ID[:8] }...
+									</div>
+								</td>
+								<td>
+									<div class="admin-text-primary admin-font-medium">
+										if order.UserID != "" {
+											<a
+												href={ templ.URL("/admin/users/" + order.UserID) }
+												class="text-blue-600 hover:text-blue-800"
+												onclick="event.stopPropagation()"
+											>
+												{ order.CustomerName }
+											</a>
+										} else {
+											{ order.CustomerName }
+										}
+									</div>
+									<div class="admin-text-muted admin-text-sm">{ order.CustomerEmail }</div>
+								</td>
+								<td>
+									<div class="admin-text-primary admin-font-semibold">
+										${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }
+									</div>
+									<div class="admin-text-muted admin-text-sm">
+										Subtotal: ${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }
+									</div>
+								</td>
+								<td>
+									@OrderStatusBadge(getOrderStatusString(order.Status))
+								</td>
+								<td>
+									<div class="admin-text-sm">
+										{ formatOrderDate(getOrderCreatedAt(order.CreatedAt)) }
+									</div>
+								</td>
+								<td>
+									if getNextStatus(getOrderStatusString(order.Status)) != "" {
+										<button
+											onclick={ templ.ComponentScript{Call: fmt.Sprintf("event.stopPropagation(); advanceStatus(event, '%s', '%s', '%s')", order.ID, getNextStatus(getOrderStatusString(order.Status)), getNextStatusButtonText(getOrderStatusString(order.Status)))} }
+											class="admin-btn admin-btn-sm admin-btn-primary">
+											{ getNextStatusButtonText(getOrderStatusString(order.Status)) }
+										</button>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- Shipping Info Modal for List Page -->
+		@dialog.Content(dialog.ContentProps{
+			ID: "shippingModalList",
+			Class: "max-w-md",
+		}) {
+			@dialog.Header() {
+				@dialog.Title() {
+					Enter Shipping Information
+				}
+			}
+			<form id="shippingFormList" class="space-y-4">
+				<div>
+					<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
+					<input type="text" id="carrierList" name="carrier" required
+						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="e.g., USPS, UPS, FedEx"/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
+					<input type="text" id="trackingNumberList" name="trackingNumber" required
+						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="Enter tracking number"/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
+					<input type="url" id="trackingUrlList" name="trackingUrl"
+						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="https://..."/>
+				</div>
+			</form>
+			@dialog.Footer() {
+				@button.Button(button.Props{
+					Variant: button.VariantOutline,
+					Attributes: templ.Attributes{
+						"onclick": "window.tui.dialog.close('filterDateModal')",
+					},
+				}) {
+					Cancel
+				}
+				@button.Button(button.Props{
+					Attributes: templ.Attributes{
+						"type":    "submit",
+						"form":    "shippingFormList",
+					},
+				}) {
+					Ship Order
+				}
+			}
+		}
+
+		<script>
+			let currentOrderIDList = '';
+
+			function advanceStatus(event, orderID, nextStatus, buttonText) {
+				event.stopPropagation();
+
+				// If advancing to shipped, show modal for shipping info
+				if (nextStatus === 'shipped') {
+					currentOrderIDList = orderID;
+					window.tui.dialog.open('shippingModalList');
+					return;
 				}
 
-				function closeShippingModalList() {
-					window.tui.dialog.close('shippingModalList');
-				}
-
-				document.getElementById('shippingFormList').addEventListener('submit', function(e) {
-					e.preventDefault();
-					const carrier = document.getElementById('carrierList').value;
-					const trackingNumber = document.getElementById('trackingNumberList').value;
-					const trackingUrl = document.getElementById('trackingUrlList').value;
-
-					updateStatusWithTracking(currentOrderIDList, 'shipped', {
-						carrier: carrier,
-						tracking_number: trackingNumber,
-						tracking_url: trackingUrl
-					});
-				});
-
-				function updateStatusWithTracking(orderID, newStatus, trackingData) {
-					const body = { status: newStatus, ...trackingData };
-
+				if (confirm('Change order status to "' + buttonText + '"?')) {
 					fetch('/admin/orders/' + orderID + '/status', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json'
 						},
-						body: JSON.stringify(body)
+						body: JSON.stringify({ status: nextStatus })
 					})
 					.then(response => {
 						if (response.ok) {
 							location.reload();
 						} else {
 							alert('Failed to update status');
-							location.reload();
 						}
 					})
 					.catch(error => {
 						alert('Failed to update status: ' + error);
-						location.reload();
 					});
 				}
-			</script>
-		}
+			}
+
+			function closeShippingModalList() {
+				window.tui.dialog.close('shippingModalList');
+			}
+
+			document.getElementById('shippingFormList').addEventListener('submit', function(e) {
+				e.preventDefault();
+				const carrier = document.getElementById('carrierList').value;
+				const trackingNumber = document.getElementById('trackingNumberList').value;
+				const trackingUrl = document.getElementById('trackingUrlList').value;
+
+				updateStatusWithTracking(currentOrderIDList, 'shipped', {
+					carrier: carrier,
+					tracking_number: trackingNumber,
+					tracking_url: trackingUrl
+				});
+			});
+
+			function updateStatusWithTracking(orderID, newStatus, trackingData) {
+				const body = { status: newStatus, ...trackingData };
+
+				fetch('/admin/orders/' + orderID + '/status', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(body)
+				})
+				.then(response => {
+					if (response.ok) {
+						location.reload();
+					} else {
+						alert('Failed to update status');
+						location.reload();
+					}
+				})
+				.catch(error => {
+					alert('Failed to update status: ' + error);
+					location.reload();
+				});
+			}
+		</script>
 	}
 }
 
 templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shippingSelection db.OrderShippingSelection) {
 	@layout.AdminBase(c, fmt.Sprintf("Order #%s", order.ID[:8])) {
-		@layout.AdminContainer() {
-			<!-- Back Button -->
-			<div class="mb-6">
-				<a href="/admin/orders" class="text-blue-600 hover:text-blue-800">
-					← Back to Orders
-				</a>
-			</div>
+		<!-- Back Button -->
+		<div class="mb-6">
+			<a href="/admin/orders" class="text-blue-600 hover:text-blue-800">
+				← Back to Orders
+			</a>
+		</div>
 
-			<!-- Header with Stripe Link -->
-			<div class="flex justify-between items-start mb-6">
-				<div class="flex items-center gap-4">
-					<h1 class="admin-text-primary admin-text-2xl admin-font-bold">
-						Order #{ order.ID[:8] }
-					</h1>
-					<select
-						id="statusDropdown"
-						onchange={ templ.ComponentScript{Call: fmt.Sprintf("updateOrderStatusFromDropdown('%s', this.value)", order.ID)} }
-						class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+		<!-- Header with Stripe Link -->
+		<div class="flex justify-between items-start mb-6">
+			<div class="flex items-center gap-4">
+				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">
+					Order #{ order.ID[:8] }
+				</h1>
+				<select
+					id="statusDropdown"
+					onchange={ templ.ComponentScript{Call: fmt.Sprintf("updateOrderStatusFromDropdown('%s', this.value)", order.ID)} }
+					class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+				>
+					<option value="received" selected?={ getOrderStatusString(order.Status) == "received" }>Received</option>
+					<option value="in_production" selected?={ getOrderStatusString(order.Status) == "in_production" }>In Production</option>
+					<option value="shipped" selected?={ getOrderStatusString(order.Status) == "shipped" }>Shipped</option>
+					<option value="delivered" selected?={ getOrderStatusString(order.Status) == "delivered" }>Delivered</option>
+					<option value="cancelled" selected?={ getOrderStatusString(order.Status) == "cancelled" }>Cancelled</option>
+				</select>
+			</div>
+			<div class="flex items-center gap-3">
+				if order.StripePaymentIntentID.Valid && order.StripePaymentIntentID.String != "" {
+					<a
+						href={ templ.SafeURL(fmt.Sprintf("https://dashboard.stripe.com/payments/%s", order.StripePaymentIntentID.String)) }
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+						title="View in Stripe Dashboard"
 					>
-						<option value="received" selected?={ getOrderStatusString(order.Status) == "received" }>Received</option>
-						<option value="in_production" selected?={ getOrderStatusString(order.Status) == "in_production" }>In Production</option>
-						<option value="shipped" selected?={ getOrderStatusString(order.Status) == "shipped" }>Shipped</option>
-						<option value="delivered" selected?={ getOrderStatusString(order.Status) == "delivered" }>Delivered</option>
-						<option value="cancelled" selected?={ getOrderStatusString(order.Status) == "cancelled" }>Cancelled</option>
-					</select>
+						<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+							<path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z"></path>
+					</svg>
+					View in Stripe
+				</a>
+				}
+				<div class="text-sm admin-text-muted">
+					ID: { order.ID }
 				</div>
-				<div class="flex items-center gap-3">
-					if order.StripePaymentIntentID.Valid && order.StripePaymentIntentID.String != "" {
-						<a
-							href={ templ.SafeURL(fmt.Sprintf("https://dashboard.stripe.com/payments/%s", order.StripePaymentIntentID.String)) }
-							target="_blank"
-							rel="noopener noreferrer"
-							class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
-							title="View in Stripe Dashboard"
-						>
-							<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-								<path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z"></path>
-						</svg>
-						View in Stripe
-					</a>
-					}
-					<div class="text-sm admin-text-muted">
-						ID: { order.ID }
+			</div>
+		</div>
+
+		<!-- Order Summary Card -->
+		<div class="admin-card mb-6">
+			<div class="admin-card-header">
+				<h2 class="admin-card-title">Order Summary</h2>
+			</div>
+			<div class="p-6">
+				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+					<div>
+						<p class="text-sm admin-text-muted mb-1">Status</p>
+						@OrderStatusBadge(getOrderStatusString(order.Status))
+					</div>
+					<div>
+						<p class="text-sm admin-text-muted mb-1">Order Date</p>
+						<p class="admin-text-primary admin-font-medium">{ formatOrderDate(getOrderCreatedAt(order.CreatedAt)) }</p>
+					</div>
+					<div>
+						<p class="text-sm admin-text-muted mb-1">Total Amount</p>
+						<p class="admin-text-primary admin-font-medium text-lg">${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }</p>
 					</div>
 				</div>
+				if order.TrackingNumber.Valid && order.TrackingNumber.String != "" {
+					<div class="mt-6 pt-6 border-t border-gray-200">
+						<p class="text-sm admin-text-muted mb-2">Tracking Information</p>
+						<div class="flex items-center gap-4">
+							if order.Carrier.Valid && order.Carrier.String != "" {
+								<div>
+									<span class="text-xs admin-text-muted">Carrier:</span>
+									<span class="admin-text-primary admin-font-medium ml-2">{ order.Carrier.String }</span>
+								</div>
+							}
+							<div>
+								<span class="text-xs admin-text-muted">Tracking #:</span>
+								<span class="admin-text-primary admin-font-medium ml-2">{ order.TrackingNumber.String }</span>
+							</div>
+							if order.TrackingUrl.Valid && order.TrackingUrl.String != "" {
+								<a href={ templ.SafeURL(order.TrackingUrl.String) } target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn-sm admin-btn-primary">
+									Track Package
+								</a>
+							}
+						</div>
+					</div>
+				}
 			</div>
+		</div>
 
-			<!-- Order Summary Card -->
+		<!-- EasyPost Shipping Card -->
+		if order.EasypostShipmentID.Valid && order.EasypostShipmentID.String != "" {
 			<div class="admin-card mb-6">
 				<div class="admin-card-header">
-					<h2 class="admin-card-title">Order Summary</h2>
+					<h2 class="admin-card-title">EasyPost Shipping</h2>
 				</div>
 				<div class="p-6">
-					<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-						<div>
-							<p class="text-sm admin-text-muted mb-1">Status</p>
-							@OrderStatusBadge(getOrderStatusString(order.Status))
+					<div class="flex items-start justify-between mb-4">
+						<div class="space-y-3 flex-1">
+							<div>
+								<p class="text-sm admin-text-muted mb-1">Shipment ID</p>
+								<p class="admin-text-primary admin-font-mono text-sm">{ order.EasypostShipmentID.String }</p>
+							</div>
+							if shippingSelection.ID != "" {
+								<div>
+									<p class="text-sm admin-text-muted mb-1">Selected Service</p>
+									<p class="admin-text-primary admin-font-medium">{ shippingSelection.CarrierID } - { shippingSelection.ServiceName }</p>
+									if shippingSelection.DeliveryDays.Valid {
+										<p class="text-sm admin-text-muted">{ fmt.Sprintf("%d business days", shippingSelection.DeliveryDays.Int64) }</p>
+									}
+								</div>
+								<div>
+									<p class="text-sm admin-text-muted mb-2">Quoted Shipping Rate</p>
+									<div class="space-y-1 text-sm">
+										<div class="flex justify-between">
+											<span class="admin-text-muted">Carrier Rate:</span>
+											<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedShippingAmountCents)/100) }</span>
+										</div>
+										<div class="flex justify-between">
+											<span class="admin-text-muted">Box/Packaging:</span>
+											<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedBoxCostCents)/100) }</span>
+										</div>
+										<div class="flex justify-between">
+											<span class="admin-text-muted">Handling:</span>
+											<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedHandlingCostCents)/100) }</span>
+										</div>
+										<div class="flex justify-between pt-1 border-t border-gray-200">
+											<span class="admin-text-primary admin-font-bold">Total Shipping:</span>
+											<span class="admin-text-primary admin-font-bold">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedTotalCents)/100) }</span>
+										</div>
+									</div>
+								</div>
+							}
+							if order.EasypostLabelUrl.Valid && order.EasypostLabelUrl.String != "" {
+								<div>
+									<p class="text-sm admin-text-muted mb-1">Label Status</p>
+									<div class="flex items-center gap-2">
+										<span class="admin-status admin-status-success">
+											<div class="admin-status-dot"></div>
+											Label Purchased
+										</span>
+										<a href={ templ.SafeURL(order.EasypostLabelUrl.String) } target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn-sm admin-btn-primary">
+											Download Label
+										</a>
+									</div>
+								</div>
+							}
 						</div>
-						<div>
-							<p class="text-sm admin-text-muted mb-1">Order Date</p>
-							<p class="admin-text-primary admin-font-medium">{ formatOrderDate(getOrderCreatedAt(order.CreatedAt)) }</p>
-						</div>
-						<div>
-							<p class="text-sm admin-text-muted mb-1">Total Amount</p>
-							<p class="admin-text-primary admin-font-medium text-lg">${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }</p>
+						<div class="flex flex-col gap-2">
+							<a
+								href={ templ.SafeURL(fmt.Sprintf("https://www.easypost.com/shipments/%s", order.EasypostShipmentID.String)) }
+								target="_blank"
+								rel="noopener noreferrer"
+								class="admin-btn admin-btn-sm admin-btn-secondary"
+							>
+								View in EasyPost
+							</a>
+							if !order.EasypostLabelUrl.Valid || order.EasypostLabelUrl.String == "" {
+								<button
+									onclick={ templ.ComponentScript{Call: fmt.Sprintf("openLabelPurchaseModal('%s')", order.ID)} }
+									class="admin-btn admin-btn-sm admin-btn-primary"
+								>
+									Buy Shipping Label
+								</button>
+							}
 						</div>
 					</div>
-					if order.TrackingNumber.Valid && order.TrackingNumber.String != "" {
-						<div class="mt-6 pt-6 border-t border-gray-200">
-							<p class="text-sm admin-text-muted mb-2">Tracking Information</p>
-							<div class="flex items-center gap-4">
-								if order.Carrier.Valid && order.Carrier.String != "" {
-									<div>
-										<span class="text-xs admin-text-muted">Carrier:</span>
-										<span class="admin-text-primary admin-font-medium ml-2">{ order.Carrier.String }</span>
-									</div>
-								}
-								<div>
-									<span class="text-xs admin-text-muted">Tracking #:</span>
-									<span class="admin-text-primary admin-font-medium ml-2">{ order.TrackingNumber.String }</span>
-								</div>
-								if order.TrackingUrl.Valid && order.TrackingUrl.String != "" {
-									<a href={ templ.SafeURL(order.TrackingUrl.String) } target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn-sm admin-btn-primary">
-										Track Package
-									</a>
-								}
-							</div>
+				</div>
+			</div>
+		}
+
+		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+			<!-- Customer Information -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Customer Information</h2>
+				</div>
+				<div class="p-6 space-y-3">
+					<div>
+						<p class="text-sm admin-text-muted">Name</p>
+						<p class="admin-text-primary admin-font-medium">
+							if order.UserID != "" {
+								<a
+									href={ templ.URL("/admin/users/" + order.UserID) }
+									class="text-blue-600 hover:text-blue-800"
+								>
+									{ order.CustomerName }
+								</a>
+							} else {
+								{ order.CustomerName }
+							}
+						</p>
+					</div>
+					<div>
+						<p class="text-sm admin-text-muted">Email</p>
+						<p class="admin-text-primary">{ order.CustomerEmail }</p>
+					</div>
+					if order.CustomerPhone.Valid && order.CustomerPhone.String != "" {
+						<div>
+							<p class="text-sm admin-text-muted">Phone</p>
+							<p class="admin-text-primary">{ order.CustomerPhone.String }</p>
+						</div>
+					}
+					if order.UserID != "" {
+						<div class="pt-3 border-t border-gray-200">
+							<a href={ templ.URL("/admin/users/" + order.UserID) } class="admin-btn admin-btn-sm admin-btn-primary">
+								View User Profile
+							</a>
 						</div>
 					}
 				</div>
 			</div>
 
-			<!-- EasyPost Shipping Card -->
-			if order.EasypostShipmentID.Valid && order.EasypostShipmentID.String != "" {
-				<div class="admin-card mb-6">
-					<div class="admin-card-header">
-						<h2 class="admin-card-title">EasyPost Shipping</h2>
-					</div>
-					<div class="p-6">
-						<div class="flex items-start justify-between mb-4">
-							<div class="space-y-3 flex-1">
-								<div>
-									<p class="text-sm admin-text-muted mb-1">Shipment ID</p>
-									<p class="admin-text-primary admin-font-mono text-sm">{ order.EasypostShipmentID.String }</p>
-								</div>
-								if shippingSelection.ID != "" {
-									<div>
-										<p class="text-sm admin-text-muted mb-1">Selected Service</p>
-										<p class="admin-text-primary admin-font-medium">{ shippingSelection.CarrierID } - { shippingSelection.ServiceName }</p>
-										if shippingSelection.DeliveryDays.Valid {
-											<p class="text-sm admin-text-muted">{ fmt.Sprintf("%d business days", shippingSelection.DeliveryDays.Int64) }</p>
-										}
-									</div>
-									<div>
-										<p class="text-sm admin-text-muted mb-2">Quoted Shipping Rate</p>
-										<div class="space-y-1 text-sm">
-											<div class="flex justify-between">
-												<span class="admin-text-muted">Carrier Rate:</span>
-												<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedShippingAmountCents)/100) }</span>
-											</div>
-											<div class="flex justify-between">
-												<span class="admin-text-muted">Box/Packaging:</span>
-												<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedBoxCostCents)/100) }</span>
-											</div>
-											<div class="flex justify-between">
-												<span class="admin-text-muted">Handling:</span>
-												<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedHandlingCostCents)/100) }</span>
-											</div>
-											<div class="flex justify-between pt-1 border-t border-gray-200">
-												<span class="admin-text-primary admin-font-bold">Total Shipping:</span>
-												<span class="admin-text-primary admin-font-bold">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedTotalCents)/100) }</span>
-											</div>
-										</div>
-									</div>
-								}
-								if order.EasypostLabelUrl.Valid && order.EasypostLabelUrl.String != "" {
-									<div>
-										<p class="text-sm admin-text-muted mb-1">Label Status</p>
-										<div class="flex items-center gap-2">
-											<span class="admin-status admin-status-success">
-												<div class="admin-status-dot"></div>
-												Label Purchased
-											</span>
-											<a href={ templ.SafeURL(order.EasypostLabelUrl.String) } target="_blank" rel="noopener noreferrer" class="admin-btn admin-btn-sm admin-btn-primary">
-												Download Label
-											</a>
-										</div>
-									</div>
-								}
-							</div>
-							<div class="flex flex-col gap-2">
-								<a
-									href={ templ.SafeURL(fmt.Sprintf("https://www.easypost.com/shipments/%s", order.EasypostShipmentID.String)) }
-									target="_blank"
-									rel="noopener noreferrer"
-									class="admin-btn admin-btn-sm admin-btn-secondary"
-								>
-									View in EasyPost
-								</a>
-								if !order.EasypostLabelUrl.Valid || order.EasypostLabelUrl.String == "" {
-									<button
-										onclick={ templ.ComponentScript{Call: fmt.Sprintf("openLabelPurchaseModal('%s')", order.ID)} }
-										class="admin-btn admin-btn-sm admin-btn-primary"
-									>
-										Buy Shipping Label
-									</button>
-								}
-							</div>
-						</div>
-					</div>
+			<!-- Shipping Address -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Shipping Address</h2>
 				</div>
-			}
-
-			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-				<!-- Customer Information -->
-				<div class="admin-card">
-					<div class="admin-card-header">
-						<h2 class="admin-card-title">Customer Information</h2>
-					</div>
-					<div class="p-6 space-y-3">
-						<div>
-							<p class="text-sm admin-text-muted">Name</p>
-							<p class="admin-text-primary admin-font-medium">
-								if order.UserID != "" {
-									<a
-										href={ templ.URL("/admin/users/" + order.UserID) }
-										class="text-blue-600 hover:text-blue-800"
-									>
-										{ order.CustomerName }
-									</a>
-								} else {
-									{ order.CustomerName }
-								}
-							</p>
-						</div>
-						<div>
-							<p class="text-sm admin-text-muted">Email</p>
-							<p class="admin-text-primary">{ order.CustomerEmail }</p>
-						</div>
-						if order.CustomerPhone.Valid && order.CustomerPhone.String != "" {
-							<div>
-								<p class="text-sm admin-text-muted">Phone</p>
-								<p class="admin-text-primary">{ order.CustomerPhone.String }</p>
-							</div>
-						}
-						if order.UserID != "" {
-							<div class="pt-3 border-t border-gray-200">
-								<a href={ templ.URL("/admin/users/" + order.UserID) } class="admin-btn admin-btn-sm admin-btn-primary">
-									View User Profile
-								</a>
-							</div>
-						}
-					</div>
-				</div>
-
-				<!-- Shipping Address -->
-				<div class="admin-card">
-					<div class="admin-card-header">
-						<h2 class="admin-card-title">Shipping Address</h2>
-					</div>
-					<div class="p-6">
-						<p class="admin-text-primary">{ order.ShippingAddressLine1 }</p>
-						if order.ShippingAddressLine2.Valid && order.ShippingAddressLine2.String != "" {
-							<p class="admin-text-primary">{ order.ShippingAddressLine2.String }</p>
-						}
-						<p class="admin-text-primary">{ order.ShippingCity }, { order.ShippingState } { order.ShippingPostalCode }</p>
-						<p class="admin-text-primary">{ order.ShippingCountry }</p>
-					</div>
+				<div class="p-6">
+					<p class="admin-text-primary">{ order.ShippingAddressLine1 }</p>
+					if order.ShippingAddressLine2.Valid && order.ShippingAddressLine2.String != "" {
+						<p class="admin-text-primary">{ order.ShippingAddressLine2.String }</p>
+					}
+					<p class="admin-text-primary">{ order.ShippingCity }, { order.ShippingState } { order.ShippingPostalCode }</p>
+					<p class="admin-text-primary">{ order.ShippingCountry }</p>
 				</div>
 			</div>
+		</div>
 
-			<!-- Order Items -->
-			<div class="admin-card mb-6">
-				<div class="admin-card-header">
-					<h2 class="admin-card-title">Order Items</h2>
-				</div>
-				<div class="overflow-x-auto">
-					<table class="admin-table">
-						<thead>
+		<!-- Order Items -->
+		<div class="admin-card mb-6">
+			<div class="admin-card-header">
+				<h2 class="admin-card-title">Order Items</h2>
+			</div>
+			<div class="overflow-x-auto">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>Product</th>
+							<th>Quantity</th>
+							<th>Unit Price</th>
+							<th>Total</th>
+						</tr>
+					</thead>
+					<tbody>
+						if len(orderItems) == 0 {
 							<tr>
-								<th>Product</th>
-								<th>Quantity</th>
-								<th>Unit Price</th>
-								<th>Total</th>
+								<td colspan="4" class="text-center admin-text-muted py-8">
+									No items found
+								</td>
 							</tr>
-						</thead>
-						<tbody>
-							if len(orderItems) == 0 {
-								<tr>
-									<td colspan="4" class="text-center admin-text-muted py-8">
-										No items found
-									</td>
-								</tr>
-							}
-							for _, item := range orderItems {
-								<tr>
-									<td>
-										<div class="admin-text-primary admin-font-medium">{ item.ProductName }</div>
-										if item.ProductSku.Valid && item.ProductSku.String != "" {
-											<div class="admin-text-muted admin-text-sm">SKU: { item.ProductSku.String }</div>
-										}
-									</td>
-									<td>{ fmt.Sprintf("%d", item.Quantity) }</td>
-									<td>${ fmt.Sprintf("%.2f", float64(item.UnitPriceCents)/100) }</td>
-									<td class="admin-font-semibold">${ fmt.Sprintf("%.2f", float64(item.TotalPriceCents)/100) }</td>
-								</tr>
-							}
-						</tbody>
-					</table>
-				</div>
-
-				<!-- Order Totals -->
-				<div class="p-6 border-t border-gray-200">
-					<div class="space-y-2 max-w-sm ml-auto">
-						<div class="flex justify-between admin-text-primary">
-							<span>Subtotal:</span>
-							if order.OriginalSubtotalCents.Valid && order.OriginalSubtotalCents.Int64 > 0 {
-								<span>${ fmt.Sprintf("%.2f", float64(order.OriginalSubtotalCents.Int64)/100) }</span>
-							} else {
-								<span>${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }</span>
-							}
-						</div>
-						if order.DiscountCents.Valid && order.DiscountCents.Int64 > 0 {
-							<div class="flex justify-between text-emerald-600 font-medium">
-								<span>
-									Discount
-									if order.PromotionCode.Valid && order.PromotionCode.String != "" {
-										<span class="text-sm font-normal">({ order.PromotionCode.String })</span>
+						}
+						for _, item := range orderItems {
+							<tr>
+								<td>
+									<div class="admin-text-primary admin-font-medium">{ item.ProductName }</div>
+									if item.ProductSku.Valid && item.ProductSku.String != "" {
+										<div class="admin-text-muted admin-text-sm">SKU: { item.ProductSku.String }</div>
 									}
-									:
-								</span>
-								<span>-${ fmt.Sprintf("%.2f", float64(order.DiscountCents.Int64)/100) }</span>
-							</div>
+								</td>
+								<td>{ fmt.Sprintf("%d", item.Quantity) }</td>
+								<td>${ fmt.Sprintf("%.2f", float64(item.UnitPriceCents)/100) }</td>
+								<td class="admin-font-semibold">${ fmt.Sprintf("%.2f", float64(item.TotalPriceCents)/100) }</td>
+							</tr>
 						}
-						if order.TaxCents > 0 {
-							<div class="flex justify-between admin-text-primary">
-								<span>Tax:</span>
-								<span>${ fmt.Sprintf("%.2f", float64(order.TaxCents)/100) }</span>
-							</div>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Order Totals -->
+			<div class="p-6 border-t border-gray-200">
+				<div class="space-y-2 max-w-sm ml-auto">
+					<div class="flex justify-between admin-text-primary">
+						<span>Subtotal:</span>
+						if order.OriginalSubtotalCents.Valid && order.OriginalSubtotalCents.Int64 > 0 {
+							<span>${ fmt.Sprintf("%.2f", float64(order.OriginalSubtotalCents.Int64)/100) }</span>
+						} else {
+							<span>${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }</span>
 						}
-						if order.ShippingCents > 0 {
-							if shippingSelection.ID != "" {
-								<div class="pt-2 border-t border-gray-200">
-									<div class="flex justify-between text-sm admin-text-muted mb-1">
-										<span>Shipping Rate:</span>
-										<span>${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedShippingAmountCents)/100) }</span>
-									</div>
-									<div class="flex justify-between text-sm admin-text-muted mb-1">
-										<span>Box/Packaging:</span>
-										<span>${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedBoxCostCents)/100) }</span>
-									</div>
-									<div class="flex justify-between admin-text-primary admin-font-medium">
-										<span>Shipping Total:</span>
-										<span>${ fmt.Sprintf("%.2f", float64(order.ShippingCents)/100) }</span>
-									</div>
+					</div>
+					if order.DiscountCents.Valid && order.DiscountCents.Int64 > 0 {
+						<div class="flex justify-between text-emerald-600 font-medium">
+							<span>
+								Discount
+								if order.PromotionCode.Valid && order.PromotionCode.String != "" {
+									<span class="text-sm font-normal">({ order.PromotionCode.String })</span>
+								}
+								:
+							</span>
+							<span>-${ fmt.Sprintf("%.2f", float64(order.DiscountCents.Int64)/100) }</span>
+						</div>
+					}
+					if order.TaxCents > 0 {
+						<div class="flex justify-between admin-text-primary">
+							<span>Tax:</span>
+							<span>${ fmt.Sprintf("%.2f", float64(order.TaxCents)/100) }</span>
+						</div>
+					}
+					if order.ShippingCents > 0 {
+						if shippingSelection.ID != "" {
+							<div class="pt-2 border-t border-gray-200">
+								<div class="flex justify-between text-sm admin-text-muted mb-1">
+									<span>Shipping Rate:</span>
+									<span>${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedShippingAmountCents)/100) }</span>
 								</div>
-							} else {
-								<div class="flex justify-between admin-text-primary">
-									<span>Shipping:</span>
+								<div class="flex justify-between text-sm admin-text-muted mb-1">
+									<span>Box/Packaging:</span>
+									<span>${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedBoxCostCents)/100) }</span>
+								</div>
+								<div class="flex justify-between admin-text-primary admin-font-medium">
+									<span>Shipping Total:</span>
 									<span>${ fmt.Sprintf("%.2f", float64(order.ShippingCents)/100) }</span>
 								</div>
-							}
+							</div>
+						} else {
+							<div class="flex justify-between admin-text-primary">
+								<span>Shipping:</span>
+								<span>${ fmt.Sprintf("%.2f", float64(order.ShippingCents)/100) }</span>
+							</div>
 						}
-						<div class="flex justify-between text-xl font-bold admin-text-primary pt-2 border-t border-gray-300">
-							<span>Total:</span>
-							<span>${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }</span>
-						</div>
+					}
+					<div class="flex justify-between text-xl font-bold admin-text-primary pt-2 border-t border-gray-300">
+						<span>Total:</span>
+						<span>${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }</span>
 					</div>
 				</div>
 			</div>
+		</div>
 
-			<!-- Notes -->
-			if order.Notes.Valid && order.Notes.String != "" {
-				<div class="admin-card">
-					<div class="admin-card-header">
-						<h2 class="admin-card-title">Notes</h2>
-					</div>
-					<div class="p-6">
-						<p class="admin-text-primary">{ order.Notes.String }</p>
-					</div>
+		<!-- Notes -->
+		if order.Notes.Valid && order.Notes.String != "" {
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Notes</h2>
 				</div>
-			}
+				<div class="p-6">
+					<p class="admin-text-primary">{ order.Notes.String }</p>
+				</div>
+			</div>
+		}
 
-			<!-- Shipping Info Modal -->
-			@dialog.Content(dialog.ContentProps{
-				ID: "shippingModal",
-				Class: "max-w-md",
-			}) {
-				@dialog.Header() {
-					@dialog.Title() {
-						Enter Shipping Information
-					}
-				}
-				<form id="shippingForm" class="space-y-4">
-					<div>
-						<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
-						<input type="text" id="carrier" name="carrier" required
-							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="e.g., USPS, UPS, FedEx"/>
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
-						<input type="text" id="trackingNumber" name="trackingNumber" required
-							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="Enter tracking number"/>
-					</div>
-					<div>
-						<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
-						<input type="url" id="trackingUrl" name="trackingUrl"
-							class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							placeholder="https://..."/>
-					</div>
-				</form>
-				@dialog.Footer() {
-					@button.Button(button.Props{
-						Variant: button.VariantOutline,
-						Attributes: templ.Attributes{
-							"onclick": "window.tui.dialog.close('createShippingDialog')",
-						},
-					}) {
-						Cancel
-					}
-					@button.Button(button.Props{
-						Attributes: templ.Attributes{
-							"type":    "submit",
-							"form":    "shippingForm",
-						},
-					}) {
-						Ship Order
-					}
+		<!-- Shipping Info Modal -->
+		@dialog.Content(dialog.ContentProps{
+			ID: "shippingModal",
+			Class: "max-w-md",
+		}) {
+			@dialog.Header() {
+				@dialog.Title() {
+					Enter Shipping Information
 				}
 			}
-
-			<!-- Label Purchase Modal -->
-			@dialog.Content(dialog.ContentProps{
-				ID: "labelPurchaseModal",
-				Class: "max-w-2xl max-h-[90vh] overflow-y-auto",
-			}) {
-				@dialog.Header() {
-					@dialog.Title() {
-						Purchase Shipping Label
-					}
+			<form id="shippingForm" class="space-y-4">
+				<div>
+					<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
+					<input type="text" id="carrier" name="carrier" required
+						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="e.g., USPS, UPS, FedEx"/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
+					<input type="text" id="trackingNumber" name="trackingNumber" required
+						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="Enter tracking number"/>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
+					<input type="url" id="trackingUrl" name="trackingUrl"
+						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						placeholder="https://..."/>
+				</div>
+			</form>
+			@dialog.Footer() {
+				@button.Button(button.Props{
+					Variant: button.VariantOutline,
+					Attributes: templ.Attributes{
+						"onclick": "window.tui.dialog.close('createShippingDialog')",
+					},
+				}) {
+					Cancel
 				}
-				<div id="ratesLoadingState" class="text-center py-8">
-					<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-					<p class="text-muted-foreground mt-2">Loading shipping rates...</p>
-				</div>
-				<div id="ratesErrorState" class="hidden">
-					<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-						<p class="text-red-800 text-sm" id="ratesErrorMessage"></p>
-					</div>
-				</div>
-				<div id="ratesContentState" class="hidden">
-					<div class="mb-4">
-						<p class="text-sm text-muted-foreground">Select a shipping rate to purchase a label:</p>
-					</div>
-					<div id="ratesList" class="space-y-3 mb-6">
-					</div>
-				</div>
-				@dialog.Footer() {
-					@button.Button(button.Props{
-						Variant: button.VariantOutline,
-						Attributes: templ.Attributes{
-							"onclick": "window.tui.dialog.close('labelPurchaseModal')",
-						},
-					}) {
-						Cancel
-					}
+				@button.Button(button.Props{
+					Attributes: templ.Attributes{
+						"type":    "submit",
+						"form":    "shippingForm",
+					},
+				}) {
+					Ship Order
 				}
 			}
+		}
 
-			<script>
-				let currentOrderID = '';
+		<!-- Label Purchase Modal -->
+		@dialog.Content(dialog.ContentProps{
+			ID: "labelPurchaseModal",
+			Class: "max-w-2xl max-h-[90vh] overflow-y-auto",
+		}) {
+			@dialog.Header() {
+				@dialog.Title() {
+					Purchase Shipping Label
+				}
+			}
+			<div id="ratesLoadingState" class="text-center py-8">
+				<div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+				<p class="text-muted-foreground mt-2">Loading shipping rates...</p>
+			</div>
+			<div id="ratesErrorState" class="hidden">
+				<div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+					<p class="text-red-800 text-sm" id="ratesErrorMessage"></p>
+				</div>
+			</div>
+			<div id="ratesContentState" class="hidden">
+				<div class="mb-4">
+					<p class="text-sm text-muted-foreground">Select a shipping rate to purchase a label:</p>
+				</div>
+				<div id="ratesList" class="space-y-3 mb-6">
+				</div>
+			</div>
+			@dialog.Footer() {
+				@button.Button(button.Props{
+					Variant: button.VariantOutline,
+					Attributes: templ.Attributes{
+						"onclick": "window.tui.dialog.close('labelPurchaseModal')",
+					},
+				}) {
+					Cancel
+				}
+			}
+		}
 
-				function updateOrderStatusFromDropdown(orderID, newStatus) {
-					const statusLabels = {
-						'received': 'Received',
-						'in_production': 'In Production',
-						'shipped': 'Shipped',
-						'delivered': 'Delivered',
-						'cancelled': 'Cancelled'
-					};
+		<script>
+			let currentOrderID = '';
 
-					// If changing to shipped, try to auto-fill from EasyPost first
-					if (newStatus === 'shipped') {
-						currentOrderID = orderID;
-						loadTrackingAndShowShippingModal(orderID);
-						return;
-					}
+			function updateOrderStatusFromDropdown(orderID, newStatus) {
+				const statusLabels = {
+					'received': 'Received',
+					'in_production': 'In Production',
+					'shipped': 'Shipped',
+					'delivered': 'Delivered',
+					'cancelled': 'Cancelled'
+				};
 
-					if (confirm('Change order status to "' + statusLabels[newStatus] + '"?')) {
-						updateStatus(orderID, newStatus, {});
-					} else {
-						location.reload();
-					}
+				// If changing to shipped, try to auto-fill from EasyPost first
+				if (newStatus === 'shipped') {
+					currentOrderID = orderID;
+					loadTrackingAndShowShippingModal(orderID);
+					return;
 				}
 
-				async function loadTrackingAndShowShippingModal(orderID) {
-					try {
-						const response = await fetch('/admin/orders/' + orderID + '/tracking/lookup');
-						const data = await response.json();
-
-						if (data.has_shipment && data.tracking_number) {
-							document.getElementById('carrier').value = data.carrier || '';
-							document.getElementById('trackingNumber').value = data.tracking_number || '';
-							document.getElementById('trackingUrl').value = data.tracking_url || '';
-						}
-					} catch (error) {
-						console.error('Failed to load tracking info:', error);
-					}
-
-					window.tui.dialog.open('shippingModal');
-				}
-
-				function closeShippingModal() {
-					window.tui.dialog.close('shippingModal');
-					document.getElementById('carrier').value = '';
-					document.getElementById('trackingNumber').value = '';
-					document.getElementById('trackingUrl').value = '';
+				if (confirm('Change order status to "' + statusLabels[newStatus] + '"?')) {
+					updateStatus(orderID, newStatus, {});
+				} else {
 					location.reload();
 				}
+			}
 
-				document.getElementById('shippingForm').addEventListener('submit', function(e) {
-					e.preventDefault();
-					const carrier = document.getElementById('carrier').value;
-					const trackingNumber = document.getElementById('trackingNumber').value;
-					const trackingUrl = document.getElementById('trackingUrl').value;
+			async function loadTrackingAndShowShippingModal(orderID) {
+				try {
+					const response = await fetch('/admin/orders/' + orderID + '/tracking/lookup');
+					const data = await response.json();
 
-					updateStatus(currentOrderID, 'shipped', {
-						carrier: carrier,
-						tracking_number: trackingNumber,
-						tracking_url: trackingUrl
-					});
+					if (data.has_shipment && data.tracking_number) {
+						document.getElementById('carrier').value = data.carrier || '';
+						document.getElementById('trackingNumber').value = data.tracking_number || '';
+						document.getElementById('trackingUrl').value = data.tracking_url || '';
+					}
+				} catch (error) {
+					console.error('Failed to load tracking info:', error);
+				}
+
+				window.tui.dialog.open('shippingModal');
+			}
+
+			function closeShippingModal() {
+				window.tui.dialog.close('shippingModal');
+				document.getElementById('carrier').value = '';
+				document.getElementById('trackingNumber').value = '';
+				document.getElementById('trackingUrl').value = '';
+				location.reload();
+			}
+
+			document.getElementById('shippingForm').addEventListener('submit', function(e) {
+				e.preventDefault();
+				const carrier = document.getElementById('carrier').value;
+				const trackingNumber = document.getElementById('trackingNumber').value;
+				const trackingUrl = document.getElementById('trackingUrl').value;
+
+				updateStatus(currentOrderID, 'shipped', {
+					carrier: carrier,
+					tracking_number: trackingNumber,
+					tracking_url: trackingUrl
 				});
+			});
 
-				function updateStatus(orderID, newStatus, trackingData) {
-					const body = { status: newStatus, ...trackingData };
+			function updateStatus(orderID, newStatus, trackingData) {
+				const body = { status: newStatus, ...trackingData };
 
-					fetch('/admin/orders/' + orderID + '/status', {
+				fetch('/admin/orders/' + orderID + '/status', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					},
+					body: JSON.stringify(body)
+				})
+				.then(response => {
+					if (response.ok) {
+						location.reload();
+					} else {
+						alert('Failed to update status');
+						location.reload();
+					}
+				})
+				.catch(error => {
+					alert('Failed to update status: ' + error);
+					location.reload();
+				});
+			}
+
+			async function openLabelPurchaseModal(orderID) {
+				currentOrderID = orderID;
+				const loadingState = document.getElementById('ratesLoadingState');
+				const errorState = document.getElementById('ratesErrorState');
+				const contentState = document.getElementById('ratesContentState');
+
+				window.tui.dialog.open('labelPurchaseModal');
+				loadingState.classList.remove('hidden');
+				errorState.classList.add('hidden');
+				contentState.classList.add('hidden');
+
+				try {
+					const response = await fetch('/admin/orders/' + orderID + '/shipping/rates');
+					if (!response.ok) {
+						throw new Error('Failed to load shipping rates');
+					}
+
+					const data = await response.json();
+					const ratesList = document.getElementById('ratesList');
+					ratesList.innerHTML = '';
+
+					if (!data.rates || data.rates.length === 0) {
+						throw new Error('No shipping rates available');
+					}
+
+					data.rates.forEach(rate => {
+						const rateCard = document.createElement('div');
+						rateCard.className = 'border border-gray-300 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors cursor-pointer';
+						rateCard.onclick = function() { purchaseLabel(orderID, rate.rate_id); };
+
+						const deliveryInfo = rate.delivery_days ?
+							`${rate.delivery_days} business days` :
+							(rate.estimated_date ? `Est: ${rate.estimated_date}` : 'Delivery time varies');
+
+						rateCard.innerHTML = `
+							<div class="flex items-center justify-between">
+								<div>
+									<div class="font-medium text-gray-900">${rate.carrier_nickname || rate.carrier_code}</div>
+									<div class="text-sm text-gray-600">${rate.service_type}</div>
+									<div class="text-xs text-gray-500 mt-1">${deliveryInfo}</div>
+								</div>
+								<div class="text-right">
+									<div class="text-lg font-bold text-gray-900">$${rate.shipping_amount.amount.toFixed(2)}</div>
+									<div class="text-xs text-gray-500">${rate.shipping_amount.currency}</div>
+								</div>
+							</div>
+						`;
+
+						ratesList.appendChild(rateCard);
+					});
+
+					loadingState.classList.add('hidden');
+					contentState.classList.remove('hidden');
+				} catch (error) {
+					console.error('Error loading rates:', error);
+					document.getElementById('ratesErrorMessage').textContent = error.message || 'Failed to load shipping rates';
+					loadingState.classList.add('hidden');
+					errorState.classList.remove('hidden');
+				}
+			}
+
+			async function purchaseLabel(orderID, rateID) {
+				if (!confirm('Purchase this shipping label? This will mark the order as shipped.')) {
+					return;
+				}
+
+				try {
+					const response = await fetch('/admin/orders/' + orderID + '/shipping/buy-label', {
 						method: 'POST',
 						headers: {
 							'Content-Type': 'application/json'
 						},
-						body: JSON.stringify(body)
-					})
-					.then(response => {
-						if (response.ok) {
-							location.reload();
-						} else {
-							alert('Failed to update status');
-							location.reload();
-						}
-					})
-					.catch(error => {
-						alert('Failed to update status: ' + error);
-						location.reload();
+						body: JSON.stringify({ rate_id: rateID })
 					});
-				}
 
-				async function openLabelPurchaseModal(orderID) {
-					currentOrderID = orderID;
-					const loadingState = document.getElementById('ratesLoadingState');
-					const errorState = document.getElementById('ratesErrorState');
-					const contentState = document.getElementById('ratesContentState');
-
-					window.tui.dialog.open('labelPurchaseModal');
-					loadingState.classList.remove('hidden');
-					errorState.classList.add('hidden');
-					contentState.classList.add('hidden');
-
-					try {
-						const response = await fetch('/admin/orders/' + orderID + '/shipping/rates');
-						if (!response.ok) {
-							throw new Error('Failed to load shipping rates');
-						}
-
-						const data = await response.json();
-						const ratesList = document.getElementById('ratesList');
-						ratesList.innerHTML = '';
-
-						if (!data.rates || data.rates.length === 0) {
-							throw new Error('No shipping rates available');
-						}
-
-						data.rates.forEach(rate => {
-							const rateCard = document.createElement('div');
-							rateCard.className = 'border border-gray-300 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors cursor-pointer';
-							rateCard.onclick = function() { purchaseLabel(orderID, rate.rate_id); };
-
-							const deliveryInfo = rate.delivery_days ?
-								`${rate.delivery_days} business days` :
-								(rate.estimated_date ? `Est: ${rate.estimated_date}` : 'Delivery time varies');
-
-							rateCard.innerHTML = `
-								<div class="flex items-center justify-between">
-									<div>
-										<div class="font-medium text-gray-900">${rate.carrier_nickname || rate.carrier_code}</div>
-										<div class="text-sm text-gray-600">${rate.service_type}</div>
-										<div class="text-xs text-gray-500 mt-1">${deliveryInfo}</div>
-									</div>
-									<div class="text-right">
-										<div class="text-lg font-bold text-gray-900">$${rate.shipping_amount.amount.toFixed(2)}</div>
-										<div class="text-xs text-gray-500">${rate.shipping_amount.currency}</div>
-									</div>
-								</div>
-							`;
-
-							ratesList.appendChild(rateCard);
-						});
-
-						loadingState.classList.add('hidden');
-						contentState.classList.remove('hidden');
-					} catch (error) {
-						console.error('Error loading rates:', error);
-						document.getElementById('ratesErrorMessage').textContent = error.message || 'Failed to load shipping rates';
-						loadingState.classList.add('hidden');
-						errorState.classList.remove('hidden');
-					}
-				}
-
-				async function purchaseLabel(orderID, rateID) {
-					if (!confirm('Purchase this shipping label? This will mark the order as shipped.')) {
-						return;
+					if (!response.ok) {
+						const error = await response.json();
+						throw new Error(error.error || 'Failed to purchase label');
 					}
 
-					try {
-						const response = await fetch('/admin/orders/' + orderID + '/shipping/buy-label', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json'
-							},
-							body: JSON.stringify({ rate_id: rateID })
-						});
-
-						if (!response.ok) {
-							const error = await response.json();
-							throw new Error(error.error || 'Failed to purchase label');
-						}
-
-						const data = await response.json();
-						alert('Label purchased successfully! Tracking #: ' + data.tracking_number);
-						location.reload();
-					} catch (error) {
-						console.error('Error purchasing label:', error);
-						alert('Failed to purchase label: ' + error.message);
-					}
+					const data = await response.json();
+					alert('Label purchased successfully! Tracking #: ' + data.tracking_number);
+					location.reload();
+				} catch (error) {
+					console.error('Error purchasing label:', error);
+					alert('Failed to purchase label: ' + error.message);
 				}
+			}
 
-				function closeLabelPurchaseModal() {
-					window.tui.dialog.close('labelPurchaseModal');
-				}
-			</script>
-		}
+			function closeLabelPurchaseModal() {
+				window.tui.dialog.close('labelPurchaseModal');
+			}
+		</script>
 	}
 }
 

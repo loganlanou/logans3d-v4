@@ -2,32 +2,11 @@ package layout
 
 import (
 	"os"
-	"strings"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/components/dialog"
+	"github.com/loganlanou/logans3d-v4/components/sidebar"
 )
-
-func getAlpineData(c echo.Context) string {
-	path := c.Request().URL.Path
-	isDevPage := strings.HasPrefix(path, "/dev")
-	isShippingPage := strings.HasPrefix(path, "/admin/shipping")
-	isSalesPage := strings.HasPrefix(path, "/admin/orders") || strings.HasPrefix(path, "/admin/carts") || strings.HasPrefix(path, "/admin/abandoned-carts") || strings.HasPrefix(path, "/admin/quotes") || strings.HasPrefix(path, "/admin/emails")
-	isPromotionsPage := strings.HasPrefix(path, "/admin/promotions")
-	if isDevPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: true, mobileDevOpen: true, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false, promotionsOpen: false, mobilePromotionsOpen: false }"
-	}
-	if isShippingPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: true, mobileShippingOpen: true, salesOpen: false, mobileSalesOpen: false, promotionsOpen: false, mobilePromotionsOpen: false }"
-	}
-	if isSalesPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: true, mobileSalesOpen: true, promotionsOpen: false, mobilePromotionsOpen: false }"
-	}
-	if isPromotionsPage {
-		return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false, promotionsOpen: true, mobilePromotionsOpen: true }"
-	}
-	return "{ sidebarOpen: true, mobileSidebarOpen: false, devOpen: false, mobileDevOpen: false, shippingOpen: false, mobileShippingOpen: false, salesOpen: false, mobileSalesOpen: false, promotionsOpen: false, mobilePromotionsOpen: false }"
-}
 
 func getSubitemClass(c echo.Context, targetPath string) string {
 	currentPath := c.Request().URL.Path
@@ -68,38 +47,21 @@ templ AdminBase(c echo.Context, title string) {
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-			<!-- templUI dialog component -->
+			<!-- TemplUI Components -->
 			@dialog.Script()
+			@sidebar.Script()
 			<script defer nonce={ templ.GetNonce(ctx) } src="/public/js/chart.min.js"></script>
 
 			<!-- Admin JavaScript (toast notifications, etc.) -->
 			<script defer src="/public/js/admin.js"></script>
 		</head>
-		<body class="admin-root" x-data={ getAlpineData(c) }>
-			<!-- Sidebar -->
-			@AdminSidebar(c)
-
-			<!-- Main Content Area -->
-			<div class="admin-content-wrapper" :class="{ 'admin-content-expanded': !sidebarOpen }">
-				<!-- Page Content -->
-				<div class="admin-main">
+		<body class="admin-root">
+			@sidebar.Layout() {
+				@AdminSidebar(c)
+				@AdminInset(c, title) {
 					{ children... }
-				</div>
-			</div>
-
-			<!-- Mobile Sidebar Overlay -->
-			<div
-				x-show="mobileSidebarOpen"
-				x-cloak
-				@click="mobileSidebarOpen = false"
-				class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-				x-transition:enter="transition-opacity ease-linear duration-300"
-				x-transition:enter-start="opacity-0"
-				x-transition:enter-end="opacity-100"
-				x-transition:leave="transition-opacity ease-linear duration-300"
-				x-transition:leave-start="opacity-100"
-				x-transition:leave-end="opacity-0"
-			></div>
+				}
+			}
 
 			<!-- Initialize Clerk for automatic token refresh -->
 			<script>
@@ -137,83 +99,58 @@ templ AdminBase(c echo.Context, title string) {
 }
 
 templ AdminSidebar(c echo.Context) {
-	<!-- Desktop Sidebar -->
-	<aside
-		class="admin-sidebar"
-		:class="{ 'admin-sidebar-collapsed': !sidebarOpen }"
-	>
-		<div class="flex flex-col h-full">
-			<!-- Sidebar Header -->
-			<div class="admin-sidebar-header">
-				<div class="flex items-center justify-between">
-					<!-- Mobile Menu Button -->
-					<button
-						@click="mobileSidebarOpen = true"
-						class="lg:hidden text-slate-400 hover:text-slate-200 p-2"
-						title="Open Menu"
-					>
-						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-						</svg>
-					</button>
-
-					<div class="flex items-center space-x-3" x-show="sidebarOpen">
-						<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-8 h-8 rounded-lg"/>
-						<span class="admin-text-primary admin-text-lg admin-font-semibold">Admin</span>
-					</div>
-					<button
-						@click="sidebarOpen = !sidebarOpen"
-						class="hidden lg:flex admin-sidebar-toggle"
-						title="Toggle Sidebar"
-					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path>
-						</svg>
-					</button>
-				</div>
-				<!-- Visit Site Button -->
-				<div class="mt-3" x-show="sidebarOpen">
-					<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary flex items-center justify-center space-x-2 w-full" title="View Public Site">
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-						</svg>
-						<span>View Site</span>
-					</a>
+	@sidebar.Sidebar(sidebar.Props{
+		Collapsible: sidebar.CollapsibleOffcanvas,
+	}) {
+		@sidebar.Header() {
+			<div class="flex items-center justify-between px-4">
+				<div class="flex items-center space-x-3">
+					<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-8 h-8 rounded-lg"/>
+					<span class="admin-text-primary admin-text-lg admin-font-semibold">Admin</span>
 				</div>
 			</div>
+			<div class="px-4 mt-3">
+				<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary flex items-center justify-center space-x-2 w-full" title="View Public Site">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+					</svg>
+					<span>View Site</span>
+				</a>
+			</div>
+		}
 
-			<!-- Navigation -->
+		@sidebar.Content() {
 			<nav class="admin-sidebar-nav">
 				<a href="/admin" class="admin-sidebar-item" title="Dashboard">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Dashboard</span>
+					<span class="admin-sidebar-text">Dashboard</span>
 				</a>
 
 				<a href="/admin/products" class="admin-sidebar-item" title="Products">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Products</span>
+					<span class="admin-sidebar-text">Products</span>
 				</a>
 
 				<a href="/admin/categories" class="admin-sidebar-item" title="Categories">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Categories</span>
+					<span class="admin-sidebar-text">Categories</span>
 				</a>
 
+				<a href="/admin/users" class="admin-sidebar-item" title="Users">
+					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+					</svg>
+					<span class="admin-sidebar-text">Users</span>
+				</a>
 
-			<a href="/admin/users" class="admin-sidebar-item" title="Users">
-				<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-				</svg>
-				<span x-show="sidebarOpen" class="admin-sidebar-text">Users</span>
-			</a>
 				<!-- Sales Section (Collapsible) -->
-				<div x-show="sidebarOpen">
+				<div x-data="{ salesOpen: false }">
 					<button
 						@click="salesOpen = !salesOpen"
 						class="admin-sidebar-item w-full"
@@ -245,51 +182,45 @@ templ AdminSidebar(c echo.Context) {
 						<a href="/admin/abandoned-carts" class={ getSubitemClass(c, "/admin/abandoned-carts") } title="Abandoned Carts">
 							<span class="admin-sidebar-text">Abandoned Carts</span>
 						</a>
-					<a href="/admin/emails" class={ getSubitemClass(c, "/admin/emails") } title="Email History">
-						<span class="admin-sidebar-text">Email History</span>
-					</a>						<a href="/admin/quotes" class={ getSubitemClass(c, "/admin/quotes") } title="Quotes">
+						<a href="/admin/emails" class={ getSubitemClass(c, "/admin/emails") } title="Email History">
+							<span class="admin-sidebar-text">Email History</span>
+						</a>
+						<a href="/admin/quotes" class={ getSubitemClass(c, "/admin/quotes") } title="Quotes">
 							<span class="admin-sidebar-text">Quotes</span>
 						</a>
 					</div>
 				</div>
 
-				<!-- Sales Icon Only (When Collapsed) -->
-				<a href="/admin/orders" class="admin-sidebar-item" title="Sales" x-show="!sidebarOpen">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-					</svg>
-				</a>
-
 				<a href="/admin/events" class="admin-sidebar-item" title="Events">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Events</span>
+					<span class="admin-sidebar-text">Events</span>
 				</a>
 
 				<a href="/admin/contacts" class="admin-sidebar-item" title="Contact Requests">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Contacts</span>
+					<span class="admin-sidebar-text">Contacts</span>
 				</a>
 
 				<a href="/admin/email-preview" class="admin-sidebar-item" title="Email Preview">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Email Preview</span>
+					<span class="admin-sidebar-text">Email Preview</span>
 				</a>
 
 				<a href="/admin/promotions" class="admin-sidebar-item" title="Promotions">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
 					</svg>
-					<span x-show="sidebarOpen" class="admin-sidebar-text">Promotions</span>
+					<span class="admin-sidebar-text">Promotions</span>
 				</a>
 
 				<!-- Shipping Section (Collapsible) -->
-				<div x-show="sidebarOpen">
+				<div x-data="{ shippingOpen: false }">
 					<button
 						@click="shippingOpen = !shippingOpen"
 						class="admin-sidebar-item w-full"
@@ -324,15 +255,8 @@ templ AdminSidebar(c echo.Context) {
 					</div>
 				</div>
 
-				<!-- Shipping Icon Only (When Collapsed) -->
-				<a href="/admin/shipping/boxes" class="admin-sidebar-item" title="Shipping" x-show="!sidebarOpen">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-					</svg>
-				</a>
-
 				<!-- Developer Section (Collapsible) -->
-				<div x-show="sidebarOpen">
+				<div x-data="{ devOpen: false }">
 					<button
 						@click="devOpen = !devOpen"
 						class="admin-sidebar-item w-full"
@@ -375,269 +299,44 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 					</div>
 				</div>
-
-				<!-- Developer Icon Only (When Collapsed) -->
-				<a href="/dev" class="admin-sidebar-item" title="Developer Tools" x-show="!sidebarOpen">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-					</svg>
-				</a>
 			</nav>
+		}
 
-			<!-- Sidebar Footer -->
-			<div class="mt-auto admin-sidebar-footer">
-				if user, ok := auth.GetDBUser(c); ok {
-					<div class="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg" x-show="sidebarOpen">
-						if user.ProfileImageUrl.Valid {
-							<img src={ user.ProfileImageUrl.String } alt="Admin" class="h-8 w-8 rounded-full"/>
-						} else {
-							<div class="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-								<span class="text-white text-sm font-bold">{ user.FullName[:1] }</span>
-							</div>
-						}
-						<div class="flex-1 min-w-0">
-							<p class="text-sm font-medium text-slate-200 truncate">{ user.FullName }</p>
-							<p class="text-xs text-slate-400 truncate">Administrator</p>
+		@sidebar.Footer() {
+			if user, ok := auth.GetDBUser(c); ok {
+				<div class="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg">
+					if user.ProfileImageUrl.Valid {
+						<img src={ user.ProfileImageUrl.String } alt="Admin" class="h-8 w-8 rounded-full"/>
+					} else {
+						<div class="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+							<span class="text-white text-sm font-bold">{ user.FullName[:1] }</span>
 						</div>
+					}
+					<div class="flex-1 min-w-0">
+						<p class="text-sm font-medium text-slate-200 truncate">{ user.FullName }</p>
+						<p class="text-xs text-slate-400 truncate">Administrator</p>
 					</div>
-					<div class="flex items-center justify-center p-3" x-show="!sidebarOpen">
-						if user.ProfileImageUrl.Valid {
-							<img src={ user.ProfileImageUrl.String } alt="Admin" class="h-8 w-8 rounded-full"/>
-						} else {
-							<div class="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-								<span class="text-white text-sm font-bold">{ user.FullName[:1] }</span>
-							</div>
-						}
-					</div>
-				}
+				</div>
+			}
+		}
+	}
+}
+
+templ AdminInset(c echo.Context, title string) {
+	@sidebar.Inset() {
+		<div class="flex h-full flex-col">
+			<!-- Mobile header with trigger and title -->
+			<div class="flex h-14 items-center gap-4 px-6 border-b border-slate-700 bg-slate-900/50 sticky top-0">
+				@sidebar.Trigger()
+				<span class="text-sm font-semibold text-slate-100">{ title }</span>
+			</div>
+
+			<!-- Main content area with padding -->
+			<div class="flex-1 overflow-auto p-6">
+				{ children... }
 			</div>
 		</div>
-	</aside>
-
-	<!-- Mobile Sidebar -->
-	<aside
-		x-show="mobileSidebarOpen"
-		x-cloak
-		@click.away="mobileSidebarOpen = false"
-		class="admin-sidebar-mobile"
-		x-transition:enter="transition ease-in-out duration-300 transform"
-		x-transition:enter-start="-translate-x-full"
-		x-transition:enter-end="translate-x-0"
-		x-transition:leave="transition ease-in-out duration-300 transform"
-		x-transition:leave-start="translate-x-0"
-		x-transition:leave-end="-translate-x-full"
-	>
-		<div class="flex flex-col h-full">
-			<!-- Mobile Sidebar Header -->
-			<div class="admin-sidebar-header">
-				<div class="flex items-center justify-between">
-					<div class="flex items-center space-x-3">
-						<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-8 h-8 rounded-lg"/>
-						<span class="admin-text-primary admin-text-lg admin-font-semibold">Admin</span>
-					</div>
-					<button
-						@click="mobileSidebarOpen = false"
-						class="admin-sidebar-toggle"
-						title="Close Menu"
-					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-						</svg>
-					</button>
-				</div>
-				<!-- Visit Site Button -->
-				<div class="mt-3">
-					<a href="/" class="admin-btn admin-btn-sm admin-btn-secondary flex items-center justify-center space-x-2 w-full" title="View Public Site">
-						<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-						</svg>
-						<span>View Site</span>
-					</a>
-				</div>
-			</div>
-
-			<!-- Mobile Navigation -->
-			<nav class="admin-sidebar-nav">
-				<a href="/admin" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-					</svg>
-					<span class="admin-sidebar-text">Dashboard</span>
-				</a>
-
-				<a href="/admin/products" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-					</svg>
-					<span class="admin-sidebar-text">Products</span>
-				</a>
-
-				<a href="/admin/categories" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-					</svg>
-					<span class="admin-sidebar-text">Categories</span>
-				</a>
-
-			<a href="/admin/users" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-				<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-				</svg>
-				<span class="admin-sidebar-text">Users</span>
-			</a>
-
-				<a href="/admin/orders" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-					</svg>
-					<span class="admin-sidebar-text">Orders</span>
-				</a>
-
-			<a href="/admin/abandoned-carts" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-				<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6"></path>
-				</svg>
-				<span class="admin-sidebar-text">Abandoned Carts</span>
-			</a>
-
-				<a href="/admin/quotes" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-					</svg>
-					<span class="admin-sidebar-text">Quotes</span>
-				</a>
-
-				<a href="/admin/events" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-					</svg>
-					<span class="admin-sidebar-text">Events</span>
-				</a>
-
-				<a href="/admin/contacts" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-					</svg>
-					<span class="admin-sidebar-text">Contacts</span>
-				</a>
-
-				<a href="/admin/email-preview" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-					</svg>
-					<span class="admin-sidebar-text">Email Preview</span>
-				</a>
-
-				<a href="/admin/promotions" class="admin-sidebar-item" @click="mobileSidebarOpen = false">
-					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
-					</svg>
-					<span class="admin-sidebar-text">Promotions</span>
-				</a>
-
-				<!-- Shipping Section (Collapsible) -->
-				<div>
-					<button
-						@click="mobileShippingOpen = !mobileShippingOpen"
-						class="admin-sidebar-item w-full"
-						title="Shipping"
-					>
-						<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-						</svg>
-						<span class="admin-sidebar-text flex-1 text-left">Shipping</span>
-						<svg
-							class="w-4 h-4 transition-transform duration-200"
-							:class="{ 'rotate-180': mobileShippingOpen }"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-						</svg>
-					</button>
-
-					<!-- Shipping Sub-items -->
-					<div x-show="mobileShippingOpen" x-collapse class="ml-6 mt-1 space-y-1">
-						<a href="/admin/shipping/boxes" class={ getSubitemClass(c, "/admin/shipping/boxes") } @click="mobileSidebarOpen = false" title="Boxes">
-							<span class="admin-sidebar-text">Boxes</span>
-						</a>
-						<a href="/admin/shipping/config" class={ getSubitemClass(c, "/admin/shipping/config") } @click="mobileSidebarOpen = false" title="Configuration">
-							<span class="admin-sidebar-text">Configuration</span>
-						</a>
-						<a href="/admin/shipping/settings" class={ getSubitemClass(c, "/admin/shipping/settings") } @click="mobileSidebarOpen = false" title="Settings">
-							<span class="admin-sidebar-text">Settings</span>
-						</a>
-					</div>
-				</div>
-
-				<!-- Developer Section (Collapsible) -->
-				<div>
-					<button
-						@click="mobileDevOpen = !mobileDevOpen"
-						class="admin-sidebar-item w-full"
-						title="Developer Tools"
-					>
-						<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
-						</svg>
-						<span class="admin-sidebar-text flex-1 text-left">Developer</span>
-						<svg
-							class="w-4 h-4 transition-transform duration-200"
-							:class="{ 'rotate-180': mobileDevOpen }"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-						</svg>
-					</button>
-
-					<!-- Developer Sub-items -->
-					<div x-show="mobileDevOpen" x-collapse class="ml-6 mt-1 space-y-1">
-						<a href="/dev" class={ getSubitemClass(c, "/dev") } @click="mobileSidebarOpen = false" title="Overview">
-							<span class="admin-sidebar-text">Overview</span>
-						</a>
-						<a href="/dev/system" class={ getSubitemClass(c, "/dev/system") } @click="mobileSidebarOpen = false" title="System Info">
-							<span class="admin-sidebar-text">System Info</span>
-						</a>
-						<a href="/dev/database" class={ getSubitemClass(c, "/dev/database") } @click="mobileSidebarOpen = false" title="Database">
-							<span class="admin-sidebar-text">Database</span>
-						</a>
-						<a href="/dev/memory" class={ getSubitemClass(c, "/dev/memory") } @click="mobileSidebarOpen = false" title="Memory">
-							<span class="admin-sidebar-text">Memory</span>
-						</a>
-						<a href="/dev/logs" class={ getSubitemClass(c, "/dev/logs") } @click="mobileSidebarOpen = false" title="Logs">
-							<span class="admin-sidebar-text">Logs</span>
-						</a>
-						<a href="/dev/config" class={ getSubitemClass(c, "/dev/config") } @click="mobileSidebarOpen = false" title="Config">
-							<span class="admin-sidebar-text">Config</span>
-						</a>
-					</div>
-				</div>
-			</nav>
-
-			<!-- Mobile Sidebar Footer -->
-			<div class="mt-auto admin-sidebar-footer">
-				if user, ok := auth.GetDBUser(c); ok {
-					<div class="flex items-center space-x-3 p-3 bg-slate-800 rounded-lg">
-						if user.ProfileImageUrl.Valid {
-							<img src={ user.ProfileImageUrl.String } alt="Admin" class="h-8 w-8 rounded-full"/>
-						} else {
-							<div class="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-								<span class="text-white text-sm font-bold">{ user.FullName[:1] }</span>
-							</div>
-						}
-						<div class="flex-1 min-w-0">
-							<p class="text-sm font-medium text-slate-200 truncate">{ user.FullName }</p>
-							<p class="text-xs text-slate-400 truncate">Administrator</p>
-						</div>
-					</div>
-				}
-			</div>
-		</div>
-	</aside>
+	}
 }
 
 templ AdminContainer() {

@@ -9,267 +9,265 @@ import (
 
 templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contactHTML string, abandonedCart1HrHTML string, abandonedCart24HrHTML string, abandonedCart72HrHTML string, welcomeCouponHTML string, withPromo bool) {
 	@layout.AdminBase(c, "Email Preview") {
-		@layout.AdminContainer() {
-			<!-- Header -->
-			<div class="flex justify-between items-center mb-8">
-				<h1 class="text-2xl font-bold text-gray-100">Email Preview</h1>
-			</div>
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-8">
+			<h1 class="text-2xl font-bold text-gray-100">Email Preview</h1>
+		</div>
 
-			@card.Card() {
-				@card.Header() {
-					@card.Title() {
-						Email Templates
-					}
-					@card.Description() {
-						Preview the email templates that are sent to customers and internal staff. These emails use sample data for demonstration.
-					}
+		@card.Card() {
+			@card.Header() {
+				@card.Title() {
+					Email Templates
 				}
-				@card.Content(card.ContentProps{Class: "p-6 space-y-6"}) {
-					<!-- Template Selector and Controls -->
-					<div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-						<!-- Dropdown Menu -->
-						<div class="flex-1 max-w-md">
-							<label for="templateSelect" class="block text-sm font-medium text-gray-300 mb-2">Select Email Template</label>
-							<select
-								id="templateSelect"
-								onchange="handleTemplateChange(this.value)"
-								class="w-full px-4 py-2 bg-gray-800 border border-gray-700 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-							>
-								<optgroup label="Orders" class="text-gray-100">
-									<option value="customer">Customer Order Confirmation</option>
-									<option value="admin">Admin Order Notification</option>
-								</optgroup>
-								<optgroup label="Support" class="text-gray-100">
-									<option value="contact">Contact Request</option>
-								</optgroup>
-								<optgroup label="Marketing" class="text-gray-100">
-									<option value="welcome-coupon">Welcome Coupon</option>
-								</optgroup>
-								<optgroup label="Abandoned Cart" class="text-gray-100">
-									<option value="abandoned-1hr">1 Hour Reminder</option>
-									<option value="abandoned-24hr">24 Hour Follow-up</option>
-									<option value="abandoned-72hr">72 Hour Final Notice</option>
-								</optgroup>
-							</select>
-						</div>
-
-						<!-- Promo Toggle (only for 24hr and 72hr emails) -->
-						<div id="promoToggleContainer" class="hidden">
-							<label class="flex items-center space-x-3 cursor-pointer bg-gray-800 px-4 py-2 rounded-md border border-gray-700">
-								<input
-									type="checkbox"
-									id="promoToggle"
-									checked?={ withPromo }
-									onchange="handlePromoToggle(this.checked)"
-									class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-								/>
-								<span class="text-sm font-medium text-gray-300">Show with promo code</span>
-							</label>
-						</div>
-
-						<!-- Send Test Email Button -->
-						<div>
-							@button.Button(button.Props{
-								Variant: button.VariantDefault,
-								Class:   "bg-green-600 hover:bg-green-700 text-white",
-								Attributes: templ.Attributes{
-								"onclick": "showTestEmailDialog()",
-							},
-							}) {
-								<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-								</svg>
-								Send Test Email
-							}
-						</div>
-					</div>
-
-					<!-- Email Preview Frames -->
-					<div class="border border-gray-700 rounded-lg overflow-hidden bg-gray-900">
-						<!-- Customer Order Email -->
-						<div id="email-customer" class="email-preview">
-							<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-								<div class="text-sm text-gray-300">
-									<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-									<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">Subject:</strong> Order Confirmation - Order #SAMPLE-12345</div>
-								</div>
-							</div>
-							<iframe
-								srcdoc={ customerHTML }
-								class="w-full bg-white"
-								style="height: 800px; border: none;"
-								title="Customer Email Preview"
-							></iframe>
-						</div>
-
-						<!-- Admin Order Email -->
-						<div id="email-admin" class="email-preview hidden">
-							<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-								<div class="text-sm text-gray-300">
-									<div><strong class="text-gray-100">To:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">Subject:</strong> New Order Received - Order #SAMPLE-12345</div>
-								</div>
-							</div>
-							<iframe
-								srcdoc={ adminHTML }
-								class="w-full bg-white"
-								style="height: 800px; border: none;"
-								title="Admin Email Preview"
-							></iframe>
-						</div>
-
-						<!-- Contact Request Email -->
-						<div id="email-contact" class="email-preview hidden">
-							<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-								<div class="text-sm text-gray-300">
-									<div><strong class="text-gray-100">To:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">Reply-To:</strong> customer@example.com</div>
-									<div><strong class="text-gray-100">Subject:</strong> New Contact Request - General Inquiry</div>
-								</div>
-							</div>
-							<iframe
-								srcdoc={ contactHTML }
-								class="w-full bg-white"
-								style="height: 800px; border: none;"
-								title="Contact Request Email Preview"
-							></iframe>
-						</div>
-
-						<!-- Abandoned Cart (1hr) Email -->
-						<div id="email-abandoned-1hr" class="email-preview hidden">
-							<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-								<div class="text-sm text-gray-300">
-									<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-									<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">Subject:</strong> You left something in your cart!</div>
-								</div>
-							</div>
-							<iframe
-								srcdoc={ abandonedCart1HrHTML }
-								class="w-full bg-white"
-								style="height: 800px; border: none;"
-								title="Abandoned Cart 1hr Email Preview"
-							></iframe>
-						</div>
-
-						<!-- Abandoned Cart (24hr) Email -->
-						<div id="email-abandoned-24hr" class="email-preview hidden">
-							<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-								<div class="text-sm text-gray-300">
-									<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-									<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">Subject:</strong> Still interested in your cart?</div>
-								</div>
-							</div>
-							<iframe
-								srcdoc={ abandonedCart24HrHTML }
-								class="w-full bg-white"
-								style="height: 800px; border: none;"
-								title="Abandoned Cart 24hr Email Preview"
-							></iframe>
-						</div>
-
-						<!-- Abandoned Cart (72hr) Email -->
-						<div id="email-abandoned-72hr" class="email-preview hidden">
-							<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-								<div class="text-sm text-gray-300">
-									<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-									<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">Subject:</strong> Last chance to complete your order!</div>
-								</div>
-							</div>
-							<iframe
-								srcdoc={ abandonedCart72HrHTML }
-								class="w-full bg-white"
-								style="height: 800px; border: none;"
-								title="Abandoned Cart 72hr Email Preview"
-							></iframe>
-						</div>
-
-						<!-- Welcome Coupon Email -->
-						<div id="email-welcome-coupon" class="email-preview hidden">
-							<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-								<div class="text-sm text-gray-300">
-									<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-									<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-									<div><strong class="text-gray-100">Subject:</strong> Welcome! Here's your exclusive discount</div>
-								</div>
-							</div>
-							<iframe
-								srcdoc={ welcomeCouponHTML }
-								class="w-full bg-white"
-								style="height: 800px; border: none;"
-								title="Welcome Coupon Email Preview"
-							></iframe>
-						</div>
-					</div>
+				@card.Description() {
+					Preview the email templates that are sent to customers and internal staff. These emails use sample data for demonstration.
 				}
 			}
-
-			<!-- Test Email Modal -->
-			<div id="testEmailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-				<div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-700">
-					<div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-lg">
-						<h3 class="text-xl font-bold text-white">Send Test Email</h3>
+			@card.Content(card.ContentProps{Class: "p-6 space-y-6"}) {
+				<!-- Template Selector and Controls -->
+				<div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+					<!-- Dropdown Menu -->
+					<div class="flex-1 max-w-md">
+						<label for="templateSelect" class="block text-sm font-medium text-gray-300 mb-2">Select Email Template</label>
+						<select
+							id="templateSelect"
+							onchange="handleTemplateChange(this.value)"
+							class="w-full px-4 py-2 bg-gray-800 border border-gray-700 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						>
+							<optgroup label="Orders" class="text-gray-100">
+								<option value="customer">Customer Order Confirmation</option>
+								<option value="admin">Admin Order Notification</option>
+							</optgroup>
+							<optgroup label="Support" class="text-gray-100">
+								<option value="contact">Contact Request</option>
+							</optgroup>
+							<optgroup label="Marketing" class="text-gray-100">
+								<option value="welcome-coupon">Welcome Coupon</option>
+							</optgroup>
+							<optgroup label="Abandoned Cart" class="text-gray-100">
+								<option value="abandoned-1hr">1 Hour Reminder</option>
+								<option value="abandoned-24hr">24 Hour Follow-up</option>
+								<option value="abandoned-72hr">72 Hour Final Notice</option>
+							</optgroup>
+						</select>
 					</div>
-					<div class="p-6">
-						<p class="text-sm text-gray-300 mb-4">Enter an email address to send a test email to:</p>
 
-						<div class="space-y-4">
-							<div>
-								<label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-								<input
-									type="email"
-									id="testEmailInput"
-									class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-									placeholder="example@email.com"
-									value="prints@logans3dcreations.com"
-								/>
+					<!-- Promo Toggle (only for 24hr and 72hr emails) -->
+					<div id="promoToggleContainer" class="hidden">
+						<label class="flex items-center space-x-3 cursor-pointer bg-gray-800 px-4 py-2 rounded-md border border-gray-700">
+							<input
+								type="checkbox"
+								id="promoToggle"
+								checked?={ withPromo }
+								onchange="handlePromoToggle(this.checked)"
+								class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+							/>
+							<span class="text-sm font-medium text-gray-300">Show with promo code</span>
+						</label>
+					</div>
+
+					<!-- Send Test Email Button -->
+					<div>
+						@button.Button(button.Props{
+							Variant: button.VariantDefault,
+							Class:   "bg-green-600 hover:bg-green-700 text-white",
+							Attributes: templ.Attributes{
+							"onclick": "showTestEmailDialog()",
+						},
+						}) {
+							<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+							</svg>
+							Send Test Email
+						}
+					</div>
+				</div>
+
+				<!-- Email Preview Frames -->
+				<div class="border border-gray-700 rounded-lg overflow-hidden bg-gray-900">
+					<!-- Customer Order Email -->
+					<div id="email-customer" class="email-preview">
+						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
+							<div class="text-sm text-gray-300">
+								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
+								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">Subject:</strong> Order Confirmation - Order #SAMPLE-12345</div>
 							</div>
+						</div>
+						<iframe
+							srcdoc={ customerHTML }
+							class="w-full bg-white"
+							style="height: 800px; border: none;"
+							title="Customer Email Preview"
+						></iframe>
+					</div>
 
-							<div>
-								<label class="block text-sm font-medium text-gray-300 mb-2">Email Type</label>
-								<select
-									id="testEmailType"
-									class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-								>
-									<option value="customer">Customer Order Confirmation</option>
-									<option value="admin">Admin Order Notification</option>
-									<option value="contact">Contact Request Notification</option>
-									<option value="abandoned-1hr">Abandoned Cart Recovery (1hr)</option>
-									<option value="abandoned-24hr">Abandoned Cart Recovery (24hr)</option>
-									<option value="abandoned-72hr">Abandoned Cart Recovery (72hr)</option>
-									<option value="welcome-coupon">Welcome Coupon</option>
-								</select>
+					<!-- Admin Order Email -->
+					<div id="email-admin" class="email-preview hidden">
+						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
+							<div class="text-sm text-gray-300">
+								<div><strong class="text-gray-100">To:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">Subject:</strong> New Order Received - Order #SAMPLE-12345</div>
 							</div>
 						</div>
+						<iframe
+							srcdoc={ adminHTML }
+							class="w-full bg-white"
+							style="height: 800px; border: none;"
+							title="Admin Email Preview"
+						></iframe>
+					</div>
 
-						<div id="testEmailStatus" class="mt-4 hidden">
-							<div class="p-3 rounded-md"></div>
+					<!-- Contact Request Email -->
+					<div id="email-contact" class="email-preview hidden">
+						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
+							<div class="text-sm text-gray-300">
+								<div><strong class="text-gray-100">To:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">Reply-To:</strong> customer@example.com</div>
+								<div><strong class="text-gray-100">Subject:</strong> New Contact Request - General Inquiry</div>
+							</div>
+						</div>
+						<iframe
+							srcdoc={ contactHTML }
+							class="w-full bg-white"
+							style="height: 800px; border: none;"
+							title="Contact Request Email Preview"
+						></iframe>
+					</div>
+
+					<!-- Abandoned Cart (1hr) Email -->
+					<div id="email-abandoned-1hr" class="email-preview hidden">
+						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
+							<div class="text-sm text-gray-300">
+								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
+								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">Subject:</strong> You left something in your cart!</div>
+							</div>
+						</div>
+						<iframe
+							srcdoc={ abandonedCart1HrHTML }
+							class="w-full bg-white"
+							style="height: 800px; border: none;"
+							title="Abandoned Cart 1hr Email Preview"
+						></iframe>
+					</div>
+
+					<!-- Abandoned Cart (24hr) Email -->
+					<div id="email-abandoned-24hr" class="email-preview hidden">
+						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
+							<div class="text-sm text-gray-300">
+								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
+								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">Subject:</strong> Still interested in your cart?</div>
+							</div>
+						</div>
+						<iframe
+							srcdoc={ abandonedCart24HrHTML }
+							class="w-full bg-white"
+							style="height: 800px; border: none;"
+							title="Abandoned Cart 24hr Email Preview"
+						></iframe>
+					</div>
+
+					<!-- Abandoned Cart (72hr) Email -->
+					<div id="email-abandoned-72hr" class="email-preview hidden">
+						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
+							<div class="text-sm text-gray-300">
+								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
+								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">Subject:</strong> Last chance to complete your order!</div>
+							</div>
+						</div>
+						<iframe
+							srcdoc={ abandonedCart72HrHTML }
+							class="w-full bg-white"
+							style="height: 800px; border: none;"
+							title="Abandoned Cart 72hr Email Preview"
+						></iframe>
+					</div>
+
+					<!-- Welcome Coupon Email -->
+					<div id="email-welcome-coupon" class="email-preview hidden">
+						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
+							<div class="text-sm text-gray-300">
+								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
+								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-gray-100">Subject:</strong> Welcome! Here's your exclusive discount</div>
+							</div>
+						</div>
+						<iframe
+							srcdoc={ welcomeCouponHTML }
+							class="w-full bg-white"
+							style="height: 800px; border: none;"
+							title="Welcome Coupon Email Preview"
+						></iframe>
+					</div>
+				</div>
+			}
+		}
+
+		<!-- Test Email Modal -->
+		<div id="testEmailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+			<div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-700">
+				<div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-lg">
+					<h3 class="text-xl font-bold text-white">Send Test Email</h3>
+				</div>
+				<div class="p-6">
+					<p class="text-sm text-gray-300 mb-4">Enter an email address to send a test email to:</p>
+
+					<div class="space-y-4">
+						<div>
+							<label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+							<input
+								type="email"
+								id="testEmailInput"
+								class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								placeholder="example@email.com"
+								value="prints@logans3dcreations.com"
+							/>
 						</div>
 
-						<div class="flex justify-end space-x-3 mt-6">
-							<button
-								onclick="closeTestEmailDialog()"
-								class="px-4 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition"
+						<div>
+							<label class="block text-sm font-medium text-gray-300 mb-2">Email Type</label>
+							<select
+								id="testEmailType"
+								class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
-								Cancel
-							</button>
-							<button
-								onclick="sendTestEmail()"
-								id="sendTestEmailBtn"
-								class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
-							>
-								Send Test Email
-							</button>
+								<option value="customer">Customer Order Confirmation</option>
+								<option value="admin">Admin Order Notification</option>
+								<option value="contact">Contact Request Notification</option>
+								<option value="abandoned-1hr">Abandoned Cart Recovery (1hr)</option>
+								<option value="abandoned-24hr">Abandoned Cart Recovery (24hr)</option>
+								<option value="abandoned-72hr">Abandoned Cart Recovery (72hr)</option>
+								<option value="welcome-coupon">Welcome Coupon</option>
+							</select>
 						</div>
+					</div>
+
+					<div id="testEmailStatus" class="mt-4 hidden">
+						<div class="p-3 rounded-md"></div>
+					</div>
+
+					<div class="flex justify-end space-x-3 mt-6">
+						<button
+							onclick="closeTestEmailDialog()"
+							class="px-4 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition"
+						>
+							Cancel
+						</button>
+						<button
+							onclick="sendTestEmail()"
+							id="sendTestEmailBtn"
+							class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition"
+						>
+							Send Test Email
+						</button>
 					</div>
 				</div>
 			</div>
-		}
+		</div>
 	}
 
 	<script>

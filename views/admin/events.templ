@@ -10,306 +10,302 @@ import (
 
 templ EventsList(c echo.Context, events []db.Event) {
 	@layout.AdminBase(c, "Events") {
-		@layout.AdminContainer() {
-			<!-- Header -->
-			<div class="flex justify-between items-center mb-8">
-				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Events Management</h1>
-				<a href="/admin/events/new" class="admin-btn admin-btn-primary">+ Add Event</a>
-			</div>
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-8">
+			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Events Management</h1>
+			<a href="/admin/events/new" class="admin-btn admin-btn-primary">+ Add Event</a>
+		</div>
 
-			<!-- Stats Cards -->
-			<div class="admin-stats-grid">
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", len(events)) }</div>
-					<div class="admin-stat-label">Total Events</div>
-				</div>
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", countUpcomingEvents(events)) }</div>
-					<div class="admin-stat-label">Upcoming Events</div>
-				</div>
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", countActiveEvents(events)) }</div>
-					<div class="admin-stat-label">Active Events</div>
-				</div>
-				<div class="admin-stat-card">
-					<div class="admin-stat-number">{ fmt.Sprintf("%d", countPastEvents(events)) }</div>
-					<div class="admin-stat-label">Past Events</div>
-				</div>
+		<!-- Stats Cards -->
+		<div class="admin-stats-grid">
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">{ fmt.Sprintf("%d", len(events)) }</div>
+				<div class="admin-stat-label">Total Events</div>
 			</div>
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">{ fmt.Sprintf("%d", countUpcomingEvents(events)) }</div>
+				<div class="admin-stat-label">Upcoming Events</div>
+			</div>
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">{ fmt.Sprintf("%d", countActiveEvents(events)) }</div>
+				<div class="admin-stat-label">Active Events</div>
+			</div>
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">{ fmt.Sprintf("%d", countPastEvents(events)) }</div>
+				<div class="admin-stat-label">Past Events</div>
+			</div>
+		</div>
 
-			<!-- Filters -->
-			<div class="admin-card mb-6">
-				<div class="admin-card-header">
-					<h2 class="admin-card-title">Filter Events</h2>
-				</div>
-				<div class="p-4">
-					<div class="flex flex-wrap gap-3">
-						<a href="/admin/events" class="admin-btn admin-btn-sm admin-btn-secondary">All Events</a>
-						<a href="/admin/events?filter=upcoming" class="admin-btn admin-btn-sm admin-btn-success">Upcoming</a>
-						<a href="/admin/events?filter=active" class="admin-btn admin-btn-sm admin-btn-primary">Active</a>
-						<a href="/admin/events?filter=past" class="admin-btn admin-btn-sm admin-btn-warning">Past</a>
-						<a href="/admin/events?filter=inactive" class="admin-btn admin-btn-sm admin-btn-danger">Inactive</a>
-					</div>
+		<!-- Filters -->
+		<div class="admin-card mb-6">
+			<div class="admin-card-header">
+				<h2 class="admin-card-title">Filter Events</h2>
+			</div>
+			<div class="p-4">
+				<div class="flex flex-wrap gap-3">
+					<a href="/admin/events" class="admin-btn admin-btn-sm admin-btn-secondary">All Events</a>
+					<a href="/admin/events?filter=upcoming" class="admin-btn admin-btn-sm admin-btn-success">Upcoming</a>
+					<a href="/admin/events?filter=active" class="admin-btn admin-btn-sm admin-btn-primary">Active</a>
+					<a href="/admin/events?filter=past" class="admin-btn admin-btn-sm admin-btn-warning">Past</a>
+					<a href="/admin/events?filter=inactive" class="admin-btn admin-btn-sm admin-btn-danger">Inactive</a>
 				</div>
 			</div>
+		</div>
 
-			<!-- Events Table -->
-			<div class="admin-card">
-				<div class="admin-card-header">
-					<h2 class="admin-card-title">Events</h2>
-				</div>
-				<div class="overflow-x-auto">
-					<table class="admin-table">
-						<thead>
+		<!-- Events Table -->
+		<div class="admin-card">
+			<div class="admin-card-header">
+				<h2 class="admin-card-title">Events</h2>
+			</div>
+			<div class="overflow-x-auto">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>Title</th>
+							<th>Location</th>
+							<th>Start Date</th>
+							<th>End Date</th>
+							<th>Status</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody>
+						if len(events) == 0 {
 							<tr>
-								<th>Title</th>
-								<th>Location</th>
-								<th>Start Date</th>
-								<th>End Date</th>
-								<th>Status</th>
-								<th>Actions</th>
+								<td colspan="6" class="text-center admin-text-muted py-8">
+									No events found
+								</td>
 							</tr>
-						</thead>
-						<tbody>
-							if len(events) == 0 {
-								<tr>
-									<td colspan="6" class="text-center admin-text-muted py-8">
-										No events found
-									</td>
-								</tr>
-							}
-							for _, event := range events {
-								<tr>
-									<td>
-										<div class="admin-text-primary admin-font-medium">{ event.Title }</div>
-										if event.Description.Valid {
-											<div class="admin-text-muted admin-text-sm max-w-xs truncate" title={ event.Description.String }>
-												{ event.Description.String }
-											</div>
-										}
-									</td>
-									<td>
-										if event.Location.Valid {
-											<div class="admin-text-primary admin-text-sm">{ event.Location.String }</div>
-										}
-										if event.Address.Valid {
-											<div class="admin-text-muted admin-text-xs">{ event.Address.String }</div>
-										}
-									</td>
-									<td>
+						}
+						for _, event := range events {
+							<tr>
+								<td>
+									<div class="admin-text-primary admin-font-medium">{ event.Title }</div>
+									if event.Description.Valid {
+										<div class="admin-text-muted admin-text-sm max-w-xs truncate" title={ event.Description.String }>
+											{ event.Description.String }
+										</div>
+									}
+								</td>
+								<td>
+									if event.Location.Valid {
+										<div class="admin-text-primary admin-text-sm">{ event.Location.String }</div>
+									}
+									if event.Address.Valid {
+										<div class="admin-text-muted admin-text-xs">{ event.Address.String }</div>
+									}
+								</td>
+								<td>
+									<div class="admin-text-sm">
+										{ formatEventDateTime(event.StartDate) }
+									</div>
+								</td>
+								<td>
+									if event.EndDate.Valid {
 										<div class="admin-text-sm">
-											{ formatEventDateTime(event.StartDate) }
+											{ formatEventDateTime(event.EndDate.Time) }
 										</div>
-									</td>
-									<td>
-										if event.EndDate.Valid {
-											<div class="admin-text-sm">
-												{ formatEventDateTime(event.EndDate.Time) }
-											</div>
-										} else {
-											<span class="admin-text-disabled">-</span>
-										}
-									</td>
-									<td>
-										@EventStatusBadge(event, time.Now())
-									</td>
-									<td>
-										<div class="flex space-x-2">
-											<a href={ templ.SafeURL(fmt.Sprintf("/admin/events/edit?id=%s", event.ID)) } 
-											   class="admin-btn admin-btn-sm admin-btn-primary">
-												Edit
+									} else {
+										<span class="admin-text-disabled">-</span>
+									}
+								</td>
+								<td>
+									@EventStatusBadge(event, time.Now())
+								</td>
+								<td>
+									<div class="flex space-x-2">
+										<a href={ templ.SafeURL(fmt.Sprintf("/admin/events/edit?id=%s", event.ID)) } 
+										   class="admin-btn admin-btn-sm admin-btn-primary">
+											Edit
+										</a>
+										if event.Url.Valid {
+											<a href={ templ.SafeURL(event.Url.String) } 
+											   target="_blank" 
+											   class="admin-btn admin-btn-sm admin-btn-secondary">
+												Visit
 											</a>
-											if event.Url.Valid {
-												<a href={ templ.SafeURL(event.Url.String) } 
-												   target="_blank" 
-												   class="admin-btn admin-btn-sm admin-btn-secondary">
-													Visit
-												</a>
-											}
-											<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/events/%s/delete", event.ID)) } 
-												  onsubmit="return confirm('Are you sure you want to delete this event?');" class="inline">
-												<button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">
-													Delete
-												</button>
-											</form>
-										</div>
-									</td>
-								</tr>
-							}
-						</tbody>
-					</table>
-				</div>
+										}
+										<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/events/%s/delete", event.ID)) } 
+											  onsubmit="return confirm('Are you sure you want to delete this event?');" class="inline">
+											<button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">
+												Delete
+											</button>
+										</form>
+									</div>
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
 			</div>
-		}
+		</div>
 	}
 }
 
 templ EventForm(c echo.Context, event *db.Event) {
 	@layout.AdminBase(c, "Event Form") {
-		@layout.AdminContainer() {
-			<!-- Header -->
-			<div class="flex justify-between items-center mb-8">
-				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">
-					if event != nil {
-						Edit Event
-					} else {
-						Add New Event
-					}
-				</h1>
-				<a href="/admin/events" class="admin-btn admin-btn-secondary">← Back to Events</a>
-			</div>
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-8">
+			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">
+				if event != nil {
+					Edit Event
+				} else {
+					Add New Event
+				}
+			</h1>
+			<a href="/admin/events" class="admin-btn admin-btn-secondary">← Back to Events</a>
+		</div>
 
-			<!-- Form -->
-			<div class="admin-card">
-				<form 
-					if event != nil {
-						method="POST" 
-						action={ templ.SafeURL(fmt.Sprintf("/admin/events/%s", event.ID)) }
-					} else {
-						method="POST" 
-						action="/admin/events"
-					}
-					class="p-6 space-y-6"
-				>
-					<!-- Basic Information -->
-					<div class="space-y-4">
-						<h3 class="admin-text-lg admin-font-semibold">Event Information</h3>
+		<!-- Form -->
+		<div class="admin-card">
+			<form 
+				if event != nil {
+					method="POST" 
+					action={ templ.SafeURL(fmt.Sprintf("/admin/events/%s", event.ID)) }
+				} else {
+					method="POST" 
+					action="/admin/events"
+				}
+				class="p-6 space-y-6"
+			>
+				<!-- Basic Information -->
+				<div class="space-y-4">
+					<h3 class="admin-text-lg admin-font-semibold">Event Information</h3>
 						
-						<!-- Title -->
+					<!-- Title -->
+					<div>
+						<label for="title" class="admin-text-sm admin-font-medium">Title <span class="text-red-400">*</span></label>
+						<input
+							type="text"
+							id="title"
+							name="title"
+							required
+							if event != nil {
+								value={ event.Title }
+							}
+							class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+							placeholder="Enter event title"
+						/>
+					</div>
+
+					<!-- Description -->
+					<div>
+						<label for="description" class="admin-text-sm admin-font-medium">Description</label>
+						<textarea
+							id="description"
+							name="description"
+							rows="4"
+							class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+							placeholder="Event description"
+						>{ getEventDescription(event) }</textarea>
+					</div>
+
+					<!-- Location Details -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
-							<label for="title" class="admin-text-sm admin-font-medium">Title <span class="text-red-400">*</span></label>
+							<label for="location" class="admin-text-sm admin-font-medium">Location</label>
 							<input
 								type="text"
-								id="title"
-								name="title"
+								id="location"
+								name="location"
+								if event != nil && event.Location.Valid {
+									value={ event.Location.String }
+								}
+								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+								placeholder="Event location name"
+							/>
+						</div>
+
+						<div>
+							<label for="url" class="admin-text-sm admin-font-medium">Event URL</label>
+							<input
+								type="url"
+								id="url"
+								name="url"
+								if event != nil && event.Url.Valid {
+									value={ event.Url.String }
+								}
+								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+								placeholder="https://example.com"
+							/>
+						</div>
+					</div>
+
+					<!-- Address -->
+					<div>
+						<label for="address" class="admin-text-sm admin-font-medium">Address</label>
+						<input
+							type="text"
+							id="address"
+							name="address"
+							if event != nil && event.Address.Valid {
+								value={ event.Address.String }
+							}
+							class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+							placeholder="Full address"
+						/>
+					</div>
+
+					<!-- Date & Time -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<label for="start_date" class="admin-text-sm admin-font-medium">Start Date & Time <span class="text-red-400">*</span></label>
+							<input
+								type="datetime-local"
+								id="start_date"
+								name="start_date"
 								required
 								if event != nil {
-									value={ event.Title }
+									value={ formatEventFormDateTime(event.StartDate) }
 								}
-								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-								placeholder="Enter event title"
+								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							/>
 						</div>
 
-						<!-- Description -->
 						<div>
-							<label for="description" class="admin-text-sm admin-font-medium">Description</label>
-							<textarea
-								id="description"
-								name="description"
-								rows="4"
-								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-								placeholder="Event description"
-							>{ getEventDescription(event) }</textarea>
-						</div>
-
-						<!-- Location Details -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div>
-								<label for="location" class="admin-text-sm admin-font-medium">Location</label>
-								<input
-									type="text"
-									id="location"
-									name="location"
-									if event != nil && event.Location.Valid {
-										value={ event.Location.String }
-									}
-									class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-									placeholder="Event location name"
-								/>
-							</div>
-
-							<div>
-								<label for="url" class="admin-text-sm admin-font-medium">Event URL</label>
-								<input
-									type="url"
-									id="url"
-									name="url"
-									if event != nil && event.Url.Valid {
-										value={ event.Url.String }
-									}
-									class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-									placeholder="https://example.com"
-								/>
-							</div>
-						</div>
-
-						<!-- Address -->
-						<div>
-							<label for="address" class="admin-text-sm admin-font-medium">Address</label>
+							<label for="end_date" class="admin-text-sm admin-font-medium">End Date & Time</label>
 							<input
-								type="text"
-								id="address"
-								name="address"
-								if event != nil && event.Address.Valid {
-									value={ event.Address.String }
+								type="datetime-local"
+								id="end_date"
+								name="end_date"
+								if event != nil && event.EndDate.Valid {
+									value={ formatEventFormDateTime(event.EndDate.Time) }
 								}
-								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-								placeholder="Full address"
+								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							/>
 						</div>
-
-						<!-- Date & Time -->
-						<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div>
-								<label for="start_date" class="admin-text-sm admin-font-medium">Start Date & Time <span class="text-red-400">*</span></label>
-								<input
-									type="datetime-local"
-									id="start_date"
-									name="start_date"
-									required
-									if event != nil {
-										value={ formatEventFormDateTime(event.StartDate) }
-									}
-									class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-								/>
-							</div>
-
-							<div>
-								<label for="end_date" class="admin-text-sm admin-font-medium">End Date & Time</label>
-								<input
-									type="datetime-local"
-									id="end_date"
-									name="end_date"
-									if event != nil && event.EndDate.Valid {
-										value={ formatEventFormDateTime(event.EndDate.Time) }
-									}
-									class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
-								/>
-							</div>
-						</div>
-
-						<!-- Status -->
-						<div>
-							<label class="flex items-center cursor-pointer">
-								<input
-									type="checkbox"
-									name="is_active"
-									if event == nil || (event.IsActive.Valid && event.IsActive.Bool) {
-										checked
-									}
-									class="w-4 h-4 text-emerald-600 bg-slate-900 border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
-								/>
-								<span class="ml-2 admin-text-sm admin-font-medium">Active Event</span>
-							</label>
-							<p class="mt-1 admin-text-xs admin-text-muted">Only active events will be displayed on the website</p>
-						</div>
 					</div>
 
-					<!-- Form Actions -->
-					<div class="flex justify-end space-x-4 pt-6 border-t border-slate-700">
-						<a href="/admin/events" class="admin-btn admin-btn-secondary">Cancel</a>
-						<button type="submit" class="admin-btn admin-btn-primary">
-							if event != nil {
-								Update Event
-							} else {
-								Create Event
-							}
-						</button>
+					<!-- Status -->
+					<div>
+						<label class="flex items-center cursor-pointer">
+							<input
+								type="checkbox"
+								name="is_active"
+								if event == nil || (event.IsActive.Valid && event.IsActive.Bool) {
+									checked
+								}
+								class="w-4 h-4 text-emerald-600 bg-slate-900 border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
+							/>
+							<span class="ml-2 admin-text-sm admin-font-medium">Active Event</span>
+						</label>
+						<p class="mt-1 admin-text-xs admin-text-muted">Only active events will be displayed on the website</p>
 					</div>
-				</form>
-			</div>
-		}
+				</div>
+
+				<!-- Form Actions -->
+				<div class="flex justify-end space-x-4 pt-6 border-t border-slate-700">
+					<a href="/admin/events" class="admin-btn admin-btn-secondary">Cancel</a>
+					<button type="submit" class="admin-btn admin-btn-primary">
+						if event != nil {
+							Update Event
+						} else {
+							Create Event
+						}
+					</button>
+				</div>
+			</form>
+		</div>
 	}
 }
 
