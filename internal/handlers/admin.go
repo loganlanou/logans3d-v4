@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -676,7 +677,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		Slug:             slug,
 		Description:      sql.NullString{String: description, Valid: description != ""},
 		ShortDescription: sql.NullString{String: shortDescription, Valid: shortDescription != ""},
-		PriceCents:       int64(price * 100),
+		PriceCents:       int64(math.Round(price * 100)),
 		CategoryID:       sql.NullString{String: categoryID, Valid: categoryID != ""},
 		Sku:              sql.NullString{String: sku, Valid: sku != ""},
 		StockQuantity:    sql.NullInt64{Int64: stockQuantity, Valid: true},
@@ -811,32 +812,9 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 
 	// Check if this is an HTMX request
 	if c.Request().Header.Get("HX-Request") == "true" {
-		// Fetch fresh data from database to show updated state
-		product, err := h.storage.Queries.GetProduct(c.Request().Context(), productID)
-		if err != nil {
-			slog.Error("failed to fetch updated product", "error", err, "product_id", productID)
-			c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Failed to fetch updated product", "type": "error"}}`)
-			return c.String(http.StatusInternalServerError, "Failed to fetch updated product")
-		}
-
-		productImages, err := h.storage.Queries.GetProductImages(c.Request().Context(), productID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "error", err, "product_id", productID)
-			productImages = []db.ProductImage{}
-		}
-
-		categories, err := h.storage.Queries.ListCategories(c.Request().Context())
-		if err != nil {
-			slog.Error("failed to fetch categories", "error", err)
-			c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Failed to fetch categories", "type": "error"}}`)
-			return c.String(http.StatusInternalServerError, "Failed to fetch categories")
-		}
-
-		// Trigger toast notification
-		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Product updated successfully!", "type": "success"}}`)
-
-		// Return the updated form partial with fresh data
-		return Render(c, admin.ProductFormPartial(c, &product, categories, productImages))
+		// Redirect back to products list after successful update
+		c.Response().Header().Set("HX-Redirect", "/admin/products")
+		return c.String(http.StatusOK, "Product updated successfully")
 	}
 
 	// Standard form submission - redirect
@@ -1118,6 +1096,270 @@ func (h *AdminHandler) HandleProductSearch(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, results)
+}
+
+// Inline Product Editing
+
+func (h *AdminHandler) HandleGetProductRow(c echo.Context) error {
+	productID := c.Param("id")
+
+	product, err := h.storage.Queries.GetProduct(c.Request().Context(), productID)
+	if err != nil {
+		slog.Error("failed to fetch product for row", "error", err, "product_id", productID)
+		return c.String(http.StatusInternalServerError, "Failed to fetch product")
+	}
+
+	// Fetch primary image
+	imageURL := ""
+	if image, err := h.storage.Queries.GetPrimaryProductImage(c.Request().Context(), productID); err == nil {
+		imageURL = "/public/images/products/" + image.ImageUrl
+	}
+
+	productWithImage := &types.ProductWithImage{
+		Product:  product,
+		ImageURL: imageURL,
+	}
+
+	return Render(c, admin.ProductTableRowDisplay(c, productWithImage))
+}
+
+func (h *AdminHandler) HandleGetProductEditRow(c echo.Context) error {
+	productID := c.Param("id")
+
+	// Single query to fetch product with image data
+	result, err := h.storage.Queries.GetProductWithImage(c.Request().Context(), productID)
+	if err != nil {
+		slog.Error("failed to fetch product for edit row", "error", err, "product_id", productID)
+		return c.String(http.StatusInternalServerError, "Failed to fetch product")
+	}
+
+	// Convert result to Product type
+	product := db.Product{
+		ID:                 result.ID,
+		Name:               result.Name,
+		Slug:               result.Slug,
+		Description:        result.Description,
+		ShortDescription:   result.ShortDescription,
+		PriceCents:         result.PriceCents,
+		CategoryID:         result.CategoryID,
+		Sku:                result.Sku,
+		StockQuantity:      result.StockQuantity,
+		LowStockThreshold:  result.LowStockThreshold,
+		WeightGrams:        result.WeightGrams,
+		DimensionsLengthMm: result.DimensionsLengthMm,
+		DimensionsWidthMm:  result.DimensionsWidthMm,
+		DimensionsHeightMm: result.DimensionsHeightMm,
+		LeadTimeDays:       result.LeadTimeDays,
+		IsActive:           result.IsActive,
+		IsFeatured:         result.IsFeatured,
+		CreatedAt:          result.CreatedAt,
+		UpdatedAt:          result.UpdatedAt,
+		ShippingCategory:   result.ShippingCategory,
+		IsPremium:          result.IsPremium,
+		IsNew:              result.IsNew,
+		SeoTitle:           result.SeoTitle,
+		SeoDescription:     result.SeoDescription,
+		SeoKeywords:        result.SeoKeywords,
+		OgImageUrl:         result.OgImageUrl,
+		Disclaimer:         result.Disclaimer,
+	}
+
+	// Extract image URL
+	imageURL := ""
+	if result.PrimaryImageUrl.Valid && result.PrimaryImageUrl.String != "" {
+		imageURL = "/public/images/products/" + result.PrimaryImageUrl.String
+	}
+
+	productWithImage := &types.ProductWithImage{
+		Product:  product,
+		ImageURL: imageURL,
+	}
+
+	return Render(c, admin.ProductTableRowEdit(c, productWithImage))
+}
+
+func (h *AdminHandler) HandleUpdateProductInline(c echo.Context) error {
+	productID := c.Param("id")
+
+	name := c.FormValue("name")
+	priceStr := c.FormValue("price")
+	stockStr := c.FormValue("stock_quantity")
+
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		slog.Error("invalid price format", "error", err, "price", priceStr)
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Invalid price format", "type": "error"}}`)
+		return c.String(http.StatusBadRequest, "Invalid price format")
+	}
+
+	stockQuantity, err := strconv.ParseInt(stockStr, 10, 64)
+	if err != nil {
+		slog.Error("invalid stock format", "error", err, "stock", stockStr)
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Invalid stock format", "type": "error"}}`)
+		return c.String(http.StatusBadRequest, "Invalid stock format")
+	}
+
+	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+
+	params := db.UpdateProductInlineParams{
+		ID:            productID,
+		Name:          name,
+		Slug:          slug,
+		PriceCents:    int64(math.Round(price * 100)),
+		StockQuantity: sql.NullInt64{Int64: stockQuantity, Valid: true},
+	}
+
+	product, err := h.storage.Queries.UpdateProductInline(c.Request().Context(), params)
+	if err != nil {
+		slog.Error("failed to update product inline", "error", err, "product_id", productID)
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Failed to update product", "type": "error"}}`)
+		return c.String(http.StatusInternalServerError, "Failed to update product")
+	}
+
+	// Fetch primary image
+	imageURL := ""
+	if image, err := h.storage.Queries.GetPrimaryProductImage(c.Request().Context(), productID); err == nil {
+		imageURL = "/public/images/products/" + image.ImageUrl
+	}
+
+	productWithImage := &types.ProductWithImage{
+		Product:  product,
+		ImageURL: imageURL,
+	}
+
+	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Product updated successfully!", "type": "success"}}`)
+	return Render(c, admin.ProductTableRowDisplay(c, productWithImage))
+}
+
+func (h *AdminHandler) HandleGetProductRowMobile(c echo.Context) error {
+	productID := c.Param("id")
+
+	product, err := h.storage.Queries.GetProduct(c.Request().Context(), productID)
+	if err != nil {
+		slog.Error("failed to fetch product for mobile row", "error", err, "product_id", productID)
+		return c.String(http.StatusInternalServerError, "Failed to fetch product")
+	}
+
+	// Fetch primary image
+	imageURL := ""
+	if image, err := h.storage.Queries.GetPrimaryProductImage(c.Request().Context(), productID); err == nil {
+		imageURL = "/public/images/products/" + image.ImageUrl
+	}
+
+	productWithImage := &types.ProductWithImage{
+		Product:  product,
+		ImageURL: imageURL,
+	}
+
+	return Render(c, admin.ProductRowCollapsed(c, productWithImage))
+}
+
+func (h *AdminHandler) HandleGetProductEditRowMobile(c echo.Context) error {
+	productID := c.Param("id")
+
+	// Single query to fetch product with image data
+	result, err := h.storage.Queries.GetProductWithImage(c.Request().Context(), productID)
+	if err != nil {
+		slog.Error("failed to fetch product for mobile edit row", "error", err, "product_id", productID)
+		return c.String(http.StatusInternalServerError, "Failed to fetch product")
+	}
+
+	// Convert result to Product type
+	product := db.Product{
+		ID:                 result.ID,
+		Name:               result.Name,
+		Slug:               result.Slug,
+		Description:        result.Description,
+		ShortDescription:   result.ShortDescription,
+		PriceCents:         result.PriceCents,
+		CategoryID:         result.CategoryID,
+		Sku:                result.Sku,
+		StockQuantity:      result.StockQuantity,
+		LowStockThreshold:  result.LowStockThreshold,
+		WeightGrams:        result.WeightGrams,
+		DimensionsLengthMm: result.DimensionsLengthMm,
+		DimensionsWidthMm:  result.DimensionsWidthMm,
+		DimensionsHeightMm: result.DimensionsHeightMm,
+		LeadTimeDays:       result.LeadTimeDays,
+		IsActive:           result.IsActive,
+		IsFeatured:         result.IsFeatured,
+		CreatedAt:          result.CreatedAt,
+		UpdatedAt:          result.UpdatedAt,
+		ShippingCategory:   result.ShippingCategory,
+		IsPremium:          result.IsPremium,
+		IsNew:              result.IsNew,
+		SeoTitle:           result.SeoTitle,
+		SeoDescription:     result.SeoDescription,
+		SeoKeywords:        result.SeoKeywords,
+		OgImageUrl:         result.OgImageUrl,
+		Disclaimer:         result.Disclaimer,
+	}
+
+	// Extract image URL
+	imageURL := ""
+	if result.PrimaryImageUrl.Valid && result.PrimaryImageUrl.String != "" {
+		imageURL = "/public/images/products/" + result.PrimaryImageUrl.String
+	}
+
+	productWithImage := &types.ProductWithImage{
+		Product:  product,
+		ImageURL: imageURL,
+	}
+
+	return Render(c, admin.ProductRowCollapsedEdit(c, productWithImage))
+}
+
+func (h *AdminHandler) HandleUpdateProductInlineMobile(c echo.Context) error {
+	productID := c.Param("id")
+
+	name := c.FormValue("name")
+	priceStr := c.FormValue("price")
+	stockStr := c.FormValue("stock_quantity")
+
+	price, err := strconv.ParseFloat(priceStr, 64)
+	if err != nil {
+		slog.Error("invalid price format", "error", err, "price", priceStr)
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Invalid price format", "type": "error"}}`)
+		return c.String(http.StatusBadRequest, "Invalid price format")
+	}
+
+	stockQuantity, err := strconv.ParseInt(stockStr, 10, 64)
+	if err != nil {
+		slog.Error("invalid stock format", "error", err, "stock", stockStr)
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Invalid stock format", "type": "error"}}`)
+		return c.String(http.StatusBadRequest, "Invalid stock format")
+	}
+
+	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+
+	params := db.UpdateProductInlineParams{
+		ID:            productID,
+		Name:          name,
+		Slug:          slug,
+		PriceCents:    int64(math.Round(price * 100)),
+		StockQuantity: sql.NullInt64{Int64: stockQuantity, Valid: true},
+	}
+
+	product, err := h.storage.Queries.UpdateProductInline(c.Request().Context(), params)
+	if err != nil {
+		slog.Error("failed to update product inline mobile", "error", err, "product_id", productID)
+		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Failed to update product", "type": "error"}}`)
+		return c.String(http.StatusInternalServerError, "Failed to update product")
+	}
+
+	// Fetch primary image
+	imageURL := ""
+	if image, err := h.storage.Queries.GetPrimaryProductImage(c.Request().Context(), productID); err == nil {
+		imageURL = "/public/images/products/" + image.ImageUrl
+	}
+
+	productWithImage := &types.ProductWithImage{
+		Product:  product,
+		ImageURL: imageURL,
+	}
+
+	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Product updated successfully!", "type": "success"}}`)
+	return Render(c, admin.ProductRowCollapsed(c, productWithImage))
 }
 
 // Category Management Functions

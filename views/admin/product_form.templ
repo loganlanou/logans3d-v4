@@ -57,14 +57,21 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 			hx-disabled-elt="#submit-btn"
 		>
 			<div class="space-y-6">
-				<!-- Basic Information Section -->
-				@card.Card() {
-					@card.Header() {
-						@card.Title() {
-							Basic Information
+				<!-- Basic Information Section - Mobile Collapsible -->
+				<div x-data="{ expanded: true }">
+					@card.Card() {
+						@card.Header() {
+							<div class="flex items-center justify-between w-full" @click="expanded = !expanded">
+								@card.Title() {
+									Basic Information
+								}
+								<svg :class="{ 'rotate-180': expanded }" class="w-5 h-5 text-slate-400 transition-transform md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+								</svg>
+							</div>
 						}
-					}
-					@card.Content() {
+						<div x-show="expanded" x-transition class="md:block">
+							@card.Content() {
 						<div class="space-y-4">
 							<!-- Name -->
 							<div>
@@ -81,8 +88,8 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									placeholder="Enter product name"
 								/>
 							</div>
-							<!-- Description -->
-							<div>
+							<!-- Description - Hidden on mobile -->
+							<div class="hidden md:block">
 								<label for="description" class="block text-sm font-medium text-slate-200 mb-2">
 									Description
 								</label>
@@ -94,8 +101,8 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									placeholder="Detailed product description"
 								>{ productDescription(product) }</textarea>
 							</div>
-							<!-- Short Description -->
-							<div>
+							<!-- Short Description - Hidden on mobile -->
+							<div class="hidden md:block">
 								<label for="short_description" class="block text-sm font-medium text-slate-200 mb-2">
 									Short Description
 								</label>
@@ -108,8 +115,8 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									placeholder="Brief product description"
 								/>
 							</div>
-							<!-- Disclaimer/Warning -->
-							<div>
+							<!-- Disclaimer/Warning - Hidden on mobile -->
+							<div class="hidden md:block">
 								<label for="disclaimer" class="block text-sm font-medium text-amber-400 mb-2">
 									⚠️ Safety Warning / Disclaimer
 								</label>
@@ -147,8 +154,10 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 							</div>
 						</div>
 					}
-				}
-				<!-- Pricing & Inventory Section -->
+				</div>
+			}
+			</div>
+			<!-- Pricing & Inventory Section -->
 				@card.Card() {
 					@card.Header() {
 						@card.Title() {
@@ -252,111 +261,113 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 						</div>
 					}
 				}
-				<!-- SEO Section -->
-				@card.Card() {
-					@card.Header() {
-						@card.Title() {
-							Search Engine Optimization
+				<!-- SEO Section - Hidden on mobile -->
+				<div class="hidden md:block">
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								Search Engine Optimization
+							}
+							@card.Description() {
+								Customize how this product appears in search results and social media. Leave blank to use defaults.
+							}
 						}
-						@card.Description() {
-							Customize how this product appears in search results and social media. Leave blank to use defaults.
-						}
-					}
-					@card.Content() {
-						<div class="space-y-4">
-							<!-- SEO Title -->
-							<div>
-								<label for="seo_title" class="block text-sm font-medium text-slate-200 mb-2">
-									SEO Title
-									<span class="text-slate-400 text-xs ml-2">(50-60 characters recommended)</span>
-								</label>
-								<input
-									type="text"
-									id="seo_title"
-									name="seo_title"
-									maxlength="70"
-									value={ productSeoTitle(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-									placeholder={ productName(product) }
-									oninput="updateSeoPreview()"
-								/>
-								<p class="text-xs text-slate-400 mt-1">
-									<span id="seo-title-count">0</span> / 70 characters
-								</p>
-							</div>
-							<!-- SEO Description -->
-							<div>
-								<label for="seo_description" class="block text-sm font-medium text-slate-200 mb-2">
-									SEO Description
-									<span class="text-slate-400 text-xs ml-2">(155-160 characters recommended)</span>
-								</label>
-								<textarea
-									id="seo_description"
-									name="seo_description"
-									rows="3"
-									maxlength="200"
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
-									placeholder={ productDescription(product) }
-									oninput="updateSeoPreview()"
-								>{ productSeoDescription(product) }</textarea>
-								<p class="text-xs text-slate-400 mt-1">
-									<span id="seo-desc-count">0</span> / 200 characters
-								</p>
-							</div>
-							<!-- SEO Keywords -->
-							<div>
-								<label for="seo_keywords" class="block text-sm font-medium text-slate-200 mb-2">
-									SEO Keywords
-									<span class="text-slate-400 text-xs ml-2">(comma-separated)</span>
-								</label>
-								<input
-									type="text"
-									id="seo_keywords"
-									name="seo_keywords"
-									value={ productSeoKeywords(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-									placeholder="3D printed, collectible, custom printing"
-								/>
-								<p class="text-xs text-slate-400 mt-1">
-									Separate keywords with commas
-								</p>
-							</div>
-							<!-- Custom OG Image URL -->
-							<div>
-								<label for="og_image_url" class="block text-sm font-medium text-slate-200 mb-2">
-									Custom Social Share Image URL
-									<span class="text-slate-400 text-xs ml-2">(optional)</span>
-								</label>
-								<input
-									type="text"
-									id="og_image_url"
-									name="og_image_url"
-									value={ productOgImageUrl(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-									placeholder="/public/images/products/custom-image.jpg"
-								/>
-								<p class="text-xs text-slate-400 mt-1">
-									Leave blank to use primary product image
-								</p>
-							</div>
-							<!-- Search Preview -->
-							<div class="p-4 border border-slate-600 rounded-lg bg-slate-900/30">
-								<p class="text-xs text-slate-400 mb-2">Search Result Preview:</p>
+						@card.Content() {
+							<div class="space-y-4">
+								<!-- SEO Title -->
 								<div>
-									<div class="text-blue-400 text-lg hover:underline cursor-pointer" id="preview-title">
-										{ getPreviewTitle(product) }
-									</div>
-									<div class="text-emerald-500 text-xs mt-1">
-										www.logans3dcreations.com › shop › product › { productSlug(product) }
-									</div>
-									<div class="text-slate-300 text-sm mt-1" id="preview-desc">
-										{ getPreviewDescription(product) }
+									<label for="seo_title" class="block text-sm font-medium text-slate-200 mb-2">
+										SEO Title
+										<span class="text-slate-400 text-xs ml-2">(50-60 characters recommended)</span>
+									</label>
+									<input
+										type="text"
+										id="seo_title"
+										name="seo_title"
+										maxlength="70"
+										value={ productSeoTitle(product) }
+										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+										placeholder={ productName(product) }
+										oninput="updateSeoPreview()"
+									/>
+									<p class="text-xs text-slate-400 mt-1">
+										<span id="seo-title-count">0</span> / 70 characters
+									</p>
+								</div>
+								<!-- SEO Description -->
+								<div>
+									<label for="seo_description" class="block text-sm font-medium text-slate-200 mb-2">
+										SEO Description
+										<span class="text-slate-400 text-xs ml-2">(155-160 characters recommended)</span>
+									</label>
+									<textarea
+										id="seo_description"
+										name="seo_description"
+										rows="3"
+										maxlength="200"
+										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
+										placeholder={ productDescription(product) }
+										oninput="updateSeoPreview()"
+									>{ productSeoDescription(product) }</textarea>
+									<p class="text-xs text-slate-400 mt-1">
+										<span id="seo-desc-count">0</span> / 200 characters
+									</p>
+								</div>
+								<!-- SEO Keywords -->
+								<div>
+									<label for="seo_keywords" class="block text-sm font-medium text-slate-200 mb-2">
+										SEO Keywords
+										<span class="text-slate-400 text-xs ml-2">(comma-separated)</span>
+									</label>
+									<input
+										type="text"
+										id="seo_keywords"
+										name="seo_keywords"
+										value={ productSeoKeywords(product) }
+										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+										placeholder="3D printed, collectible, custom printing"
+									/>
+									<p class="text-xs text-slate-400 mt-1">
+										Separate keywords with commas
+									</p>
+								</div>
+								<!-- Custom OG Image URL -->
+								<div>
+									<label for="og_image_url" class="block text-sm font-medium text-slate-200 mb-2">
+										Custom Social Share Image URL
+										<span class="text-slate-400 text-xs ml-2">(optional)</span>
+									</label>
+									<input
+										type="text"
+										id="og_image_url"
+										name="og_image_url"
+										value={ productOgImageUrl(product) }
+										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+										placeholder="/public/images/products/custom-image.jpg"
+									/>
+									<p class="text-xs text-slate-400 mt-1">
+										Leave blank to use primary product image
+									</p>
+								</div>
+								<!-- Search Preview -->
+								<div class="p-4 border border-slate-600 rounded-lg bg-slate-900/30">
+									<p class="text-xs text-slate-400 mb-2">Search Result Preview:</p>
+									<div>
+										<div class="text-blue-400 text-lg hover:underline cursor-pointer" id="preview-title">
+											{ getPreviewTitle(product) }
+										</div>
+										<div class="text-emerald-500 text-xs mt-1">
+											www.logans3dcreations.com › shop › product › { productSlug(product) }
+										</div>
+										<div class="text-slate-300 text-sm mt-1" id="preview-desc">
+											{ getPreviewDescription(product) }
+										</div>
 									</div>
 								</div>
 							</div>
-						</div>
-					}
+						}
 				}
+			</div>
 				<!-- Status Options Section -->
 				@card.Card() {
 					@card.Header() {

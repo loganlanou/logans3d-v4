@@ -235,6 +235,12 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.DELETE("/product/image/:imageId/delete", adminHandler.HandleDeleteProductImage)
 	admin.PUT("/product/image/:imageId/set-primary", adminHandler.HandleSetPrimaryProductImage)
 	admin.GET("/product/search", adminHandler.HandleProductSearch)
+	admin.GET("/product/:id/row", adminHandler.HandleGetProductRow)
+	admin.GET("/product/:id/edit-row", adminHandler.HandleGetProductEditRow)
+	admin.PUT("/product/:id/inline", adminHandler.HandleUpdateProductInline)
+	admin.GET("/product/:id/row-mobile", adminHandler.HandleGetProductRowMobile)
+	admin.GET("/product/:id/edit-row-mobile", adminHandler.HandleGetProductEditRowMobile)
+	admin.PUT("/product/:id/inline-mobile", adminHandler.HandleUpdateProductInlineMobile)
 
 	// Category management routes
 	admin.GET("/category/new", adminHandler.HandleCategoryForm)

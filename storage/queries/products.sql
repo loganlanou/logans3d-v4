@@ -1,6 +1,14 @@
 -- name: GetProduct :one
 SELECT * FROM products WHERE id = ?;
 
+-- name: GetProductWithImage :one
+SELECT
+    p.*,
+    pi.image_url as primary_image_url
+FROM products p
+LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = TRUE
+WHERE p.id = ?;
+
 -- name: GetProductBySlug :one
 SELECT * FROM products WHERE slug = ? AND is_active = TRUE;
 
@@ -156,3 +164,10 @@ SELECT * FROM products
 WHERE category_id = ? AND id != ? AND is_active = TRUE
 ORDER BY RANDOM()
 LIMIT ?;
+
+-- name: UpdateProductInline :one
+UPDATE products
+SET name = ?, slug = ?, price_cents = ?, stock_quantity = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING *;
