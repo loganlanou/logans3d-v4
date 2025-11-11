@@ -67,12 +67,12 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 						<!-- Status Indicator -->
 						<div id="stream-status" class="flex items-center space-x-2">
 							<div id="status-dot" class="w-2 h-2 bg-gray-500 rounded-full"></div>
-							<span id="status-text" class="text-sm text-slate-400">Disconnected</span>
+							<span id="status-text" class="text-sm text-muted-foreground">Disconnected</span>
 						</div>
 					</div>
 
 					<div class="flex items-center space-x-4">
-						<span id="log-count" class="text-sm text-slate-400">0 lines</span>
+						<span id="log-count" class="text-sm text-muted-foreground">0 lines</span>
 					</div>
 				</div>
 			</div>
@@ -87,7 +87,7 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 				</div>
 				<div class="p-4">
 					<div id="log-viewer" class="bg-slate-950 rounded-lg p-4 font-mono text-xs overflow-y-auto max-h-[600px] space-y-1">
-						<div class="text-slate-500 italic">Click "Start Live" to begin streaming logs, or "Load Last 100" to view recent logs...</div>
+						<div class="text-muted-foreground italic">Click "Start Live" to begin streaming logs, or "Load Last 100" to view recent logs...</div>
 					</div>
 				</div>
 			</div>
@@ -134,24 +134,24 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 				}
 
 				const div = document.createElement('div');
-				div.className = 'flex items-start space-x-2 text-slate-300 hover:bg-slate-900 px-2 py-1 rounded';
+				div.className = 'flex items-start space-x-2 text-muted-foreground hover:bg-background px-2 py-1 rounded';
 
 				// Determine log level and color
-				let levelClass = 'text-slate-400';
-				let levelBg = 'bg-slate-800';
+				let levelClass = 'text-muted-foreground';
+				let levelBg = 'bg-card';
 
 				if (line.includes('[INF]') || line.includes('INFO')) {
 					levelClass = 'text-blue-400';
-					levelBg = 'bg-blue-900/30';
+					levelBg = 'bg-blue-100 dark:bg-blue-900/30';
 				} else if (line.includes('[DBG]') || line.includes('DEBUG')) {
 					levelClass = 'text-purple-400';
-					levelBg = 'bg-purple-900/30';
+					levelBg = 'bg-purple-100 dark:bg-purple-900/30';
 				} else if (line.includes('[WRN]') || line.includes('WARN')) {
 					levelClass = 'text-yellow-400';
-					levelBg = 'bg-yellow-900/30';
+					levelBg = 'bg-yellow-100 dark:bg-yellow-900/30';
 				} else if (line.includes('[ERR]') || line.includes('ERROR')) {
 					levelClass = 'text-red-400';
-					levelBg = 'bg-red-900/30';
+					levelBg = 'bg-red-100 dark:bg-red-900/30';
 				}
 
 				div.className += ` ${levelBg}`;
@@ -180,7 +180,7 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 				} else {
 					statusDot.className = 'w-2 h-2 bg-gray-500 rounded-full';
 					statusText.textContent = 'Disconnected';
-					statusText.className = 'text-sm text-slate-400';
+					statusText.className = 'text-sm text-muted-foreground';
 				}
 			}
 
@@ -242,7 +242,7 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 
 			// Clear logs
 			clearBtn.addEventListener('click', () => {
-				logViewer.innerHTML = '<div class="text-slate-500 italic">Logs cleared. Click "Start Live" to resume streaming...</div>';
+				logViewer.innerHTML = '<div class="text-muted-foreground italic">Logs cleared. Click "Start Live" to resume streaming...</div>';
 				logCount = 0;
 				updateLogCount();
 			});
@@ -266,11 +266,11 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 						updateLogCount();
 						scrollToBottom();
 					} else {
-						logViewer.innerHTML = '<div class="text-slate-500 italic">No logs found.</div>';
+						logViewer.innerHTML = '<div class="text-muted-foreground italic">No logs found.</div>';
 					}
 				} catch (error) {
 					console.error('Error loading logs:', error);
-					logViewer.innerHTML = '<div class="text-red-400">Error loading logs: ' + error.message + '</div>';
+					logViewer.innerHTML = '<div class="text-red-600 dark:text-red-400">Error loading logs: ' + error.message + '</div>';
 				}
 			});
 

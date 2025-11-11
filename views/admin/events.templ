@@ -72,7 +72,7 @@ templ EventsList(c echo.Context, events []db.Event) {
 					<tbody>
 						if len(events) == 0 {
 							<tr>
-								<td colspan="6" class="text-center admin-text-muted py-8">
+								<td colspan="6" class="text-center admin-text-muted-foreground py-8">
 									No events found
 								</td>
 							</tr>
@@ -82,7 +82,7 @@ templ EventsList(c echo.Context, events []db.Event) {
 								<td>
 									<div class="admin-text-primary admin-font-medium">{ event.Title }</div>
 									if event.Description.Valid {
-										<div class="admin-text-muted admin-text-sm max-w-xs truncate" title={ event.Description.String }>
+										<div class="admin-text-muted-foreground admin-text-sm max-w-xs truncate" title={ event.Description.String }>
 											{ event.Description.String }
 										</div>
 									}
@@ -92,7 +92,7 @@ templ EventsList(c echo.Context, events []db.Event) {
 										<div class="admin-text-primary admin-text-sm">{ event.Location.String }</div>
 									}
 									if event.Address.Valid {
-										<div class="admin-text-muted admin-text-xs">{ event.Address.String }</div>
+										<div class="admin-text-muted-foreground admin-text-xs">{ event.Address.String }</div>
 									}
 								</td>
 								<td>
@@ -174,7 +174,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 						
 					<!-- Title -->
 					<div>
-						<label for="title" class="admin-text-sm admin-font-medium">Title <span class="text-red-400">*</span></label>
+						<label for="title" class="admin-text-sm admin-font-medium">Title <span class="text-red-600 dark:text-red-400">*</span></label>
 						<input
 							type="text"
 							id="title"
@@ -183,7 +183,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 							if event != nil {
 								value={ event.Title }
 							}
-							class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+							class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							placeholder="Enter event title"
 						/>
 					</div>
@@ -195,7 +195,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 							id="description"
 							name="description"
 							rows="4"
-							class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+							class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							placeholder="Event description"
 						>{ getEventDescription(event) }</textarea>
 					</div>
@@ -211,7 +211,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 								if event != nil && event.Location.Valid {
 									value={ event.Location.String }
 								}
-								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+								class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 								placeholder="Event location name"
 							/>
 						</div>
@@ -225,7 +225,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 								if event != nil && event.Url.Valid {
 									value={ event.Url.String }
 								}
-								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+								class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 								placeholder="https://example.com"
 							/>
 						</div>
@@ -241,7 +241,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 							if event != nil && event.Address.Valid {
 								value={ event.Address.String }
 							}
-							class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+							class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							placeholder="Full address"
 						/>
 					</div>
@@ -249,7 +249,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 					<!-- Date & Time -->
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
-							<label for="start_date" class="admin-text-sm admin-font-medium">Start Date & Time <span class="text-red-400">*</span></label>
+							<label for="start_date" class="admin-text-sm admin-font-medium">Start Date & Time <span class="text-red-600 dark:text-red-400">*</span></label>
 							<input
 								type="datetime-local"
 								id="start_date"
@@ -258,7 +258,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 								if event != nil {
 									value={ formatEventFormDateTime(event.StartDate) }
 								}
-								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+								class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							/>
 						</div>
 
@@ -271,7 +271,7 @@ templ EventForm(c echo.Context, event *db.Event) {
 								if event != nil && event.EndDate.Valid {
 									value={ formatEventFormDateTime(event.EndDate.Time) }
 								}
-								class="w-full px-3 py-2 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+								class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							/>
 						</div>
 					</div>
@@ -285,16 +285,16 @@ templ EventForm(c echo.Context, event *db.Event) {
 								if event == nil || (event.IsActive.Valid && event.IsActive.Bool) {
 									checked
 								}
-								class="w-4 h-4 text-emerald-600 bg-slate-900 border-slate-600 rounded focus:ring-emerald-500 focus:ring-2"
+								class="w-4 h-4 text-emerald-600 bg-background border-border rounded focus:ring-emerald-500 focus:ring-2"
 							/>
 							<span class="ml-2 admin-text-sm admin-font-medium">Active Event</span>
 						</label>
-						<p class="mt-1 admin-text-xs admin-text-muted">Only active events will be displayed on the website</p>
+						<p class="mt-1 admin-text-xs admin-text-muted-foreground">Only active events will be displayed on the website</p>
 					</div>
 				</div>
 
 				<!-- Form Actions -->
-				<div class="flex justify-end space-x-4 pt-6 border-t border-slate-700">
+				<div class="flex justify-end space-x-4 pt-6 border-t border-border">
 					<a href="/admin/events" class="admin-btn admin-btn-secondary">Cancel</a>
 					<button type="submit" class="admin-btn admin-btn-primary">
 						if event != nil {

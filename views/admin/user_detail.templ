@@ -77,7 +77,7 @@ templ UserDetail(
 	@layout.AdminBase(c, user.FullName) {
 		<!-- Back Button -->
 		<div class="mb-6">
-			<a href="/admin/users" class="text-blue-400 hover:text-blue-300 flex items-center gap-2">
+			<a href="/admin/users" class="text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-2">
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
 				</svg>
@@ -101,7 +101,7 @@ templ UserDetail(
 				}
 				<div>
 					<div class="flex items-center gap-2">
-						<h1 class="text-2xl font-bold text-white">{ user.FullName }</h1>
+						<h1 class="text-2xl font-bold text-foreground">{ user.FullName }</h1>
 						if user.IsAdmin {
 							@badge.Badge(badge.Props{
 								Variant: badge.VariantSecondary,
@@ -111,12 +111,12 @@ templ UserDetail(
 						}
 					</div>
 					if user.Username != "" {
-						<p class="text-sm text-gray-400 mt-1">{ "@" + user.Username }</p>
+						<p class="text-sm text-muted-foreground mt-1">{ "@" + user.Username }</p>
 					}
 					<div class="flex items-center gap-2 mt-2">
 						@renderUserDetailBadges(user)
 					</div>
-					<p class="text-sm text-gray-500 mt-1">User ID: { user.ID[:16] }...</p>
+					<p class="text-sm text-muted-foreground mt-1">User ID: { user.ID[:16] }...</p>
 				</div>
 			</div>
 		</div>
@@ -135,10 +135,10 @@ templ UserDetail(
 						<div class="space-y-4">
 							<!-- Email -->
 							<div>
-								<div class="text-sm text-gray-400 mb-1">Email</div>
+								<div class="text-sm text-muted-foreground mb-1">Email</div>
 								<a
 									href={ templ.URL("mailto:" + user.Email) }
-									class="text-blue-400 hover:text-blue-300"
+									class="text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
 								>
 									{ user.Email }
 								</a>
@@ -146,25 +146,25 @@ templ UserDetail(
 
 							<!-- Clerk ID -->
 							if user.ClerkID != "" {
-								<div class="pt-3 border-t border-gray-700">
-									<div class="text-sm text-gray-400 mb-1">Clerk ID</div>
-									<div class="text-xs font-mono text-gray-300">{ user.ClerkID }</div>
+								<div class="pt-3 border-t border-border dark:border-border">
+									<div class="text-sm text-muted-foreground mb-1">Clerk ID</div>
+									<div class="text-xs font-mono text-foreground">{ user.ClerkID }</div>
 								</div>
 							}
 
 							<!-- Registration Date -->
-							<div class="pt-3 border-t border-gray-700">
-								<div class="text-sm text-gray-400 mb-1">Registered</div>
-								<div class="text-white">{ user.CreatedAt.Format("Jan 2, 2006") }</div>
-								<div class="text-xs text-gray-500">{ formatTimeAgoUser(user.CreatedAt) }</div>
+							<div class="pt-3 border-t border-border dark:border-border">
+								<div class="text-sm text-muted-foreground mb-1">Registered</div>
+								<div class="text-foreground">{ user.CreatedAt.Format("Jan 2, 2006") }</div>
+								<div class="text-xs text-muted-foreground">{ formatTimeAgoUser(user.CreatedAt) }</div>
 							</div>
 
 							<!-- Last Activity -->
 							if !user.LastSyncedAt.IsZero() {
-								<div class="pt-3 border-t border-gray-700">
-									<div class="text-sm text-gray-400 mb-1">Last Activity</div>
-									<div class="text-white">{ user.LastSyncedAt.Format("Jan 2, 2006") }</div>
-									<div class="text-xs text-gray-500">{ formatTimeAgoUser(user.LastSyncedAt) }</div>
+								<div class="pt-3 border-t border-border dark:border-border">
+									<div class="text-sm text-muted-foreground mb-1">Last Activity</div>
+									<div class="text-foreground">{ user.LastSyncedAt.Format("Jan 2, 2006") }</div>
+									<div class="text-xs text-muted-foreground">{ formatTimeAgoUser(user.LastSyncedAt) }</div>
 								</div>
 							}
 						</div>
@@ -182,23 +182,23 @@ templ UserDetail(
 						<div class="space-y-4">
 							<!-- Lifetime Spend -->
 							<div>
-								<div class="text-sm text-gray-400 mb-1">Lifetime Spend</div>
-								<div class="text-3xl font-bold text-white">{ formatUserCents(user.LifetimeSpendCents) }</div>
+								<div class="text-sm text-muted-foreground mb-1">Lifetime Spend</div>
+								<div class="text-3xl font-bold text-foreground">{ formatUserCents(user.LifetimeSpendCents) }</div>
 							</div>
 
 							<!-- Orders -->
-							<div class="pt-3 border-t border-gray-700">
+							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Orders</span>
-									<span class="text-xl font-bold text-white">{ fmt.Sprintf("%d", user.OrderCount) }</span>
+									<span class="text-sm text-muted-foreground">Orders</span>
+									<span class="text-xl font-bold text-foreground">{ fmt.Sprintf("%d", user.OrderCount) }</span>
 								</div>
 							</div>
 
 							<!-- Average Order Value -->
-							<div class="pt-3 border-t border-gray-700">
+							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Avg Order Value</span>
-									<span class="text-lg font-semibold text-white">
+									<span class="text-sm text-muted-foreground">Avg Order Value</span>
+									<span class="text-lg font-semibold text-foreground">
 										if user.OrderCount > 0 {
 											{ formatUserCents(user.LifetimeSpendCents / user.OrderCount) }
 										} else {
@@ -209,34 +209,34 @@ templ UserDetail(
 							</div>
 
 							<!-- Favorites -->
-							<div class="pt-3 border-t border-gray-700">
+							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Favorites</span>
-									<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.FavoritesCount) }</span>
+									<span class="text-sm text-muted-foreground">Favorites</span>
+									<span class="text-lg font-semibold text-foreground">{ fmt.Sprintf("%d", user.FavoritesCount) }</span>
 								</div>
 							</div>
 
 							<!-- Collections -->
-							<div class="pt-3 border-t border-gray-700">
+							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Collections</span>
-									<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.CollectionsCount) }</span>
+									<span class="text-sm text-muted-foreground">Collections</span>
+									<span class="text-lg font-semibold text-foreground">{ fmt.Sprintf("%d", user.CollectionsCount) }</span>
 								</div>
 							</div>
 
 							<!-- Active Carts -->
-							<div class="pt-3 border-t border-gray-700">
+							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Active Carts</span>
-									<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.ActiveCartsCount) }</span>
+									<span class="text-sm text-muted-foreground">Active Carts</span>
+									<span class="text-lg font-semibold text-foreground">{ fmt.Sprintf("%d", user.ActiveCartsCount) }</span>
 								</div>
 							</div>
 
 							<!-- Abandoned Carts -->
-							<div class="pt-3 border-t border-gray-700">
+							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Abandoned Carts</span>
-									<span class="text-lg font-semibold text-white">{ fmt.Sprintf("%d", user.AbandonedCartsCount) }</span>
+									<span class="text-sm text-muted-foreground">Abandoned Carts</span>
+									<span class="text-lg font-semibold text-foreground">{ fmt.Sprintf("%d", user.AbandonedCartsCount) }</span>
 								</div>
 							</div>
 						</div>
@@ -259,7 +259,7 @@ templ UserDetail(
 					@card.Content() {
 						if len(orders) == 0 {
 							<div class="text-center py-8">
-								<p class="text-gray-400">No orders yet</p>
+								<p class="text-muted-foreground">No orders yet</p>
 							</div>
 						} else {
 							@table.Table() {
@@ -274,22 +274,22 @@ templ UserDetail(
 								@table.Body() {
 									for _, order := range orders {
 										@table.Row(table.RowProps{
-											Class:   "cursor-pointer hover:bg-gray-750",
+											Class:   "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
 											Attributes: templ.Attributes{
 												"data-order-id": order.ID,
 											},
 										}) {
 											@table.Cell() {
-												<span class="font-mono text-sm text-blue-400">{ order.ID[:8] }</span>
+												<span class="font-mono text-sm text-blue-600 dark:text-blue-400">{ order.ID[:8] }</span>
 											}
 											@table.Cell() {
 												@renderOrderStatusBadge(order.Status)
 											}
 											@table.Cell() {
-												<span class="font-medium text-white">{ formatUserCents(order.TotalCents) }</span>
+												<span class="font-medium text-foreground">{ formatUserCents(order.TotalCents) }</span>
 											}
 											@table.Cell() {
-												<span class="text-gray-400">{ order.CreatedAt.Format("Jan 2, 2006") }</span>
+												<span class="text-muted-foreground">{ order.CreatedAt.Format("Jan 2, 2006") }</span>
 											}
 										}
 									}
@@ -314,7 +314,7 @@ templ UserDetail(
 							<div class="space-y-6">
 								if len(activeCarts) > 0 {
 									<div>
-										<h3 class="text-sm font-semibold text-gray-300 mb-3">Active Carts</h3>
+										<h3 class="text-sm font-semibold text-muted-foreground mb-3">Active Carts</h3>
 										@table.Table() {
 											@table.Header() {
 												@table.Row() {
@@ -327,22 +327,22 @@ templ UserDetail(
 											@table.Body() {
 												for _, cart := range activeCarts {
 													@table.Row(table.RowProps{
-														Class:   "cursor-pointer hover:bg-gray-750",
+														Class:   "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
 														Attributes: templ.Attributes{
 															"data-cart-session": cart.SessionID,
 														},
 													}) {
 														@table.Cell() {
-															<span class="font-mono text-xs text-gray-400">{ formatSessionID(cart.SessionID) }</span>
+															<span class="font-mono text-xs text-muted-foreground">{ formatSessionID(cart.SessionID) }</span>
 														}
 														@table.Cell() {
-															<span class="text-white">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+															<span class="text-foreground">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
 														}
 														@table.Cell() {
-															<span class="text-white">{ formatUserCents(cart.TotalCents) }</span>
+															<span class="text-foreground">{ formatUserCents(cart.TotalCents) }</span>
 														}
 														@table.Cell() {
-															<span class="text-gray-400">{ formatTimeAgoUser(cart.LastActivity) }</span>
+															<span class="text-muted-foreground">{ formatTimeAgoUser(cart.LastActivity) }</span>
 														}
 													}
 												}
@@ -352,7 +352,7 @@ templ UserDetail(
 								}
 								if len(abandonedCarts) > 0 {
 									<div>
-										<h3 class="text-sm font-semibold text-gray-300 mb-3">Abandoned Carts</h3>
+										<h3 class="text-sm font-semibold text-muted-foreground mb-3">Abandoned Carts</h3>
 										@table.Table() {
 											@table.Header() {
 												@table.Row() {
@@ -365,22 +365,22 @@ templ UserDetail(
 											@table.Body() {
 												for _, cart := range abandonedCarts {
 													@table.Row(table.RowProps{
-														Class:   "cursor-pointer hover:bg-gray-750",
+														Class:   "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
 														Attributes: templ.Attributes{
 															"data-cart-session": cart.SessionID,
 														},
 													}) {
 														@table.Cell() {
-															<span class="font-mono text-xs text-gray-400">{ formatSessionID(cart.SessionID) }</span>
+															<span class="font-mono text-xs text-muted-foreground">{ formatSessionID(cart.SessionID) }</span>
 														}
 														@table.Cell() {
-															<span class="text-white">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+															<span class="text-foreground">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
 														}
 														@table.Cell() {
-															<span class="text-white">{ formatUserCents(cart.TotalCents) }</span>
+															<span class="text-foreground">{ formatUserCents(cart.TotalCents) }</span>
 														}
 														@table.Cell() {
-															<span class="text-gray-400">{ cart.LastActivity.Format("Jan 2, 2006") }</span>
+															<span class="text-muted-foreground">{ cart.LastActivity.Format("Jan 2, 2006") }</span>
 														}
 													}
 												}
@@ -408,18 +408,18 @@ templ UserDetail(
 							<div class="space-y-6">
 								if len(favorites) > 0 {
 									<div>
-										<h3 class="text-sm font-semibold text-gray-300 mb-3">Recent Favorites ({ fmt.Sprintf("%d", len(favorites)) })</h3>
+										<h3 class="text-sm font-semibold text-muted-foreground mb-3">Recent Favorites ({ fmt.Sprintf("%d", len(favorites)) })</h3>
 										<div class="grid grid-cols-2 gap-4">
 											for _, fav := range favorites {
-												<a href={ templ.URL("/shop/" + fav.ProductSlug) } class="flex items-center gap-3 p-3 bg-gray-750 hover:bg-gray-700 rounded-lg transition-colors">
+												<a href={ templ.URL("/shop/" + fav.ProductSlug) } class="flex items-center gap-3 p-3 bg-muted hover:bg-muted/80 dark:bg-muted/50 dark:hover:bg-muted rounded-lg transition-colors">
 													if fav.ImageUrl != "" {
 														<img src={ "/public/images/products/" + fav.ImageUrl } alt={ fav.ProductName } class="w-12 h-12 object-cover rounded"/>
 													} else {
-														<div class="w-12 h-12 bg-gray-600 rounded flex items-center justify-center text-gray-400">📦</div>
+														<div class="w-12 h-12 bg-gray-600 rounded flex items-center justify-center text-muted-foreground">📦</div>
 													}
 													<div class="flex-1 min-w-0">
-														<div class="text-sm font-medium text-white truncate">{ fav.ProductName }</div>
-														<div class="text-xs text-gray-400">{ formatUserCents(fav.PriceCents) }</div>
+														<div class="text-sm font-medium text-foreground truncate">{ fav.ProductName }</div>
+														<div class="text-xs text-muted-foreground">{ formatUserCents(fav.PriceCents) }</div>
 													</div>
 												</a>
 											}
@@ -428,15 +428,15 @@ templ UserDetail(
 								}
 								if len(collections) > 0 {
 									<div>
-										<h3 class="text-sm font-semibold text-gray-300 mb-3">Collections ({ fmt.Sprintf("%d", len(collections)) })</h3>
+										<h3 class="text-sm font-semibold text-muted-foreground mb-3">Collections ({ fmt.Sprintf("%d", len(collections)) })</h3>
 										<div class="space-y-2">
 											for _, col := range collections {
-												<div class="p-3 bg-gray-750 rounded-lg">
+												<div class="p-3 bg-muted dark:bg-muted/50 rounded-lg">
 													<div class="flex items-center justify-between">
 														<div class="flex-1">
-															<div class="font-medium text-white">{ col.Name }</div>
+															<div class="font-medium text-foreground">{ col.Name }</div>
 															if col.Description != "" {
-																<div class="text-sm text-gray-400 mt-1">{ col.Description }</div>
+																<div class="text-sm text-muted-foreground mt-1">{ col.Description }</div>
 															}
 														</div>
 														if col.IsQuoteRequested {
@@ -622,7 +622,7 @@ templ renderUserDetailBadges(user UserDetailData) {
 	if isInactiveUserDetail(user) {
 		@badge.Badge(badge.Props{
 			Variant: badge.VariantSecondary,
-			Class:   "bg-gray-500/10 text-gray-400 border-gray-500/20",
+			Class:   "bg-gray-500/10 text-muted-foreground border-gray-500/20",
 		}) {
 			💤 Inactive
 		}

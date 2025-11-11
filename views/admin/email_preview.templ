@@ -11,7 +11,7 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 	@layout.AdminBase(c, "Email Preview") {
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-8">
-			<h1 class="text-2xl font-bold text-gray-100">Email Preview</h1>
+			<h1 class="text-2xl font-bold text-foreground">Email Preview</h1>
 		</div>
 
 		@card.Card() {
@@ -28,23 +28,23 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 				<div class="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
 					<!-- Dropdown Menu -->
 					<div class="flex-1 max-w-md">
-						<label for="templateSelect" class="block text-sm font-medium text-gray-300 mb-2">Select Email Template</label>
+						<label for="templateSelect" class="block text-sm font-medium text-muted-foreground mb-2">Select Email Template</label>
 						<select
 							id="templateSelect"
 							onchange="handleTemplateChange(this.value)"
-							class="w-full px-4 py-2 bg-gray-800 border border-gray-700 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+							class="w-full px-4 py-2 bg-card border border-border dark:border-border text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						>
-							<optgroup label="Orders" class="text-gray-100">
+							<optgroup label="Orders" class="text-foreground">
 								<option value="customer">Customer Order Confirmation</option>
 								<option value="admin">Admin Order Notification</option>
 							</optgroup>
-							<optgroup label="Support" class="text-gray-100">
+							<optgroup label="Support" class="text-foreground">
 								<option value="contact">Contact Request</option>
 							</optgroup>
-							<optgroup label="Marketing" class="text-gray-100">
+							<optgroup label="Marketing" class="text-foreground">
 								<option value="welcome-coupon">Welcome Coupon</option>
 							</optgroup>
-							<optgroup label="Abandoned Cart" class="text-gray-100">
+							<optgroup label="Abandoned Cart" class="text-foreground">
 								<option value="abandoned-1hr">1 Hour Reminder</option>
 								<option value="abandoned-24hr">24 Hour Follow-up</option>
 								<option value="abandoned-72hr">72 Hour Final Notice</option>
@@ -54,15 +54,15 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 					<!-- Promo Toggle (only for 24hr and 72hr emails) -->
 					<div id="promoToggleContainer" class="hidden">
-						<label class="flex items-center space-x-3 cursor-pointer bg-gray-800 px-4 py-2 rounded-md border border-gray-700">
+						<label class="flex items-center space-x-3 cursor-pointer bg-card px-4 py-2 rounded-md border border-border dark:border-border">
 							<input
 								type="checkbox"
 								id="promoToggle"
 								checked?={ withPromo }
 								onchange="handlePromoToggle(this.checked)"
-								class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+								class="w-4 h-4 text-blue-600 bg-secondary border-border dark:border-border rounded focus:ring-blue-500 focus:ring-2"
 							/>
-							<span class="text-sm font-medium text-gray-300">Show with promo code</span>
+							<span class="text-sm font-medium text-foreground">Show with promo code</span>
 						</label>
 					</div>
 
@@ -70,7 +70,7 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 					<div>
 						@button.Button(button.Props{
 							Variant: button.VariantDefault,
-							Class:   "bg-green-600 hover:bg-green-700 text-white",
+							Class:   "bg-green-600 hover:bg-green-700 text-foreground",
 							Attributes: templ.Attributes{
 							"onclick": "showTestEmailDialog()",
 						},
@@ -84,14 +84,14 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 				</div>
 
 				<!-- Email Preview Frames -->
-				<div class="border border-gray-700 rounded-lg overflow-hidden bg-gray-900">
+				<div class="border border-border dark:border-border rounded-lg overflow-hidden bg-background">
 					<!-- Customer Order Email -->
 					<div id="email-customer" class="email-preview">
-						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-							<div class="text-sm text-gray-300">
-								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">Subject:</strong> Order Confirmation - Order #SAMPLE-12345</div>
+						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
+							<div class="text-sm text-foreground">
+								<div><strong class="text-foreground">To:</strong> customer@example.com</div>
+								<div><strong class="text-foreground">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">Subject:</strong> Order Confirmation - Order #SAMPLE-12345</div>
 							</div>
 						</div>
 						<iframe
@@ -104,11 +104,11 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 					<!-- Admin Order Email -->
 					<div id="email-admin" class="email-preview hidden">
-						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-							<div class="text-sm text-gray-300">
-								<div><strong class="text-gray-100">To:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">Subject:</strong> New Order Received - Order #SAMPLE-12345</div>
+						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
+							<div class="text-sm text-foreground">
+								<div><strong class="text-foreground">To:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">Subject:</strong> New Order Received - Order #SAMPLE-12345</div>
 							</div>
 						</div>
 						<iframe
@@ -121,12 +121,12 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 					<!-- Contact Request Email -->
 					<div id="email-contact" class="email-preview hidden">
-						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-							<div class="text-sm text-gray-300">
-								<div><strong class="text-gray-100">To:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">Reply-To:</strong> customer@example.com</div>
-								<div><strong class="text-gray-100">Subject:</strong> New Contact Request - General Inquiry</div>
+						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
+							<div class="text-sm text-foreground">
+								<div><strong class="text-foreground">To:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">Reply-To:</strong> customer@example.com</div>
+								<div><strong class="text-foreground">Subject:</strong> New Contact Request - General Inquiry</div>
 							</div>
 						</div>
 						<iframe
@@ -139,11 +139,11 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 					<!-- Abandoned Cart (1hr) Email -->
 					<div id="email-abandoned-1hr" class="email-preview hidden">
-						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-							<div class="text-sm text-gray-300">
-								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">Subject:</strong> You left something in your cart!</div>
+						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
+							<div class="text-sm text-foreground">
+								<div><strong class="text-foreground">To:</strong> customer@example.com</div>
+								<div><strong class="text-foreground">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">Subject:</strong> You left something in your cart!</div>
 							</div>
 						</div>
 						<iframe
@@ -156,11 +156,11 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 					<!-- Abandoned Cart (24hr) Email -->
 					<div id="email-abandoned-24hr" class="email-preview hidden">
-						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-							<div class="text-sm text-gray-300">
-								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">Subject:</strong> Still interested in your cart?</div>
+						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
+							<div class="text-sm text-foreground">
+								<div><strong class="text-foreground">To:</strong> customer@example.com</div>
+								<div><strong class="text-foreground">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">Subject:</strong> Still interested in your cart?</div>
 							</div>
 						</div>
 						<iframe
@@ -173,11 +173,11 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 					<!-- Abandoned Cart (72hr) Email -->
 					<div id="email-abandoned-72hr" class="email-preview hidden">
-						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-							<div class="text-sm text-gray-300">
-								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">Subject:</strong> Last chance to complete your order!</div>
+						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
+							<div class="text-sm text-foreground">
+								<div><strong class="text-foreground">To:</strong> customer@example.com</div>
+								<div><strong class="text-foreground">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">Subject:</strong> Last chance to complete your order!</div>
 							</div>
 						</div>
 						<iframe
@@ -190,11 +190,11 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 					<!-- Welcome Coupon Email -->
 					<div id="email-welcome-coupon" class="email-preview hidden">
-						<div class="bg-gray-800 px-4 py-3 border-b border-gray-700">
-							<div class="text-sm text-gray-300">
-								<div><strong class="text-gray-100">To:</strong> customer@example.com</div>
-								<div><strong class="text-gray-100">From:</strong> prints@logans3dcreations.com</div>
-								<div><strong class="text-gray-100">Subject:</strong> Welcome! Here's your exclusive discount</div>
+						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
+							<div class="text-sm text-foreground">
+								<div><strong class="text-foreground">To:</strong> customer@example.com</div>
+								<div><strong class="text-foreground">From:</strong> prints@logans3dcreations.com</div>
+								<div><strong class="text-foreground">Subject:</strong> Welcome! Here's your exclusive discount</div>
 							</div>
 						</div>
 						<iframe
@@ -210,30 +210,30 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 
 		<!-- Test Email Modal -->
 		<div id="testEmailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-			<div class="bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 border border-gray-700">
+			<div class="bg-card rounded-lg shadow-xl max-w-md w-full mx-4 border border-border dark:border-border">
 				<div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-lg">
-					<h3 class="text-xl font-bold text-white">Send Test Email</h3>
+					<h3 class="text-xl font-bold text-foreground">Send Test Email</h3>
 				</div>
 				<div class="p-6">
-					<p class="text-sm text-gray-300 mb-4">Enter an email address to send a test email to:</p>
+					<p class="text-sm text-muted-foreground mb-4">Enter an email address to send a test email to:</p>
 
 					<div class="space-y-4">
 						<div>
-							<label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+							<label class="block text-sm font-medium text-muted-foreground mb-2">Email Address</label>
 							<input
 								type="email"
 								id="testEmailInput"
-								class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 bg-secondary border border-border dark:border-border text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 								placeholder="example@email.com"
 								value="prints@logans3dcreations.com"
 							/>
 						</div>
 
 						<div>
-							<label class="block text-sm font-medium text-gray-300 mb-2">Email Type</label>
+							<label class="block text-sm font-medium text-muted-foreground mb-2">Email Type</label>
 							<select
 								id="testEmailType"
-								class="w-full px-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								class="w-full px-3 py-2 bg-secondary border border-border dark:border-border text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 							>
 								<option value="customer">Customer Order Confirmation</option>
 								<option value="admin">Admin Order Notification</option>
@@ -253,7 +253,7 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 					<div class="flex justify-end space-x-3 mt-6">
 						<button
 							onclick="closeTestEmailDialog()"
-							class="px-4 py-2 bg-gray-700 text-gray-200 rounded-md hover:bg-gray-600 transition"
+							class="px-4 py-2 bg-secondary text-foreground rounded-md hover:bg-gray-600 transition"
 						>
 							Cancel
 						</button>

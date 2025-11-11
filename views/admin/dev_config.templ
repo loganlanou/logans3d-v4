@@ -22,7 +22,7 @@ templ DevConfig(c echo.Context, sysInfo types.SystemInfo) {
 				</h2>
 			</div>
 			<div class="p-4">
-				<pre class="bg-slate-900 p-4 rounded-lg overflow-x-auto"><code class="text-sm text-slate-300 font-mono">DB_PATH={ sysInfo.DBPath }
+				<pre class="bg-background p-4 rounded-lg overflow-x-auto"><code class="text-sm text-muted-foreground font-mono">DB_PATH={ sysInfo.DBPath }
 PORT={ sysInfo.Port }
 ENVIRONMENT={ sysInfo.Environment }
 GO_VERSION={ sysInfo.GoVersion }
@@ -66,7 +66,7 @@ VERSION={ sysInfo.Version }</code></pre>
 						</tr>
 						<tr>
 							<td class="admin-font-semibold">Database Path</td>
-							<td><code class="px-2 py-1 bg-slate-900 rounded text-sm">{ sysInfo.DBPath }</code></td>
+							<td><code class="px-2 py-1 bg-background rounded text-sm">{ sysInfo.DBPath }</code></td>
 						</tr>
 						<tr>
 							<td class="admin-font-semibold">Process ID</td>
@@ -84,11 +84,11 @@ VERSION={ sysInfo.Version }</code></pre>
 					<span class="text-xl mr-2">💡</span>
 					Environment Configuration
 				</h3>
-				<p class="admin-text-muted text-sm mb-3">
-					Environment variables are loaded from <code class="px-2 py-1 bg-slate-800 rounded">.envrc</code> using direnv.
+				<p class="admin-text-muted-foreground text-sm mb-3">
+					Environment variables are loaded from <code class="px-2 py-1 bg-card rounded">.envrc</code> using direnv.
 				</p>
-				<p class="admin-text-muted text-sm">
-					After making changes to <code class="px-2 py-1 bg-slate-800 rounded">.envrc</code>, run <code class="px-2 py-1 bg-slate-800 rounded">direnv allow</code> to activate them.
+				<p class="admin-text-muted-foreground text-sm">
+					After making changes to <code class="px-2 py-1 bg-card rounded">.envrc</code>, run <code class="px-2 py-1 bg-card rounded">direnv allow</code> to activate them.
 				</p>
 			</div>
 
@@ -97,11 +97,11 @@ VERSION={ sysInfo.Version }</code></pre>
 					<span class="text-xl mr-2">📝</span>
 					Development Mode
 				</h3>
-				<p class="admin-text-muted text-sm mb-3">
+				<p class="admin-text-muted-foreground text-sm mb-3">
 					The development server runs with hot-reloading via Air, automatically rebuilding on file changes.
 				</p>
-				<p class="admin-text-muted text-sm">
-					Logs are available in <code class="px-2 py-1 bg-slate-800 rounded">./tmp/air-combined.log</code>
+				<p class="admin-text-muted-foreground text-sm">
+					Logs are available in <code class="px-2 py-1 bg-card rounded">./tmp/air-combined.log</code>
 				</p>
 			</div>
 		</div>

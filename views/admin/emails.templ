@@ -15,10 +15,10 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6">
 			<div>
-				<h1 class="text-2xl font-bold text-gray-900">Email History</h1>
-				<p class="text-gray-600 mt-1">All emails sent by the system</p>
+				<h1 class="text-2xl font-bold text-foreground">Email History</h1>
+				<p class="text-muted-foreground mt-1">All emails sent by the system</p>
 			</div>
-			<div class="text-sm text-gray-600">
+			<div class="text-sm text-muted-foreground">
 				Total: { fmt.Sprintf("%d", totalCount) } emails
 			</div>
 		</div>
@@ -32,7 +32,7 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 			}
 			@card.Content() {
 				if len(emails) == 0 {
-					<div class="text-center py-12 text-gray-500">
+					<div class="text-center py-12 text-muted-foreground">
 						<p>No emails sent yet</p>
 					</div>
 				} else {
@@ -50,20 +50,20 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 							for _, email := range emails {
 								@table.Row() {
 									@table.Cell() {
-										<span class="text-sm text-gray-900">
+										<span class="text-sm text-foreground">
 											if email.SentAt.Valid {
 												{ email.SentAt.Time.Format("Jan 2, 2006 3:04 PM") }
 											}
 										</span>
 									}
 									@table.Cell() {
-										<span class="font-medium text-gray-900">{ email.RecipientEmail }</span>
+										<span class="font-medium text-foreground">{ email.RecipientEmail }</span>
 									}
 									@table.Cell() {
 										@emailTypeBadge(email.EmailType)
 									}
 									@table.Cell() {
-										<span class="text-gray-700">{ email.Subject }</span>
+										<span class="text-foreground">{ email.Subject }</span>
 									}
 									@table.Cell() {
 										@emailStatusBadges(email)
@@ -131,7 +131,7 @@ templ emailStatusBadges(email db.EmailHistory) {
 			<span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">Clicked</span>
 		}
 		if !email.OpenedAt.Valid && !email.ClickedAt.Valid {
-			<span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded">Sent</span>
+			<span class="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">Sent</span>
 		}
 	</div>
 }

@@ -24,7 +24,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 	<div id="product-form-container">
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6">
-			<h1 class="text-2xl font-bold text-white">
+			<h1 class="text-2xl font-bold text-foreground">
 				{ productFormTitle(product) }
 			</h1>
 			<div class="flex items-center gap-3">
@@ -41,7 +41,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 						}
 					</a>
 				}
-				<a href="/admin/products" class="text-slate-400 hover:text-white transition-colors duration-200">
+				<a href="/admin/products" class="text-muted-foreground hover:text-foreground transition-colors duration-200">
 					← Back to Products
 				</a>
 			</div>
@@ -65,7 +65,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 								@card.Title() {
 									Basic Information
 								}
-								<svg :class="{ 'rotate-180': expanded }" class="w-5 h-5 text-slate-400 transition-transform md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<svg :class="{ 'rotate-180': expanded }" class="w-5 h-5 text-muted-foreground transition-transform md:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
 								</svg>
 							</div>
@@ -75,8 +75,8 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 						<div class="space-y-4">
 							<!-- Name -->
 							<div>
-								<label for="name" class="block text-sm font-medium text-slate-200 mb-2">
-									Product Name <span class="text-red-400">*</span>
+								<label for="name" class="block text-sm font-medium text-muted-foreground mb-2">
+									Product Name <span class="text-red-600 dark:text-red-400">*</span>
 								</label>
 								<input
 									type="text"
@@ -84,26 +84,26 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									name="name"
 									required
 									value={ productName(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="Enter product name"
 								/>
 							</div>
 							<!-- Description - Hidden on mobile -->
 							<div class="hidden md:block">
-								<label for="description" class="block text-sm font-medium text-slate-200 mb-2">
+								<label for="description" class="block text-sm font-medium text-muted-foreground mb-2">
 									Description
 								</label>
 								<textarea
 									id="description"
 									name="description"
 									rows="4"
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
+									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
 									placeholder="Detailed product description"
 								>{ productDescription(product) }</textarea>
 							</div>
 							<!-- Short Description - Hidden on mobile -->
 							<div class="hidden md:block">
-								<label for="short_description" class="block text-sm font-medium text-slate-200 mb-2">
+								<label for="short_description" class="block text-sm font-medium text-muted-foreground mb-2">
 									Short Description
 								</label>
 								<input
@@ -111,7 +111,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									id="short_description"
 									name="short_description"
 									value={ productShortDescription(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="Brief product description"
 								/>
 							</div>
@@ -124,7 +124,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									id="disclaimer"
 									name="disclaimer"
 									rows="3"
-									class="w-full px-4 py-2.5 bg-amber-900/10 border border-amber-600/50 rounded-lg text-white placeholder-amber-400/60 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all resize-vertical"
+									class="w-full px-4 py-2.5 bg-amber-900/10 border border-amber-600/50 rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all resize-vertical"
 									placeholder="e.g., Not recommended for rough play; designed for gentle handling and display"
 								>{ productDisclaimer(product) }</textarea>
 								<p class="mt-2 text-xs text-amber-400/80">
@@ -133,13 +133,13 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 							</div>
 							<!-- Category -->
 							<div>
-								<label for="category_id" class="block text-sm font-medium text-slate-200 mb-2">
+								<label for="category_id" class="block text-sm font-medium text-muted-foreground mb-2">
 									Category
 								</label>
 								<select
 									id="category_id"
 									name="category_id"
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 								>
 									<option value="">No Category</option>
 									for _, category := range categories {
@@ -168,8 +168,8 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<!-- Price -->
 							<div>
-								<label for="price" class="block text-sm font-medium text-slate-200 mb-2">
-									Price ($) <span class="text-red-400">*</span>
+								<label for="price" class="block text-sm font-medium text-muted-foreground mb-2">
+									Price ($) <span class="text-red-600 dark:text-red-400">*</span>
 								</label>
 								<input
 									type="number"
@@ -179,13 +179,13 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									min="0"
 									required
 									value={ productPrice(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="0.00"
 								/>
 							</div>
 							<!-- SKU -->
 							<div>
-								<label for="sku" class="block text-sm font-medium text-slate-200 mb-2">
+								<label for="sku" class="block text-sm font-medium text-muted-foreground mb-2">
 									SKU
 								</label>
 								<input
@@ -193,13 +193,13 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									id="sku"
 									name="sku"
 									value={ productSKU(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="SKU-001"
 								/>
 							</div>
 							<!-- Stock Quantity -->
 							<div>
-								<label for="stock_quantity" class="block text-sm font-medium text-slate-200 mb-2">
+								<label for="stock_quantity" class="block text-sm font-medium text-muted-foreground mb-2">
 									Stock Quantity
 								</label>
 								<input
@@ -208,7 +208,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									name="stock_quantity"
 									min="0"
 									value={ productStockQuantity(product) }
-									class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="0"
 								/>
 							</div>
@@ -253,9 +253,9 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 								name="images"
 								multiple
 								accept="image/*"
-								class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer transition-all"
+								class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-primary-foreground hover:file:bg-emerald-700 cursor-pointer transition-all"
 							/>
-							<p class="mt-2 text-xs text-slate-400">
+							<p class="mt-2 text-xs text-muted-foreground">
 								Supported formats: JPG, PNG, WebP (Max: 5MB per file)
 							</p>
 						</div>
@@ -276,9 +276,9 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 							<div class="space-y-4">
 								<!-- SEO Title -->
 								<div>
-									<label for="seo_title" class="block text-sm font-medium text-slate-200 mb-2">
+									<label for="seo_title" class="block text-sm font-medium text-muted-foreground mb-2">
 										SEO Title
-										<span class="text-slate-400 text-xs ml-2">(50-60 characters recommended)</span>
+										<span class="text-muted-foreground text-xs ml-2">(50-60 characters recommended)</span>
 									</label>
 									<input
 										type="text"
@@ -286,72 +286,72 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 										name="seo_title"
 										maxlength="70"
 										value={ productSeoTitle(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+										class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 										placeholder={ productName(product) }
 										oninput="updateSeoPreview()"
 									/>
-									<p class="text-xs text-slate-400 mt-1">
+									<p class="text-xs text-muted-foreground mt-1">
 										<span id="seo-title-count">0</span> / 70 characters
 									</p>
 								</div>
 								<!-- SEO Description -->
 								<div>
-									<label for="seo_description" class="block text-sm font-medium text-slate-200 mb-2">
+									<label for="seo_description" class="block text-sm font-medium text-muted-foreground mb-2">
 										SEO Description
-										<span class="text-slate-400 text-xs ml-2">(155-160 characters recommended)</span>
+										<span class="text-muted-foreground text-xs ml-2">(155-160 characters recommended)</span>
 									</label>
 									<textarea
 										id="seo_description"
 										name="seo_description"
 										rows="3"
 										maxlength="200"
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
+										class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-vertical"
 										placeholder={ productDescription(product) }
 										oninput="updateSeoPreview()"
 									>{ productSeoDescription(product) }</textarea>
-									<p class="text-xs text-slate-400 mt-1">
+									<p class="text-xs text-muted-foreground mt-1">
 										<span id="seo-desc-count">0</span> / 200 characters
 									</p>
 								</div>
 								<!-- SEO Keywords -->
 								<div>
-									<label for="seo_keywords" class="block text-sm font-medium text-slate-200 mb-2">
+									<label for="seo_keywords" class="block text-sm font-medium text-muted-foreground mb-2">
 										SEO Keywords
-										<span class="text-slate-400 text-xs ml-2">(comma-separated)</span>
+										<span class="text-muted-foreground text-xs ml-2">(comma-separated)</span>
 									</label>
 									<input
 										type="text"
 										id="seo_keywords"
 										name="seo_keywords"
 										value={ productSeoKeywords(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+										class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 										placeholder="3D printed, collectible, custom printing"
 									/>
-									<p class="text-xs text-slate-400 mt-1">
+									<p class="text-xs text-muted-foreground mt-1">
 										Separate keywords with commas
 									</p>
 								</div>
 								<!-- Custom OG Image URL -->
 								<div>
-									<label for="og_image_url" class="block text-sm font-medium text-slate-200 mb-2">
+									<label for="og_image_url" class="block text-sm font-medium text-muted-foreground mb-2">
 										Custom Social Share Image URL
-										<span class="text-slate-400 text-xs ml-2">(optional)</span>
+										<span class="text-muted-foreground text-xs ml-2">(optional)</span>
 									</label>
 									<input
 										type="text"
 										id="og_image_url"
 										name="og_image_url"
 										value={ productOgImageUrl(product) }
-										class="w-full px-4 py-2.5 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+										class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 										placeholder="/public/images/products/custom-image.jpg"
 									/>
-									<p class="text-xs text-slate-400 mt-1">
+									<p class="text-xs text-muted-foreground mt-1">
 										Leave blank to use primary product image
 									</p>
 								</div>
 								<!-- Search Preview -->
-								<div class="p-4 border border-slate-600 rounded-lg bg-slate-900/30">
-									<p class="text-xs text-slate-400 mb-2">Search Result Preview:</p>
+								<div class="p-4 border border-border rounded-lg bg-background/30">
+									<p class="text-xs text-muted-foreground mb-2">Search Result Preview:</p>
 									<div>
 										<div class="text-blue-400 text-lg hover:underline cursor-pointer" id="preview-title">
 											{ getPreviewTitle(product) }
@@ -359,7 +359,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 										<div class="text-emerald-500 text-xs mt-1">
 											www.logans3dcreations.com › shop › product › { productSlug(product) }
 										</div>
-										<div class="text-slate-300 text-sm mt-1" id="preview-desc">
+										<div class="text-muted-foreground text-sm mt-1" id="preview-desc">
 											{ getPreviewDescription(product) }
 										</div>
 									</div>
@@ -378,8 +378,8 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 					@card.Content() {
 						<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<!-- Premium Collection Toggle -->
-							<div x-data={ fmt.Sprintf("{ isPremium: %t, productId: '%s' }", isPremiumCollection(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
-								<span class="text-sm font-medium text-slate-200">Premium</span>
+							<div x-data={ fmt.Sprintf("{ isPremium: %t, productId: '%s' }", isPremiumCollection(product), productID(product)) } class="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border">
+								<span class="text-sm font-medium text-muted-foreground">Premium</span>
 								<div
 									@click="
 											isPremium = !isPremium;
@@ -406,12 +406,12 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									class="relative inline-flex items-center cursor-pointer"
 								>
 									<input type="checkbox" :checked="isPremium" class="sr-only peer"/>
-									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
+									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-secondary peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-border peer-checked:bg-yellow-500"></div>
 								</div>
 							</div>
 							<!-- Active Toggle -->
-							<div x-data={ fmt.Sprintf("{ isActiveState: %t, productId: '%s' }", isActive(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
-								<span class="text-sm font-medium text-slate-200">Active</span>
+							<div x-data={ fmt.Sprintf("{ isActiveState: %t, productId: '%s' }", isActive(product), productID(product)) } class="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border">
+								<span class="text-sm font-medium text-muted-foreground">Active</span>
 								<div
 									@click="
 											isActiveState = !isActiveState;
@@ -438,12 +438,12 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									class="relative inline-flex items-center cursor-pointer"
 								>
 									<input type="checkbox" :checked="isActiveState" class="sr-only peer"/>
-									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-secondary peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-border peer-checked:bg-green-600"></div>
 								</div>
 							</div>
 							<!-- Featured Toggle -->
-							<div x-data={ fmt.Sprintf("{ isFeaturedState: %t, productId: '%s' }", isFeatured(product), productID(product)) } class="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-600">
-								<span class="text-sm font-medium text-slate-200">Featured</span>
+							<div x-data={ fmt.Sprintf("{ isFeaturedState: %t, productId: '%s' }", isFeatured(product), productID(product)) } class="flex items-center justify-between p-4 bg-background/50 rounded-lg border border-border">
+								<span class="text-sm font-medium text-muted-foreground">Featured</span>
 								<div
 									@click="
 											isFeaturedState = !isFeaturedState;
@@ -470,7 +470,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									class="relative inline-flex items-center cursor-pointer"
 								>
 									<input type="checkbox" :checked="isFeaturedState" class="sr-only peer"/>
-									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+									<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-secondary peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-border peer-checked:bg-blue-600"></div>
 								</div>
 							</div>
 						</div>

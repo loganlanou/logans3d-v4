@@ -12,7 +12,7 @@ templ ShippingTab(c echo.Context, boxes []db.BoxCatalog) {
 		@layout.AdminContainer() {
 			<!-- Header Controls -->
 			<div class="flex justify-between items-center mb-6">
-				<h1 class="text-2xl font-bold text-gray-900">Box Catalog</h1>
+				<h1 class="text-2xl font-bold text-foreground">Box Catalog</h1>
 				<div class="flex space-x-3">
 					<a href="/admin/shipping/boxes/new" class="admin-btn admin-btn-primary">
 						+ Add Box
@@ -60,7 +60,7 @@ templ ShippingTab(c echo.Context, boxes []db.BoxCatalog) {
 						<tbody>
 							if len(boxes) == 0 {
 								<tr>
-									<td colspan="8" class="px-6 py-12 text-center text-gray-500">
+									<td colspan="8" class="px-6 py-12 text-center text-muted-foreground">
 										No boxes configured. Add your first box to get started.
 									</td>
 								</tr>
@@ -68,7 +68,7 @@ templ ShippingTab(c echo.Context, boxes []db.BoxCatalog) {
 								for _, box := range boxes {
 									<tr class="admin-table-tr">
 										<td class="admin-table-td">
-											<span class="font-medium text-gray-900">{ box.Sku }</span>
+											<span class="font-medium text-foreground">{ box.Sku }</span>
 										</td>
 										<td class="admin-table-td">{ box.Name }</td>
 										<td class="admin-table-td">

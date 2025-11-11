@@ -35,15 +35,15 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 					<img src="/public/images/favicon.png" alt="Logan's 3D" class="w-12 h-12 rounded-lg"/>
 					<div>
 						<h2 class="admin-text-primary text-xl font-semibold">Logan's 3D v4</h2>
-						<p class="admin-text-muted text-sm">Process ID: { fmt.Sprintf("%d", sysInfo.PID) }</p>
+						<p class="admin-text-muted-foreground text-sm">Process ID: { fmt.Sprintf("%d", sysInfo.PID) }</p>
 					</div>
 				</div>
 				<div class="flex items-center space-x-6">
 					<div class="text-right">
-						<p class="admin-text-muted text-sm">Uptime</p>
+						<p class="admin-text-muted-foreground text-sm">Uptime</p>
 						<p class="admin-text-primary text-lg font-semibold">{ sysInfo.Uptime }</p>
 					</div>
-					<div class="inline-flex items-center px-4 py-2 rounded-full bg-green-900/30 border border-green-500/30">
+					<div class="inline-flex items-center px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-500/30">
 						<span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
 						<span class="text-green-400 text-sm font-medium">Running</span>
 					</div>
@@ -56,36 +56,36 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 			<!-- Go Version -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
-					<h3 class="text-sm font-medium admin-text-muted mb-2">Go Version</h3>
+					<h3 class="text-sm font-medium admin-text-muted-foreground mb-2">Go Version</h3>
 					<p class="text-3xl font-bold admin-text-primary mb-1">{ sysInfo.GoVersion }</p>
-					<p class="text-xs admin-text-muted">{ sysInfo.Architecture }</p>
+					<p class="text-xs admin-text-muted-foreground">{ sysInfo.Architecture }</p>
 				</div>
 			</div>
 
 			<!-- Operating System -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
-					<h3 class="text-sm font-medium admin-text-muted mb-2">Operating System</h3>
+					<h3 class="text-sm font-medium admin-text-muted-foreground mb-2">Operating System</h3>
 					<p class="text-3xl font-bold admin-text-primary mb-1">{ sysInfo.OS }</p>
-					<p class="text-xs admin-text-muted">{ sysInfo.Architecture } architecture</p>
+					<p class="text-xs admin-text-muted-foreground">{ sysInfo.Architecture } architecture</p>
 				</div>
 			</div>
 
 			<!-- Memory Allocated -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
-					<h3 class="text-sm font-medium admin-text-muted mb-2">Memory Allocated</h3>
+					<h3 class="text-sm font-medium admin-text-muted-foreground mb-2">Memory Allocated</h3>
 					<p class="text-3xl font-bold text-blue-400 mb-1">{ fmt.Sprintf("%.1f", memStats.AllocMB) } MB</p>
-					<p class="text-xs admin-text-muted">{ fmt.Sprintf("%.1f MB system", memStats.SysMB) }</p>
+					<p class="text-xs admin-text-muted-foreground">{ fmt.Sprintf("%.1f MB system", memStats.SysMB) }</p>
 				</div>
 			</div>
 
 			<!-- Goroutines -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
-					<h3 class="text-sm font-medium admin-text-muted mb-2">Active Goroutines</h3>
+					<h3 class="text-sm font-medium admin-text-muted-foreground mb-2">Active Goroutines</h3>
 					<p class="text-3xl font-bold text-purple-400 mb-1">{ fmt.Sprintf("%d", memStats.Goroutines) }</p>
-					<p class="text-xs admin-text-muted">{ fmt.Sprintf("%d GC cycles", memStats.NumGC) }</p>
+					<p class="text-xs admin-text-muted-foreground">{ fmt.Sprintf("%d GC cycles", memStats.NumGC) }</p>
 				</div>
 			</div>
 		</div>
@@ -95,27 +95,27 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 			<!-- Products -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
-					<h3 class="text-sm font-medium admin-text-muted mb-2">Products</h3>
+					<h3 class="text-sm font-medium admin-text-muted-foreground mb-2">Products</h3>
 					<p class="text-3xl font-bold text-green-400 mb-1">{ fmt.Sprintf("%d", dbStats.ProductCount) }</p>
-					<p class="text-xs admin-text-muted">Total products in catalog</p>
+					<p class="text-xs admin-text-muted-foreground">Total products in catalog</p>
 				</div>
 			</div>
 
 			<!-- Categories -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
-					<h3 class="text-sm font-medium admin-text-muted mb-2">Categories</h3>
+					<h3 class="text-sm font-medium admin-text-muted-foreground mb-2">Categories</h3>
 					<p class="text-3xl font-bold text-orange-400 mb-1">{ fmt.Sprintf("%d", dbStats.CategoryCount) }</p>
-					<p class="text-xs admin-text-muted">Active categories</p>
+					<p class="text-xs admin-text-muted-foreground">Active categories</p>
 				</div>
 			</div>
 
 			<!-- Database Size -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
-					<h3 class="text-sm font-medium admin-text-muted mb-2">Database Size</h3>
+					<h3 class="text-sm font-medium admin-text-muted-foreground mb-2">Database Size</h3>
 					<p class="text-3xl font-bold text-cyan-400 mb-1">{ dbStats.DatabaseSize }</p>
-					<p class="text-xs admin-text-muted">SQLite database</p>
+					<p class="text-xs admin-text-muted-foreground">SQLite database</p>
 				</div>
 			</div>
 		</div>

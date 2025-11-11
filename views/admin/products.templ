@@ -16,12 +16,12 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 	@layout.AdminBase(c, "Products") {
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6">
-			<h1 class="text-2xl font-bold text-gray-100">Products</h1>
+			<h1 class="text-2xl font-bold text-foreground">Products</h1>
 			<div class="flex space-x-3">
 				<a href="/admin/categories">
 					@button.Button(button.Props{
 						Variant: button.VariantOutline,
-						Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600",
+						Class: "bg-card border-border dark:border-border text-foreground hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary hover:border-border dark:border-border",
 					}) {
 						Manage Categories
 					}
@@ -70,13 +70,13 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 					@focus="if(results.length > 0) showResults = true"
 					@click.outside="showResults = false"
 					placeholder="Search products by name..."
-					class="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-200 placeholder-gray-500 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-gray-700 transition-colors"
+					class="w-full px-4 py-2 bg-card border border-border dark:border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary transition-colors"
 				/>
-				<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-96 overflow-y-auto">
+				<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-card border border-border dark:border-border rounded-lg shadow-xl max-h-96 overflow-y-auto">
 					<template x-for="result in results" :key="result.id">
 						<a
 							:href="`/admin/product/edit?id=${result.id}`"
-							class="flex items-center gap-3 px-4 py-3 hover:bg-gray-700 border-b border-gray-700 last:border-b-0 transition-colors"
+							class="flex items-center gap-3 px-4 py-3 hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary border-b border-border dark:border-border last:border-b-0 transition-colors"
 							@click="showResults = false"
 						>
 							<img
@@ -85,8 +85,8 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 								class="w-12 h-12 object-cover rounded"
 							/>
 							<div class="flex-1">
-								<div class="font-medium text-gray-100" x-text="result.name"></div>
-								<div class="text-sm text-gray-400" x-text="`$${result.price.toFixed(2)}`"></div>
+								<div class="font-medium text-foreground" x-text="result.name"></div>
+								<div class="text-sm text-muted-foreground" x-text="`$${result.price.toFixed(2)}`"></div>
 							</div>
 						</a>
 					</template>
@@ -97,7 +97,7 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 			<div class="flex gap-3 flex-wrap items-center">
 				<select
 					name="category"
-					class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm font-medium text-gray-200 hover:bg-gray-700 hover:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
+					class="px-4 py-2 bg-card border border-border dark:border-border rounded-lg text-sm font-medium text-foreground hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary hover:border-border dark:border-border focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer transition-colors"
 					onchange="window.location.href = updateQueryParam('category', this.value)"
 				>
 					<option value="">All Categories</option>
@@ -110,7 +110,7 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 					}
 				</select>
 
-				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${newFilter == "true" ? "bg-green-900/30 border-green-600/50 hover:bg-green-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${newFilter == "true" ? "bg-green-100 dark:bg-green-900/30 border-green-600/50 hover:bg-green-900/40" : "bg-card border-border dark:border-border hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary hover:border-border dark:border-border"}` }>
 					<div class="switch-wrapper">
 						@switchcomp.Switch(switchcomp.Props{
 							ID: "new-filter",
@@ -118,10 +118,10 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('new', this.checked ? 'true' : '')"},
 						})
 					</div>
-					<span class={ `text-sm font-medium ${newFilter == "true" ? "text-green-400" : "text-gray-200"}` }>New</span>
+					<span class={ `text-sm font-medium ${newFilter == "true" ? "text-green-600 dark:text-green-400" : "text-foreground"}` }>New</span>
 				</div>
 
-				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${featuredFilter == "true" ? "bg-blue-900/30 border-blue-600/50 hover:bg-blue-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${featuredFilter == "true" ? "bg-blue-100 dark:bg-blue-900/30 border-blue-600/50 hover:bg-blue-900/40" : "bg-card border-border dark:border-border hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary hover:border-border dark:border-border"}` }>
 					<div class="switch-wrapper">
 						@switchcomp.Switch(switchcomp.Props{
 							ID: "featured-filter",
@@ -129,10 +129,10 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('featured', this.checked ? 'true' : '')"},
 						})
 					</div>
-					<span class={ `text-sm font-medium ${featuredFilter == "true" ? "text-blue-400" : "text-gray-200"}` }>Featured</span>
+					<span class={ `text-sm font-medium ${featuredFilter == "true" ? "text-blue-600 dark:text-blue-400" : "text-foreground"}` }>Featured</span>
 				</div>
 
-				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${premiumFilter == "true" ? "bg-yellow-900/30 border-yellow-600/50 hover:bg-yellow-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${premiumFilter == "true" ? "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-600/50 hover:bg-yellow-900/40" : "bg-card border-border dark:border-border hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary hover:border-border dark:border-border"}` }>
 					<div class="switch-wrapper">
 						@switchcomp.Switch(switchcomp.Props{
 							ID: "premium-filter",
@@ -140,10 +140,10 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('premium', this.checked ? 'true' : '')"},
 						})
 					</div>
-					<span class={ `text-sm font-medium ${premiumFilter == "true" ? "text-yellow-400" : "text-gray-200"}` }>Premium</span>
+					<span class={ `text-sm font-medium ${premiumFilter == "true" ? "text-yellow-600 dark:text-yellow-400" : "text-foreground"}` }>Premium</span>
 				</div>
 
-				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${statusFilter == "inactive" ? "bg-red-900/30 border-red-600/50 hover:bg-red-900/40" : "bg-gray-800 border-gray-700 hover:bg-gray-700 hover:border-gray-600"}` }>
+				<div class={ `flex items-center gap-3 px-4 py-2 border rounded-lg transition-all cursor-pointer ${statusFilter == "inactive" ? "bg-red-100 dark:bg-red-900/30 border-red-600/50 hover:bg-red-900/40" : "bg-card border-border dark:border-border hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary hover:border-border dark:border-border"}` }>
 					<div class="switch-wrapper">
 						@switchcomp.Switch(switchcomp.Props{
 							ID: "inactive-filter",
@@ -151,7 +151,7 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 							Attributes: templ.Attributes{"onchange": "window.location.href = updateQueryParam('status', this.checked ? 'inactive' : '')"},
 						})
 					</div>
-					<span class={ `text-sm font-medium ${statusFilter == "inactive" ? "text-red-400" : "text-gray-200"}` }>Inactive</span>
+					<span class={ `text-sm font-medium ${statusFilter == "inactive" ? "text-red-600 dark:text-red-400" : "text-foreground"}` }>Inactive</span>
 				</div>
 
 				if categoryFilter != "" || featuredFilter != "" || premiumFilter != "" || newFilter != "" || statusFilter != "" || sortBy != "" {
@@ -159,7 +159,7 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 						@button.Button(button.Props{
 							Variant: button.VariantOutline,
 							Size: button.SizeSm,
-							Class: "bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:border-gray-600 hover:text-gray-100",
+							Class: "bg-card border-border dark:border-border text-foreground hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary hover:border-border dark:border-border hover:text-foreground",
 						}) {
 							Clear Filters
 						}
@@ -217,7 +217,7 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 		<!-- Mobile Collapsed Row Layout (< 640px) -->
 		<div class="sm:hidden space-y-1 mb-6" x-data="{ expandedProducts: new Set() }">
 			if len(products) == 0 {
-				<div class="text-center py-8 text-gray-400">
+				<div class="text-center py-8 text-muted-foreground">
 					No products found
 				</div>
 			} else {
@@ -261,7 +261,7 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 													</svg>
 												}
 											} else {
-												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="w-4 h-4 text-muted-foreground opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
 												</svg>
 											}
@@ -286,7 +286,7 @@ templ Products(c echo.Context, products []types.ProductWithImage, categories []d
 													</svg>
 												}
 											} else {
-												<svg class="w-4 h-4 text-gray-400 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<svg class="w-4 h-4 text-muted-foreground opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
 												</svg>
 											}
@@ -337,7 +337,7 @@ templ ProductTableRowDisplay(c echo.Context, productWithImage *types.ProductWith
 					<img src={ productWithImage.ImageURL } alt={ productWithImage.Product.Name } class="w-12 h-12 object-cover rounded-lg hover:opacity-80 transition-opacity" />
 				} else {
 					<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition-colors">
-						<span class="admin-text-muted text-xs">No Image</span>
+						<span class="admin-text-muted-foreground text-xs">No Image</span>
 					</div>
 				}
 			</a>
@@ -397,7 +397,7 @@ templ ProductTableRowDisplay(c echo.Context, productWithImage *types.ProductWith
 				class="relative inline-flex items-center cursor-pointer"
 			>
 				<input type="checkbox" :checked="isNew" class="sr-only peer"/>
-				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-secondary peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-border peer-checked:bg-green-600"></div>
 			</div>
 		}
 		@table.Cell() {
@@ -429,7 +429,7 @@ templ ProductTableRowDisplay(c echo.Context, productWithImage *types.ProductWith
 				class="relative inline-flex items-center cursor-pointer"
 			>
 				<input type="checkbox" :checked="featured" class="sr-only peer"/>
-				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-secondary peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-border peer-checked:bg-blue-600"></div>
 			</div>
 		}
 		@table.Cell() {
@@ -461,7 +461,7 @@ templ ProductTableRowDisplay(c echo.Context, productWithImage *types.ProductWith
 				class="relative inline-flex items-center cursor-pointer"
 			>
 				<input type="checkbox" :checked="premium" class="sr-only peer"/>
-				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-yellow-500"></div>
+				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 dark:peer-focus:ring-yellow-800 rounded-full peer dark:bg-secondary peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-border peer-checked:bg-yellow-500"></div>
 			</div>
 		}
 		@table.Cell() {
@@ -493,7 +493,7 @@ templ ProductTableRowDisplay(c echo.Context, productWithImage *types.ProductWith
 				class="relative inline-flex items-center cursor-pointer"
 			>
 				<input type="checkbox" :checked="active" class="sr-only peer"/>
-				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+				<div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-secondary peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-border peer-checked:bg-green-600"></div>
 			</div>
 		}
 		@table.Cell() {
@@ -551,7 +551,7 @@ templ ProductTableRowEdit(c echo.Context, productWithImage *types.ProductWithIma
 				<img src={ productWithImage.ImageURL } alt={ productWithImage.Product.Name } class="w-12 h-12 object-cover rounded-lg" />
 			} else {
 				<div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-					<span class="admin-text-muted text-xs">No Image</span>
+					<span class="admin-text-muted-foreground text-xs">No Image</span>
 				</div>
 			}
 		}
@@ -560,7 +560,7 @@ templ ProductTableRowEdit(c echo.Context, productWithImage *types.ProductWithIma
 				type="text"
 				name="name"
 				value={ productWithImage.Product.Name }
-				class="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				class="w-full px-2 py-1 bg-card border border-border dark:border-border rounded text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				required
 			/>
 		}
@@ -576,7 +576,7 @@ templ ProductTableRowEdit(c echo.Context, productWithImage *types.ProductWithIma
 				type="text"
 				name="price"
 				value={ fmt.Sprintf("%.2f", float64(productWithImage.Product.PriceCents)/100) }
-				class="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				class="w-full px-2 py-1 bg-card border border-border dark:border-border rounded text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				pattern="^\d+(\.\d{1,2})?$"
 				placeholder="0.00"
 				required
@@ -587,7 +587,7 @@ templ ProductTableRowEdit(c echo.Context, productWithImage *types.ProductWithIma
 				type="number"
 				name="stock_quantity"
 				value={ fmt.Sprintf("%d", productWithImage.Product.StockQuantity.Int64) }
-				class="w-full px-2 py-1 bg-gray-800 border border-gray-600 rounded text-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+				class="w-full px-2 py-1 bg-card border border-border dark:border-border rounded text-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 				min="0"
 				required
 			/>
@@ -625,7 +625,7 @@ templ ProductTableRowEdit(c echo.Context, productWithImage *types.ProductWithIma
 					hx-get={ fmt.Sprintf("/admin/product/%s/row", productWithImage.Product.ID) }
 					hx-target="closest tr"
 					hx-swap="outerHTML"
-					class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-600 hover:bg-gray-700 text-white transition-colors"
+					class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-600 hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary text-white transition-colors"
 					title="Cancel"
 				>
 					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -641,30 +641,30 @@ templ ProductTableRowEdit(c echo.Context, productWithImage *types.ProductWithIma
 templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithImage) {
 	<div
 		x-data={ fmt.Sprintf("{ productId: '%s', expanded: false }", productWithImage.Product.ID) }
-		class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden product-row-mobile"
+		class="bg-card border border-border dark:border-border rounded-lg overflow-hidden product-row-mobile"
 	>
 		<!-- Collapsed Row Header -->
 		<div
 			@click="expanded = !expanded"
-			class="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-700/50 transition-colors"
+			class="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary/50 transition-colors"
 		>
 			<!-- Product Image -->
 			if productWithImage.ImageURL != "" {
 				<img src={ productWithImage.ImageURL } alt={ productWithImage.Product.Name } class="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
 			} else {
-				<div class="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
-					<span class="text-xs text-gray-500">No Image</span>
+				<div class="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+					<span class="text-xs text-muted-foreground">No Image</span>
 				</div>
 			}
 			<!-- Product Info -->
 			<div class="flex-1 min-w-0">
 				<h3 class="font-semibold text-gray-100 truncate text-sm">{ productWithImage.Product.Name }</h3>
-				<p class="text-xs text-gray-400">${ fmt.Sprintf("%.2f", float64(productWithImage.Product.PriceCents)/100) }</p>
+				<p class="text-xs text-muted-foreground">${ fmt.Sprintf("%.2f", float64(productWithImage.Product.PriceCents)/100) }</p>
 			</div>
 			<!-- Expand Icon -->
 			<svg
 				:class="expanded ? 'rotate-180' : ''"
-				class="w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0"
+				class="w-5 h-5 text-muted-foreground transition-transform duration-200 flex-shrink-0"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"
@@ -677,27 +677,27 @@ templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithIma
 		<div
 			x-show="expanded"
 			x-transition
-			class="border-t border-gray-700 p-3 space-y-3"
+			class="border-t border-border dark:border-border p-3 space-y-3"
 		>
 			<!-- Stock -->
 			<div class="flex justify-between items-center text-xs">
-				<span class="text-gray-400">Stock:</span>
+				<span class="text-muted-foreground">Stock:</span>
 				if productWithImage.Product.StockQuantity.Valid {
 					if productWithImage.Product.StockQuantity.Int64 <= 5 {
-						<span class="font-medium text-orange-400">{ fmt.Sprintf("%d", productWithImage.Product.StockQuantity.Int64) }</span>
+						<span class="font-medium text-orange-600 dark:text-orange-400">{ fmt.Sprintf("%d", productWithImage.Product.StockQuantity.Int64) }</span>
 					} else {
-						<span class="font-medium text-gray-100">{ fmt.Sprintf("%d", productWithImage.Product.StockQuantity.Int64) }</span>
+						<span class="font-medium text-foreground">{ fmt.Sprintf("%d", productWithImage.Product.StockQuantity.Int64) }</span>
 					}
 				} else {
-					<span class="text-gray-400">-</span>
+					<span class="text-muted-foreground">-</span>
 				}
 			</div>
 
 			<!-- Toggle Switches Grid (2x2) -->
 			<div class="grid grid-cols-2 gap-2">
 				<!-- New Toggle -->
-				<div class="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-					<span class="text-xs text-gray-300">New</span>
+				<div class="flex items-center justify-between bg-secondary/30 p-2 rounded">
+					<span class="text-xs text-foreground">New</span>
 					<div
 						x-data={ fmt.Sprintf("{ isNew: %t }", productWithImage.Product.IsNew.Valid && productWithImage.Product.IsNew.Bool) }
 						@click="
@@ -722,12 +722,12 @@ templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithIma
 						class="relative inline-flex items-center cursor-pointer"
 					>
 						<input type="checkbox" :checked="isNew" class="sr-only peer"/>
-						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
+						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
 					</div>
 				</div>
 				<!-- Featured Toggle -->
-				<div class="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-					<span class="text-xs text-gray-300">Featured</span>
+				<div class="flex items-center justify-between bg-secondary/30 p-2 rounded">
+					<span class="text-xs text-foreground">Featured</span>
 					<div
 						x-data={ fmt.Sprintf("{ featured: %t }", productWithImage.Product.IsFeatured.Valid && productWithImage.Product.IsFeatured.Bool) }
 						@click="
@@ -752,12 +752,12 @@ templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithIma
 						class="relative inline-flex items-center cursor-pointer"
 					>
 						<input type="checkbox" :checked="featured" class="sr-only peer"/>
-						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
+						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-blue-600"></div>
 					</div>
 				</div>
 				<!-- Premium Toggle -->
-				<div class="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-					<span class="text-xs text-gray-300">Premium</span>
+				<div class="flex items-center justify-between bg-secondary/30 p-2 rounded">
+					<span class="text-xs text-foreground">Premium</span>
 					<div
 						x-data={ fmt.Sprintf("{ premium: %t }", productWithImage.Product.IsPremium.Valid && productWithImage.Product.IsPremium.Bool) }
 						@click="
@@ -782,12 +782,12 @@ templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithIma
 						class="relative inline-flex items-center cursor-pointer"
 					>
 						<input type="checkbox" :checked="premium" class="sr-only peer"/>
-						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-yellow-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-yellow-500"></div>
+						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-yellow-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-yellow-500"></div>
 					</div>
 				</div>
 				<!-- Active Toggle -->
-				<div class="flex items-center justify-between bg-gray-700/30 p-2 rounded">
-					<span class="text-xs text-gray-300">Active</span>
+				<div class="flex items-center justify-between bg-secondary/30 p-2 rounded">
+					<span class="text-xs text-foreground">Active</span>
 					<div
 						x-data={ fmt.Sprintf("{ active: %t }", productWithImage.Product.IsActive.Valid && productWithImage.Product.IsActive.Bool) }
 						@click="
@@ -812,7 +812,7 @@ templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithIma
 						class="relative inline-flex items-center cursor-pointer"
 					>
 						<input type="checkbox" :checked="active" class="sr-only peer"/>
-						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
+						<div class="w-8 h-5 bg-gray-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-green-400 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-500 peer-checked:bg-green-600"></div>
 					</div>
 				</div>
 			</div>
@@ -856,30 +856,30 @@ templ ProductRowCollapsed(c echo.Context, productWithImage *types.ProductWithIma
 templ ProductRowCollapsedEdit(c echo.Context, productWithImage *types.ProductWithImage) {
 	<div
 		x-data={ fmt.Sprintf("{ productId: '%s', expanded: true }", productWithImage.Product.ID) }
-		class="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden product-row-mobile"
+		class="bg-card border border-border dark:border-border rounded-lg overflow-hidden product-row-mobile"
 	>
 		<!-- Collapsed Row Header -->
 		<div
 			@click="expanded = !expanded"
-			class="flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-700/50 transition-colors"
+			class="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary/50 transition-colors"
 		>
 			<!-- Product Image -->
 			if productWithImage.ImageURL != "" {
 				<img src={ productWithImage.ImageURL } alt={ productWithImage.Product.Name } class="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
 			} else {
-				<div class="w-12 h-12 bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
-					<span class="text-xs text-gray-500">No Image</span>
+				<div class="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+					<span class="text-xs text-muted-foreground">No Image</span>
 				</div>
 			}
 			<!-- Product Info -->
 			<div class="flex-1 min-w-0">
 				<h3 class="font-semibold text-gray-100 truncate text-sm">{ productWithImage.Product.Name }</h3>
-				<p class="text-xs text-gray-400">${ fmt.Sprintf("%.2f", float64(productWithImage.Product.PriceCents)/100) }</p>
+				<p class="text-xs text-muted-foreground">${ fmt.Sprintf("%.2f", float64(productWithImage.Product.PriceCents)/100) }</p>
 			</div>
 			<!-- Expand Icon -->
 			<svg
 				:class="expanded ? 'rotate-180' : ''"
-				class="w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0"
+				class="w-5 h-5 text-muted-foreground transition-transform duration-200 flex-shrink-0"
 				fill="none"
 				stroke="currentColor"
 				viewBox="0 0 24 24"
@@ -892,43 +892,43 @@ templ ProductRowCollapsedEdit(c echo.Context, productWithImage *types.ProductWit
 		<div
 			x-show="expanded"
 			x-transition
-			class="border-t border-gray-700 p-3 space-y-3"
+			class="border-t border-border dark:border-border p-3 space-y-3"
 		>
 			<!-- Name Input -->
 			<div>
-				<label class="text-xs text-gray-400 block mb-1">Name</label>
+				<label class="text-xs text-muted-foreground block mb-1">Name</label>
 				<input
 					type="text"
 					name="name"
 					value={ productWithImage.Product.Name }
-					class="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+					class="w-full px-2 py-1.5 bg-secondary border border-border dark:border-border rounded text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 					required
 				/>
 			</div>
 
 			<!-- Price Input -->
 			<div>
-				<label class="text-xs text-gray-400 block mb-1">Price</label>
+				<label class="text-xs text-muted-foreground block mb-1">Price</label>
 				<input
 					type="text"
 					name="price"
 					value={ fmt.Sprintf("%.2f", float64(productWithImage.Product.PriceCents)/100) }
 					pattern="^\d+(\.\d{1,2})?$"
 					placeholder="0.00"
-					class="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+					class="w-full px-2 py-1.5 bg-secondary border border-border dark:border-border rounded text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 					required
 				/>
 			</div>
 
 			<!-- Stock Quantity Input -->
 			<div>
-				<label class="text-xs text-gray-400 block mb-1">Stock Quantity</label>
+				<label class="text-xs text-muted-foreground block mb-1">Stock Quantity</label>
 				<input
 					type="number"
 					name="stock_quantity"
 					value={ fmt.Sprintf("%d", productWithImage.Product.StockQuantity.Int64) }
 					min="0"
-					class="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+					class="w-full px-2 py-1.5 bg-secondary border border-border dark:border-border rounded text-gray-100 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 					required
 				/>
 			</div>
@@ -950,7 +950,7 @@ templ ProductRowCollapsedEdit(c echo.Context, productWithImage *types.ProductWit
 					hx-get={ fmt.Sprintf("/admin/product/%s/row-mobile", productWithImage.Product.ID) }
 					hx-target="closest .product-row-mobile"
 					hx-swap="outerHTML"
-					class="flex-1 inline-flex items-center justify-center py-1.5 px-2 rounded bg-gray-600 hover:bg-gray-700 text-white font-medium transition-colors text-xs"
+					class="flex-1 inline-flex items-center justify-center py-1.5 px-2 rounded bg-gray-600 hover:bg-muted/80 dark:hover:bg-muted/80 dark:hover:bg-secondary text-white font-medium transition-colors text-xs"
 				>
 					Cancel
 				</button>

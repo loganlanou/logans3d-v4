@@ -83,8 +83,8 @@ templ AbandonedCartsDashboard(
 			<!-- Header -->
 			<div class="flex justify-between items-center mb-6">
 				<div>
-					<h1 class="text-2xl font-bold text-gray-900">Abandoned Cart Analytics</h1>
-					<p class="text-sm text-gray-600 mt-1">Monitor and recover abandoned shopping carts</p>
+					<h1 class="text-2xl font-bold text-foreground">Abandoned Cart Analytics</h1>
+					<p class="text-sm text-muted-foreground mt-1">Monitor and recover abandoned shopping carts</p>
 				</div>
 				<div class="flex gap-3">
 					<a href="/admin/abandoned-carts/export">
@@ -113,13 +113,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-slate-300">Abandoned (24h)</p>
+								<p class="text-sm font-medium text-muted-foreground">Abandoned (24h)</p>
 								<span class="text-2xl">🛒</span>
 							</div>
-							<p class="text-3xl font-bold text-white">
+							<p class="text-3xl font-bold text-foreground">
 								{ fmt.Sprintf("%d", metrics.TotalAbandoned24h) }
 							</p>
-							<p class="text-xs text-slate-400">
+							<p class="text-xs text-muted-foreground">
 								Last 24 hours
 							</p>
 						</div>
@@ -131,13 +131,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-slate-300">Abandonment Rate</p>
+								<p class="text-sm font-medium text-muted-foreground">Abandonment Rate</p>
 								<span class="text-2xl">📉</span>
 							</div>
-							<p class="text-3xl font-bold text-white">
+							<p class="text-3xl font-bold text-foreground">
 								{ fmt.Sprintf("%.1f%%", metrics.AbandonmentRate) }
 							</p>
-							<p class="text-xs text-slate-400">
+							<p class="text-xs text-muted-foreground">
 								Industry avg: 69.9%
 							</p>
 						</div>
@@ -149,13 +149,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-slate-300">Lost Revenue</p>
+								<p class="text-sm font-medium text-muted-foreground">Lost Revenue</p>
 								<span class="text-2xl">💰</span>
 							</div>
-							<p class="text-3xl font-bold text-red-400">
+							<p class="text-3xl font-bold text-red-600 dark:text-red-400">
 								${ fmt.Sprintf("%.2f", float64(metrics.LostRevenueCents)/100) }
 							</p>
-							<p class="text-xs text-slate-400">
+							<p class="text-xs text-muted-foreground">
 								Active abandoned carts
 							</p>
 						</div>
@@ -167,13 +167,13 @@ templ AbandonedCartsDashboard(
 					@card.Content() {
 						<div class="space-y-2">
 							<div class="flex items-center justify-between">
-								<p class="text-sm font-medium text-slate-300">Recovery Rate</p>
+								<p class="text-sm font-medium text-muted-foreground">Recovery Rate</p>
 								<span class="text-2xl">✅</span>
 							</div>
-							<p class="text-3xl font-bold text-green-400">
+							<p class="text-3xl font-bold text-green-600 dark:text-green-400">
 								{ fmt.Sprintf("%.1f%%", metrics.RecoveryRate) }
 							</p>
-							<p class="text-xs text-slate-400">
+							<p class="text-xs text-muted-foreground">
 								{ fmt.Sprintf("%d carts / $%.2f", metrics.TotalRecovered, float64(metrics.RecoveredValueCents)/100) }
 							</p>
 						</div>
@@ -273,13 +273,13 @@ templ AbandonedCartsDashboard(
 												<span class="font-medium">{ formatAttemptType(stat.AttemptType) }</span>
 											}
 											@table.Cell() {
-												<span class="text-gray-900">{ fmt.Sprintf("%d", stat.TotalSent) }</span>
+												<span class="text-foreground">{ fmt.Sprintf("%d", stat.TotalSent) }</span>
 											}
 											@table.Cell() {
-												<span class="text-gray-900">{ fmt.Sprintf("%d", stat.OpenedCount) }</span>
+												<span class="text-foreground">{ fmt.Sprintf("%d", stat.OpenedCount) }</span>
 											}
 											@table.Cell() {
-												<span class="text-gray-900">{ fmt.Sprintf("%d", stat.ClickedCount) }</span>
+												<span class="text-foreground">{ fmt.Sprintf("%d", stat.ClickedCount) }</span>
 											}
 											@table.Cell() {
 												<span class="font-medium text-blue-600">{ fmt.Sprintf("%.1f%%", stat.OpenRatePercent) }</span>
@@ -311,15 +311,15 @@ templ AbandonedCartsDashboard(
 						<!-- Active Carts Metrics -->
 						<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
 							<div>
-								<p class="text-sm text-gray-600">Total Active Carts</p>
+								<p class="text-sm text-muted-foreground">Total Active Carts</p>
 								<p class="text-2xl font-bold text-blue-700">{ fmt.Sprintf("%d", activeCartsMetrics.TotalActiveCarts) }</p>
 							</div>
 							<div>
-								<p class="text-sm text-gray-600">Total Value</p>
+								<p class="text-sm text-muted-foreground">Total Value</p>
 								<p class="text-2xl font-bold text-blue-700">{ formatCents(activeCartsMetrics.TotalValueCents) }</p>
 							</div>
 							<div>
-								<p class="text-sm text-gray-600">Average Cart Value</p>
+								<p class="text-sm text-muted-foreground">Average Cart Value</p>
 								<p class="text-2xl font-bold text-blue-700">{ formatCents(activeCartsMetrics.AvgValueCents) }</p>
 							</div>
 						</div>
@@ -340,7 +340,7 @@ templ AbandonedCartsDashboard(
 										for _, cart := range activeCarts {
 											@table.Row() {
 												@table.Cell() {
-													<div class="font-medium text-gray-900">
+													<div class="font-medium text-foreground">
 														if cart.UserID != "" {
 															<a
 																href={ templ.URL("/admin/users/" + cart.UserID) }
@@ -353,19 +353,19 @@ templ AbandonedCartsDashboard(
 														}
 													</div>
 													if cart.CustomerEmail != "Guest" {
-														<div class="text-sm text-gray-500">{ cart.CustomerEmail }</div>
+														<div class="text-sm text-muted-foreground">{ cart.CustomerEmail }</div>
 													} else {
-														<div class="text-sm text-gray-400">Guest Session</div>
+														<div class="text-sm text-muted-foreground">Guest Session</div>
 													}
 												}
 												@table.Cell() {
-													<span class="text-gray-900">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+													<span class="text-foreground">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
 												}
 												@table.Cell() {
-													<span class="font-medium text-gray-900">{ formatCents(cart.CartValue) }</span>
+													<span class="font-medium text-foreground">{ formatCents(cart.CartValue) }</span>
 												}
 												@table.Cell() {
-													<span class="text-sm text-gray-600">{ cart.TimeAgo }</span>
+													<span class="text-sm text-muted-foreground">{ cart.TimeAgo }</span>
 												}
 											}
 										}
@@ -373,7 +373,7 @@ templ AbandonedCartsDashboard(
 								}
 							</div>
 						} else {
-							<div class="text-center text-gray-500 py-8">
+							<div class="text-center text-muted-foreground py-8">
 								No active carts at this time
 							</div>
 						}
@@ -388,18 +388,18 @@ templ AbandonedCartsDashboard(
 					<input
 						type="text"
 						placeholder="Search by customer name or email..."
-						class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						onkeyup="debounceSearch(this.value)"
 					/>
 				</div>
 
 				<!-- Status Filters -->
 				<div class="flex gap-4 flex-wrap items-center">
-					<a href="/admin/abandoned-carts" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors">All Carts</a>
-					<a href="/admin/abandoned-carts?status=active" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 transition-colors">Active</a>
-					<a href="/admin/abandoned-carts?status=contacted" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Contacted</a>
-					<a href="/admin/abandoned-carts?status=recovered" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-green-100 hover:border-green-400 hover:text-green-900 transition-colors">Recovered</a>
-					<a href="/admin/abandoned-carts?high_value=true" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">High Value ($100+)</a>
+					<a href="/admin/abandoned-carts" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-muted/80 hover:text-foreground transition-colors">All Carts</a>
+					<a href="/admin/abandoned-carts?status=active" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 transition-colors">Active</a>
+					<a href="/admin/abandoned-carts?status=contacted" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Contacted</a>
+					<a href="/admin/abandoned-carts?status=recovered" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-green-100 hover:border-green-400 hover:text-green-900 transition-colors">Recovered</a>
+					<a href="/admin/abandoned-carts?high_value=true" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">High Value ($100+)</a>
 				</div>
 			</div>
 
@@ -449,7 +449,7 @@ templ AbandonedCartsDashboard(
 							@table.Body() {
 								if len(carts) == 0 {
 									<tr>
-										<td colspan="6" class="text-center text-gray-500 py-8">
+										<td colspan="6" class="text-center text-muted-foreground py-8">
 											No abandoned carts found
 										</td>
 									</tr>
@@ -457,7 +457,7 @@ templ AbandonedCartsDashboard(
 								for _, cartDetail := range carts {
 									<tr class="hover:bg-gray-50">
 										<td>
-											<div class="font-medium text-gray-900">
+											<div class="font-medium text-foreground">
 												if cartDetail.Cart.UserID.Valid && cartDetail.Cart.UserID.String != "" {
 													<a
 														href={ templ.URL("/admin/users/" + cartDetail.Cart.UserID.String) }
@@ -469,22 +469,22 @@ templ AbandonedCartsDashboard(
 													{ getCartCustomerName(cartDetail.Cart) }
 												}
 											</div>
-											<div class="text-sm text-gray-500">
+											<div class="text-sm text-muted-foreground">
 												{ getCartCustomerEmail(cartDetail.Cart) }
 											</div>
 										</td>
 										<td>
-											<div class="font-semibold text-gray-900">
+											<div class="font-semibold text-foreground">
 												${ fmt.Sprintf("%.2f", float64(cartDetail.Cart.CartValueCents)/100) }
 											</div>
 										</td>
 										<td>
-											<span class="text-gray-900">
+											<span class="text-foreground">
 												{ fmt.Sprintf("%d", cartDetail.Cart.ItemCount) }
 											</span>
 										</td>
 										<td>
-											<div class="text-sm text-gray-600">
+											<div class="text-sm text-muted-foreground">
 												{ cartDetail.TimeAgo }
 											</div>
 										</td>

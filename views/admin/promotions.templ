@@ -40,8 +40,8 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6">
 			<div>
-				<h1 class="text-2xl font-bold text-gray-100">Promotion Campaigns</h1>
-				<p class="text-gray-400 mt-1">Manage discount campaigns and promotion codes</p>
+				<h1 class="text-2xl font-bold text-foreground">Promotion Campaigns</h1>
+				<p class="text-muted-foreground mt-1">Manage discount campaigns and promotion codes</p>
 			</div>
 		</div>
 
@@ -52,14 +52,14 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 				@card.Content(card.ContentProps{Class: "p-6"}) {
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-400">Overall Redemption Rate</p>
+							<p class="text-sm font-medium text-muted-foreground">Overall Redemption Rate</p>
 							<h3 class="text-2xl font-bold text-gray-100 mt-2">
 								{ helpers.FormatFloat(compositeStats.OverallRedemptionRate, 1) }%
 							</h3>
-							<p class="text-xs text-gray-500 mt-1">Across active campaigns</p>
+							<p class="text-xs text-muted-foreground mt-1">Across active campaigns</p>
 						</div>
-						<div class="p-3 bg-green-900/30 rounded-lg">
-							<svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+							<svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
 							</svg>
 						</div>
@@ -72,14 +72,14 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 				@card.Content(card.ContentProps{Class: "p-6"}) {
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-400">Total Emails to Non-Users</p>
+							<p class="text-sm font-medium text-muted-foreground">Total Emails to Non-Users</p>
 							<h3 class="text-2xl font-bold text-gray-100 mt-2">
 								{ helpers.FormatInt(compositeStats.TotalEmailsToNonUsers) }
 							</h3>
-							<p class="text-xs text-gray-500 mt-1">Potential conversions</p>
+							<p class="text-xs text-muted-foreground mt-1">Potential conversions</p>
 						</div>
-						<div class="p-3 bg-orange-900/30 rounded-lg">
-							<svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+							<svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
 							</svg>
 						</div>
@@ -92,14 +92,14 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 				@card.Content(card.ContentProps{Class: "p-6"}) {
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-400">Total Active Codes</p>
+							<p class="text-sm font-medium text-muted-foreground">Total Active Codes</p>
 							<h3 class="text-2xl font-bold text-gray-100 mt-2">
 								{ helpers.FormatInt(compositeStats.TotalActiveCodes) }
 							</h3>
-							<p class="text-xs text-gray-500 mt-1">Non-expired codes</p>
+							<p class="text-xs text-muted-foreground mt-1">Non-expired codes</p>
 						</div>
-						<div class="p-3 bg-purple-900/30 rounded-lg">
-							<svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+							<svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
 							</svg>
 						</div>
@@ -112,14 +112,14 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 				@card.Content(card.ContentProps{Class: "p-6"}) {
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-400">Codes Issued</p>
+							<p class="text-sm font-medium text-muted-foreground">Codes Issued</p>
 							<h3 class="text-2xl font-bold text-gray-100 mt-2">
 								{ helpers.FormatNullFloat64AsInt(compositeStats.TotalCodesRedeemed, "0") } / { helpers.FormatInt(compositeStats.TotalCodesIssued) }
 							</h3>
-							<p class="text-xs text-gray-500 mt-1">Redeemed / Total</p>
+							<p class="text-xs text-muted-foreground mt-1">Redeemed / Total</p>
 						</div>
-						<div class="p-3 bg-blue-900/30 rounded-lg">
-							<svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+							<svg class="w-8 h-8 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
 							</svg>
 						</div>
@@ -137,7 +137,7 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 			}
 			@card.Content() {
 				if len(campaigns) == 0 {
-					<div class="text-center py-12 text-gray-500">
+					<div class="text-center py-12 text-muted-foreground">
 						<p>No campaigns created yet</p>
 					</div>
 				} else {
@@ -156,11 +156,11 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 							for _, campaign := range campaigns {
 								@table.Row() {
 									@table.Cell() {
-										<a href={ templ.SafeURL(fmt.Sprintf("/admin/promotions/%s", campaign.ID)) } class="text-blue-400 hover:text-blue-300 font-medium">
+										<a href={ templ.SafeURL(fmt.Sprintf("/admin/promotions/%s", campaign.ID)) } class="text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
 											{ campaign.Name }
 										</a>
 										if campaign.Description.Valid {
-											<p class="text-sm text-gray-400 mt-1">{ campaign.Description.String }</p>
+											<p class="text-sm text-muted-foreground mt-1">{ campaign.Description.String }</p>
 										}
 									}
 									@table.Cell() {
@@ -174,9 +174,9 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 										}
 									}
 									@table.Cell() {
-										<span class="text-gray-200">{ helpers.FormatNullInt64(campaign.CurrentUses, "0") }</span>
+										<span class="text-foreground">{ helpers.FormatNullInt64(campaign.CurrentUses, "0") }</span>
 										if campaign.MaxUses.Valid {
-											<span class="text-gray-400"> / { helpers.FormatInt(campaign.MaxUses.Int64) }</span>
+											<span class="text-muted-foreground"> / { helpers.FormatInt(campaign.MaxUses.Int64) }</span>
 										}
 									}
 									@table.Cell() {
@@ -191,7 +191,7 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 										}
 									}
 									@table.Cell() {
-										<span class="text-sm text-gray-300">
+										<span class="text-sm text-foreground">
 											{ helpers.FormatNullTime(campaign.CreatedAt, "Jan 2, 2006", "-") }
 										</span>
 									}
@@ -217,9 +217,9 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 		<!-- Header -->
 		<div class="flex justify-between items-start mb-6">
 			<div>
-				<h1 class="text-2xl font-bold text-gray-100">{ campaign.Name }</h1>
+				<h1 class="text-2xl font-bold text-foreground">{ campaign.Name }</h1>
 				if campaign.Description.Valid {
-					<p class="text-gray-400 mt-1">{ campaign.Description.String }</p>
+					<p class="text-muted-foreground mt-1">{ campaign.Description.String }</p>
 				}
 			</div>
 			<div>
@@ -242,14 +242,14 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				@card.Content(card.ContentProps{Class: "p-6"}) {
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-400">Redemption Rate</p>
+							<p class="text-sm font-medium text-muted-foreground">Redemption Rate</p>
 							<h3 class="text-2xl font-bold text-gray-100 mt-2">
 								{ helpers.FormatFloat(stats.RedemptionRatePercent, 1) }%
 							</h3>
-							<p class="text-xs text-gray-500 mt-1">Active codes used</p>
+							<p class="text-xs text-muted-foreground mt-1">Active codes used</p>
 						</div>
-						<div class="p-3 bg-green-900/30 rounded-lg">
-							<svg class="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
+							<svg class="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
 							</svg>
 						</div>
@@ -262,14 +262,14 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				@card.Content(card.ContentProps{Class: "p-6"}) {
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-400">Emails to Non-Users</p>
+							<p class="text-sm font-medium text-muted-foreground">Emails to Non-Users</p>
 							<h3 class="text-2xl font-bold text-gray-100 mt-2">
 								{ helpers.FormatInt(stats.EmailsToNonUsers) }
 							</h3>
-							<p class="text-xs text-gray-500 mt-1">Potential conversions</p>
+							<p class="text-xs text-muted-foreground mt-1">Potential conversions</p>
 						</div>
-						<div class="p-3 bg-orange-900/30 rounded-lg">
-							<svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+							<svg class="w-8 h-8 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
 							</svg>
 						</div>
@@ -282,14 +282,14 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				@card.Content(card.ContentProps{Class: "p-6"}) {
 					<div class="flex items-center justify-between">
 						<div>
-							<p class="text-sm font-medium text-gray-400">Active Codes</p>
+							<p class="text-sm font-medium text-muted-foreground">Active Codes</p>
 							<h3 class="text-2xl font-bold text-gray-100 mt-2">
 								{ helpers.FormatNullFloat64AsInt(stats.ActiveCodesRedeemed, "0") } / { helpers.FormatInt(stats.ActiveCodesIssued) }
 							</h3>
-							<p class="text-xs text-gray-500 mt-1">Redeemed / Issued</p>
+							<p class="text-xs text-muted-foreground mt-1">Redeemed / Issued</p>
 						</div>
-						<div class="p-3 bg-purple-900/30 rounded-lg">
-							<svg class="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<div class="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+							<svg class="w-8 h-8 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
 							</svg>
 						</div>
@@ -303,8 +303,8 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 			@card.Card() {
 				@card.Content() {
 					<div class="text-center">
-						<p class="text-3xl font-bold text-gray-100">{ helpers.FormatInt(stats.TotalCodes) }</p>
-						<p class="text-sm text-gray-400 mt-1">Total Codes</p>
+						<p class="text-3xl font-bold text-foreground">{ helpers.FormatInt(stats.TotalCodes) }</p>
+						<p class="text-sm text-muted-foreground mt-1">Total Codes</p>
 					</div>
 				}
 			}
@@ -312,8 +312,8 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 			@card.Card() {
 				@card.Content() {
 					<div class="text-center">
-						<p class="text-3xl font-bold text-green-400">{ helpers.FormatNullFloat64AsInt(stats.UsedCodes, "0") }</p>
-						<p class="text-sm text-gray-400 mt-1">Codes Used</p>
+						<p class="text-3xl font-bold text-green-600 dark:text-green-400">{ helpers.FormatNullFloat64AsInt(stats.UsedCodes, "0") }</p>
+						<p class="text-sm text-muted-foreground mt-1">Codes Used</p>
 					</div>
 				}
 			}
@@ -321,8 +321,8 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 			@card.Card() {
 				@card.Content() {
 					<div class="text-center">
-						<p class="text-3xl font-bold text-blue-400">{ helpers.FormatNullFloat64AsInt(stats.TotalUses, "0") }</p>
-						<p class="text-sm text-gray-400 mt-1">Total Redemptions</p>
+						<p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{ helpers.FormatNullFloat64AsInt(stats.TotalUses, "0") }</p>
+						<p class="text-sm text-muted-foreground mt-1">Total Redemptions</p>
 					</div>
 				}
 			}
@@ -331,11 +331,11 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				@card.Content() {
 					<div class="text-center">
 						if campaign.DiscountType == "percentage" {
-							<p class="text-3xl font-bold text-blue-400">{ helpers.FormatPercentage(campaign.DiscountValue) }</p>
+							<p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{ helpers.FormatPercentage(campaign.DiscountValue) }</p>
 						} else {
-							<p class="text-3xl font-bold text-blue-400">{ helpers.FormatPrice(campaign.DiscountValue) }</p>
+							<p class="text-3xl font-bold text-blue-600 dark:text-blue-400">{ helpers.FormatPrice(campaign.DiscountValue) }</p>
 						}
-						<p class="text-sm text-gray-400 mt-1">Discount Value</p>
+						<p class="text-sm text-muted-foreground mt-1">Discount Value</p>
 					</div>
 				}
 			}
@@ -350,7 +350,7 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 			}
 			@card.Content() {
 				if len(codes) == 0 {
-					<div class="text-center py-12 text-gray-500">
+					<div class="text-center py-12 text-muted-foreground">
 						<p>No codes issued yet</p>
 					</div>
 				} else {
@@ -368,26 +368,26 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 							for _, code := range codes {
 								@table.Row() {
 									@table.Cell() {
-										<span class="font-mono font-semibold text-blue-400">{ code.Code }</span>
+										<span class="font-mono font-semibold text-blue-600 dark:text-blue-400">{ code.Code }</span>
 									}
 									@table.Cell() {
 										if code.Email.Valid {
-											<span class="text-gray-300">{ code.Email.String }</span>
+											<span class="text-foreground">{ code.Email.String }</span>
 										} else {
-											<span class="text-gray-400">-</span>
+											<span class="text-muted-foreground">-</span>
 										}
 									}
 									@table.Cell() {
-										<span class="text-gray-200">{ helpers.FormatNullInt64(code.CurrentUses, "0") }</span>
+										<span class="text-foreground">{ helpers.FormatNullInt64(code.CurrentUses, "0") }</span>
 										if code.MaxUses.Valid {
-											<span class="text-gray-400"> / { helpers.FormatInt(code.MaxUses.Int64) }</span>
+											<span class="text-muted-foreground"> / { helpers.FormatInt(code.MaxUses.Int64) }</span>
 										}
 									}
 									@table.Cell() {
-										<span class="text-sm text-gray-300">{ helpers.FormatNullTime(code.ExpiresAt, "Jan 2, 2006", "Never") }</span>
+										<span class="text-sm text-foreground">{ helpers.FormatNullTime(code.ExpiresAt, "Jan 2, 2006", "Never") }</span>
 									}
 									@table.Cell() {
-										<span class="text-sm text-gray-300">{ helpers.FormatNullTime(code.CreatedAt, "Jan 2, 2006", "-") }</span>
+										<span class="text-sm text-foreground">{ helpers.FormatNullTime(code.CreatedAt, "Jan 2, 2006", "-") }</span>
 									}
 								}
 							}

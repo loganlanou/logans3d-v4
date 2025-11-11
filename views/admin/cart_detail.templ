@@ -58,8 +58,8 @@ templ CartDetailPage(
 			<!-- Header -->
 			<div class="flex justify-between items-start mb-6">
 				<div>
-					<h1 class="text-2xl font-bold text-gray-900">Cart Details</h1>
-					<p class="text-sm text-gray-600 mt-1">
+					<h1 class="text-2xl font-bold text-foreground">Cart Details</h1>
+					<p class="text-sm text-muted-foreground mt-1">
 						if cart.SessionID != "" {
 							Session: { cart.SessionID }
 						} else {
@@ -94,11 +94,11 @@ templ CartDetailPage(
 										</div>
 									} else {
 										<div class="w-16 h-16 bg-gray-300 rounded-full flex items-center justify-center">
-											<span class="text-gray-600 text-3xl">👤</span>
+											<span class="text-muted-foreground text-3xl">👤</span>
 										</div>
 									}
 									<div>
-										<div class="font-bold text-lg text-white">
+										<div class="font-bold text-lg text-foreground">
 											if cart.CustomerName != "" {
 												{ cart.CustomerName }
 											} else {
@@ -114,10 +114,10 @@ templ CartDetailPage(
 								</div>
 
 								<!-- Customer Type -->
-								<div class="pt-3 border-t border-gray-700">
+								<div class="pt-3 border-t border-border dark:border-border">
 									<div class="flex justify-between items-center">
-										<span class="text-sm text-gray-400">Customer Type:</span>
-										<span class="text-sm font-medium text-white">
+										<span class="text-sm text-muted-foreground">Customer Type:</span>
+										<span class="text-sm font-medium text-foreground">
 											if cart.UserID != "" {
 												Registered User
 											} else {
@@ -129,7 +129,7 @@ templ CartDetailPage(
 
 								<!-- View User Profile Button -->
 								if cart.UserID != "" {
-									<div class="pt-4 border-t border-gray-700">
+									<div class="pt-4 border-t border-border dark:border-border">
 										<a href={ templ.URL("/admin/users/" + cart.UserID) }>
 											@button.Button(button.Props{
 												Variant: button.VariantDefault,
@@ -144,14 +144,14 @@ templ CartDetailPage(
 								<!-- Session/User ID -->
 								<div class="pt-1">
 									<div class="flex justify-between items-center">
-										<span class="text-sm text-gray-400">
+										<span class="text-sm text-muted-foreground">
 											if cart.UserID != "" {
 												User ID:
 											} else {
 												Session ID:
 											}
 										</span>
-										<span class="text-xs font-mono text-gray-300">
+										<span class="text-xs font-mono text-foreground">
 											if cart.UserID != "" {
 												{ cart.UserID[:16] }...
 											} else {
@@ -188,20 +188,20 @@ templ CartDetailPage(
 						@card.Content() {
 							<div class="space-y-3">
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Total Items:</span>
-									<span class="text-lg font-bold text-white">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
+									<span class="text-sm text-muted-foreground">Total Items:</span>
+									<span class="text-lg font-bold text-foreground">{ fmt.Sprintf("%d", cart.ItemCount) }</span>
 								</div>
-								<div class="flex justify-between items-center pt-2 border-t border-gray-700">
-									<span class="text-sm text-gray-400">Cart Value:</span>
-									<span class="text-2xl font-bold text-white">{ formatDetailCents(cart.CartValueCents) }</span>
+								<div class="flex justify-between items-center pt-2 border-t border-border dark:border-border">
+									<span class="text-sm text-muted-foreground">Cart Value:</span>
+									<span class="text-2xl font-bold text-foreground">{ formatDetailCents(cart.CartValueCents) }</span>
 								</div>
-								<div class="flex justify-between items-center pt-2 border-t border-gray-700">
-									<span class="text-sm text-gray-400">Created:</span>
-									<span class="text-sm text-gray-200">{ cart.CreatedAt.Format("Jan 2, 2006 3:04 PM") }</span>
+								<div class="flex justify-between items-center pt-2 border-t border-border dark:border-border">
+									<span class="text-sm text-muted-foreground">Created:</span>
+									<span class="text-sm text-foreground">{ cart.CreatedAt.Format("Jan 2, 2006 3:04 PM") }</span>
 								</div>
 								<div class="flex justify-between items-center">
-									<span class="text-sm text-gray-400">Last Activity:</span>
-									<span class="text-sm text-gray-200">{ formatTimeAgoDetail(cart.LastActivity) }</span>
+									<span class="text-sm text-muted-foreground">Last Activity:</span>
+									<span class="text-sm text-foreground">{ formatTimeAgoDetail(cart.LastActivity) }</span>
 								</div>
 							</div>
 						}
@@ -234,7 +234,7 @@ templ CartDetailPage(
 									@table.Body() {
 										if len(items) == 0 {
 											<tr>
-												<td colspan="5" class="text-center text-gray-500 py-8">
+												<td colspan="5" class="text-center text-muted-foreground py-8">
 													No items in cart
 												</td>
 											</tr>
@@ -247,39 +247,39 @@ templ CartDetailPage(
 															<img src={ "/public/images/products/" + item.ProductImage } alt={ item.ProductName } class="w-12 h-12 object-cover rounded border"/>
 														} else {
 															<div class="w-12 h-12 bg-gray-200 rounded border flex items-center justify-center">
-																<span class="text-gray-400 text-xs">No Image</span>
+																<span class="text-muted-foreground text-xs">No Image</span>
 															</div>
 														}
 														<div>
-															<div class="font-medium text-white">{ item.ProductName }</div>
+															<div class="font-medium text-foreground">{ item.ProductName }</div>
 															if item.VariantName != "" {
-																<div class="text-xs text-gray-400">{ item.VariantName }</div>
+																<div class="text-xs text-muted-foreground">{ item.VariantName }</div>
 															}
 															if item.VariantSKU != "" {
-																<div class="text-xs text-gray-500">SKU: { item.VariantSKU }</div>
+																<div class="text-xs text-muted-foreground">SKU: { item.VariantSKU }</div>
 															}
 														</div>
 													</div>
 												</td>
 												<td>
-													<span class="text-gray-200">{ fmt.Sprintf("%d", item.Quantity) }</span>
+													<span class="text-foreground">{ fmt.Sprintf("%d", item.Quantity) }</span>
 												</td>
 												<td>
-													<span class="text-gray-200">{ formatDetailCents(item.PriceCents) }</span>
+													<span class="text-foreground">{ formatDetailCents(item.PriceCents) }</span>
 												</td>
 												<td>
-													<span class="font-medium text-white">{ formatDetailCents(item.LineTotalCents) }</span>
+													<span class="font-medium text-foreground">{ formatDetailCents(item.LineTotalCents) }</span>
 												</td>
 												<td>
-													<span class="text-sm text-gray-400">{ formatTimeAgoDetail(item.CreatedAt) }</span>
+													<span class="text-sm text-muted-foreground">{ formatTimeAgoDetail(item.CreatedAt) }</span>
 												</td>
 											</tr>
 										}
 										<!-- Cart Total Row -->
 										if len(items) > 0 {
-											<tr class="border-t-2 border-gray-700">
-												<td colspan="3" class="text-right font-bold text-white">Cart Total:</td>
-												<td colspan="2" class="font-bold text-xl text-white">{ formatDetailCents(cart.CartValueCents) }</td>
+											<tr class="border-t-2 border-border dark:border-border">
+												<td colspan="3" class="text-right font-bold text-foreground">Cart Total:</td>
+												<td colspan="2" class="font-bold text-xl text-foreground">{ formatDetailCents(cart.CartValueCents) }</td>
 											</tr>
 										}
 									}

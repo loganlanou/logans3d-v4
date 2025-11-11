@@ -109,7 +109,7 @@ templ CategoriesTab(c echo.Context, products []types.ProductWithImage, categorie
 					<tbody>
 						if len(categories) == 0 {
 							<tr>
-								<td colspan="6" class="text-center admin-text-muted py-8">
+								<td colspan="6" class="text-center admin-text-muted-foreground py-8">
 									switch filter {
 										case "root":
 											No root categories found
@@ -127,7 +127,7 @@ templ CategoriesTab(c echo.Context, products []types.ProductWithImage, categorie
 								<tr>
 									<td>
 										<div class="admin-text-primary admin-font-medium">{ category.Name }</div>
-										<div class="admin-text-muted admin-text-xs">{ category.Slug }</div>
+										<div class="admin-text-muted-foreground admin-text-xs">{ category.Slug }</div>
 									</td>
 									<td>
 										if category.Description.Valid {

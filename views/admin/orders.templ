@@ -57,20 +57,20 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 					@click.outside="showResults = false"
 					@keydown.escape="clearSearch()"
 					placeholder="Search orders by customer name..."
-					class="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-4 py-2 pr-10 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 				/>
 				<!-- Clear button -->
 				<button
 					type="button"
 					x-show="search.length > 0"
 					@click="clearSearch()"
-					class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+					class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground transition-colors"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
 					</svg>
 				</button>
-				<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+				<div x-show="showResults && results.length > 0" class="absolute z-10 w-full mt-1 bg-white border border-border rounded-lg shadow-lg max-h-96 overflow-y-auto">
 					<template x-for="result in results" :key="result.id">
 						<a
 							:href="`/admin/orders/${result.id}`"
@@ -82,16 +82,16 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 								<div class="flex-1 min-w-0">
 									<div class="flex items-center gap-2 mb-1">
 										<span class="font-mono text-sm font-semibold text-blue-600" x-text="`#${result.order_number}`"></span>
-										<span class="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded" x-text="result.status"></span>
+										<span class="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded" x-text="result.status"></span>
 									</div>
-									<div class="font-medium text-gray-900 truncate" x-text="result.customer_name"></div>
-									<div class="text-sm text-gray-500 truncate" x-text="result.customer_email"></div>
+									<div class="font-medium text-foreground truncate" x-text="result.customer_name"></div>
+									<div class="text-sm text-muted-foreground truncate" x-text="result.customer_email"></div>
 								</div>
 								<!-- Right: Order Details -->
 								<div class="text-right shrink-0">
-									<div class="font-bold text-gray-900" x-text="`$${(result.total_cents / 100).toFixed(2)}`"></div>
-									<div class="text-xs text-gray-500" x-text="`${result.item_count} item${result.item_count !== 1 ? 's' : ''}`"></div>
-									<div class="text-xs text-gray-500" x-text="result.created_at"></div>
+									<div class="font-bold text-foreground" x-text="`$${(result.total_cents / 100).toFixed(2)}`"></div>
+									<div class="text-xs text-muted-foreground" x-text="`${result.item_count} item${result.item_count !== 1 ? 's' : ''}`"></div>
+									<div class="text-xs text-muted-foreground" x-text="result.created_at"></div>
 								</div>
 							</div>
 						</a>
@@ -105,17 +105,17 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 				<input
 					type="date"
 					name="date"
-					class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					onchange="window.location.href = updateQueryParam('date', this.value)"
 				/>
 
 				<!-- Status Filters -->
-				<a href="/admin/orders" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors">All Orders</a>
-				<a href="/admin/orders?status=received" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Received</a>
-				<a href="/admin/orders?status=in_production" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 transition-colors">In Production</a>
-				<a href="/admin/orders?status=shipped" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">Shipped</a>
-				<a href="/admin/orders?status=delivered" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-green-100 hover:border-green-400 hover:text-green-900 transition-colors">Delivered</a>
-				<a href="/admin/orders?status=cancelled" class="px-4 py-2 text-sm text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-red-100 hover:border-red-400 hover:text-red-900 transition-colors">Cancelled</a>
+				<a href="/admin/orders" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-muted/80 hover:text-foreground transition-colors">All Orders</a>
+				<a href="/admin/orders?status=received" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Received</a>
+				<a href="/admin/orders?status=in_production" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-blue-100 hover:border-blue-400 hover:text-blue-900 transition-colors">In Production</a>
+				<a href="/admin/orders?status=shipped" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">Shipped</a>
+				<a href="/admin/orders?status=delivered" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-green-100 hover:border-green-400 hover:text-green-900 transition-colors">Delivered</a>
+				<a href="/admin/orders?status=cancelled" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-red-100 hover:border-red-400 hover:text-red-900 transition-colors">Cancelled</a>
 			</div>
 		</div>
 
@@ -151,7 +151,7 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 					<tbody>
 						if len(orders) == 0 {
 							<tr>
-								<td colspan="6" class="text-center admin-text-muted py-8">
+								<td colspan="6" class="text-center admin-text-muted-foreground py-8">
 									No orders found
 								</td>
 							</tr>
@@ -177,13 +177,13 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 											{ order.CustomerName }
 										}
 									</div>
-									<div class="admin-text-muted admin-text-sm">{ order.CustomerEmail }</div>
+									<div class="admin-text-muted-foreground admin-text-sm">{ order.CustomerEmail }</div>
 								</td>
 								<td>
 									<div class="admin-text-primary admin-font-semibold">
 										${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }
 									</div>
-									<div class="admin-text-muted admin-text-sm">
+									<div class="admin-text-muted-foreground admin-text-sm">
 										Subtotal: ${ fmt.Sprintf("%.2f", float64(order.SubtotalCents)/100) }
 									</div>
 								</td>
@@ -225,19 +225,19 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
 					<input type="text" id="carrierList" name="carrier" required
-						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="e.g., USPS, UPS, FedEx"/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
 					<input type="text" id="trackingNumberList" name="trackingNumber" required
-						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="Enter tracking number"/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
 					<input type="url" id="trackingUrlList" name="trackingUrl"
-						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="https://..."/>
 				</div>
 			</form>
@@ -357,7 +357,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 				<select
 					id="statusDropdown"
 					onchange={ templ.ComponentScript{Call: fmt.Sprintf("updateOrderStatusFromDropdown('%s', this.value)", order.ID)} }
-					class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 				>
 					<option value="received" selected?={ getOrderStatusString(order.Status) == "received" }>Received</option>
 					<option value="in_production" selected?={ getOrderStatusString(order.Status) == "in_production" }>In Production</option>
@@ -381,7 +381,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 					View in Stripe
 				</a>
 				}
-				<div class="text-sm admin-text-muted">
+				<div class="text-sm admin-text-muted-foreground">
 					ID: { order.ID }
 				</div>
 			</div>
@@ -395,30 +395,30 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 			<div class="p-6">
 				<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
 					<div>
-						<p class="text-sm admin-text-muted mb-1">Status</p>
+						<p class="text-sm admin-text-muted-foreground mb-1">Status</p>
 						@OrderStatusBadge(getOrderStatusString(order.Status))
 					</div>
 					<div>
-						<p class="text-sm admin-text-muted mb-1">Order Date</p>
+						<p class="text-sm admin-text-muted-foreground mb-1">Order Date</p>
 						<p class="admin-text-primary admin-font-medium">{ formatOrderDate(getOrderCreatedAt(order.CreatedAt)) }</p>
 					</div>
 					<div>
-						<p class="text-sm admin-text-muted mb-1">Total Amount</p>
+						<p class="text-sm admin-text-muted-foreground mb-1">Total Amount</p>
 						<p class="admin-text-primary admin-font-medium text-lg">${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }</p>
 					</div>
 				</div>
 				if order.TrackingNumber.Valid && order.TrackingNumber.String != "" {
-					<div class="mt-6 pt-6 border-t border-gray-200">
-						<p class="text-sm admin-text-muted mb-2">Tracking Information</p>
+					<div class="mt-6 pt-6 border-t border-border dark:border-gray-200">
+						<p class="text-sm admin-text-muted-foreground mb-2">Tracking Information</p>
 						<div class="flex items-center gap-4">
 							if order.Carrier.Valid && order.Carrier.String != "" {
 								<div>
-									<span class="text-xs admin-text-muted">Carrier:</span>
+									<span class="text-xs admin-text-muted-foreground">Carrier:</span>
 									<span class="admin-text-primary admin-font-medium ml-2">{ order.Carrier.String }</span>
 								</div>
 							}
 							<div>
-								<span class="text-xs admin-text-muted">Tracking #:</span>
+								<span class="text-xs admin-text-muted-foreground">Tracking #:</span>
 								<span class="admin-text-primary admin-font-medium ml-2">{ order.TrackingNumber.String }</span>
 							</div>
 							if order.TrackingUrl.Valid && order.TrackingUrl.String != "" {
@@ -442,33 +442,33 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 					<div class="flex items-start justify-between mb-4">
 						<div class="space-y-3 flex-1">
 							<div>
-								<p class="text-sm admin-text-muted mb-1">Shipment ID</p>
+								<p class="text-sm admin-text-muted-foreground mb-1">Shipment ID</p>
 								<p class="admin-text-primary admin-font-mono text-sm">{ order.EasypostShipmentID.String }</p>
 							</div>
 							if shippingSelection.ID != "" {
 								<div>
-									<p class="text-sm admin-text-muted mb-1">Selected Service</p>
+									<p class="text-sm admin-text-muted-foreground mb-1">Selected Service</p>
 									<p class="admin-text-primary admin-font-medium">{ shippingSelection.CarrierID } - { shippingSelection.ServiceName }</p>
 									if shippingSelection.DeliveryDays.Valid {
-										<p class="text-sm admin-text-muted">{ fmt.Sprintf("%d business days", shippingSelection.DeliveryDays.Int64) }</p>
+										<p class="text-sm admin-text-muted-foreground">{ fmt.Sprintf("%d business days", shippingSelection.DeliveryDays.Int64) }</p>
 									}
 								</div>
 								<div>
-									<p class="text-sm admin-text-muted mb-2">Quoted Shipping Rate</p>
+									<p class="text-sm admin-text-muted-foreground mb-2">Quoted Shipping Rate</p>
 									<div class="space-y-1 text-sm">
 										<div class="flex justify-between">
-											<span class="admin-text-muted">Carrier Rate:</span>
+											<span class="admin-text-muted-foreground">Carrier Rate:</span>
 											<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedShippingAmountCents)/100) }</span>
 										</div>
 										<div class="flex justify-between">
-											<span class="admin-text-muted">Box/Packaging:</span>
+											<span class="admin-text-muted-foreground">Box/Packaging:</span>
 											<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedBoxCostCents)/100) }</span>
 										</div>
 										<div class="flex justify-between">
-											<span class="admin-text-muted">Handling:</span>
+											<span class="admin-text-muted-foreground">Handling:</span>
 											<span class="admin-text-primary admin-font-medium">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedHandlingCostCents)/100) }</span>
 										</div>
-										<div class="flex justify-between pt-1 border-t border-gray-200">
+										<div class="flex justify-between pt-1 border-t border-border dark:border-gray-200">
 											<span class="admin-text-primary admin-font-bold">Total Shipping:</span>
 											<span class="admin-text-primary admin-font-bold">${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedTotalCents)/100) }</span>
 										</div>
@@ -477,7 +477,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 							}
 							if order.EasypostLabelUrl.Valid && order.EasypostLabelUrl.String != "" {
 								<div>
-									<p class="text-sm admin-text-muted mb-1">Label Status</p>
+									<p class="text-sm admin-text-muted-foreground mb-1">Label Status</p>
 									<div class="flex items-center gap-2">
 										<span class="admin-status admin-status-success">
 											<div class="admin-status-dot"></div>
@@ -521,7 +521,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 				</div>
 				<div class="p-6 space-y-3">
 					<div>
-						<p class="text-sm admin-text-muted">Name</p>
+						<p class="text-sm admin-text-muted-foreground">Name</p>
 						<p class="admin-text-primary admin-font-medium">
 							if order.UserID != "" {
 								<a
@@ -536,17 +536,17 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 						</p>
 					</div>
 					<div>
-						<p class="text-sm admin-text-muted">Email</p>
+						<p class="text-sm admin-text-muted-foreground">Email</p>
 						<p class="admin-text-primary">{ order.CustomerEmail }</p>
 					</div>
 					if order.CustomerPhone.Valid && order.CustomerPhone.String != "" {
 						<div>
-							<p class="text-sm admin-text-muted">Phone</p>
+							<p class="text-sm admin-text-muted-foreground">Phone</p>
 							<p class="admin-text-primary">{ order.CustomerPhone.String }</p>
 						</div>
 					}
 					if order.UserID != "" {
-						<div class="pt-3 border-t border-gray-200">
+						<div class="pt-3 border-t border-border dark:border-gray-200">
 							<a href={ templ.URL("/admin/users/" + order.UserID) } class="admin-btn admin-btn-sm admin-btn-primary">
 								View User Profile
 							</a>
@@ -589,7 +589,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 					<tbody>
 						if len(orderItems) == 0 {
 							<tr>
-								<td colspan="4" class="text-center admin-text-muted py-8">
+								<td colspan="4" class="text-center admin-text-muted-foreground py-8">
 									No items found
 								</td>
 							</tr>
@@ -599,7 +599,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 								<td>
 									<div class="admin-text-primary admin-font-medium">{ item.ProductName }</div>
 									if item.ProductSku.Valid && item.ProductSku.String != "" {
-										<div class="admin-text-muted admin-text-sm">SKU: { item.ProductSku.String }</div>
+										<div class="admin-text-muted-foreground admin-text-sm">SKU: { item.ProductSku.String }</div>
 									}
 								</td>
 								<td>{ fmt.Sprintf("%d", item.Quantity) }</td>
@@ -612,7 +612,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 			</div>
 
 			<!-- Order Totals -->
-			<div class="p-6 border-t border-gray-200">
+			<div class="p-6 border-t border-border dark:border-gray-200">
 				<div class="space-y-2 max-w-sm ml-auto">
 					<div class="flex justify-between admin-text-primary">
 						<span>Subtotal:</span>
@@ -642,12 +642,12 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 					}
 					if order.ShippingCents > 0 {
 						if shippingSelection.ID != "" {
-							<div class="pt-2 border-t border-gray-200">
-								<div class="flex justify-between text-sm admin-text-muted mb-1">
+							<div class="pt-2 border-t border-border dark:border-gray-200">
+								<div class="flex justify-between text-sm admin-text-muted-foreground mb-1">
 									<span>Shipping Rate:</span>
 									<span>${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedShippingAmountCents)/100) }</span>
 								</div>
-								<div class="flex justify-between text-sm admin-text-muted mb-1">
+								<div class="flex justify-between text-sm admin-text-muted-foreground mb-1">
 									<span>Box/Packaging:</span>
 									<span>${ fmt.Sprintf("%.2f", float64(shippingSelection.QuotedBoxCostCents)/100) }</span>
 								</div>
@@ -663,7 +663,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 							</div>
 						}
 					}
-					<div class="flex justify-between text-xl font-bold admin-text-primary pt-2 border-t border-gray-300">
+					<div class="flex justify-between text-xl font-bold admin-text-primary pt-2 border-t border-border">
 						<span>Total:</span>
 						<span>${ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }</span>
 					</div>
@@ -697,19 +697,19 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
 					<input type="text" id="carrier" name="carrier" required
-						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="e.g., USPS, UPS, FedEx"/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
 					<input type="text" id="trackingNumber" name="trackingNumber" required
-						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="Enter tracking number"/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
 					<input type="url" id="trackingUrl" name="trackingUrl"
-						class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 						placeholder="https://..."/>
 				</div>
 			</form>
@@ -886,7 +886,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 
 					data.rates.forEach(rate => {
 						const rateCard = document.createElement('div');
-						rateCard.className = 'border border-gray-300 rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors cursor-pointer';
+						rateCard.className = 'border border-border rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors cursor-pointer';
 						rateCard.onclick = function() { purchaseLabel(orderID, rate.rate_id); };
 
 						const deliveryInfo = rate.delivery_days ?
@@ -896,13 +896,13 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 						rateCard.innerHTML = `
 							<div class="flex items-center justify-between">
 								<div>
-									<div class="font-medium text-gray-900">${rate.carrier_nickname || rate.carrier_code}</div>
-									<div class="text-sm text-gray-600">${rate.service_type}</div>
-									<div class="text-xs text-gray-500 mt-1">${deliveryInfo}</div>
+									<div class="font-medium text-foreground">${rate.carrier_nickname || rate.carrier_code}</div>
+									<div class="text-sm text-muted-foreground">${rate.service_type}</div>
+									<div class="text-xs text-muted-foreground mt-1">${deliveryInfo}</div>
 								</div>
 								<div class="text-right">
-									<div class="text-lg font-bold text-gray-900">$${rate.shipping_amount.amount.toFixed(2)}</div>
-									<div class="text-xs text-gray-500">${rate.shipping_amount.currency}</div>
+									<div class="text-lg font-bold text-foreground">$${rate.shipping_amount.amount.toFixed(2)}</div>
+									<div class="text-xs text-muted-foreground">${rate.shipping_amount.currency}</div>
 								</div>
 							</div>
 						`;

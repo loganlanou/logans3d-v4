@@ -8,12 +8,12 @@ import (
 templ ProductImagesGrid(productID string, images []db.ProductImage) {
 	<div id="product-images-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 		if len(images) == 0 {
-			<div class="col-span-full text-center py-8 text-slate-400">
+			<div class="col-span-full text-center py-8 text-muted-foreground">
 				No images uploaded yet
 			</div>
 		}
 		for _, img := range images {
-			<div class="relative group bg-slate-900/50 border border-slate-600 rounded-lg p-2 hover:border-emerald-500/50 transition-all">
+			<div class="relative group bg-background/50 border border-border rounded-lg p-2 hover:border-emerald-500/50 transition-all">
 				<!-- Image -->
 				<img
 					src={ fmt.Sprintf("/public/images/products/%s", img.ImageUrl) }
@@ -23,7 +23,7 @@ templ ProductImagesGrid(productID string, images []db.ProductImage) {
 				<!-- Overlay on Hover -->
 				<div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center gap-2 p-2">
 					<!-- Primary Radio Button -->
-					<label class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-lg cursor-pointer hover:bg-slate-700 transition-colors">
+					<label class="flex items-center gap-2 bg-card px-3 py-1.5 rounded-lg cursor-pointer hover:bg-border transition-colors">
 						<input
 							type="radio"
 							name={ fmt.Sprintf("primary-image-%s", productID) }
@@ -33,7 +33,7 @@ templ ProductImagesGrid(productID string, images []db.ProductImage) {
 							hx-target="#product-images-grid"
 							hx-swap="outerHTML"
 							hx-indicator="none"
-							class="w-4 h-4 text-emerald-600 bg-slate-900 border-slate-600 focus:ring-emerald-500 focus:ring-2"
+							class="w-4 h-4 text-emerald-600 bg-background border-border focus:ring-emerald-500 focus:ring-2"
 						/>
 						<span class="text-white text-xs font-semibold">Primary</span>
 					</label>
