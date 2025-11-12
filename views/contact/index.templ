@@ -17,14 +17,14 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 			</div>
 			<div class="relative z-10">
 				<!-- Contact Form & Info -->
-				<section class="px-8 sm:px-12 lg:px-16 pt-32 pb-24 border-t border-slate-700/50">
+				<section class="px-4 sm:px-8 lg:px-16 pt-32 pb-24 border-t border-slate-700/50">
 					<div class="max-w-7xl mx-auto">
 						<div class="grid lg:grid-cols-2 gap-16 lg:gap-20">
 							<!-- Contact Form -->
-							<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
+							<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-10 border border-slate-700/50 backdrop-blur-sm hover:border-emerald-500/30 transition-all duration-500 group">
 								<!-- reCAPTCHA v3 Script -->
 								<script src={ "https://www.google.com/recaptcha/api.js?render=" + os.Getenv("RECAPTCHA_SITE_KEY") }></script>
-								<h2 class="text-3xl font-bold text-white mb-8 group-hover:text-emerald-400 transition-colors duration-300">Send Us a Message</h2>
+								<h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 group-hover:text-emerald-400 transition-colors duration-300">Send Us a Message</h2>
 								<div id="contact-form-messages"></div>
 								<form
 									id="contact-form"
@@ -33,7 +33,7 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 									action="/contact/submit"
 									data-recaptcha-key={ os.Getenv("RECAPTCHA_SITE_KEY") }
 								>
-									<div class="grid md:grid-cols-2 gap-6">
+									<div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 										<div>
 											<label for="first-name" class="block text-sm font-medium text-slate-300 mb-2">First Name *</label>
 											<input
@@ -191,8 +191,8 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 							<!-- Contact Information -->
 							<div class="space-y-8">
 								<!-- Contact Details -->
-								<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm hover:border-blue-500/30 transition-all duration-500 group">
-									<h2 class="text-3xl font-bold text-white mb-8 group-hover:text-blue-400 transition-colors duration-300">Contact Information</h2>
+								<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-10 border border-slate-700/50 backdrop-blur-sm hover:border-blue-500/30 transition-all duration-500 group">
+									<h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 group-hover:text-blue-400 transition-colors duration-300">Contact Information</h2>
 									<div class="space-y-8">
 										<div class="flex items-start group/item">
 											<div class="bg-gradient-to-br from-blue-500 to-blue-600 p-4 rounded-2xl mr-6 group-hover/item:scale-110 transition-transform duration-300 shadow-lg shadow-blue-500/25">
@@ -234,8 +234,8 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 									</div>
 								</div>
 								<!-- Business Hours -->
-								<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm hover:border-teal-500/30 transition-all duration-500 group">
-									<h2 class="text-3xl font-bold text-white mb-8 group-hover:text-teal-400 transition-colors duration-300">Business Hours</h2>
+								<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-10 border border-slate-700/50 backdrop-blur-sm hover:border-teal-500/30 transition-all duration-500 group">
+									<h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 group-hover:text-teal-400 transition-colors duration-300">Business Hours</h2>
 									<div class="space-y-4">
 										<div class="flex justify-between items-center py-3 border-b border-slate-600/50">
 											<span class="text-slate-300 text-lg">Summer Hours</span>
@@ -258,8 +258,8 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 									</div>
 								</div>
 								<!-- Social Links -->
-								<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl p-10 border border-slate-700/50 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-500 group">
-									<h2 class="text-3xl font-bold text-white mb-8 group-hover:text-purple-400 transition-colors duration-300">Follow Our Work</h2>
+								<div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-10 border border-slate-700/50 backdrop-blur-sm hover:border-purple-500/30 transition-all duration-500 group">
+									<h2 class="text-2xl sm:text-3xl font-bold text-white mb-6 sm:mb-8 group-hover:text-purple-400 transition-colors duration-300">Follow Our Work</h2>
 									<div class="flex space-x-4">
 										<a href="https://www.facebook.com/Logans3D" class="group/social bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white p-4 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transform hover:-translate-y-1 hover:scale-105" target="_blank" rel="noopener noreferrer">
 											<svg class="w-6 h-6 group-hover/social:scale-110 transition-transform duration-200" fill="currentColor" viewBox="0 0 24 24">
