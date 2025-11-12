@@ -7723,6 +7723,26 @@
   transform: translateY(-2px);
   box-shadow: var(--account-glow-purple);
 }
+.grecaptcha-badge {
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+  position: fixed !important;
+  bottom: 14px !important;
+  right: 14px !important;
+  z-index: 9999 !important;
+  transform: none !important;
+  scale: 1 !important;
+  @media (max-width: 768px) {
+    bottom: 20px !important;
+    right: 10px !important;
+    z-index: 10000 !important;
+  }
+}
+.grecaptcha-badge * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
 @property --tw-translate-x {
   syntax: "*";
   inherits: false;

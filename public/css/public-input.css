@@ -794,3 +794,49 @@
   All business card styling uses the prefix "business-card" or "business" in
   class names and comments for easy identification.
 */
+
+/* ==========================================================================
+   RECAPTCHA BADGE - MOBILE FIX
+   ========================================================================== */
+
+/* Ensure reCAPTCHA badge is visible and properly positioned on all devices */
+.grecaptcha-badge {
+  /* Force visibility on all devices */
+  visibility: visible !important;
+  opacity: 1 !important;
+  display: block !important;
+
+  /* Position the badge properly */
+  position: fixed !important;
+  bottom: 14px !important;
+  right: 14px !important;
+
+  /* Ensure it's above other elements */
+  z-index: 9999 !important;
+
+  /* Prevent any transforms or scaling */
+  transform: none !important;
+  scale: 1 !important;
+
+  /* Allow repositioning on mobile if needed */
+  @media (max-width: 768px) {
+    bottom: 20px !important;
+    right: 10px !important;
+    /* Ensure it's not covered by mobile navigation */
+    z-index: 10000 !important;
+  }
+}
+
+/* Prevent any parent elements from hiding the badge */
+.grecaptcha-badge * {
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Alternative: Hide badge properly (only if privacy text is included) */
+/* Uncomment the following if you want to hide the badge:
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
+Note: Only do this if you have the required privacy text on your page
+*/
