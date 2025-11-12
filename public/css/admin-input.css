@@ -740,12 +740,14 @@
 /* HTMX Indicator - Hidden by default */
 .htmx-indicator {
   opacity: 0;
+  pointer-events: none;
   transition: opacity 200ms ease-in-out;
 }
 
 /* Show indicator when request is in progress */
 .htmx-request .htmx-indicator {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Custom visibility classes for HTMX states */

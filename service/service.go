@@ -298,6 +298,13 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/promotions", promotionsAdminHandler.HandlePromotionsList)
 	admin.GET("/promotions/:id", promotionsAdminHandler.HandlePromotionDetail)
 
+	// Social Media management routes
+	admin.GET("/social-media", adminHandler.HandleAdminSocialMedia)
+	admin.POST("/social-media/generate/:product_id", adminHandler.HandleGeneratePostsForProduct)
+	admin.GET("/social-media/product/:product_id", adminHandler.HandleSocialMediaProductView)
+	admin.POST("/social-media/update-status", adminHandler.HandleUpdatePostStatus)
+	admin.POST("/social-media/bulk-generate", adminHandler.HandleBulkGeneratePosts)
+
 	// Cart management routes
 	cartHandler := handlers.NewCartHandler(s.storage)
 	admin.GET("/carts", cartHandler.HandleCartsList)
