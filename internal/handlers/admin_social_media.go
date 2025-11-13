@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -278,7 +279,10 @@ func (h *AdminHandler) HandleSocialMediaProductView(c echo.Context) error {
 		})
 	}
 
-	return admin.SocialMediaProductView(c, product, categoryName, primaryImage, generatedPosts).Render(c.Request().Context(), c.Response().Writer)
+	// Generate OG image URL for preview
+	ogImageURL := fmt.Sprintf("/api/og-image/%s", productID)
+
+	return admin.SocialMediaProductView(c, product, categoryName, primaryImage, ogImageURL, generatedPosts).Render(c.Request().Context(), c.Response().Writer)
 }
 
 func (h *AdminHandler) HandleUpdatePostStatus(c echo.Context) error {

@@ -104,6 +104,7 @@ func generateFacebookPost(product ProductData) string {
 
 	priceText := formatPrice(product.PriceCents)
 	highlight := getProductHighlight(product.CategoryName, product.Name)
+	cta := getCTA(PlatformFacebook, product.CategoryName, product.Name)
 
 	template := fmt.Sprintf(`%s Just finished printing this incredible %s!
 💰 %s
@@ -114,13 +115,14 @@ Great for collectors, display shelves, gifts, or anyone who loves %s%s!
 
 🇺🇸 100%% Made in Wisconsin, USA - Never imported, always handcrafted here
 
-Which one should we print next? Drop your vote in the comments! 👇`,
+%s`,
 		emoji,
 		product.Name,
 		priceText,
 		highlight,
 		strings.ToLower(product.CategoryName),
 		bestSellerText,
+		cta,
 	)
 
 	return template
@@ -141,22 +143,26 @@ func generateInstagramPost(product ProductData) string {
 	}
 
 	highlight := getProductHighlight(product.CategoryName, product.Name)
+	cta := getCTA(PlatformInstagram, product.CategoryName, product.Name)
 
 	template := fmt.Sprintf(`%s %s%s
-💵 %s | Link in bio
+💵 %s
 
 %s
 
 🇺🇸 100%% Made in Wisconsin, USA - Never imported!
 📦 Ships nationwide
 
-✨ %s`,
+✨ %s
+
+%s`,
 		emoji,
 		product.Name,
 		bestSellerBadge,
 		priceText,
 		description,
 		highlight,
+		cta,
 	)
 
 	return template
@@ -171,14 +177,19 @@ func generateTwitterPost(product ProductData, productURL string) string {
 		bestSellerBadge = " 🔥"
 	}
 
+	cta := getCTA(PlatformTwitter, product.CategoryName, product.Name)
+
 	template := fmt.Sprintf(`%s New: %s%s
 
 Hand-finished 3D print | %s
-100%% Made in Wisconsin 🇺🇸`,
+100%% Made in Wisconsin 🇺🇸
+
+%s`,
 		emoji,
 		product.Name,
 		bestSellerBadge,
 		priceText,
+		cta,
 	)
 
 	maxLength := 280 - len(productURL) - 5
@@ -198,6 +209,8 @@ func generatePinterestPost(product ProductData) string {
 		description = product.ShortDescription
 	}
 
+	cta := getCTA(PlatformPinterest, product.CategoryName, product.Name)
+
 	template := fmt.Sprintf(`%s %s - %s
 
 %s
@@ -206,12 +219,15 @@ Amazing gift for %s fans and collectors! Hand-finished with incredible detail.
 
 🎁 Great for: Collectors, gifts, home decor, display shelves, STEM enthusiasts
 📐 Precision 3D printing with hand-selected colors
-🇺🇸 100%% Made in Wisconsin - Never imported, always handcrafted here`,
+🇺🇸 100%% Made in Wisconsin - Never imported, always handcrafted here
+
+%s`,
 		emoji,
 		product.Name,
 		priceText,
 		truncateText(description, 150),
 		strings.ToLower(product.CategoryName),
+		cta,
 	)
 
 	return template
@@ -353,6 +369,53 @@ func getProductHighlight(category, name string) string {
 	default:
 		return "Hand-finished with amazing detail"
 	}
+}
+
+func getCTA(platform Platform, category, name string) string {
+	categoryLower := strings.ToLower(category)
+	nameLower := strings.ToLower(name)
+
+	// Category-specific CTAs
+	hasArticulated := strings.Contains(nameLower, "articulated") || strings.Contains(nameLower, "flexi")
+	isDinosaur := strings.Contains(categoryLower, "dinosaur")
+	isCustom := strings.Contains(categoryLower, "custom")
+
+	switch platform {
+	case PlatformFacebook:
+		if hasArticulated {
+			return "Want to pose your own? Tap to choose your colors and customize!"
+		}
+		if isDinosaur {
+			return "Ready to start your collection? Choose your colors now!"
+		}
+		if isCustom {
+			return "Pick your favorite colors and make it yours!"
+		}
+		return "Choose your colors and customize yours today!"
+
+	case PlatformInstagram:
+		if hasArticulated {
+			return "Pose it your way! Link in bio to customize 👆"
+		}
+		if isDinosaur {
+			return "Start your collection! Link in bio to choose colors 👆"
+		}
+		return "Customize yours! Link in bio to pick your colors 👆"
+
+	case PlatformTwitter:
+		return "Choose your colors →"
+
+	case PlatformPinterest:
+		if hasArticulated {
+			return "Click to pose your own!"
+		}
+		if isDinosaur {
+			return "Click to start your collection!"
+		}
+		return "Click to customize with your favorite colors!"
+	}
+
+	return "Shop now!"
 }
 
 func truncateText(text string, maxLength int) string {

@@ -144,7 +144,7 @@ templ SocialMediaDashboard(c echo.Context, products []types.ProductWithStatus) {
 	}
 }
 
-templ SocialMediaProductView(c echo.Context, product db.Product, categoryName string, primaryImage string, posts []types.GeneratedPostData) {
+templ SocialMediaProductView(c echo.Context, product db.Product, categoryName string, primaryImage string, ogImageURL string, posts []types.GeneratedPostData) {
 	@layout.AdminBase(c, fmt.Sprintf("Social Media Posts - %s", product.Name)) {
 		@layout.AdminContainer() {
 			<!-- Back Button -->
@@ -156,21 +156,36 @@ templ SocialMediaProductView(c echo.Context, product db.Product, categoryName st
 			<!-- Product Header -->
 			<div class="mb-6">
 				<div class="bg-white rounded-lg shadow p-6">
-					<div class="flex gap-6">
-						<div class="flex-shrink-0">
-							<img src={ primaryImage } alt={ product.Name } class="w-32 h-32 object-cover rounded-lg"/>
+					<!-- Product Info -->
+					<div class="mb-6">
+						<h1 class="text-2xl font-bold text-gray-900">{ product.Name }</h1>
+						<p class="text-gray-600 mt-1">{ categoryName }</p>
+						<p class="text-lg font-semibold text-gray-900 mt-2">{ formatPrice(product.PriceCents) }</p>
+						<div class="mt-4 flex gap-2">
+							<form hx-post={ "/admin/social-media/generate/" + product.ID } hx-indicator="#loading" hx-swap="none">
+								<button type="submit" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
+									🔄 Regenerate All Posts
+								</button>
+							</form>
 						</div>
-						<div class="flex-grow">
-							<h1 class="text-2xl font-bold text-gray-900">{ product.Name }</h1>
-							<p class="text-gray-600 mt-1">{ categoryName }</p>
-							<p class="text-lg font-semibold text-gray-900 mt-2">{ formatPrice(product.PriceCents) }</p>
-							<div class="mt-4 flex gap-2">
-								<form hx-post={ "/admin/social-media/generate/" + product.ID } hx-indicator="#loading" hx-swap="none">
-									<button type="submit" class="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-100 rounded hover:bg-gray-200">
-										🔄 Regenerate All Posts
-									</button>
-								</form>
+					</div>
+					<!-- Image Comparison -->
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+						<!-- Primary Product Image -->
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+							<div class="bg-gray-50 rounded-lg border border-gray-200 p-4">
+								<img src={ primaryImage } alt={ product.Name } class="w-full h-64 object-contain"/>
 							</div>
+							<p class="text-xs text-gray-500 mt-1">Original product photo</p>
+						</div>
+						<!-- Open Graph Preview Image -->
+						<div>
+							<label class="block text-sm font-medium text-gray-700 mb-2">Open Graph Preview (Social Media)</label>
+							<div class="bg-gray-50 rounded-lg border border-gray-200 p-4">
+								<img src={ ogImageURL } alt={ "OG: " + product.Name } class="w-full h-64 object-contain"/>
+							</div>
+							<p class="text-xs text-gray-500 mt-1">This is how your product appears when shared on Facebook, Twitter, Pinterest, etc.</p>
 						</div>
 					</div>
 				</div>

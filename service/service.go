@@ -194,6 +194,10 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	api.GET("/email-preferences", emailPrefsHandler.HandleGetEmailPreferences)
 	api.PUT("/email-preferences", emailPrefsHandler.HandleUpdateEmailPreferences)
 
+	// Open Graph image generation
+	ogImageHandler := handlers.NewOGImageHandler(s.storage)
+	api.GET("/og-image/:product_id", ogImageHandler.HandleGenerateOGImage)
+
 	// Promotion routes (public)
 	promotionsHandler := handlers.NewPromotionsHandler(s.storage.Queries, s.emailService)
 	adminPromotionsHandler := handlers.NewAdminPromotionsHandler(s.storage.Queries)
@@ -784,6 +788,10 @@ func (s *Service) handleProduct(c echo.Context) error {
 		}
 		meta = meta.WithProductImage(primaryImageFilename)
 	}
+
+	// Use dynamically generated OG image with text overlay
+	ogImageURL := fmt.Sprintf("/api/og-image/%s", product.ID)
+	meta = meta.WithOGImage(ogImageURL)
 
 	// Add category for breadcrumbs and schema
 	meta = meta.WithCategories([]db.Category{category})

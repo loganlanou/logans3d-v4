@@ -41,6 +41,16 @@ func NewAdminHandler(storage *storage.Storage, shippingService *shipping.Shippin
 	}
 }
 
+// deleteProductOGImage deletes the OG image to force regeneration
+func deleteProductOGImage(productID string) {
+	ogImagePath := filepath.Join("public", "og-images", fmt.Sprintf("product-%s.png", productID))
+	if err := os.Remove(ogImagePath); err != nil && !os.IsNotExist(err) {
+		slog.Debug("failed to delete OG image", "error", err, "path", ogImagePath)
+	} else {
+		slog.Debug("deleted OG image to force regeneration", "product_id", productID)
+	}
+}
+
 func (h *AdminHandler) HandleAdminDashboard(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -805,6 +815,11 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 			}
 
 			slog.Debug("image upload completed", "product_id", productID, "uploaded_count", uploadedCount, "total_files", len(files))
+
+			// If images were uploaded, delete OG image to force regeneration
+			if uploadedCount > 0 {
+				deleteProductOGImage(productID)
+			}
 		}
 	}
 
@@ -900,6 +915,9 @@ func (h *AdminHandler) HandleDeleteProductImage(c echo.Context) error {
 			if err != nil {
 				slog.Error("failed to set new primary image after delete", "error", err, "image_id", updatedImages[0].ID)
 			} else {
+				// Delete OG image to force regeneration with new primary image
+				deleteProductOGImage(productID)
+
 				// Re-query again to get updated primary status
 				updatedImages, err = h.storage.Queries.GetProductImages(c.Request().Context(), productID)
 				if err != nil {
@@ -965,6 +983,9 @@ func (h *AdminHandler) HandleSetPrimaryProductImage(c echo.Context) error {
 	}
 
 	slog.Debug("primary image set successfully", "image_id", imageID)
+
+	// Delete OG image to force regeneration with new primary image
+	deleteProductOGImage(productID)
 
 	// Check if this is an HTMX request
 	if c.Request().Header.Get("HX-Request") == "true" {

@@ -88,6 +88,8 @@ yarn-error.log*
 *.backup
 *.bak
 
+# OG images
+/public/og-images/
+
 # Temporary files
 *.tmp
-*.temp
