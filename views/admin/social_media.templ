@@ -18,11 +18,18 @@ templ SocialMediaDashboard(c echo.Context, products []types.ProductWithStatus) {
 					<h1 class="text-2xl font-bold text-gray-900">Social Media Marketing</h1>
 					<p class="text-sm text-gray-600 mt-1">Generate and manage social media posts for your products</p>
 				</div>
-				<form hx-post="/admin/social-media/bulk-generate" hx-confirm="Generate posts for all products without existing posts?" hx-swap="none">
-					<button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-						Generate All Posts
-					</button>
-				</form>
+				<div class="flex gap-2">
+					<form hx-post="/admin/social-media/delete-pending" hx-confirm="Delete all pending posts? This cannot be undone. (Posted and skipped posts will be kept.)" hx-swap="none">
+						<button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
+							Delete All Pending Posts
+						</button>
+					</form>
+					<form hx-post="/admin/social-media/bulk-generate" hx-confirm="Generate posts for all products without existing posts?" hx-swap="none">
+						<button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+							Generate All Posts
+						</button>
+					</form>
+				</div>
 			</div>
 			<!-- Stats Summary -->
 			<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -215,47 +222,85 @@ templ SocialMediaPostCard(post types.GeneratedPostData, productID string) {
 			<!-- Post Copy -->
 			<div class="mb-4">
 				<label class="block text-sm font-medium text-muted-foreground mb-2">Post Copy</label>
-				<textarea
-					id={ fmt.Sprintf("post-copy-%s", post.Platform) }
-					class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-mono text-sm"
-					rows="8"
-					readonly
-				>{ post.PostCopy }</textarea>
+				<div class="relative group">
+					<textarea
+						id={ fmt.Sprintf("post-copy-%s", post.Platform) }
+						class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-mono text-sm"
+						rows="8"
+						readonly
+					>{ post.PostCopy }</textarea>
+					<button
+						type="button"
+						onclick={ templ.ComponentScript{Call: fmt.Sprintf("copyTextareaContent('post-copy-%s')", post.Platform)} }
+						class="absolute top-2 right-2 p-1.5 rounded bg-background/80 hover:bg-background border border-border opacity-60 hover:opacity-100 transition-all"
+						title="Copy to clipboard"
+					>
+						<svg id={ fmt.Sprintf("copy-icon-post-%s", post.Platform) } class="w-4 h-4 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+						</svg>
+						<svg id={ fmt.Sprintf("check-icon-post-%s", post.Platform) } class="w-4 h-4 text-green-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+						</svg>
+					</button>
+				</div>
 			</div>
 			<!-- Hashtags -->
 			if post.Hashtags != "" {
 				<div class="mb-4">
 					<label class="block text-sm font-medium text-muted-foreground mb-2">Hashtags</label>
-					<textarea
-						id={ fmt.Sprintf("hashtags-%s", post.Platform) }
-						class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-mono text-sm"
-						rows="3"
-						readonly
-					>{ post.Hashtags }</textarea>
+					<div class="relative group">
+						<textarea
+							id={ fmt.Sprintf("hashtags-%s", post.Platform) }
+							class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all font-mono text-sm"
+							rows="3"
+							readonly
+						>{ post.Hashtags }</textarea>
+						<button
+							type="button"
+							onclick={ templ.ComponentScript{Call: fmt.Sprintf("copyTextareaContent('hashtags-%s')", post.Platform)} }
+							class="absolute top-2 right-2 p-1.5 rounded bg-background/80 hover:bg-background border border-border opacity-60 hover:opacity-100 transition-all"
+							title="Copy to clipboard"
+						>
+							<svg id={ fmt.Sprintf("copy-icon-hashtags-%s", post.Platform) } class="w-4 h-4 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+							</svg>
+							<svg id={ fmt.Sprintf("check-icon-hashtags-%s", post.Platform) } class="w-4 h-4 text-green-500 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+							</svg>
+						</button>
+					</div>
 				</div>
 			}
 		</div>
 		<div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center gap-2">
-			<div class="flex gap-2">
-				<!-- Copy Button -->
-				<button
-					class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
-					onclick={ templ.ComponentScript{Call: fmt.Sprintf("copyToClipboard('%s', '%s')", post.Platform, productID)} }
-				>
-					📋 Copy
-				</button>
-				<!-- Platform Share Button -->
-				if post.ShareURL != "" && post.Platform != social.PlatformInstagram {
-					<a href={ templ.URL(post.ShareURL) } target="_blank" rel="noopener noreferrer" class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700">
-						{ getPlatformIcon(post.Platform) } Post to { getPlatformName(post.Platform) }
-					</a>
-				} else if post.Platform == social.PlatformInstagram {
+			<div class="flex flex-col gap-2">
+				<div class="flex gap-2">
+					<!-- Copy Button -->
 					<button
-						class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+						class="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50"
 						onclick={ templ.ComponentScript{Call: fmt.Sprintf("copyToClipboard('%s', '%s')", post.Platform, productID)} }
 					>
-						{ getPlatformIcon(post.Platform) } Copy for Instagram
+						📋 Copy
 					</button>
+					<!-- Platform Share Button -->
+					if post.ShareURL != "" && post.Platform != social.PlatformInstagram {
+						<a href={ templ.URL(post.ShareURL) } target="_blank" rel="noopener noreferrer" class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700">
+							{ getPlatformIcon(post.Platform) } Post to { getPlatformName(post.Platform) }
+						</a>
+					} else if post.Platform == social.PlatformInstagram {
+						<button
+							class="px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+							onclick={ templ.ComponentScript{Call: fmt.Sprintf("copyToClipboard('%s', '%s')", post.Platform, productID)} }
+						>
+							{ getPlatformIcon(post.Platform) } Copy for Instagram
+						</button>
+					}
+				</div>
+				<!-- Helper text for Facebook -->
+				if post.Platform == social.PlatformFacebook {
+					<p class="text-xs text-muted-foreground italic">
+						💡 Click Copy, then paste the text into Facebook after clicking Post
+					</p>
 				}
 			</div>
 			<!-- Status Actions -->
@@ -287,6 +332,34 @@ templ SocialMediaPostCard(post types.GeneratedPostData, productID string) {
 
 			navigator.clipboard.writeText(fullText).then(() => {
 				alert('Copied to clipboard! Now paste into ' + platform.charAt(0).toUpperCase() + platform.slice(1));
+			}).catch(err => {
+				console.error('Failed to copy:', err);
+			});
+		}
+
+		function copyTextareaContent(textareaId) {
+			const textarea = document.getElementById(textareaId);
+			const text = textarea.value;
+
+			navigator.clipboard.writeText(text).then(() => {
+				// Determine field type from ID (e.g., "post-copy-facebook" -> "post")
+				const fieldType = textareaId.includes('hashtags') ? 'hashtags' : 'post';
+				const platform = textareaId.split('-').pop();
+
+				// Toggle icons
+				const copyIcon = document.getElementById(`copy-icon-${fieldType}-${platform}`);
+				const checkIcon = document.getElementById(`check-icon-${fieldType}-${platform}`);
+
+				if (copyIcon && checkIcon) {
+					copyIcon.classList.add('hidden');
+					checkIcon.classList.remove('hidden');
+
+					// Revert after 2 seconds
+					setTimeout(() => {
+						checkIcon.classList.add('hidden');
+						copyIcon.classList.remove('hidden');
+					}, 2000);
+				}
 			}).catch(err => {
 				console.error('Failed to copy:', err);
 			});

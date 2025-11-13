@@ -114,3 +114,15 @@ FROM products p
 LEFT JOIN product_images pi ON p.id = pi.product_id
 WHERE p.id = ?
 GROUP BY p.id;
+
+-- name: DeleteAllPendingPosts :exec
+DELETE FROM social_media_posts
+WHERE (product_id, platform) IN (
+    SELECT product_id, platform
+    FROM social_media_tasks
+    WHERE status = 'pending'
+);
+
+-- name: DeleteAllPendingTasks :exec
+DELETE FROM social_media_tasks
+WHERE status = 'pending';

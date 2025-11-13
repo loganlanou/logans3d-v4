@@ -445,3 +445,25 @@ func (h *AdminHandler) HandleBulkGeneratePosts(c echo.Context) error {
 		"message": "Generated posts for " + string(rune(count)) + " products",
 	})
 }
+
+func (h *AdminHandler) HandleDeleteAllPendingPosts(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	err := h.storage.Queries.DeleteAllPendingPosts(ctx)
+	if err != nil {
+		slog.Error("failed to delete pending posts", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete pending posts")
+	}
+
+	err = h.storage.Queries.DeleteAllPendingTasks(ctx)
+	if err != nil {
+		slog.Error("failed to delete pending tasks", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to delete pending tasks")
+	}
+
+	c.Response().Header().Set("HX-Redirect", "/admin/social-media")
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"status":  "success",
+		"message": "Deleted all pending posts",
+	})
+}

@@ -304,6 +304,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/social-media/product/:product_id", adminHandler.HandleSocialMediaProductView)
 	admin.POST("/social-media/update-status", adminHandler.HandleUpdatePostStatus)
 	admin.POST("/social-media/bulk-generate", adminHandler.HandleBulkGeneratePosts)
+	admin.POST("/social-media/delete-pending", adminHandler.HandleDeleteAllPendingPosts)
 
 	// Cart management routes
 	cartHandler := handlers.NewCartHandler(s.storage)
