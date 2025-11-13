@@ -140,7 +140,8 @@ func (h *AdminHandler) HandleGeneratePostsForProduct(c echo.Context) error {
 			Platform:  string(post.Platform),
 		})
 
-		if err == sql.ErrNoRows {
+		switch err {
+		case sql.ErrNoRows:
 			_, err = h.storage.Queries.CreateSocialMediaPost(ctx, db.CreateSocialMediaPostParams{
 				ID:        uuid.New().String(),
 				ProductID: productID,
@@ -151,7 +152,7 @@ func (h *AdminHandler) HandleGeneratePostsForProduct(c echo.Context) error {
 			if err != nil {
 				slog.Error("failed to create social media post", "error", err, "product_id", productID, "platform", post.Platform)
 			}
-		} else if err == nil {
+		case nil:
 			err = h.storage.Queries.UpdateSocialMediaPost(ctx, db.UpdateSocialMediaPostParams{
 				ID:       existingPost.ID,
 				PostCopy: post.PostCopy,
@@ -160,7 +161,7 @@ func (h *AdminHandler) HandleGeneratePostsForProduct(c echo.Context) error {
 			if err != nil {
 				slog.Error("failed to update social media post", "error", err, "post_id", existingPost.ID)
 			}
-		} else {
+		default:
 			slog.Error("failed to check for existing post", "error", err, "product_id", productID, "platform", post.Platform)
 		}
 
@@ -169,7 +170,8 @@ func (h *AdminHandler) HandleGeneratePostsForProduct(c echo.Context) error {
 			Platform:  string(post.Platform),
 		})
 
-		if err == sql.ErrNoRows {
+		switch err {
+		case sql.ErrNoRows:
 			_, err = h.storage.Queries.CreateSocialMediaTask(ctx, db.CreateSocialMediaTaskParams{
 				ID:        uuid.New().String(),
 				ProductID: productID,
@@ -179,7 +181,9 @@ func (h *AdminHandler) HandleGeneratePostsForProduct(c echo.Context) error {
 			if err != nil {
 				slog.Error("failed to create social media task", "error", err, "product_id", productID, "platform", post.Platform)
 			}
-		} else if err != nil {
+		case nil:
+			// Task already exists, nothing to do
+		default:
 			slog.Error("failed to check for existing task", "error", err, "product_id", productID, "platform", post.Platform)
 		}
 	}
