@@ -103,20 +103,22 @@ func generateFacebookPost(product ProductData) string {
 	}
 
 	priceText := formatPrice(product.PriceCents)
+	highlight := getProductHighlight(product.CategoryName, product.Name)
 
 	template := fmt.Sprintf(`%s Just finished printing this incredible %s!
 💰 %s
 
-Every detail meticulously crafted in high-quality PLA+. Museum-quality finish with hand-selected colors and careful post-processing to bring out the finest details.
+%s Printed in high-quality PLA+ with carefully selected colors.
 
-Perfect for collectors, educators, or anyone who loves %s%s!
+Great for collectors, display shelves, gifts, or anyone who loves %s%s!
 
-🚚 Made in Cadott, WI - Shipped nationwide
+🇺🇸 100%% Made in Wisconsin, USA - Never imported, always handcrafted here
 
 Which one should we print next? Drop your vote in the comments! 👇`,
 		emoji,
 		product.Name,
 		priceText,
+		highlight,
 		strings.ToLower(product.CategoryName),
 		bestSellerText,
 	)
@@ -138,20 +140,23 @@ func generateInstagramPost(product ProductData) string {
 		description = truncateText(product.Description, 80)
 	}
 
+	highlight := getProductHighlight(product.CategoryName, product.Name)
+
 	template := fmt.Sprintf(`%s %s%s
 💵 %s | Link in bio
 
 %s
 
-🏠 Handcrafted in Wisconsin
+🇺🇸 100%% Made in Wisconsin, USA - Never imported!
 📦 Ships nationwide
 
-✨ Every piece is hand-finished for museum-quality results`,
+✨ %s`,
 		emoji,
 		product.Name,
 		bestSellerBadge,
 		priceText,
 		description,
+		highlight,
 	)
 
 	return template
@@ -168,8 +173,8 @@ func generateTwitterPost(product ProductData, productURL string) string {
 
 	template := fmt.Sprintf(`%s New: %s%s
 
-Museum-quality 3D print | %s
-Handcrafted in Wisconsin 🏠`,
+Hand-finished 3D print | %s
+100%% Made in Wisconsin 🇺🇸`,
 		emoji,
 		product.Name,
 		bestSellerBadge,
@@ -197,11 +202,11 @@ func generatePinterestPost(product ProductData) string {
 
 %s
 
-Perfect gift for %s lovers! Museum-quality 3D printed with incredible detail. Hand-finished and carefully crafted in Wisconsin.
+Amazing gift for %s fans and collectors! Hand-finished with incredible detail.
 
-🎁 Great for: Collectors, educators, gifts, home decor, STEM enthusiasts
+🎁 Great for: Collectors, gifts, home decor, display shelves, STEM enthusiasts
 📐 Precision 3D printing with hand-selected colors
-🚚 Ships nationwide from Cadott, WI`,
+🇺🇸 100%% Made in Wisconsin - Never imported, always handcrafted here`,
 		emoji,
 		product.Name,
 		priceText,
@@ -238,7 +243,8 @@ func getInstagramHashtags(product ProductData) []string {
 		"#MakerMovement",
 		"#SmallBusiness",
 		"#MadeInWisconsin",
-		"#MuseumQuality",
+		"#MadeInUSA",
+		"#DeskDecor",
 		"#GiftIdeas",
 		"#UniqueGifts",
 		"#HomeDecor",
@@ -249,7 +255,7 @@ func getInstagramHashtags(product ProductData) []string {
 	base = append(base, categoryTag)
 
 	if strings.Contains(strings.ToLower(product.CategoryName), "dinosaur") {
-		base = append(base, "#DinosaurCollector", "#DinosaurToys", "#DinosaurLover")
+		base = append(base, "#DinosaurCollector", "#DinosaurCollectibles", "#DinosaurLover")
 	}
 
 	return base
@@ -287,9 +293,10 @@ func getPinterestHashtags(product ProductData) []string {
 func GenerateShareURL(platform Platform, productURL, imageURL, postText string) string {
 	switch platform {
 	case PlatformFacebook:
-		return fmt.Sprintf("https://www.facebook.com/sharer/sharer.php?u=%s&quote=%s",
+		// Facebook blocks pre-filling post text via URL parameters (policy restriction)
+		// Only Open Graph tags from the product page are used for preview
+		return fmt.Sprintf("https://www.facebook.com/sharer/sharer.php?u=%s",
 			url.QueryEscape(productURL),
-			url.QueryEscape(postText),
 		)
 	case PlatformInstagram:
 		return ""
@@ -327,6 +334,24 @@ func getProductEmoji(category string) string {
 		return "🎉"
 	default:
 		return "🎨"
+	}
+}
+
+func getProductHighlight(category, name string) string {
+	categoryLower := strings.ToLower(category)
+	nameLower := strings.ToLower(name)
+
+	switch {
+	case strings.Contains(nameLower, "articulated") || strings.Contains(nameLower, "flexi"):
+		return "Fully articulated - pose it however you want!"
+	case strings.Contains(categoryLower, "dragon"):
+		return "Perfect desk companion with incredible detail"
+	case strings.Contains(categoryLower, "dinosaur"):
+		return "Stunning detail that collectors love"
+	case strings.Contains(categoryLower, "fidget") || strings.Contains(nameLower, "fidget"):
+		return "Satisfying to hold and fun to display"
+	default:
+		return "Hand-finished with amazing detail"
 	}
 }
 
