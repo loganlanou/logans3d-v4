@@ -83,6 +83,7 @@ yarn-error.log*
 # Upload directories
 /public/uploads/
 /uploads/
+/public/images/products/
 
 # Backup files
 *.backup
