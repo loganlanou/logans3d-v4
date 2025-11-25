@@ -546,6 +546,86 @@ const abandonedCartRecovery72HrTemplate = `
 </div>
 `
 
+// quoteRequestContentTemplate is the content section for quote request notification emails
+const quoteRequestContentTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <span style="display: inline-block; background-color: #10B981; color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 14px; margin-bottom: 10px;">NEW QUOTE REQUEST</span>
+    <h1 style="color: #10B981; margin: 10px 0; font-size: 28px;">Custom Order Quote Request</h1>
+    <p style="font-size: 16px; color: #666; margin: 10px 0;">A customer is interested in a custom 3D printing project</p>
+</div>
+
+<div style="background-color: #ECFDF5; padding: 20px; border-left: 4px solid #10B981; margin-bottom: 25px;">
+    <p style="margin: 8px 0;"><strong style="color: #065F46; min-width: 150px; display: inline-block;">Quote ID:</strong> #{{.ID}}</p>
+    <p style="margin: 8px 0;"><strong style="color: #065F46; min-width: 150px; display: inline-block;">Submitted:</strong> {{.SubmittedAt}}</p>
+    <p style="margin: 8px 0;"><strong style="color: #065F46; min-width: 150px; display: inline-block;">Project Type:</strong> {{.ProjectType}}</p>
+</div>
+
+<div style="background-color: #EFF6FF; padding: 20px; border-radius: 8px; border-left: 4px solid #3B82F6; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #1E40AF; font-size: 16px;">Customer Information</h3>
+    <p style="margin: 5px 0;"><strong>Name:</strong> {{.CustomerName}}</p>
+    <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:{{.CustomerEmail}}" style="color: #3B82F6; text-decoration: none;">{{.CustomerEmail}}</a></p>
+    {{if .CustomerPhone}}
+    <p style="margin: 5px 0;"><strong>Phone:</strong> <a href="tel:{{.CustomerPhone}}" style="color: #3B82F6; text-decoration: none;">{{.CustomerPhone}}</a></p>
+    {{end}}
+</div>
+
+<div style="background-color: #FEF3C7; padding: 20px; border-radius: 8px; border-left: 4px solid #F59E0B; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #92400E; font-size: 16px;">Project Specifications</h3>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+        {{if .ProjectType}}
+        <tr>
+            <td style="padding: 8px 0; width: 150px;"><strong>Type:</strong></td>
+            <td style="padding: 8px 0;">{{.ProjectType}}</td>
+        </tr>
+        {{end}}
+        {{if .Material}}
+        <tr>
+            <td style="padding: 8px 0; width: 150px;"><strong>Material:</strong></td>
+            <td style="padding: 8px 0;">{{.Material}}</td>
+        </tr>
+        {{end}}
+        {{if .Size}}
+        <tr>
+            <td style="padding: 8px 0; width: 150px;"><strong>Size:</strong></td>
+            <td style="padding: 8px 0;">{{.Size}}</td>
+        </tr>
+        {{end}}
+    </table>
+</div>
+
+<div style="background-color: #F9FAFB; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #374151; font-size: 16px;">Project Description</h3>
+    <p style="margin: 5px 0; white-space: pre-wrap; line-height: 1.6;">{{.ProjectDescription}}</p>
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <table cellpadding="0" cellspacing="0" border="0" align="center">
+        <tr>
+            <td bgcolor="#10B981" style="background-color: #10B981; padding: 14px 35px; border-radius: 5px;">
+                <a href="https://www.logans3dcreations.com/admin/quotes" style="color: white; text-decoration: none; font-weight: 600; font-size: 16px; display: block;">View All Quotes</a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f9f9f9" style="background-color: #f9f9f9; margin-top: 30px;">
+    <tr>
+        <td style="padding: 20px;">
+            <p style="margin: 0 0 10px 0; font-weight: bold;">Next Steps:</p>
+            <ol style="margin: 10px 0; padding-left: 20px;">
+                <li>Review the project requirements</li>
+                <li>Assess material needs and pricing</li>
+                <li>Respond to the customer with a quote</li>
+                <li>Update quote status in admin panel</li>
+            </ol>
+            <p style="margin-top: 20px; font-size: 12px; color: #999;">
+                This is an automated notification from Logan's 3D Creations quote system.
+            </p>
+        </td>
+    </tr>
+</table>
+`
+
 // contactRequestContentTemplate is the content section for contact request notification emails
 const contactRequestContentTemplate = `
 <div style="text-align: center; margin-bottom: 30px;">

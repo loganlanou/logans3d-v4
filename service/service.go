@@ -285,6 +285,9 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/contacts/:id/notes", adminHandler.HandleAddContactNotes)
 	admin.POST("/contacts/:id/notes/delete", adminHandler.HandleDeleteContactNotes)
 
+	// Sidebar badge counts (API for dynamic updates)
+	admin.GET("/api/badge-counts", adminHandler.HandleSidebarBadgeCounts)
+
 	// Abandoned Carts management routes
 	admin.GET("/abandoned-carts", adminHandler.HandleAbandonedCartsDashboard)
 	admin.GET("/abandoned-carts/export", adminHandler.HandleExportAbandonedCarts)
@@ -947,7 +950,95 @@ func (s *Service) handleCustom(c echo.Context) error {
 }
 
 func (s *Service) handleCustomQuote(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received"})
+	ctx := c.Request().Context()
+
+	// Parse JSON request from frontend
+	var req struct {
+		ProjectType string `json:"projectType"`
+		Material    string `json:"material"`
+		Size        string `json:"size"`
+		Name        string `json:"name"`
+		Email       string `json:"email"`
+		Phone       string `json:"phone"`
+		Description string `json:"description"`
+		ModelFile   string `json:"modelFile"` // File name if uploaded
+	}
+
+	if err := c.Bind(&req); err != nil {
+		slog.Error("failed to parse quote request", "error", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request format")
+	}
+
+	// Validate required fields
+	if strings.TrimSpace(req.Name) == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Name is required")
+	}
+
+	if strings.TrimSpace(req.Email) == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Email is required")
+	}
+
+	// Build project description from form fields
+	projectDescription := fmt.Sprintf("Project Type: %s\nMaterial: %s\nSize: %s",
+		req.ProjectType, req.Material, req.Size)
+	if req.Description != "" {
+		projectDescription += "\n\nAdditional Details:\n" + req.Description
+	}
+
+	id := ulid.Make().String()
+
+	// Create the quote request in database
+	_, err := s.storage.Queries.CreateQuoteRequest(ctx, db.CreateQuoteRequestParams{
+		ID:                 id,
+		CustomerName:       req.Name,
+		CustomerEmail:      req.Email,
+		CustomerPhone:      sql.NullString{String: req.Phone, Valid: req.Phone != ""},
+		ProjectDescription: projectDescription,
+		Quantity:           sql.NullInt64{Int64: 1, Valid: true},
+		MaterialPreference: sql.NullString{String: req.Material, Valid: req.Material != ""},
+		FinishPreference:   sql.NullString{},
+		DeadlineDate:       sql.NullTime{},
+		BudgetRange:        sql.NullString{},
+		Status:             sql.NullString{String: "pending", Valid: true},
+		AdminNotes:         sql.NullString{},
+		QuotedPriceCents:   sql.NullInt64{},
+	})
+
+	if err != nil {
+		slog.Error("failed to create quote request", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to submit quote request")
+	}
+
+	// Send email notification asynchronously
+	go func() {
+		ipAddress := c.RealIP()
+		userAgent := c.Request().UserAgent()
+
+		emailData := &email.QuoteRequestData{
+			ID:                 id,
+			CustomerName:       req.Name,
+			CustomerEmail:      req.Email,
+			CustomerPhone:      req.Phone,
+			ProjectType:        req.ProjectType,
+			Material:           req.Material,
+			Size:               req.Size,
+			ProjectDescription: projectDescription,
+			IPAddress:          ipAddress,
+			UserAgent:          userAgent,
+			SubmittedAt:        time.Now().Format("January 2, 2006 at 3:04 PM MST"),
+		}
+
+		if err := s.emailService.SendQuoteRequestNotification(emailData); err != nil {
+			slog.Error("failed to send quote request notification", "error", err, "quote_id", id)
+		}
+	}()
+
+	slog.Info("quote request submitted", "quote_id", id, "email", req.Email)
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"status":   "quote_received",
+		"quote_id": id,
+	})
 }
 
 func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {

@@ -149,7 +149,7 @@ templ AdminSidebar(c echo.Context) {
 		}
 
 		@sidebar.Content() {
-			<nav class="admin-sidebar-nav">
+			<nav class="admin-sidebar-nav" x-data="{ badgeCounts: { new_contacts: 0, pending_quotes: 0 } }" x-init="fetch('/admin/api/badge-counts').then(r => r.json()).then(data => badgeCounts = data).catch(() => {})">
 				<a href="/admin" class="admin-sidebar-item" title="Dashboard">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -216,6 +216,7 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 						<a href="/admin/quotes" class={ getSubitemClass(c, "/admin/quotes") } title="Quotes">
 							<span class="admin-sidebar-text">Quotes</span>
+							<span x-show="badgeCounts.pending_quotes > 0" x-text="badgeCounts.pending_quotes" class="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-emerald-500 rounded-full"></span>
 						</a>
 					</div>
 				</div>
@@ -232,6 +233,7 @@ templ AdminSidebar(c echo.Context) {
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
 					</svg>
 					<span class="admin-sidebar-text">Contacts</span>
+					<span x-show="badgeCounts.new_contacts > 0" x-text="badgeCounts.new_contacts" class="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-semibold text-white bg-blue-500 rounded-full"></span>
 				</a>
 
 				<a href="/admin/email-preview" class="admin-sidebar-item" title="Email Preview">

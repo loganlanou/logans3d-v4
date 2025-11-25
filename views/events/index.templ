@@ -292,20 +292,67 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 								<p class="text-xl text-slate-300 mb-16 leading-relaxed">
 									Get notified about upcoming events, new workshops, and special offers.
 								</p>
-								<form class="max-w-lg mx-auto flex flex-col sm:flex-row gap-6">
+								<form id="events-newsletter-form" class="max-w-lg mx-auto flex flex-col sm:flex-row gap-6">
 									<input
 										type="email"
+										id="events-newsletter-email"
+										name="email"
 										placeholder="Enter your email"
+										required
 										class="flex-1 px-6 py-4 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
 									/>
 									<button
 										type="submit"
+										id="events-newsletter-submit"
 										class="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-10 py-4 rounded-xl font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
 									>
 										Subscribe
 									</button>
 								</form>
+								<div id="events-newsletter-message" class="mt-6 hidden"></div>
 							</div>
+							<script>
+								document.getElementById('events-newsletter-form').addEventListener('submit', async (e) => {
+									e.preventDefault();
+									const email = document.getElementById('events-newsletter-email').value;
+									const submitBtn = document.getElementById('events-newsletter-submit');
+									const messageDiv = document.getElementById('events-newsletter-message');
+
+									// Disable button
+									submitBtn.disabled = true;
+									submitBtn.textContent = 'Subscribing...';
+
+									try {
+										const response = await fetch('/api/promotions/capture-email', {
+											method: 'POST',
+											headers: { 'Content-Type': 'application/json' },
+											body: JSON.stringify({ email: email, source: 'events' })
+										});
+
+										const data = await response.json();
+
+										if (response.ok && data.success) {
+											messageDiv.className = 'mt-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-emerald-300 text-sm';
+											if (data.code) {
+												messageDiv.innerHTML = `Thanks for subscribing! Use code <strong>${data.code}</strong> for 15% off your first order.`;
+											} else {
+												messageDiv.textContent = 'Thanks for subscribing! We\'ll keep you updated on upcoming events.';
+											}
+											document.getElementById('events-newsletter-email').value = '';
+										} else {
+											messageDiv.className = 'mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm';
+											messageDiv.textContent = data.error || 'Something went wrong. Please try again.';
+										}
+									} catch (err) {
+										messageDiv.className = 'mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-sm';
+										messageDiv.textContent = 'Something went wrong. Please try again.';
+									}
+
+									messageDiv.classList.remove('hidden');
+									submitBtn.disabled = false;
+									submitBtn.textContent = 'Subscribe';
+								});
+							</script>
 						</div>
 					</div>
 				</section>

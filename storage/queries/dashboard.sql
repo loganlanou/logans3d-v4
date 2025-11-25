@@ -186,3 +186,8 @@ WHERE o.status NOT IN ('cancelled', 'refunded')
 GROUP BY p.id
 ORDER BY total_revenue_cents DESC
 LIMIT 10;
+
+-- name: GetSidebarBadgeCounts :one
+SELECT
+    (SELECT COUNT(*) FROM contact_requests WHERE status = 'new') as new_contacts,
+    (SELECT COUNT(*) FROM quote_requests WHERE status = 'pending') as pending_quotes;

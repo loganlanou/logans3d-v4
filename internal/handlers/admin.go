@@ -3339,3 +3339,35 @@ func (h *AdminHandler) HandleDeleteContactNotes(c echo.Context) error {
 
 	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
 }
+
+// HandleSidebarBadgeCounts returns badge counts for the admin sidebar
+func (h *AdminHandler) HandleSidebarBadgeCounts(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	counts, err := h.storage.Queries.GetSidebarBadgeCounts(ctx)
+	if err != nil {
+		slog.Error("failed to get sidebar badge counts", "error", err)
+		return c.JSON(http.StatusOK, map[string]int64{
+			"new_contacts":   0,
+			"pending_quotes": 0,
+		})
+	}
+
+	// Type assert the counts
+	var newContacts, pendingQuotes int64
+	if counts.NewContacts != nil {
+		if val, ok := counts.NewContacts.(int64); ok {
+			newContacts = val
+		}
+	}
+	if counts.PendingQuotes != nil {
+		if val, ok := counts.PendingQuotes.(int64); ok {
+			pendingQuotes = val
+		}
+	}
+
+	return c.JSON(http.StatusOK, map[string]int64{
+		"new_contacts":   newContacts,
+		"pending_quotes": pendingQuotes,
+	})
+}
