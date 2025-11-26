@@ -248,11 +248,31 @@ func GenerateMultiVariantOGImage(info MultiVariantInfo, outputPath string) error
 		// Calculate position in grid
 		row := i / gridSize
 		col := i % gridSize
-		centerX := col*cellWidth + cellWidth/2
-		centerY := row*cellHeight + cellHeight/2
+		cellX := col * cellWidth
+		cellY := row * cellHeight
 
-		// Draw image centered in cell (DrawImageAnchored handles scaling)
-		dc.DrawImageAnchored(img, centerX, centerY, 0.5, 0.5)
+		// Calculate scale to fit image in cell while maintaining aspect ratio
+		imgWidth := img.Bounds().Dx()
+		imgHeight := img.Bounds().Dy()
+		scaleX := float64(cellWidth) / float64(imgWidth)
+		scaleY := float64(cellHeight) / float64(imgHeight)
+		scale := scaleX
+		if scaleY < scaleX {
+			scale = scaleY
+		}
+
+		// Calculate centered position within cell
+		scaledWidth := float64(imgWidth) * scale
+		scaledHeight := float64(imgHeight) * scale
+		offsetX := (float64(cellWidth) - scaledWidth) / 2
+		offsetY := (float64(cellHeight) - scaledHeight) / 2
+
+		// Draw scaled image
+		dc.Push()
+		dc.Translate(float64(cellX)+offsetX, float64(cellY)+offsetY)
+		dc.Scale(scale, scale)
+		dc.DrawImage(img, 0, 0)
+		dc.Pop()
 	}
 
 	// Add semi-transparent bar at bottom for text

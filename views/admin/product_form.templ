@@ -58,7 +58,9 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 					if product.HasVariants.Valid && product.HasVariants.Bool && len(productStyles) > 1 {
 						<button
 							type="button"
-							@click={ fmt.Sprintf("$dispatch('show-og-preview', { url: '/api/og-image/multi/%s?refresh=true', title: 'All Colors OG - %s' })", product.ID, product.Name) }
+							data-og-url={ fmt.Sprintf("/api/og-image/multi/%s", product.ID) }
+							data-og-title={ fmt.Sprintf("All Colors OG - %s", product.Name) }
+							onclick="window.dispatchEvent(new CustomEvent('show-og-preview', { detail: { url: this.dataset.ogUrl, title: this.dataset.ogTitle } }))"
 							class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
 							title="Preview multi-variant OG image for social sharing"
 						>
@@ -881,10 +883,21 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 		</script>
 		<!-- OG Image Preview Modal -->
 		<div
-			x-data="{ open: false, imageUrl: '', title: '', loading: true }"
+			x-data="{
+				open: false,
+				imageUrl: '',
+				baseUrl: '',
+				title: '',
+				loading: true,
+				refresh() {
+					this.loading = true;
+					const refreshUrl = this.baseUrl + (this.baseUrl.includes('?') ? '&' : '?') + 'refresh=true';
+					this.$refs.ogImage.src = refreshUrl;
+				}
+			}"
 			x-show="open"
 			x-cloak
-			@show-og-preview.window="open = true; loading = true; imageUrl = $event.detail.url; title = $event.detail.title"
+			@show-og-preview.window="open = true; loading = true; baseUrl = $event.detail.url; imageUrl = $event.detail.url; title = $event.detail.title"
 			@keydown.escape.window="open = false"
 			class="fixed inset-0 z-50 overflow-y-auto"
 			aria-labelledby="og-preview-modal-title"
@@ -945,6 +958,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 							</div>
 							<!-- Actual Image -->
 							<img
+								x-ref="ogImage"
 								x-show="!loading"
 								:src="imageUrl"
 								@load="loading = false"
@@ -958,21 +972,34 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 						</p>
 					</div>
 					<!-- Footer -->
-					<div class="flex justify-end gap-2 p-4 border-t border-border">
-						<a
-							:href="imageUrl"
-							target="_blank"
-							class="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-						>
-							Open in New Tab
-						</a>
+					<div class="flex justify-between gap-2 p-4 border-t border-border">
 						<button
 							type="button"
-							@click="open = false"
-							class="px-4 py-2 text-sm font-medium rounded-md bg-muted text-foreground hover:bg-muted/80 transition-colors"
+							@click="refresh()"
+							:disabled="loading"
+							class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md border border-border bg-background hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 						>
-							Close
+							<svg class="w-4 h-4 mr-1.5" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+							</svg>
+							Regenerate
 						</button>
+						<div class="flex gap-2">
+							<a
+								:href="imageUrl"
+								target="_blank"
+								class="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+							>
+								Open in New Tab
+							</a>
+							<button
+								type="button"
+								@click="open = false"
+								class="px-4 py-2 text-sm font-medium rounded-md bg-muted text-foreground hover:bg-muted/80 transition-colors"
+							>
+								Close
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>

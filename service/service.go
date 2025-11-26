@@ -50,6 +50,7 @@ type Service struct {
 	authHandler              *handlers.AuthHandler
 	abandonedCartDetector    *jobs.AbandonedCartDetector
 	abandonedCartEmailSender *jobs.AbandonedCartEmailSender
+	ogImageRefresher         *jobs.OGImageRefresher
 }
 
 func New(storage *storage.Storage, config *Config) *Service {
@@ -88,6 +89,10 @@ func New(storage *storage.Storage, config *Config) *Service {
 	// Start the email sender
 	abandonedCartEmailSender.Start(ctx)
 
+	// Initialize OG image refresher (runs once at startup in background)
+	ogImageRefresher := jobs.NewOGImageRefresher(storage)
+	ogImageRefresher.Start(ctx)
+
 	return &Service{
 		storage:                  storage,
 		config:                   config,
@@ -98,6 +103,7 @@ func New(storage *storage.Storage, config *Config) *Service {
 		authHandler:              handlers.NewAuthHandler(),
 		abandonedCartDetector:    abandonedCartDetector,
 		abandonedCartEmailSender: abandonedCartEmailSender,
+		ogImageRefresher:         ogImageRefresher,
 	}
 }
 

@@ -116,6 +116,7 @@ templ ShareDialog(props ShareButtonProps) {
 								<span class="text-gray-600">Generating OG image...</span>
 							</div>
 							<img
+								x-ref="ogPreviewImage"
 								x-show="!ogLoading"
 								:src="ogPreviewURL()"
 								@load="ogLoading = false"
@@ -126,6 +127,26 @@ templ ShareDialog(props ShareButtonProps) {
 							<p class="text-xs text-gray-500 mt-3 text-center">
 								This is how the image will appear when shared on social media
 							</p>
+						</div>
+						<div class="flex justify-between items-center p-4 border-t">
+							<button
+								type="button"
+								@click="refreshOGImage()"
+								:disabled="ogLoading"
+								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+							>
+								<svg class="w-4 h-4 mr-1.5" :class="{ 'animate-spin': ogLoading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+								</svg>
+								Regenerate
+							</button>
+							<a
+								:href="ogPreviewURL()"
+								target="_blank"
+								class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+							>
+								Open in New Tab
+							</a>
 						</div>
 					</div>
 				</div>
@@ -316,20 +337,35 @@ templ ShareDialog(props ShareButtonProps) {
 					return this.variantTitle || this.baseTitle;
 				},
 
-				// Get the OG image URL for preview
-				ogPreviewURL() {
+				// Get the OG image URL for preview (without refresh param)
+				ogPreviewURL(forceRefresh = false) {
+					let url;
 					if (this.shareMode === 'multi') {
-						return `/api/og-image/multi/${this.productID}?refresh=true`;
+						url = `/api/og-image/multi/${this.productID}`;
+					} else if (this.variantColorId && this.variantSizeId) {
+						url = `/api/og-image/${this.productID}?color=${this.variantColorId}&size=${this.variantSizeId}`;
+					} else {
+						url = `/api/og-image/${this.productID}`;
 					}
-					if (this.variantColorId && this.variantSizeId) {
-						return `/api/og-image/${this.productID}?color=${this.variantColorId}&size=${this.variantSizeId}&refresh=true`;
+					if (forceRefresh) {
+						url += (url.includes('?') ? '&' : '?') + 'refresh=true';
 					}
-					return `/api/og-image/${this.productID}?refresh=true`;
+					return url;
 				},
 
 				// Load OG preview (reset loading state)
 				loadOGPreview() {
 					this.ogLoading = true;
+				},
+
+				// Refresh OG image (force regeneration)
+				refreshOGImage() {
+					this.ogLoading = true;
+					// Update the image source with refresh param to force regeneration
+					const img = this.$refs.ogPreviewImage;
+					if (img) {
+						img.src = this.ogPreviewURL(true);
+					}
 				},
 
 				// Handle variant selection updates from product page

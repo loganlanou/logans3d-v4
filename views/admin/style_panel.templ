@@ -282,9 +282,11 @@ templ SkuRow(productID, styleID string, sku db.GetStyleSkusRow) {
 		<td class="px-3 py-2">
 			<button
 				type="button"
-				@click={ fmt.Sprintf("$dispatch('show-og-preview', { url: '/api/og-image/%s?color=%s&size=%s&refresh=true', title: '%s - %s' })", productID, styleID, sku.SizeID, sku.Sku, sku.SizeDisplayName) }
+				data-og-url={ fmt.Sprintf("/api/og-image/%s?color=%s&size=%s", productID, styleID, sku.SizeID) }
+				data-og-title={ fmt.Sprintf("%s - %s", sku.Sku, sku.SizeDisplayName) }
+				onclick="window.dispatchEvent(new CustomEvent('show-og-preview', { detail: { url: this.dataset.ogUrl, title: this.dataset.ogTitle } }))"
 				class="text-blue-500 hover:text-blue-700 text-xs"
-				title="Preview OG Image (always regenerates)"
+				title="Preview OG Image"
 			>
 				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>

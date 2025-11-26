@@ -19,6 +19,7 @@ require (
 	github.com/stretchr/testify v1.11.0
 	github.com/stripe/stripe-go/v80 v80.2.1
 	golang.org/x/image v0.33.0
+	golang.org/x/sync v0.18.0
 	modernc.org/sqlite v1.38.2
 )
 
@@ -41,7 +42,6 @@ require (
 	golang.org/x/crypto v0.40.0 // indirect
 	golang.org/x/exp v0.0.0-20250620022241-b7579e27df2b // indirect
 	golang.org/x/net v0.42.0 // indirect
-	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.34.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
