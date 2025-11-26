@@ -2,6 +2,7 @@ package legal
 
 import (
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/internal/utils"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
@@ -52,13 +53,18 @@ templ Shipping(c echo.Context, meta layout.PageMeta) {
 							<li>Oversized items may require special shipping arrangements</li>
 							<li>International shipping available on request (additional fees apply)</li>
 						</ul>
-						<h3 class="text-xl font-semibold text-slate-900 mb-3">Processing Time</h3>
+						<h3 class="text-xl font-semibold text-slate-900 mb-3">Processing & Shipping Time</h3>
 						<ul class="list-disc pl-6 mb-6">
-							<li><strong>In-stock items:</strong> 1-2 business days</li>
-							<li><strong>Custom prints:</strong> 3-10 business days (depending on complexity)</li>
+							<li><strong>In-stock items:</strong> { utils.ShippingTimeInStock }</li>
+							<li><strong>Items requiring printing:</strong> { utils.ShippingTimeOutOfStock }</li>
 							<li><strong>Rush orders:</strong> Available for additional fee (contact us for details)</li>
 							<li><strong>Holiday periods:</strong> May experience extended processing times</li>
 						</ul>
+						<p class="text-slate-600 mb-6">
+							Shipping times shown on product pages indicate estimated processing and ship time.
+							Items in stock ship faster, while items that need to be printed require additional
+							preparation time.
+						</p>
 						<h3 class="text-xl font-semibold text-slate-900 mb-3">Delivery</h3>
 						<ul class="list-disc pl-6 mb-6">
 							<li>Signature may be required for valuable orders</li>

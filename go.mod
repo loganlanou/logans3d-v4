@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/EasyPost/easypost-go/v5 v5.3.1
 	github.com/Oudwins/tailwind-merge-go v0.2.0
-	github.com/a-h/templ v0.3.943
+	github.com/a-h/templ v0.3.960
 	github.com/brianvoe/gofakeit/v7 v7.8.1
 	github.com/clerk/clerk-sdk-go/v2 v2.4.2
 	github.com/fogleman/gg v1.3.0

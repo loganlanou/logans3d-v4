@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -70,7 +71,7 @@ func (h *ShippingHandler) GetShippingRates(c echo.Context) error {
 
 	counts, err := h.getCartItemCounts(c, sessionID, userID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart items")
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
 	shippingReq := &shipping.ShippingQuoteRequest{
@@ -110,6 +111,10 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		return nil, err
 	}
 
+	if counts.UnknownItems.Valid && counts.UnknownItems.Float64 > 0 {
+		return nil, fmt.Errorf("shipping category missing for %d item(s); please configure size chart or SKU overrides", int(counts.UnknownItems.Float64))
+	}
+
 	var small, medium, large, xl int
 	if counts.SmallItems.Valid {
 		small = int(counts.SmallItems.Float64)
@@ -124,12 +129,66 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		xl = int(counts.XlargeItems.Float64)
 	}
 
-	return &shipping.ItemCounts{
-		Small:  small,
-		Medium: medium,
-		Large:  large,
-		XL:     xl,
-	}, nil
+	toFloat := func(v interface{}) float64 {
+		switch val := v.(type) {
+		case sql.NullFloat64:
+			if val.Valid {
+				return val.Float64
+			}
+		case float64:
+			return val
+		case int64:
+			return float64(val)
+		case int:
+			return float64(val)
+		}
+		return 0
+	}
+
+	itemCounts := &shipping.ItemCounts{
+		Small:          small,
+		Medium:         medium,
+		Large:          large,
+		XL:             xl,
+		SmallWeightOz:  toFloat(counts.SmallWeightOz),
+		MediumWeightOz: toFloat(counts.MediumWeightOz),
+		LargeWeightOz:  toFloat(counts.LargeWeightOz),
+		XLWeightOz:     toFloat(counts.XlargeWeightOz),
+		SmallMaxDims: shipping.DimensionGuard{
+			L: toFloat(counts.SmallMaxLengthIn),
+			W: toFloat(counts.SmallMaxWidthIn),
+			H: toFloat(counts.SmallMaxHeightIn),
+		},
+		MediumMaxDims: shipping.DimensionGuard{
+			L: toFloat(counts.MediumMaxLengthIn),
+			W: toFloat(counts.MediumMaxWidthIn),
+			H: toFloat(counts.MediumMaxHeightIn),
+		},
+		LargeMaxDims: shipping.DimensionGuard{
+			L: toFloat(counts.LargeMaxLengthIn),
+			W: toFloat(counts.LargeMaxWidthIn),
+			H: toFloat(counts.LargeMaxHeightIn),
+		},
+		XLMaxDims: shipping.DimensionGuard{
+			L: toFloat(counts.XlargeMaxLengthIn),
+			W: toFloat(counts.XlargeMaxWidthIn),
+			H: toFloat(counts.XlargeMaxHeightIn),
+		},
+	}
+
+	// Fail fast if any items are missing shipping dimensions/weights
+	switch {
+	case small > 0 && (toFloat(counts.SmallMissingShipping) > 0):
+		return nil, fmt.Errorf("Shipping data missing for small items. Update size chart or SKU overrides.")
+	case medium > 0 && (toFloat(counts.MediumMissingShipping) > 0):
+		return nil, fmt.Errorf("Shipping data missing for medium items. Update size chart or SKU overrides.")
+	case large > 0 && (toFloat(counts.LargeMissingShipping) > 0):
+		return nil, fmt.Errorf("Shipping data missing for large items. Update size chart or SKU overrides.")
+	case xl > 0 && (toFloat(counts.XlargeMissingShipping) > 0):
+		return nil, fmt.Errorf("Shipping data missing for xlarge items. Update size chart or SKU overrides.")
+	}
+
+	return itemCounts, nil
 }
 
 // generateCartSnapshot creates a snapshot of current cart state for validation
@@ -150,7 +209,7 @@ func (h *ShippingHandler) generateCartSnapshot(c echo.Context, sessionID string)
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
 		})
-		snapshot.TotalCents += item.PriceCents * item.Quantity
+		snapshot.TotalCents += toInt64Value(item.PriceCents) * item.Quantity
 	}
 
 	return snapshot, nil
@@ -468,4 +527,24 @@ func (h *ShippingHandler) ValidateAddress(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"valid": true,
 	})
+}
+
+func toInt64Value(v interface{}) int64 {
+	switch val := v.(type) {
+	case int64:
+		return val
+	case float64:
+		return int64(val)
+	case int:
+		return int64(val)
+	case sql.NullFloat64:
+		if val.Valid {
+			return int64(val.Float64)
+		}
+	case sql.NullInt64:
+		if val.Valid {
+			return val.Int64
+		}
+	}
+	return 0
 }

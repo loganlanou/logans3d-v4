@@ -118,22 +118,22 @@ func (q *Queries) CreateOrder(ctx context.Context, arg CreateOrderParams) (Order
 
 const createOrderItem = `-- name: CreateOrderItem :one
 INSERT INTO order_items (
-    id, order_id, product_id, product_variant_id, quantity, unit_price_cents, 
+    id, order_id, product_id, product_sku_id, quantity, unit_price_cents, 
     total_price_cents, product_name, product_sku
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-RETURNING id, order_id, product_id, product_variant_id, quantity, unit_price_cents, total_price_cents, product_name, product_sku, created_at
+RETURNING id, order_id, product_id, product_variant_id, quantity, unit_price_cents, total_price_cents, product_name, product_sku, created_at, product_sku_id
 `
 
 type CreateOrderItemParams struct {
-	ID               string         `db:"id" json:"id"`
-	OrderID          string         `db:"order_id" json:"order_id"`
-	ProductID        string         `db:"product_id" json:"product_id"`
-	ProductVariantID sql.NullString `db:"product_variant_id" json:"product_variant_id"`
-	Quantity         int64          `db:"quantity" json:"quantity"`
-	UnitPriceCents   int64          `db:"unit_price_cents" json:"unit_price_cents"`
-	TotalPriceCents  int64          `db:"total_price_cents" json:"total_price_cents"`
-	ProductName      string         `db:"product_name" json:"product_name"`
-	ProductSku       sql.NullString `db:"product_sku" json:"product_sku"`
+	ID              string         `db:"id" json:"id"`
+	OrderID         string         `db:"order_id" json:"order_id"`
+	ProductID       string         `db:"product_id" json:"product_id"`
+	ProductSkuID    sql.NullString `db:"product_sku_id" json:"product_sku_id"`
+	Quantity        int64          `db:"quantity" json:"quantity"`
+	UnitPriceCents  int64          `db:"unit_price_cents" json:"unit_price_cents"`
+	TotalPriceCents int64          `db:"total_price_cents" json:"total_price_cents"`
+	ProductName     string         `db:"product_name" json:"product_name"`
+	ProductSku      sql.NullString `db:"product_sku" json:"product_sku"`
 }
 
 func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error) {
@@ -141,7 +141,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		arg.ID,
 		arg.OrderID,
 		arg.ProductID,
-		arg.ProductVariantID,
+		arg.ProductSkuID,
 		arg.Quantity,
 		arg.UnitPriceCents,
 		arg.TotalPriceCents,
@@ -160,6 +160,7 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 		&i.ProductName,
 		&i.ProductSku,
 		&i.CreatedAt,
+		&i.ProductSkuID,
 	)
 	return i, err
 }
@@ -171,6 +172,93 @@ DELETE FROM orders WHERE id = ?
 func (q *Queries) DeleteOrder(ctx context.Context, id string) error {
 	_, err := q.db.ExecContext(ctx, deleteOrder, id)
 	return err
+}
+
+const getBuyAgainItems = `-- name: GetBuyAgainItems :many
+SELECT
+    recent.product_id,
+    recent.product_sku_id,
+    recent.product_name,
+    recent.product_sku,
+    p.slug as product_slug,
+    p.price_cents,
+    p.is_active,
+    p.has_variants,
+    COALESCE(
+        CASE WHEN psi.image_url IS NOT NULL THEN 'styles/' || psi.image_url END,
+        pi.image_url,
+        ''
+    ) as image_url,
+    recent.last_purchased_at
+FROM (
+    SELECT
+        oi.product_id,
+        oi.product_sku_id,
+        oi.product_name,
+        oi.product_sku,
+        MAX(o.created_at) as last_purchased_at
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    WHERE o.user_id = ?
+      AND o.status NOT IN ('cancelled', 'refunded')
+    GROUP BY oi.product_id, oi.product_sku_id, oi.product_name, oi.product_sku
+) recent
+LEFT JOIN products p ON recent.product_id = p.id
+LEFT JOIN product_skus ps ON recent.product_sku_id = ps.id
+LEFT JOIN product_styles pst ON ps.product_style_id = pst.id
+LEFT JOIN product_style_images psi ON psi.product_style_id = pst.id AND psi.is_primary = TRUE
+LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
+WHERE p.is_active = TRUE
+ORDER BY recent.last_purchased_at DESC
+LIMIT 12
+`
+
+type GetBuyAgainItemsRow struct {
+	ProductID       string         `db:"product_id" json:"product_id"`
+	ProductSkuID    sql.NullString `db:"product_sku_id" json:"product_sku_id"`
+	ProductName     string         `db:"product_name" json:"product_name"`
+	ProductSku      sql.NullString `db:"product_sku" json:"product_sku"`
+	ProductSlug     sql.NullString `db:"product_slug" json:"product_slug"`
+	PriceCents      sql.NullInt64  `db:"price_cents" json:"price_cents"`
+	IsActive        sql.NullBool   `db:"is_active" json:"is_active"`
+	HasVariants     sql.NullBool   `db:"has_variants" json:"has_variants"`
+	ImageUrl        string         `db:"image_url" json:"image_url"`
+	LastPurchasedAt interface{}    `db:"last_purchased_at" json:"last_purchased_at"`
+}
+
+// Returns unique products from a user's past orders for "Buy It Again" feature
+func (q *Queries) GetBuyAgainItems(ctx context.Context, userID string) ([]GetBuyAgainItemsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getBuyAgainItems, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetBuyAgainItemsRow{}
+	for rows.Next() {
+		var i GetBuyAgainItemsRow
+		if err := rows.Scan(
+			&i.ProductID,
+			&i.ProductSkuID,
+			&i.ProductName,
+			&i.ProductSku,
+			&i.ProductSlug,
+			&i.PriceCents,
+			&i.IsActive,
+			&i.HasVariants,
+			&i.ImageUrl,
+			&i.LastPurchasedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getOrder = `-- name: GetOrder :one
@@ -262,7 +350,7 @@ func (q *Queries) GetOrderByStripeSessionID(ctx context.Context, stripeCheckoutS
 }
 
 const getOrderItems = `-- name: GetOrderItems :many
-SELECT id, order_id, product_id, product_variant_id, quantity, unit_price_cents, total_price_cents, product_name, product_sku, created_at FROM order_items WHERE order_id = ?
+SELECT id, order_id, product_id, product_variant_id, quantity, unit_price_cents, total_price_cents, product_name, product_sku, created_at, product_sku_id FROM order_items WHERE order_id = ?
 `
 
 func (q *Queries) GetOrderItems(ctx context.Context, orderID string) ([]OrderItem, error) {
@@ -285,6 +373,7 @@ func (q *Queries) GetOrderItems(ctx context.Context, orderID string) ([]OrderIte
 			&i.ProductName,
 			&i.ProductSku,
 			&i.CreatedAt,
+			&i.ProductSkuID,
 		); err != nil {
 			return nil, err
 		}

@@ -77,7 +77,7 @@ SELECT * FROM order_items WHERE order_id = ?;
 
 -- name: CreateOrderItem :one
 INSERT INTO order_items (
-    id, order_id, product_id, product_variant_id, quantity, unit_price_cents, 
+    id, order_id, product_id, product_sku_id, quantity, unit_price_cents, 
     total_price_cents, product_name, product_sku
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
@@ -93,3 +93,42 @@ SELECT
     SUM(total_cents) as total_revenue_cents,
     AVG(total_cents) as average_order_value_cents
 FROM orders;
+
+-- name: GetBuyAgainItems :many
+-- Returns unique products from a user's past orders for "Buy It Again" feature
+SELECT
+    recent.product_id,
+    recent.product_sku_id,
+    recent.product_name,
+    recent.product_sku,
+    p.slug as product_slug,
+    p.price_cents,
+    p.is_active,
+    p.has_variants,
+    COALESCE(
+        CASE WHEN psi.image_url IS NOT NULL THEN 'styles/' || psi.image_url END,
+        pi.image_url,
+        ''
+    ) as image_url,
+    recent.last_purchased_at
+FROM (
+    SELECT
+        oi.product_id,
+        oi.product_sku_id,
+        oi.product_name,
+        oi.product_sku,
+        MAX(o.created_at) as last_purchased_at
+    FROM order_items oi
+    JOIN orders o ON oi.order_id = o.id
+    WHERE o.user_id = ?
+      AND o.status NOT IN ('cancelled', 'refunded')
+    GROUP BY oi.product_id, oi.product_sku_id, oi.product_name, oi.product_sku
+) recent
+LEFT JOIN products p ON recent.product_id = p.id
+LEFT JOIN product_skus ps ON recent.product_sku_id = ps.id
+LEFT JOIN product_styles pst ON ps.product_style_id = pst.id
+LEFT JOIN product_style_images psi ON psi.product_style_id = pst.id AND psi.is_primary = TRUE
+LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
+WHERE p.is_active = TRUE
+ORDER BY recent.last_purchased_at DESC
+LIMIT 12;

@@ -14,6 +14,8 @@
 - `make build` — compiles the production Go binary with static assets embedded.
 - `make migrate` / `make migrate-down` — runs Goose migrations forward or back.
 - `make test` / `make e2e` / `make lint` — Go unit tests, Playwright E2E run, `golangci-lint` sweep.
+- Build/debug logs: prefer `tmp/air-combined*.log` for real errors; `tmp/build-errors.log` is noisy and often unhelpful.
+- Air auto-reload: ensure `.air.toml` include_dir covers the repo; templ changes may need manual `make generate` if Air misses them.
 
 ## Coding Style & Naming Conventions
 - Go code follows `gofmt` defaults (tabs for indentation, camelCase locals, exported PascalCase). Run `gofmt` or rely on `air`'s pre-commands.

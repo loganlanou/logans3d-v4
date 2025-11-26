@@ -40,15 +40,15 @@ ORDER BY created_at DESC;
 -- name: CreateProduct :one
 INSERT INTO products (
     id, name, slug, description, short_description, price_cents,
-    category_id, sku, stock_quantity, weight_grams, lead_time_days,
+    category_id, sku, stock_quantity, has_variants, weight_grams, lead_time_days,
     is_active, is_featured, is_premium, disclaimer, seo_title, seo_description, seo_keywords, og_image_url
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateProduct :one
 UPDATE products
 SET name = ?, slug = ?, description = ?, short_description = ?,
-    price_cents = ?, category_id = ?, sku = ?, stock_quantity = ?,
+    price_cents = ?, category_id = ?, sku = ?, stock_quantity = ?, has_variants = ?,
     weight_grams = ?, lead_time_days = ?, is_active = ?, is_featured = ?, is_premium = ?, disclaimer = ?,
     seo_title = ?, seo_description = ?, seo_keywords = ?, og_image_url = ?,
     updated_at = CURRENT_TIMESTAMP
@@ -58,7 +58,7 @@ RETURNING *;
 -- name: UpdateProductFields :one
 UPDATE products
 SET name = ?, slug = ?, description = ?, short_description = ?,
-    price_cents = ?, category_id = ?, sku = ?, stock_quantity = ?,
+    price_cents = ?, category_id = ?, sku = ?, stock_quantity = ?, has_variants = ?,
     weight_grams = ?, lead_time_days = ?, disclaimer = ?,
     seo_title = ?, seo_description = ?, seo_keywords = ?, og_image_url = ?,
     updated_at = CURRENT_TIMESTAMP
@@ -84,10 +84,10 @@ SELECT * FROM products WHERE name = ?;
 -- name: UpsertProduct :one
 INSERT INTO products (
     id, name, slug, description, price_cents, category_id,
-    stock_quantity, is_active, is_featured, is_premium, created_at, updated_at
+    stock_quantity, has_variants, is_active, is_featured, is_premium, created_at, updated_at
 ) VALUES (
     ?, ?, ?, ?, ?, ?,
-    ?, TRUE, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    ?, FALSE, TRUE, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 )
 ON CONFLICT(name) DO UPDATE SET
     slug = excluded.slug,
@@ -158,6 +158,11 @@ UPDATE products
 SET is_new = NOT COALESCE(is_new, FALSE), updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
+
+-- name: SetProductVariantsFlag :exec
+UPDATE products
+SET has_variants = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
 
 -- name: ListRelatedProducts :many
 SELECT * FROM products

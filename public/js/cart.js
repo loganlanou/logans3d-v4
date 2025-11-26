@@ -36,7 +36,7 @@ if (document.readyState === 'loading') {
 }
 
 // Buy Now functionality - goes directly to Stripe checkout
-async function buyNow(productId, productName, productPrice, quantity = 1) {
+async function buyNow(productId, productName, productPrice, quantity = 1, productSkuId = '') {
     try {
         const response = await fetch('/checkout/create-session-single', {
             method: 'POST',
@@ -45,6 +45,7 @@ async function buyNow(productId, productName, productPrice, quantity = 1) {
             },
             body: JSON.stringify({
                 productId: productId,
+                productSkuId: productSkuId,
                 quantity: parseInt(quantity)
             })
         });
@@ -69,7 +70,7 @@ async function buyNow(productId, productName, productPrice, quantity = 1) {
 }
 
 // Cart functionality
-async function addToCart(productId, quantity = 1, productName = '') {
+async function addToCart(productId, quantity = 1, productName = '', productSkuId = '') {
     try {
         const response = await fetch('/api/cart/add', {
             method: 'POST',
@@ -78,6 +79,7 @@ async function addToCart(productId, quantity = 1, productName = '') {
             },
             body: JSON.stringify({
                 productId: productId,
+                productSkuId: productSkuId,
                 quantity: parseInt(quantity)
             })
         });
@@ -311,6 +313,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const productId = e.target.dataset.productId;
             const productName = e.target.dataset.productName;
             const productPrice = e.target.dataset.productPrice;
+            const productSkuId = e.target.dataset.productSkuId || '';
 
             // Check for quantity from dropdown first, then fallback to data attribute
             let quantity = e.target.dataset.quantity || '1';
@@ -320,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             if (productId && productName && productPrice) {
-                buyNow(productId, productName, productPrice, parseInt(quantity));
+                buyNow(productId, productName, productPrice, parseInt(quantity), productSkuId);
             }
         }
         
@@ -329,6 +332,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             e.preventDefault();
             const productId = e.target.dataset.productId;
             const productName = e.target.dataset.productName || '';
+            const productSkuId = e.target.dataset.productSkuId || '';
 
             // Check for quantity from dropdown first, then fallback to data attribute
             let quantity = e.target.dataset.quantity || '1';
@@ -338,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             if (productId) {
-                addToCart(productId, parseInt(quantity), productName);
+                addToCart(productId, parseInt(quantity), productName, productSkuId);
             }
         }
         
@@ -656,3 +660,10 @@ if (window.Clerk) {
         }
     });
 }
+
+// Global event listener for cart updates from any source
+// This allows components (like "Buy Again" buttons) to trigger cart count refresh
+window.addEventListener('cart-updated', () => {
+    console.debug('cart-updated event received, refreshing cart count');
+    updateCartCount();
+});

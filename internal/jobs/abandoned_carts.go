@@ -312,17 +312,23 @@ func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandon
 
 		for _, item := range cartItems {
 			snapshotID := uuid.New().String()
-			totalPrice := item.PriceCents * item.Quantity
+			unitPrice := priceToInt64(item.PriceCents)
+			totalPrice := unitPrice * item.Quantity
+			name := item.Name
+			if item.VariantName != "" {
+				name = fmt.Sprintf("%s (%s)", item.Name, item.VariantName)
+			}
+			variantSKU := item.VariantSku
 
 			err = d.storage.Queries.CreateCartSnapshot(ctx, db.CreateCartSnapshotParams{
 				ID:              snapshotID,
 				AbandonedCartID: abandonedCartID,
 				ProductID:       item.ProductID,
-				ProductName:     item.Name,
-				ProductSku:      sql.NullString{}, // TODO: Get SKU from product
+				ProductName:     name,
+				ProductSku:      sql.NullString{String: variantSKU, Valid: variantSKU != ""},
 				ProductImageUrl: sql.NullString{String: item.ImageUrl, Valid: item.ImageUrl != ""},
 				Quantity:        item.Quantity,
-				UnitPriceCents:  item.PriceCents,
+				UnitPriceCents:  unitPrice,
 				TotalPriceCents: totalPrice,
 			})
 			if err != nil {
@@ -339,17 +345,23 @@ func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandon
 
 		for _, item := range cartItems {
 			snapshotID := uuid.New().String()
-			totalPrice := item.PriceCents * item.Quantity
+			unitPrice := priceToInt64(item.PriceCents)
+			totalPrice := unitPrice * item.Quantity
+			name := item.Name
+			if item.VariantName != "" {
+				name = fmt.Sprintf("%s (%s)", item.Name, item.VariantName)
+			}
+			variantSKU := item.VariantSku
 
 			err = d.storage.Queries.CreateCartSnapshot(ctx, db.CreateCartSnapshotParams{
 				ID:              snapshotID,
 				AbandonedCartID: abandonedCartID,
 				ProductID:       item.ProductID,
-				ProductName:     item.Name,
-				ProductSku:      sql.NullString{}, // TODO: Get SKU from product
+				ProductName:     name,
+				ProductSku:      sql.NullString{String: variantSKU, Valid: variantSKU != ""},
 				ProductImageUrl: sql.NullString{String: item.ImageUrl, Valid: item.ImageUrl != ""},
 				Quantity:        item.Quantity,
-				UnitPriceCents:  item.PriceCents,
+				UnitPriceCents:  unitPrice,
 				TotalPriceCents: totalPrice,
 			})
 			if err != nil {
@@ -360,6 +372,26 @@ func (d *AbandonedCartDetector) createCartSnapshots(ctx context.Context, abandon
 	}
 
 	return nil
+}
+
+func priceToInt64(v interface{}) int64 {
+	switch val := v.(type) {
+	case int64:
+		return val
+	case float64:
+		return int64(val)
+	case int:
+		return int64(val)
+	case sql.NullFloat64:
+		if val.Valid {
+			return int64(val.Float64)
+		}
+	case sql.NullInt64:
+		if val.Valid {
+			return val.Int64
+		}
+	}
+	return 0
 }
 
 // CleanupExpiredCarts marks old abandoned carts as expired and deletes very old ones

@@ -422,52 +422,49 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 	// Get products with their primary images
 	productsWithImages := make([]types.ProductWithImage, 0, len(products))
 	for _, product := range products {
-		images, err := h.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			// Continue without image if there's an error
-			// Use database is_new column
-			isNew := product.IsNew.Valid && product.IsNew.Bool
-
-			// Check if product is discontinued (inactive)
-			isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
-
-			productsWithImages = append(productsWithImages, types.ProductWithImage{
-				Product:        product,
-				ImageURL:       "",
-				IsNew:          isNew,
-				IsDiscontinued: isDiscontinued,
-			})
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first image
-			var rawImageURL string
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			// If no primary image found, use the first one
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			// Build the full path from the filename
-			if rawImageURL != "" {
-				// Database should only contain filenames
-				// Always build the full path here
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		// Use database is_new column
 		isNew := product.IsNew.Valid && product.IsNew.Bool
-
 		// Check if product is discontinued (inactive)
 		isDiscontinued := !product.IsActive.Valid || !product.IsActive.Bool
+
+		imageURL := ""
+
+		// For products with variants, get the primary style's primary image
+		if product.HasVariants.Valid && product.HasVariants.Bool {
+			styles, err := h.storage.Queries.GetProductStyles(ctx, product.ID)
+			if err == nil && len(styles) > 0 {
+				// First style is primary (ordered by is_primary DESC)
+				primaryStyle := styles[0]
+				styleImage, err := h.storage.Queries.GetPrimaryStyleImage(ctx, primaryStyle.ID)
+				if err == nil && styleImage.ImageUrl != "" {
+					imageURL = "/public/images/products/styles/" + styleImage.ImageUrl
+				}
+			}
+		}
+
+		// If no variant image found (or not a variant product), try regular product images
+		if imageURL == "" {
+			images, err := h.storage.Queries.GetProductImages(ctx, product.ID)
+			if err == nil && len(images) > 0 {
+				// Get the primary image or the first image
+				var rawImageURL string
+				for _, img := range images {
+					if img.IsPrimary.Valid && img.IsPrimary.Bool {
+						rawImageURL = img.ImageUrl
+						break
+					}
+				}
+				// If no primary image found, use the first one
+				if rawImageURL == "" {
+					rawImageURL = images[0].ImageUrl
+				}
+
+				// Build the full path from the filename
+				if rawImageURL != "" {
+					imageURL = "/public/images/products/" + rawImageURL
+				}
+			}
+		}
 
 		productsWithImages = append(productsWithImages, types.ProductWithImage{
 			Product:        product,
@@ -507,7 +504,68 @@ func (h *AdminHandler) HandleProductForm(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch categories")
 	}
 
-	return Render(c, admin.ProductFormPage(c, product, categories, productImages))
+	// Variant data
+	var productStyles []admin.ProductStyleView
+	var skuViews []admin.ProductSkuView
+
+	// Get global sizes
+	sizes, err := h.storage.Queries.GetAllSizes(c.Request().Context())
+	if err != nil {
+		slog.Error("failed to fetch sizes", "error", err)
+		sizes = []db.Size{}
+	}
+
+	// Get size charts for defaults
+	sizeCharts, err := h.storage.Queries.GetSizeCharts(c.Request().Context())
+	if err != nil {
+		slog.Error("failed to fetch size charts", "error", err)
+		sizeCharts = []db.GetSizeChartsRow{}
+	}
+
+	var productSizeConfigs []db.GetAllProductSizeConfigsRow
+
+	// Load product-specific styles and SKUs
+	if product != nil {
+		styles, err := h.storage.Queries.GetProductStyles(c.Request().Context(), product.ID)
+		if err != nil {
+			slog.Error("failed to fetch product styles", "error", err)
+		} else {
+			for _, row := range styles {
+				view := admin.ProductStyleView{
+					ID:        row.ID,
+					Name:      row.Name,
+					IsPrimary: row.IsPrimary.Valid && row.IsPrimary.Bool,
+				}
+				images, _ := h.storage.Queries.GetProductStyleImages(c.Request().Context(), row.ID)
+				for _, img := range images {
+					view.Images = append(view.Images, admin.ProductStyleImage{
+						ID:        img.ID,
+						Filename:  img.ImageUrl,
+						IsPrimary: img.IsPrimary.Valid && img.IsPrimary.Bool,
+					})
+					if img.IsPrimary.Valid && img.IsPrimary.Bool {
+						view.PrimaryImage = img.ImageUrl
+					}
+				}
+				productStyles = append(productStyles, view)
+			}
+		}
+
+		skuRows, skuErr := h.storage.Queries.GetProductSkus(c.Request().Context(), product.ID)
+		if skuErr != nil {
+			slog.Error("failed to fetch product skus", "error", skuErr, "product_id", product.ID)
+		} else {
+			skuViews = buildProductSkuViews(skuRows)
+		}
+
+		productSizeConfigs, err = h.storage.Queries.GetAllProductSizeConfigs(c.Request().Context(), product.ID)
+		if err != nil {
+			slog.Error("failed to fetch product size configs", "error", err, "product_id", product.ID)
+			productSizeConfigs = []db.GetAllProductSizeConfigsRow{}
+		}
+	}
+
+	return Render(c, admin.ProductFormPage(c, product, categories, productImages, productStyles, sizes, skuViews, sizeCharts, productSizeConfigs))
 }
 
 func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
@@ -520,6 +578,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
 	isPremiumCollectionStr := c.FormValue("is_premium_collection")
+	hasVariantsStr := c.FormValue("has_variants")
 	seoTitle := c.FormValue("seo_title")
 	seoDescription := c.FormValue("seo_description")
 	seoKeywords := c.FormValue("seo_keywords")
@@ -541,6 +600,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 	productID := uuid.New().String()
 	isPremiumCollection := isPremiumCollectionStr == "on" || isPremiumCollectionStr == "true"
+	hasVariants := hasVariantsStr == "on" || hasVariantsStr == "true"
 
 	params := db.CreateProductParams{
 		ID:               productID,
@@ -552,6 +612,7 @@ func (h *AdminHandler) HandleCreateProduct(c echo.Context) error {
 		CategoryID:       sql.NullString{String: categoryID, Valid: categoryID != ""},
 		Sku:              sql.NullString{String: sku, Valid: sku != ""},
 		StockQuantity:    sql.NullInt64{Int64: stockQuantity, Valid: true},
+		HasVariants:      sql.NullBool{Bool: hasVariants, Valid: true},
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Valid: false},
 		IsActive:         sql.NullBool{Bool: true, Valid: true},
@@ -645,6 +706,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	categoryID := c.FormValue("category_id")
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
+	hasVariantsStr := c.FormValue("has_variants")
 	seoTitle := c.FormValue("seo_title")
 	seoDescription := c.FormValue("seo_description")
 	seoKeywords := c.FormValue("seo_keywords")
@@ -678,6 +740,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	}
 
 	slug := strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+	hasVariants := hasVariantsStr == "on" || hasVariantsStr == "true"
 
 	slog.Debug("parsed form values", "name", name, "price", price, "slug", slug)
 
@@ -691,6 +754,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		CategoryID:       sql.NullString{String: categoryID, Valid: categoryID != ""},
 		Sku:              sql.NullString{String: sku, Valid: sku != ""},
 		StockQuantity:    sql.NullInt64{Int64: stockQuantity, Valid: true},
+		HasVariants:      sql.NullBool{Bool: hasVariants, Valid: true},
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Valid: false},
 		Disclaimer:       sql.NullString{String: disclaimer, Valid: disclaimer != ""},
@@ -1972,12 +2036,58 @@ func (h *AdminHandler) HandleOrderDetail(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch order items")
 	}
 
+	// Build order items with images
+	itemsWithImages := make([]admin.OrderItemWithImages, len(orderItems))
+	for i, item := range orderItems {
+		itemsWithImages[i] = admin.OrderItemWithImages{
+			Item:   item,
+			Images: h.getOrderItemImages(ctx, item),
+		}
+	}
+
 	shippingSelection, err := h.storage.Queries.GetOrderShippingSelection(ctx, orderID)
 	if err != nil && err != sql.ErrNoRows {
 		slog.Error("failed to fetch shipping selection", "error", err, "order_id", orderID)
 	}
 
-	return Render(c, admin.OrderDetail(c, order, orderItems, shippingSelection))
+	return Render(c, admin.OrderDetail(c, order, itemsWithImages, shippingSelection))
+}
+
+// getOrderItemImages fetches all images for an order item (handles both regular products and variants)
+func (h *AdminHandler) getOrderItemImages(ctx context.Context, item db.OrderItem) []admin.OrderItemImage {
+	var images []admin.OrderItemImage
+
+	// If item has a SKU, try to get style images first
+	if item.ProductSkuID.Valid && item.ProductSkuID.String != "" {
+		// Get the SKU to find the style
+		sku, err := h.storage.Queries.GetProductSku(ctx, item.ProductSkuID.String)
+		if err == nil && sku.ProductStyleID != "" {
+			// Get style images
+			styleImages, err := h.storage.Queries.GetProductStyleImages(ctx, sku.ProductStyleID)
+			if err == nil && len(styleImages) > 0 {
+				for _, img := range styleImages {
+					images = append(images, admin.OrderItemImage{
+						URL:       "/public/images/products/styles/" + img.ImageUrl,
+						IsPrimary: img.IsPrimary.Valid && img.IsPrimary.Bool,
+					})
+				}
+				return images
+			}
+		}
+	}
+
+	// Fall back to regular product images
+	productImages, err := h.storage.Queries.GetProductImages(ctx, item.ProductID)
+	if err == nil {
+		for _, img := range productImages {
+			images = append(images, admin.OrderItemImage{
+				URL:       "/public/images/products/" + img.ImageUrl,
+				IsPrimary: img.IsPrimary.Valid && img.IsPrimary.Bool,
+			})
+		}
+	}
+
+	return images
 }
 
 func (h *AdminHandler) HandleUpdateOrderStatus(c echo.Context) error {
@@ -2584,7 +2694,13 @@ func (h *AdminHandler) HandleShippingConfig(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to load shipping configuration: "+err.Error())
 	}
 
-	return Render(c, admin.ShippingConfig(c, config))
+	sizeCharts, err := h.storage.Queries.GetSizeCharts(c.Request().Context())
+	if err != nil {
+		slog.Error("failed to load size charts", "error", err)
+		sizeCharts = []db.GetSizeChartsRow{}
+	}
+
+	return Render(c, admin.ShippingConfig(c, config, sizeCharts))
 }
 
 func (h *AdminHandler) HandleSaveShippingConfig(c echo.Context) error {
@@ -2594,6 +2710,11 @@ func (h *AdminHandler) HandleSaveShippingConfig(c echo.Context) error {
 	config, err := shipping.LoadShippingConfigFromDB(ctx, h.storage.Queries)
 	if err != nil {
 		return c.String(http.StatusInternalServerError, "Failed to load current config: "+err.Error())
+	}
+
+	sizeCharts, err := h.storage.Queries.GetSizeCharts(ctx)
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to load size charts: "+err.Error())
 	}
 
 	// Parse item weights for each size category
@@ -2629,6 +2750,33 @@ func (h *AdminHandler) HandleSaveShippingConfig(c echo.Context) error {
 			L: L,
 			W: W,
 			H: H,
+		}
+	}
+
+	// Persist size chart defaults for each size
+	for _, chart := range sizeCharts {
+		shippingCategory := strings.TrimSpace(c.FormValue(fmt.Sprintf("size_chart_%s_shipping_category", chart.SizeID)))
+		weightOz, _ := strconv.ParseFloat(c.FormValue(fmt.Sprintf("size_chart_%s_weight_oz", chart.SizeID)), 64)
+		priceAdjustment, _ := strconv.ParseFloat(c.FormValue(fmt.Sprintf("size_chart_%s_price_adjustment", chart.SizeID)), 64)
+		priceAdjustmentCents := int64(priceAdjustment * 100)
+
+		chartID := ""
+		if chart.ChartID.Valid {
+			chartID = chart.ChartID.String
+		}
+		if chartID == "" {
+			chartID = uuid.New().String()
+		}
+
+		_, err := h.storage.Queries.UpsertSizeChart(ctx, db.UpsertSizeChartParams{
+			ID:                          chartID,
+			SizeID:                      chart.SizeID,
+			DefaultShippingClass:        sql.NullString{String: shippingCategory, Valid: shippingCategory != ""},
+			DefaultShippingWeightOz:     sql.NullFloat64{Float64: weightOz, Valid: weightOz > 0},
+			DefaultPriceAdjustmentCents: sql.NullInt64{Int64: priceAdjustmentCents, Valid: priceAdjustmentCents != 0},
+		})
+		if err != nil {
+			return c.String(http.StatusInternalServerError, "Failed to save size chart: "+err.Error())
 		}
 	}
 

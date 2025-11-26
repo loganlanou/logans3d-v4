@@ -243,11 +243,13 @@ type OrderData struct {
 
 // OrderItem represents a single item in an order
 type OrderItem struct {
-	ProductName  string
-	ProductImage string
-	Quantity     int64
-	PriceCents   int64
-	TotalCents   int64
+	ProductName   string
+	ProductImage  string
+	Quantity      int64
+	PriceCents    int64
+	TotalCents    int64
+	ShippingTime  string // "Ships in 1-3 days" or "Ships in 4-5 days"
+	NeedsPrinting bool   // true if item needs to be printed (stock was 0)
 }
 
 // Address represents a shipping or billing address

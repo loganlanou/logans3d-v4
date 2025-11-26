@@ -2,6 +2,7 @@ package admin
 
 import (
 	"fmt"
+	"strings"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/components/button"
 	"github.com/loganlanou/logans3d-v4/components/card"
@@ -9,17 +10,42 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
+type ProductSkuView struct {
+	ID                   string
+	SKU                  string
+	Style                string
+	Size                 string
+	PriceAdjustmentCents int64
+	Stock                int64
+	Active               bool
+	StylePrimaryImage    string
+}
+
+type ProductStyleView struct {
+	ID           string
+	Name         string
+	IsPrimary    bool
+	PrimaryImage string
+	Images       []ProductStyleImage
+}
+
+type ProductStyleImage struct {
+	ID        string
+	Filename  string
+	IsPrimary bool
+}
+
 // ProductFormPage - Full page with layout wrappers (used for initial GET request)
-templ ProductFormPage(c echo.Context, product *db.Product, categories []db.Category, productImages []db.ProductImage) {
+templ ProductFormPage(c echo.Context, product *db.Product, categories []db.Category, productImages []db.ProductImage, productStyles []ProductStyleView, sizes []db.Size, skus []ProductSkuView, sizeCharts []db.GetSizeChartsRow, productSizeConfigs []db.GetAllProductSizeConfigsRow) {
 	@layout.AdminBase(c, productFormTitle(product)) {
 		@layout.AdminContainer() {
-			@ProductFormPartial(c, product, categories, productImages)
+			@ProductFormPartial(c, product, categories, productImages, productStyles, sizes, skus, sizeCharts, productSizeConfigs)
 		}
 	}
 }
 
 // ProductFormPartial - Just the form container (used for HTMX responses)
-templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Category, productImages []db.ProductImage) {
+templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Category, productImages []db.ProductImage, productStyles []ProductStyleView, sizes []db.Size, skus []ProductSkuView, sizeCharts []db.GetSizeChartsRow, productSizeConfigs []db.GetAllProductSizeConfigsRow) {
 	<!-- Product Form Container - wraps header + form for HTMX targeting -->
 	<div id="product-form-container">
 		<!-- Header -->
@@ -29,6 +55,19 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 			</h1>
 			<div class="flex items-center gap-3">
 				if product != nil {
+					if product.HasVariants.Valid && product.HasVariants.Bool && len(productStyles) > 1 {
+						<button
+							type="button"
+							@click={ fmt.Sprintf("$dispatch('show-og-preview', { url: '/api/og-image/multi/%s?refresh=true', title: 'All Colors OG - %s' })", product.ID, product.Name) }
+							class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+							title="Preview multi-variant OG image for social sharing"
+						>
+							<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+							</svg>
+							OG Preview
+						</button>
+					}
 					<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Slug)) } target="_blank" rel="noopener noreferrer">
 						@button.Button(button.Props{
 							Variant: button.VariantOutline,
@@ -179,7 +218,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									min="0"
 									required
 									value={ productPrice(product) }
-									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full md:max-w-xs px-3 py-2 text-sm bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="0.00"
 								/>
 							</div>
@@ -193,7 +232,7 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									id="sku"
 									name="sku"
 									value={ productSKU(product) }
-									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full md:max-w-xs px-3 py-2 text-sm bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="SKU-001"
 								/>
 							</div>
@@ -208,16 +247,220 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									name="stock_quantity"
 									min="0"
 									value={ productStockQuantity(product) }
-									class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+									class="w-full md:max-w-xs px-3 py-2 text-sm bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
 									placeholder="0"
 								/>
 							</div>
 						</div>
 					}
 				}
-				<!-- Product Images Section -->
-				if product != nil {
-					@card.Card() {
+				<!-- Variants & Images Section (mutually exclusive) -->
+				<div x-data={ fmt.Sprintf("{ hasVariants: %t }", productHasVariants(product)) }>
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Variants
+						}
+						@card.Description() {
+							Enable color + size combinations and manage SKUs
+						}
+					}
+					@card.Content() {
+						<div id="variants" class="space-y-4">
+							<div class="flex flex-col gap-2">
+								<label class="inline-flex items-center gap-3 text-sm">
+									<input type="checkbox" name="has_variants" value="true" x-model="hasVariants" checked?={ productHasVariants(product) } class="rounded border-border text-emerald-600 focus:ring-emerald-500"/>
+									<span class="text-foreground">This product has variants (color + size)</span>
+								</label>
+								<p class="text-xs text-muted-foreground">
+									Mark this on to manage color + size SKUs. Base price still comes from the product; adjustments live on the SKU.
+								</p>
+							</div>
+							<div x-show="!hasVariants" class="p-4 bg-muted/50 border border-border rounded-lg text-sm text-muted-foreground">
+								Enable variants above to manage color + size combinations. Product images are managed below when variants are disabled.
+							</div>
+							<div x-show="hasVariants" x-cloak>
+							if product == nil {
+								<div class="p-4 bg-muted/50 border border-border rounded-lg text-sm text-muted-foreground">
+									Save the product first to add variant SKUs.
+								</div>
+							} else {
+								<div class="space-y-4">
+									if missing := missingSizeCharts(sizeCharts); len(missing) > 0 {
+										<div class="rounded-md border border-amber-400/60 bg-amber-500/10 p-3 text-amber-700 text-xs">
+											Missing shipping defaults for: { strings.Join(missing, ", ") }. Update size chart before creating SKUs.
+										</div>
+									}
+									<!-- Product Sizes Section -->
+									<div class="rounded-lg border border-border/70 bg-muted/30 p-4">
+										<div class="flex items-center justify-between mb-3">
+											<span class="text-sm font-semibold text-foreground">Product Sizes</span>
+											<span class="text-[11px] text-muted-foreground">Select sizes for this product. SKUs auto-generate when adding colors.</span>
+										</div>
+										<div id="product-sizes-form" class="space-y-3">
+											<div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+												for _, size := range sizeCharts {
+													<div class="flex flex-col gap-1.5 p-2 rounded-md border border-border/60 bg-background/50">
+														<label class="inline-flex items-center gap-2 text-sm">
+															<input
+																type="checkbox"
+																name="size_enabled"
+																value={ size.SizeID }
+																checked?={ isSizeEnabled(size.SizeID, productSizeConfigs) }
+																class="rounded border-border text-emerald-600 focus:ring-emerald-500"
+															/>
+															<span class="font-medium text-foreground">{ size.DisplayName }</span>
+														</label>
+														<div class="flex items-center gap-1">
+															<span class="text-[11px] text-muted-foreground">Adj:</span>
+															<input
+																type="number"
+																step="0.01"
+																name={ fmt.Sprintf("price_adjustment_%s", size.SizeID) }
+																value={ getSizeConfigAdjustment(size.SizeID, productSizeConfigs, sizeChartDefaultPrice(size)) }
+																placeholder={ fmt.Sprintf("$%.2f", float64(sizeChartDefaultPrice(size))/100) }
+																class="w-20 px-2 py-1 text-xs rounded border border-border bg-background text-foreground"
+															/>
+														</div>
+													</div>
+												}
+											</div>
+											<div class="flex justify-end">
+												<button
+													type="button"
+													hx-post={ fmt.Sprintf("/admin/product/%s/sizes", product.ID) }
+													hx-include="#product-sizes-form"
+													hx-swap="none"
+													class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+												>
+													Save Sizes
+												</button>
+											</div>
+										</div>
+										if len(getEnabledSizes(productSizeConfigs)) > 0 {
+											<div class="mt-2 text-xs text-muted-foreground">
+												<span class="font-medium text-foreground">Active sizes:</span> { strings.Join(getEnabledSizeNames(productSizeConfigs, sizeCharts), ", ") }
+											</div>
+										}
+									</div>
+									<div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+										<div class="space-y-3 rounded-lg border border-border/70 bg-muted/30 p-3">
+											<div class="flex items-center justify-between">
+												<span class="text-sm font-semibold text-foreground">Styles</span>
+												<span class="text-[11px] text-muted-foreground">Upload filament photos; required per style.</span>
+											</div>
+											<div
+												id="add-color-form"
+												class="grid grid-cols-1 gap-2"
+											>
+												<div class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+													<input type="text" name="style_name" id="style_name_input" placeholder="Style name (e.g., Flame Red)" class="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground sm:col-span-2"/>
+													<div
+														x-data="{
+															isDragging: false,
+															fileCount: 0,
+															handleDrop(e) {
+																this.isDragging = false;
+																const input = this.$refs.styleImages;
+																input.files = e.dataTransfer.files;
+																this.fileCount = e.dataTransfer.files.length;
+															},
+															updateCount(e) {
+																this.fileCount = e.target.files.length;
+															}
+														}"
+														@dragenter.prevent="isDragging = true"
+														@dragover.prevent="isDragging = true"
+														@dragleave.prevent="isDragging = false"
+														@drop.prevent="handleDrop($event)"
+														:class="{ 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20': isDragging, 'border-border': !isDragging }"
+														class="sm:col-span-3 border-2 border-dashed rounded-md p-2 text-center transition-colors"
+													>
+														<input
+															type="file"
+															name="style_images"
+															accept="image/*"
+															multiple
+															x-ref="styleImages"
+															@change="updateCount($event)"
+															class="hidden"
+															id="style_images_input"
+														/>
+														<label for="style_images_input" class="cursor-pointer flex items-center justify-center gap-2 text-sm">
+															<svg class="w-5 h-5 text-muted-foreground" :class="{ 'text-emerald-500': isDragging }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+															</svg>
+															<span x-show="fileCount === 0" class="text-muted-foreground">Drop files or <span class="text-emerald-600 hover:underline">browse</span></span>
+															<span x-show="fileCount > 0" x-text="fileCount + ' file(s)'" class="text-emerald-600 font-medium"></span>
+														</label>
+													</div>
+												</div>
+												<div class="flex items-center justify-between">
+													<label class="inline-flex items-center gap-2 text-xs text-muted-foreground">
+														<input type="checkbox" name="is_primary" value="true" checked class="rounded border-border text-emerald-600 focus:ring-emerald-500"/>
+														Primary
+													</label>
+													<button
+														type="button"
+														hx-post={ fmt.Sprintf("/admin/product/%s/styles", product.ID) }
+														hx-encoding="multipart/form-data"
+														hx-include="#add-color-form"
+														class="inline-flex items-center justify-center px-3 py-2 text-sm font-medium rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+														onclick="if(!document.getElementById('style_name_input').value.trim()){document.getElementById('style_name_input').focus();window.showToast('Please enter a style name','error');return false;}"
+													>
+														Add Style & Generate SKUs
+													</button>
+												</div>
+												if len(getEnabledSizes(productSizeConfigs)) > 0 {
+													<div class="mt-2 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded text-xs text-emerald-700">
+														<svg class="inline-block w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+															<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+														</svg>
+														Will auto-create SKUs for: { strings.Join(getEnabledSizeNames(productSizeConfigs, sizeCharts), ", ") }
+													</div>
+												} else {
+													<div class="mt-2 p-2 bg-amber-500/10 border border-amber-500/30 rounded text-xs text-amber-700">
+														<svg class="inline-block w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+															<path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+														</svg>
+														Configure Product Sizes above to auto-generate SKUs
+													</div>
+												}
+											</div>
+											<div class="space-y-2 text-xs" x-data="{ selectedStyleId: '' }">
+												if len(productStyles) == 0 {
+													<span class="text-muted-foreground">No styles added yet.</span>
+												} else {
+													for _, style := range productStyles {
+														@StyleCard(StyleCardData{
+															StyleID:      style.ID,
+															ProductID:    product.ID,
+															Name:         style.Name,
+															IsPrimary:    style.IsPrimary,
+															PrimaryImage: style.PrimaryImage,
+															ImageCount:   len(style.Images),
+														})
+													}
+												}
+											</div>
+										</div>
+
+										<div class="xl:col-span-2">
+											<div id="style-detail-panel" class="rounded-lg border border-border/70 bg-background/50 p-4 min-h-[250px]">
+												@StylePanelPlaceholder()
+											</div>
+										</div>
+									</div>
+									</div>
+								}
+							</div>
+							</div>
+						}
+				}
+				<!-- Product Images Section (only when variants disabled) -->
+				<div x-show="!hasVariants" x-cloak>
+					if product != nil {
+						@card.Card() {
 						@card.Header() {
 							@card.Title() {
 								Product Images
@@ -246,21 +489,67 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 						}
 					}
 					@card.Content() {
-						<div>
-							<input
-								type="file"
-								id="images"
-								name="images"
-								multiple
-								accept="image/*"
-								class="w-full px-4 py-2.5 bg-background/50 border border-border rounded-lg text-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-primary-foreground hover:file:bg-emerald-700 cursor-pointer transition-all"
-							/>
-							<p class="mt-2 text-xs text-muted-foreground">
-								Supported formats: JPG, PNG, WebP (Max: 5MB per file)
-							</p>
+						<div
+							x-data="{
+								isDragging: false,
+								fileCount: 0,
+								handleDrop(e) {
+									this.isDragging = false;
+									const input = document.getElementById('images');
+									input.files = e.dataTransfer.files;
+									this.fileCount = e.dataTransfer.files.length;
+									input.dispatchEvent(new Event('change', { bubbles: true }));
+								},
+								updateCount(e) {
+									this.fileCount = e.target.files.length;
+								}
+							}"
+							@dragenter.prevent="isDragging = true"
+							@dragover.prevent="isDragging = true"
+							@dragleave.prevent="isDragging = false"
+							@drop.prevent="handleDrop($event)"
+							:class="{ 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20': isDragging, 'border-border': !isDragging }"
+							class="border-2 border-dashed rounded-lg p-6 text-center transition-colors"
+						>
+							<div class="flex flex-col items-center gap-3">
+								<svg
+									class="w-10 h-10 transition-colors"
+									:class="{ 'text-emerald-500': isDragging, 'text-muted-foreground': !isDragging }"
+									fill="none"
+									stroke="currentColor"
+									viewBox="0 0 24 24"
+								>
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+								</svg>
+								<p class="text-sm text-muted-foreground">
+									<span x-show="!isDragging">Drag and drop images here, or</span>
+									<span x-show="isDragging" class="text-emerald-600 font-medium">Drop files to upload</span>
+								</p>
+								<input
+									type="file"
+									id="images"
+									name="images"
+									multiple
+									accept="image/*"
+									class="hidden"
+									@change="updateCount($event)"
+								/>
+								<label
+									for="images"
+									class="cursor-pointer px-4 py-2 bg-emerald-600 text-white text-sm font-semibold rounded-lg hover:bg-emerald-700 transition-colors"
+								>
+									Choose Files
+								</label>
+								<p class="text-xs text-muted-foreground">
+									<span x-show="fileCount > 0" x-text="fileCount + ' file(s) selected'" class="text-emerald-600 font-medium"></span>
+									<span x-show="fileCount === 0">PNG, JPG, WebP up to 5MB each</span>
+								</p>
+							</div>
 						</div>
 					}
 				}
+				</div>
+				</div>
 				<!-- SEO Section - Hidden on mobile -->
 				<div class="hidden md:block">
 					@card.Card() {
@@ -579,6 +868,104 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 				updateSeoPreview();
 			});
 		</script>
+		<!-- OG Image Preview Modal -->
+		<div
+			x-data="{ open: false, imageUrl: '', title: '', loading: true }"
+			x-show="open"
+			x-cloak
+			@show-og-preview.window="open = true; loading = true; imageUrl = $event.detail.url; title = $event.detail.title"
+			@keydown.escape.window="open = false"
+			class="fixed inset-0 z-50 overflow-y-auto"
+			aria-labelledby="og-preview-modal-title"
+			role="dialog"
+			aria-modal="true"
+		>
+			<!-- Backdrop -->
+			<div
+				x-show="open"
+				x-transition:enter="ease-out duration-300"
+				x-transition:enter-start="opacity-0"
+				x-transition:enter-end="opacity-100"
+				x-transition:leave="ease-in duration-200"
+				x-transition:leave-start="opacity-100"
+				x-transition:leave-end="opacity-0"
+				class="fixed inset-0 bg-black/60 backdrop-blur-sm"
+				@click="open = false"
+			></div>
+			<!-- Modal Panel -->
+			<div class="flex min-h-full items-center justify-center p-4">
+				<div
+					x-show="open"
+					x-transition:enter="ease-out duration-300"
+					x-transition:enter-start="opacity-0 scale-95"
+					x-transition:enter-end="opacity-100 scale-100"
+					x-transition:leave="ease-in duration-200"
+					x-transition:leave-start="opacity-100 scale-100"
+					x-transition:leave-end="opacity-0 scale-95"
+					class="relative bg-background rounded-xl border border-border shadow-2xl max-w-3xl w-full"
+					@click.stop
+				>
+					<!-- Header -->
+					<div class="flex items-center justify-between p-4 border-b border-border">
+						<h3 id="og-preview-modal-title" class="text-lg font-semibold text-foreground">
+							OG Image Preview
+						</h3>
+						<button
+							type="button"
+							@click="open = false"
+							class="text-muted-foreground hover:text-foreground transition-colors"
+						>
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+							</svg>
+						</button>
+					</div>
+					<!-- Content -->
+					<div class="p-4">
+						<p class="text-sm text-muted-foreground mb-3" x-text="title"></p>
+						<div class="bg-muted/30 rounded-lg p-2 border border-border/50 overflow-hidden min-h-[200px] flex items-center justify-center">
+							<!-- Loading Spinner -->
+							<div x-show="loading" class="flex flex-col items-center gap-3 py-8">
+								<svg class="animate-spin h-10 w-10 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								<span class="text-sm text-muted-foreground">Generating OG image...</span>
+							</div>
+							<!-- Actual Image -->
+							<img
+								x-show="!loading"
+								:src="imageUrl"
+								@load="loading = false"
+								@error="loading = false"
+								alt="OG Image Preview"
+								class="max-w-full h-auto rounded-lg"
+							/>
+						</div>
+						<p class="text-xs text-muted-foreground mt-3">
+							Social platforms will crop this to 1200x630. The text overlay scales with image size.
+						</p>
+					</div>
+					<!-- Footer -->
+					<div class="flex justify-end gap-2 p-4 border-t border-border">
+						<a
+							:href="imageUrl"
+							target="_blank"
+							class="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+						>
+							Open in New Tab
+						</a>
+						<button
+							type="button"
+							@click="open = false"
+							class="px-4 py-2 text-sm font-medium rounded-md bg-muted text-foreground hover:bg-muted/80 transition-colors"
+						>
+							Close
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div> <!-- Close product-form-container -->
 }
 
@@ -644,6 +1031,38 @@ func productStockQuantity(product *db.Product) string {
 		return fmt.Sprintf("%d", product.StockQuantity.Int64)
 	}
 	return "0"
+}
+
+func productHasVariants(product *db.Product) bool {
+	return product != nil && product.HasVariants.Valid && product.HasVariants.Bool
+}
+
+func baseSkuValue(product *db.Product) string {
+	if product != nil && product.Sku.Valid && product.Sku.String != "" {
+		return product.Sku.String
+	}
+	if product != nil {
+		return strings.ToUpper(product.Slug)
+	}
+	return ""
+}
+
+func missingSizeCharts(sizeCharts []db.GetSizeChartsRow) []string {
+	var missing []string
+	for _, chart := range sizeCharts {
+		if !chart.DefaultShippingClass.Valid || chart.DefaultShippingClass.String == "" ||
+			!chart.DefaultShippingWeightOz.Valid || chart.DefaultShippingWeightOz.Float64 <= 0 {
+			missing = append(missing, chart.DisplayName)
+		}
+	}
+	return missing
+}
+
+func sizeChartDefaultPrice(chart db.GetSizeChartsRow) int64 {
+	if chart.DefaultPriceAdjustmentCents.Valid {
+		return chart.DefaultPriceAdjustmentCents.Int64
+	}
+	return 0
 }
 
 func isSelectedCategory(product *db.Product, categoryID string) bool {
@@ -744,4 +1163,48 @@ func getPreviewDescription(product *db.Product) string {
 	}
 
 	return description
+}
+
+func isSizeEnabled(sizeValueID string, configs []db.GetAllProductSizeConfigsRow) bool {
+	for _, cfg := range configs {
+		if cfg.SizeID == sizeValueID && cfg.IsEnabled.Valid && cfg.IsEnabled.Bool {
+			return true
+		}
+	}
+	return false
+}
+
+func getSizeConfigAdjustment(sizeValueID string, configs []db.GetAllProductSizeConfigsRow, defaultCents int64) string {
+	for _, cfg := range configs {
+		if cfg.SizeID == sizeValueID && cfg.PriceAdjustmentCents.Valid {
+			return fmt.Sprintf("%.2f", float64(cfg.PriceAdjustmentCents.Int64)/100)
+		}
+	}
+	return ""
+}
+
+func getEnabledSizes(configs []db.GetAllProductSizeConfigsRow) []string {
+	var enabled []string
+	for _, cfg := range configs {
+		if cfg.IsEnabled.Valid && cfg.IsEnabled.Bool {
+			enabled = append(enabled, cfg.SizeID)
+		}
+	}
+	return enabled
+}
+
+func getEnabledSizeNames(configs []db.GetAllProductSizeConfigsRow, sizeCharts []db.GetSizeChartsRow) []string {
+	enabled := make(map[string]bool)
+	for _, cfg := range configs {
+		if cfg.IsEnabled.Valid && cfg.IsEnabled.Bool {
+			enabled[cfg.SizeID] = true
+		}
+	}
+	var names []string
+	for _, sc := range sizeCharts {
+		if enabled[sc.SizeID] {
+			names = append(names, sc.DisplayName)
+		}
+	}
+	return names
 }

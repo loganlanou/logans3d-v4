@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -231,14 +232,11 @@ func (h *CartHandler) HandleCartDetail(c echo.Context) error {
 		}
 
 		variantName := ""
-		if row.VariantName.Valid {
-			variantName = row.VariantName.String
+		if row.VariantName != nil {
+			variantName = fmt.Sprintf("%v", row.VariantName)
 		}
 
-		productImage := ""
-		if row.ProductImage.Valid {
-			productImage = row.ProductImage.String
-		}
+		productImage := row.ProductImage
 
 		items = append(items, admin.CartItem{
 			ID:             row.ID,
@@ -248,7 +246,7 @@ func (h *CartHandler) HandleCartDetail(c echo.Context) error {
 			VariantSKU:     variantSKU,
 			VariantName:    variantName,
 			Quantity:       row.Quantity,
-			PriceCents:     row.PriceCents,
+			PriceCents:     toInt64(row.PriceCents),
 			LineTotalCents: toInt64(row.LineTotalCents),
 			CreatedAt:      parseNullTime(row.CreatedAt),
 			UpdatedAt:      parseNullTime(row.UpdatedAt),
