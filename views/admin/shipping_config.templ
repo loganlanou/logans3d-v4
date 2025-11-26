@@ -52,8 +52,10 @@ templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig, sizeCharts
 											<label class="block text-xs font-medium text-muted-foreground mb-1">Shipping Category</label>
 											<select name={ fmt.Sprintf("size_chart_%s_shipping_category", chart.SizeID) } class="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground">
 												<option value="">Select category</option>
-												<option value="First" selected?={ isSelectedOption(chartShippingCategory(chart), "First") }>First Class</option>
-												<option value="Priority" selected?={ isSelectedOption(chartShippingCategory(chart), "Priority") }>Priority</option>
+												<option value="small" selected?={ isSelectedOption(chartShippingCategory(chart), "small") }>Small</option>
+												<option value="medium" selected?={ isSelectedOption(chartShippingCategory(chart), "medium") }>Medium</option>
+												<option value="large" selected?={ isSelectedOption(chartShippingCategory(chart), "large") }>Large</option>
+												<option value="xlarge" selected?={ isSelectedOption(chartShippingCategory(chart), "xlarge") }>X-Large</option>
 											</select>
 										</div>
 										<div>

@@ -526,7 +526,11 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 						return fmt.Errorf("failed to create order item for product %s: %w", productID, itemErr)
 					}
 
-					// Deduct inventory (won't go negative due to WHERE clause in query)
+					// Deduct inventory - INTENTIONAL DESIGN:
+					// - Stock CAN be zero at checkout time (allows pre-orders/backorders)
+					// - The SQL query has "WHERE stock_quantity >= delta" to prevent negative stock
+					// - If stock is insufficient, the query affects 0 rows (no error, just no decrement)
+					// - Customer sees extended shipping times for zero-stock items
 					if skuID != "" {
 						// Variant product: decrement SKU stock
 						if err := h.queries.DecrementProductSkuStock(ctx, db.DecrementProductSkuStockParams{

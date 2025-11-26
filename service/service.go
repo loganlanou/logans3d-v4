@@ -1077,6 +1077,13 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received"})
 }
 
+// handleCreateStripeCheckoutSession handles the legacy checkout flow (form-based)
+//
+// INTENTIONAL: This handler does NOT block checkout when stock is zero.
+// Products with zero stock can still be purchased - the customer will see
+// extended shipping times (e.g., "Ships in 2-3 weeks") in their cart and order.
+// Stock is decremented in the webhook handler with protection against going negative.
+// This is a business decision to allow pre-orders/backorders rather than losing sales.
 func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -1344,6 +1351,12 @@ func (s *Service) handleAccountOrderDetail(c echo.Context) error {
 }
 
 // handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)
+//
+// INTENTIONAL: This handler does NOT block checkout when stock is zero.
+// Products with zero stock can still be purchased - the customer will see
+// extended shipping times (e.g., "Ships in 2-3 weeks") in their cart and order.
+// Stock is decremented in the webhook handler with protection against going negative.
+// This is a business decision to allow pre-orders/backorders rather than losing sales.
 func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -1453,6 +1466,12 @@ func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error 
 }
 
 // handleCreateStripeCheckoutSessionMulti handles multi-item checkout (Cart)
+//
+// INTENTIONAL: This handler does NOT block checkout when stock is zero.
+// Products with zero stock can still be purchased - the customer will see
+// extended shipping times (e.g., "Ships in 2-3 weeks") in their cart and order.
+// Stock is decremented in the webhook handler with protection against going negative.
+// This is a business decision to allow pre-orders/backorders rather than losing sales.
 func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -1537,6 +1556,12 @@ func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
 }
 
 // handleCreateStripeCheckoutSessionCart handles checkout from cart session
+//
+// INTENTIONAL: This handler does NOT block checkout when stock is zero.
+// Products with zero stock can still be purchased - the customer will see
+// extended shipping times (e.g., "Ships in 2-3 weeks") in their cart and order.
+// Stock is decremented in the webhook handler with protection against going negative.
+// This is a business decision to allow pre-orders/backorders rather than losing sales.
 func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 	ctx := c.Request().Context()
 
