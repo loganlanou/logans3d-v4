@@ -183,9 +183,18 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 			"has_breakdown", session.TotalDetails.Breakdown != nil)
 	}
 
-	// If breakdown is missing and there's a discount, re-fetch session with expanded details
-	if session.TotalDetails != nil && session.TotalDetails.AmountDiscount > 0 && session.TotalDetails.Breakdown == nil {
-		slog.Debug("re-fetching session to get discount breakdown", "session_id", session.ID)
+	// Always fetch line items if missing - Stripe webhooks don't include them by default
+	// Also fetch breakdown if there's a discount and it's missing
+	needsRefetch := session.LineItems == nil || len(session.LineItems.Data) == 0
+	needsBreakdown := session.TotalDetails != nil && session.TotalDetails.AmountDiscount > 0 && session.TotalDetails.Breakdown == nil
+
+	if needsRefetch || needsBreakdown {
+		reason := "line items missing"
+		if needsBreakdown {
+			reason = "line items and discount breakdown missing"
+		}
+		slog.Debug("re-fetching session", "session_id", session.ID, "reason", reason)
+
 		stripego.Key = os.Getenv("STRIPE_SECRET_KEY")
 		params := &stripego.CheckoutSessionParams{}
 		params.AddExpand("total_details.breakdown")
@@ -193,12 +202,14 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 		params.AddExpand("line_items.data.price.product")
 		expandedSession, err := checkoutsession.Get(session.ID, params)
 		if err != nil {
-			slog.Warn("failed to re-fetch session for breakdown", "error", err, "session_id", session.ID)
-			// Continue with original session - we'll still have the discount amount
+			slog.Error("failed to re-fetch session with line items", "error", err, "session_id", session.ID)
+			// This is critical - without line items we can't create order items
+			// Continue anyway but log at error level
 		} else {
 			session = expandedSession
-			slog.Debug("successfully retrieved discount breakdown",
+			slog.Debug("successfully retrieved session with expansions",
 				"session_id", session.ID,
+				"has_line_items", session.LineItems != nil && len(session.LineItems.Data) > 0,
 				"has_breakdown", session.TotalDetails != nil && session.TotalDetails.Breakdown != nil)
 		}
 	}
