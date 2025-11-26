@@ -515,13 +515,22 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 						return fmt.Errorf("failed to create order item for product %s: %w", productID, itemErr)
 					}
 
-					// Deduct inventory from SKU if present
+					// Deduct inventory (won't go negative due to WHERE clause in query)
 					if skuID != "" {
+						// Variant product: decrement SKU stock
 						if err := h.queries.DecrementProductSkuStock(ctx, db.DecrementProductSkuStockParams{
 							ID:    skuID,
 							Delta: sql.NullInt64{Int64: item.Quantity, Valid: true},
 						}); err != nil {
 							slog.Warn("failed to decrement SKU stock", "error", err, "sku_id", skuID)
+						}
+					} else {
+						// Non-variant product: decrement product stock
+						if err := h.queries.DecrementProductStock(ctx, db.DecrementProductStockParams{
+							ID:    productID,
+							Delta: sql.NullInt64{Int64: item.Quantity, Valid: true},
+						}); err != nil {
+							slog.Warn("failed to decrement product stock", "error", err, "product_id", productID)
 						}
 					}
 				}

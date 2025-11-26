@@ -69,9 +69,14 @@ RETURNING *;
 DELETE FROM products WHERE id = ?;
 
 -- name: UpdateProductStock :exec
-UPDATE products 
-SET stock_quantity = ?, updated_at = CURRENT_TIMESTAMP 
+UPDATE products
+SET stock_quantity = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?;
+
+-- name: DecrementProductStock :exec
+UPDATE products
+SET stock_quantity = stock_quantity - sqlc.arg(delta), updated_at = CURRENT_TIMESTAMP
+WHERE id = sqlc.arg(id) AND stock_quantity >= sqlc.arg(delta);
 
 -- name: GetProductImages :many
 SELECT * FROM product_images 

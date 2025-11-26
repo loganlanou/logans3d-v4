@@ -2247,7 +2247,7 @@ func (s *Service) buildSkuPresentation(ctx context.Context, product db.Product, 
 	if sku != nil {
 		// Get primary image for the style
 		if img, err := s.storage.Queries.GetPrimaryStyleImage(ctx, sku.ProductStyleID); err == nil {
-			imageURL = fmt.Sprintf("%s/public/images/products/variants/%s", s.config.BaseURL, img.ImageUrl)
+			imageURL = fmt.Sprintf("%s/public/images/products/styles/%s", s.config.BaseURL, img.ImageUrl)
 		}
 	}
 	if imageURL == "" {
