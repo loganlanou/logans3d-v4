@@ -1,12 +1,15 @@
 package handlers
 
 import (
+	"archive/zip"
+	"bytes"
 	"database/sql"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -355,4 +358,96 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 	}
 
 	return c.File(ogImagePath)
+}
+
+// HandleDownloadCarouselImages generates a ZIP file containing individual style images
+// for posting as an Instagram carousel (up to 10 images)
+// Route: GET /api/carousel/:product_id
+func (h *OGImageHandler) HandleDownloadCarouselImages(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("product_id")
+
+	if productID == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Product ID is required")
+	}
+
+	// Get product details
+	product, err := h.storage.Queries.GetProduct(ctx, productID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+		}
+		slog.Error("failed to get product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load product")
+	}
+
+	// Get all style primary images
+	styleImages, err := h.storage.Queries.GetAllStylePrimaryImages(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get style images", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load style images")
+	}
+
+	if len(styleImages) == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "No style images found for this product")
+	}
+
+	// Limit to 10 images (Instagram carousel max)
+	maxImages := 10
+	if len(styleImages) > maxImages {
+		styleImages = styleImages[:maxImages]
+	}
+
+	// Create ZIP file in memory
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+
+	// Add each style image to the ZIP
+	for i, img := range styleImages {
+		imagePath := filepath.Join("public", "images", "products", "styles", img.ImageUrl)
+
+		// Read the source image
+		imageData, err := os.ReadFile(imagePath)
+		if err != nil {
+			slog.Debug("failed to read style image, skipping", "error", err, "path", imagePath)
+			continue
+		}
+
+		// Create a safe filename: 01_StyleName.ext
+		ext := filepath.Ext(img.ImageUrl)
+		safeName := strings.ReplaceAll(img.StyleName, " ", "_")
+		safeName = strings.ReplaceAll(safeName, "/", "-")
+		filename := fmt.Sprintf("%02d_%s%s", i+1, safeName, ext)
+
+		// Add to ZIP
+		writer, err := zipWriter.Create(filename)
+		if err != nil {
+			slog.Debug("failed to create zip entry", "error", err, "filename", filename)
+			continue
+		}
+
+		_, err = writer.Write(imageData)
+		if err != nil {
+			slog.Debug("failed to write to zip", "error", err, "filename", filename)
+			continue
+		}
+	}
+
+	// Close the ZIP writer
+	if err := zipWriter.Close(); err != nil {
+		slog.Error("failed to close zip writer", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create ZIP file")
+	}
+
+	// Generate filename for download
+	safeProductName := strings.ReplaceAll(product.Name, " ", "_")
+	safeProductName = strings.ReplaceAll(safeProductName, "/", "-")
+	zipFilename := fmt.Sprintf("%s_instagram_carousel.zip", safeProductName)
+
+	// Set headers for download
+	c.Response().Header().Set("Content-Type", "application/zip")
+	c.Response().Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", zipFilename))
+	c.Response().Header().Set("Content-Length", fmt.Sprintf("%d", buf.Len()))
+
+	return c.Blob(http.StatusOK, "application/zip", buf.Bytes())
 }

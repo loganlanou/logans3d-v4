@@ -67,6 +67,17 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 							</svg>
 							OG Preview
 						</button>
+						<a
+							href={ templ.URL(fmt.Sprintf("/api/carousel/%s", product.ID)) }
+							download
+							class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-colors"
+							title="Download images as ZIP for Instagram carousel"
+						>
+							<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+							</svg>
+							Instagram
+						</a>
 					}
 					<a href={ templ.URL(fmt.Sprintf("/shop/product/%s", product.Slug)) } target="_blank" rel="noopener noreferrer">
 						@button.Button(button.Props{

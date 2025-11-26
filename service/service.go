@@ -199,6 +199,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	ogImageHandler := handlers.NewOGImageHandler(s.storage)
 	api.GET("/og-image/multi/:product_id", ogImageHandler.HandleGenerateMultiVariantOGImage) // Must be before :product_id route
 	api.GET("/og-image/:product_id", ogImageHandler.HandleGenerateOGImage)
+	api.GET("/carousel/:product_id", ogImageHandler.HandleDownloadCarouselImages) // Instagram carousel ZIP download
 
 	// Promotion routes (public)
 	promotionsHandler := handlers.NewPromotionsHandler(s.storage.Queries, s.emailService)
