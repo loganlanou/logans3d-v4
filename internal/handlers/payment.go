@@ -480,6 +480,7 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 					itemTotal := item.Price.UnitAmount * item.Quantity
 
 					// Look up stock quantity to determine shipping time
+					// Calculate effective stock AFTER this order would be fulfilled
 					var stockQuantity int64
 					if skuID != "" {
 						// If SKU exists, get stock from SKU
@@ -499,13 +500,20 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 						}
 					}
 
+					// Calculate effective stock after this order - shows correct shipping time
+					// if ordering more than available (e.g., stock=2, qty=5 → effectiveStock=-3 → backordered)
+					effectiveStock := stockQuantity - item.Quantity
+					if effectiveStock < 0 {
+						effectiveStock = 0
+					}
+
 					orderItems = append(orderItems, email.OrderItem{
 						ProductName:   item.Description,
 						Quantity:      item.Quantity,
 						PriceCents:    item.Price.UnitAmount,
 						TotalCents:    itemTotal,
-						ShippingTime:  utils.ShippingTimeMessage(stockQuantity),
-						NeedsPrinting: utils.NeedsPrinting(stockQuantity),
+						ShippingTime:  utils.ShippingTimeMessage(effectiveStock),
+						NeedsPrinting: utils.NeedsPrinting(effectiveStock),
 					})
 
 					// Create order item in database - CRITICAL: Must succeed or order is corrupt

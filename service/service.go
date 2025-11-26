@@ -384,6 +384,45 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	e.GET("/health", s.handleHealth)
 }
 
+// getProductImageURL returns the primary image URL for a product, correctly handling variants
+func (s *Service) getProductImageURL(ctx context.Context, product db.Product) string {
+	// For products with variants, use the primary style's primary image
+	if product.HasVariants.Valid && product.HasVariants.Bool {
+		styles, err := s.storage.Queries.GetProductStyles(ctx, product.ID)
+		if err == nil && len(styles) > 0 {
+			// First style is primary (ordered by is_primary DESC)
+			primaryStyle := styles[0]
+			styleImage, err := s.storage.Queries.GetPrimaryStyleImage(ctx, primaryStyle.ID)
+			if err == nil && styleImage.ImageUrl != "" {
+				return "/public/images/products/styles/" + styleImage.ImageUrl
+			}
+		}
+	}
+
+	// Fall back to regular product images
+	images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
+	if err != nil || len(images) == 0 {
+		return ""
+	}
+
+	// Get the primary image or the first one
+	rawImageURL := ""
+	for _, img := range images {
+		if img.IsPrimary.Valid && img.IsPrimary.Bool {
+			rawImageURL = img.ImageUrl
+			break
+		}
+	}
+	if rawImageURL == "" {
+		rawImageURL = images[0].ImageUrl
+	}
+
+	if rawImageURL != "" {
+		return "/public/images/products/" + rawImageURL
+	}
+	return ""
+}
+
 // Basic handler implementations
 func (s *Service) handleHome(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -397,37 +436,12 @@ func (s *Service) handleHome(c echo.Context) error {
 	}
 	slog.Debug("fetched featured products", "count", len(featuredProducts))
 
-	// Combine with images
+	// Combine with images (handles variants correctly)
 	productsWithImages := make([]home.ProductWithImage, 0, len(featuredProducts))
 	for _, product := range featuredProducts {
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		productsWithImages = append(productsWithImages, home.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
 	}
 
@@ -469,37 +483,12 @@ func (s *Service) handleShop(c echo.Context) error {
 	}
 	slog.Debug("fetched products", "count", len(products))
 
-	// Combine with images
+	// Combine with images (handles variants correctly)
 	productsWithImages := make([]shop.ProductWithImage, 0, len(products))
 	for _, product := range products {
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		productsWithImages = append(productsWithImages, shop.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
 	}
 
@@ -687,44 +676,16 @@ func (s *Service) handlePremium(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load products")
 	}
 
-	// Sort products by price descending and take top 8
+	// Sort products by price descending and take top 8 (handles variants correctly)
 	featuredProducts := make([]shop.ProductWithImage, 0, 8)
-	count := 0
-	for _, product := range products {
-		if count >= 8 {
+	for i, product := range products {
+		if i >= 8 {
 			break
 		}
-
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		featuredProducts = append(featuredProducts, shop.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
-		count++
 	}
 
 	// Build page metadata
@@ -785,17 +746,11 @@ func (s *Service) handleProduct(c echo.Context) error {
 			relatedProductsList = []db.Product{}
 		}
 
-		// Build ProductWithImage for each related product
+		// Build ProductWithImage for each related product (handles variants correctly)
 		for _, relatedProduct := range relatedProductsList {
-			primaryImage, err := s.storage.Queries.GetPrimaryProductImage(ctx, relatedProduct.ID)
-			imageURL := ""
-			if err == nil {
-				imageURL = fmt.Sprintf("/public/images/products/%s", primaryImage.ImageUrl)
-			}
-
 			relatedProducts = append(relatedProducts, shop.ProductWithImage{
 				Product:  relatedProduct,
-				ImageURL: imageURL,
+				ImageURL: s.getProductImageURL(ctx, relatedProduct),
 			})
 		}
 	}
@@ -939,42 +894,18 @@ func (s *Service) handleProductNotFound(c echo.Context, slug string) error {
 	// Try to find the product regardless of active status to get its category
 	var relatedProducts []shop.ProductWithImage
 
-	// Get a few featured products as suggestions
+	// Get a few featured products as suggestions (handles variants correctly)
 	featuredProducts, err := s.storage.Queries.ListFeaturedProducts(ctx)
 	if err == nil && len(featuredProducts) > 0 {
-		// Limit to 4 products
 		limit := 4
 		if len(featuredProducts) < limit {
 			limit = len(featuredProducts)
 		}
-
 		for i := 0; i < limit; i++ {
 			product := featuredProducts[i]
-			images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-			if err != nil {
-				continue
-			}
-
-			imageURL := ""
-			if len(images) > 0 {
-				rawImageURL := ""
-				for _, img := range images {
-					if img.IsPrimary.Valid && img.IsPrimary.Bool {
-						rawImageURL = img.ImageUrl
-						break
-					}
-				}
-				if rawImageURL == "" {
-					rawImageURL = images[0].ImageUrl
-				}
-				if rawImageURL != "" {
-					imageURL = "/public/images/products/" + rawImageURL
-				}
-			}
-
 			relatedProducts = append(relatedProducts, shop.ProductWithImage{
 				Product:  product,
-				ImageURL: imageURL,
+				ImageURL: s.getProductImageURL(ctx, product),
 			})
 		}
 	}
@@ -1014,37 +945,12 @@ func (s *Service) handleCategory(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load products")
 	}
 
-	// Combine with images
+	// Combine with images (handles variants correctly)
 	productsWithImages := make([]shop.ProductWithImage, 0, len(products))
 	for _, product := range products {
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		productsWithImages = append(productsWithImages, shop.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
 	}
 
@@ -1107,12 +1013,17 @@ func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
 	}
 
-	// Get primary product image (optional)
-	imageURL := ""
-	images, err := s.storage.Queries.GetProductImages(ctx, productID)
-	if err == nil && len(images) > 0 {
-		// Ensure we have an absolute URL for Stripe - database contains only filename
-		imageURL = fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, images[0].ImageUrl)
+	// Reject variant products - they must use the modern checkout flow that handles SKUs
+	if product.HasVariants.Valid && product.HasVariants.Bool {
+		slog.Warn("legacy checkout attempted for variant product", "product_id", productID)
+		return echo.NewHTTPError(http.StatusBadRequest, "Please select a variant before checkout")
+	}
+
+	// Get primary product image (handles variants correctly)
+	imageURL := s.getProductImageURL(ctx, product)
+	if imageURL != "" {
+		// Convert relative path to absolute URL for Stripe
+		imageURL = s.config.BaseURL + imageURL
 	}
 
 	// Create Stripe Checkout Session with dynamic product

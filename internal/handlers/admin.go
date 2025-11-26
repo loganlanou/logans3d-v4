@@ -2754,11 +2754,21 @@ func (h *AdminHandler) HandleSaveShippingConfig(c echo.Context) error {
 	}
 
 	// Persist size chart defaults for each size
+	// Valid shipping categories - must match CASE statements in storage/queries/shipping.sql
+	validShippingCategories := map[string]bool{"small": true, "medium": true, "large": true, "xlarge": true}
+
 	for _, chart := range sizeCharts {
 		shippingCategory := strings.TrimSpace(c.FormValue(fmt.Sprintf("size_chart_%s_shipping_category", chart.SizeID)))
 		weightOz, _ := strconv.ParseFloat(c.FormValue(fmt.Sprintf("size_chart_%s_weight_oz", chart.SizeID)), 64)
 		priceAdjustment, _ := strconv.ParseFloat(c.FormValue(fmt.Sprintf("size_chart_%s_price_adjustment", chart.SizeID)), 64)
 		priceAdjustmentCents := int64(priceAdjustment * 100)
+
+		// Validate shipping category - reject invalid values to prevent silent shipping calculation failures
+		if shippingCategory != "" && !validShippingCategories[strings.ToLower(shippingCategory)] {
+			slog.Warn("invalid shipping category submitted, defaulting to empty",
+				"submitted", shippingCategory, "size", chart.SizeID)
+			shippingCategory = ""
+		}
 
 		chartID := ""
 		if chart.ChartID.Valid {
