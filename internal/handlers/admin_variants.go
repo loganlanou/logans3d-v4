@@ -223,6 +223,17 @@ func (h *AdminHandler) HandleDeleteProductStyle(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to delete style")
 	}
 
+	// Check if any styles remain - if not, reset has_variants flag
+	styles, err := h.storage.Queries.GetProductStyles(ctx, productID)
+	if err == nil && len(styles) == 0 {
+		if err := h.storage.Queries.SetProductVariantsFlag(ctx, db.SetProductVariantsFlagParams{
+			ID:          productID,
+			HasVariants: sql.NullBool{Bool: false, Valid: true},
+		}); err != nil {
+			slog.Error("failed to reset has_variants flag", "error", err, "product_id", productID)
+		}
+	}
+
 	return c.Redirect(http.StatusSeeOther, "/admin/product/edit?id="+productID+"#variants")
 }
 
@@ -1051,6 +1062,17 @@ func (h *AdminHandler) HandleDeleteStyleFromPanel(c echo.Context) error {
 		slog.Error("failed to delete style", "error", err, "style_id", styleID)
 		c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Failed to delete style", "type": "error"}}`)
 		return c.NoContent(http.StatusInternalServerError)
+	}
+
+	// Check if any styles remain - if not, reset has_variants flag
+	styles, err := h.storage.Queries.GetProductStyles(ctx, productID)
+	if err == nil && len(styles) == 0 {
+		if err := h.storage.Queries.SetProductVariantsFlag(ctx, db.SetProductVariantsFlagParams{
+			ID:          productID,
+			HasVariants: sql.NullBool{Bool: false, Valid: true},
+		}); err != nil {
+			slog.Error("failed to reset has_variants flag", "error", err, "product_id", productID)
+		}
 	}
 
 	c.Response().Header().Set("HX-Trigger", `{"showToast": {"message": "Style deleted", "type": "success"}}`)

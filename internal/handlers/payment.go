@@ -203,15 +203,14 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 		expandedSession, err := checkoutsession.Get(session.ID, params)
 		if err != nil {
 			slog.Error("failed to re-fetch session with line items", "error", err, "session_id", session.ID)
-			// This is critical - without line items we can't create order items
-			// Continue anyway but log at error level
-		} else {
-			session = expandedSession
-			slog.Debug("successfully retrieved session with expansions",
-				"session_id", session.ID,
-				"has_line_items", session.LineItems != nil && len(session.LineItems.Data) > 0,
-				"has_breakdown", session.TotalDetails != nil && session.TotalDetails.Breakdown != nil)
+			// Return error so Stripe retries the webhook - without line items we can't create order items
+			return fmt.Errorf("failed to fetch line items from Stripe: %w", err)
 		}
+		session = expandedSession
+		slog.Debug("successfully retrieved session with expansions",
+			"session_id", session.ID,
+			"has_line_items", session.LineItems != nil && len(session.LineItems.Data) > 0,
+			"has_breakdown", session.TotalDetails != nil && session.TotalDetails.Breakdown != nil)
 	}
 
 	// Create order in database
