@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -71,7 +72,14 @@ func (h *ShippingHandler) GetShippingRates(c echo.Context) error {
 
 	counts, err := h.getCartItemCounts(c, sessionID, userID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		// Check if it's a validation error (starts with known prefix) or a server error
+		errMsg := err.Error()
+		if strings.HasPrefix(errMsg, "shipping category missing") {
+			return echo.NewHTTPError(http.StatusBadRequest, errMsg)
+		}
+		// Server-side error - log details but return generic message
+		slog.Error("failed to get cart item counts for shipping", "error", err, "session_id", sessionID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to calculate shipping rates")
 	}
 
 	shippingReq := &shipping.ShippingQuoteRequest{
@@ -145,47 +153,81 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		return 0
 	}
 
+	// Default fallback values for shipping dimensions/weights based on category
+	// These are used when products don't have explicit size chart or SKU overrides
+	defaultWeights := map[string]float64{
+		"small":  3.0,  // 85g avg
+		"medium": 7.05, // 200g avg
+		"large":  15.0, // 425g avg
+		"xlarge": 35.3, // 1000g avg
+	}
+	defaultDims := map[string]shipping.DimensionGuard{
+		"small":  {L: 4, W: 4, H: 4},
+		"medium": {L: 8, W: 5, H: 5},
+		"large":  {L: 20, W: 10, H: 6},
+		"xlarge": {L: 24, W: 12, H: 10},
+	}
+
+	// Helper to use DB value or fallback to default
+	weightOrDefault := func(dbVal interface{}, category string, itemCount int) float64 {
+		if itemCount == 0 {
+			return 0
+		}
+		v := toFloat(dbVal)
+		if v > 0 {
+			return v
+		}
+		// Use default weight per item * count
+		return defaultWeights[category] * float64(itemCount)
+	}
+
+	dimsOrDefault := func(l, w, h interface{}, category string) shipping.DimensionGuard {
+		dims := shipping.DimensionGuard{
+			L: toFloat(l),
+			W: toFloat(w),
+			H: toFloat(h),
+		}
+		// If any dimension is missing, use defaults for that category
+		def := defaultDims[category]
+		if dims.L <= 0 {
+			dims.L = def.L
+		}
+		if dims.W <= 0 {
+			dims.W = def.W
+		}
+		if dims.H <= 0 {
+			dims.H = def.H
+		}
+		return dims
+	}
+
+	// Log if we're using fallbacks (helpful for debugging, not an error)
+	if small > 0 && toFloat(counts.SmallMissingShipping) > 0 {
+		slog.Debug("using default shipping data for small items", "missing_count", int(toFloat(counts.SmallMissingShipping)))
+	}
+	if medium > 0 && toFloat(counts.MediumMissingShipping) > 0 {
+		slog.Debug("using default shipping data for medium items", "missing_count", int(toFloat(counts.MediumMissingShipping)))
+	}
+	if large > 0 && toFloat(counts.LargeMissingShipping) > 0 {
+		slog.Debug("using default shipping data for large items", "missing_count", int(toFloat(counts.LargeMissingShipping)))
+	}
+	if xl > 0 && toFloat(counts.XlargeMissingShipping) > 0 {
+		slog.Debug("using default shipping data for xlarge items", "missing_count", int(toFloat(counts.XlargeMissingShipping)))
+	}
+
 	itemCounts := &shipping.ItemCounts{
 		Small:          small,
 		Medium:         medium,
 		Large:          large,
 		XL:             xl,
-		SmallWeightOz:  toFloat(counts.SmallWeightOz),
-		MediumWeightOz: toFloat(counts.MediumWeightOz),
-		LargeWeightOz:  toFloat(counts.LargeWeightOz),
-		XLWeightOz:     toFloat(counts.XlargeWeightOz),
-		SmallMaxDims: shipping.DimensionGuard{
-			L: toFloat(counts.SmallMaxLengthIn),
-			W: toFloat(counts.SmallMaxWidthIn),
-			H: toFloat(counts.SmallMaxHeightIn),
-		},
-		MediumMaxDims: shipping.DimensionGuard{
-			L: toFloat(counts.MediumMaxLengthIn),
-			W: toFloat(counts.MediumMaxWidthIn),
-			H: toFloat(counts.MediumMaxHeightIn),
-		},
-		LargeMaxDims: shipping.DimensionGuard{
-			L: toFloat(counts.LargeMaxLengthIn),
-			W: toFloat(counts.LargeMaxWidthIn),
-			H: toFloat(counts.LargeMaxHeightIn),
-		},
-		XLMaxDims: shipping.DimensionGuard{
-			L: toFloat(counts.XlargeMaxLengthIn),
-			W: toFloat(counts.XlargeMaxWidthIn),
-			H: toFloat(counts.XlargeMaxHeightIn),
-		},
-	}
-
-	// Fail fast if any items are missing shipping dimensions/weights
-	switch {
-	case small > 0 && (toFloat(counts.SmallMissingShipping) > 0):
-		return nil, fmt.Errorf("Shipping data missing for small items. Update size chart or SKU overrides.")
-	case medium > 0 && (toFloat(counts.MediumMissingShipping) > 0):
-		return nil, fmt.Errorf("Shipping data missing for medium items. Update size chart or SKU overrides.")
-	case large > 0 && (toFloat(counts.LargeMissingShipping) > 0):
-		return nil, fmt.Errorf("Shipping data missing for large items. Update size chart or SKU overrides.")
-	case xl > 0 && (toFloat(counts.XlargeMissingShipping) > 0):
-		return nil, fmt.Errorf("Shipping data missing for xlarge items. Update size chart or SKU overrides.")
+		SmallWeightOz:  weightOrDefault(counts.SmallWeightOz, "small", small),
+		MediumWeightOz: weightOrDefault(counts.MediumWeightOz, "medium", medium),
+		LargeWeightOz:  weightOrDefault(counts.LargeWeightOz, "large", large),
+		XLWeightOz:     weightOrDefault(counts.XlargeWeightOz, "xlarge", xl),
+		SmallMaxDims:   dimsOrDefault(counts.SmallMaxLengthIn, counts.SmallMaxWidthIn, counts.SmallMaxHeightIn, "small"),
+		MediumMaxDims:  dimsOrDefault(counts.MediumMaxLengthIn, counts.MediumMaxWidthIn, counts.MediumMaxHeightIn, "medium"),
+		LargeMaxDims:   dimsOrDefault(counts.LargeMaxLengthIn, counts.LargeMaxWidthIn, counts.LargeMaxHeightIn, "large"),
+		XLMaxDims:      dimsOrDefault(counts.XlargeMaxLengthIn, counts.XlargeMaxWidthIn, counts.XlargeMaxHeightIn, "xlarge"),
 	}
 
 	return itemCounts, nil
