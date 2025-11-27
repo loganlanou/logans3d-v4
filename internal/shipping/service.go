@@ -535,3 +535,17 @@ func (s *ShippingService) GetShipmentTracking(shipmentID string) (*ShipmentTrack
 func (s *ShippingService) RefreshShipmentRates(shipmentID string) ([]Rate, error) {
 	return s.client.RefreshShipmentRates(shipmentID)
 }
+
+// GetDefaultItemWeights returns the configured default weights per category (in oz)
+func (s *ShippingService) GetDefaultItemWeights() map[string]float64 {
+	weights := make(map[string]float64)
+	for category, iw := range s.config.Packing.ItemWeights {
+		weights[category] = iw.AvgOz
+	}
+	return weights
+}
+
+// GetDefaultDimensions returns the configured default dimensions per category
+func (s *ShippingService) GetDefaultDimensions() map[string]DimensionGuard {
+	return s.config.Packing.DimensionGuard
+}

@@ -153,20 +153,9 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		return 0
 	}
 
-	// Default fallback values for shipping dimensions/weights based on category
-	// These are used when products don't have explicit size chart or SKU overrides
-	defaultWeights := map[string]float64{
-		"small":  3.0,  // 85g avg
-		"medium": 7.05, // 200g avg
-		"large":  15.0, // 425g avg
-		"xlarge": 35.3, // 1000g avg
-	}
-	defaultDims := map[string]shipping.DimensionGuard{
-		"small":  {L: 4, W: 4, H: 4},
-		"medium": {L: 8, W: 5, H: 5},
-		"large":  {L: 20, W: 10, H: 6},
-		"xlarge": {L: 24, W: 12, H: 10},
-	}
+	// Get default weights/dimensions from database-driven shipping config
+	defaultWeights := h.shippingService.GetDefaultItemWeights()
+	defaultDims := h.shippingService.GetDefaultDimensions()
 
 	// Helper to use DB value or fallback to default
 	weightOrDefault := func(dbVal interface{}, category string, itemCount int) float64 {
