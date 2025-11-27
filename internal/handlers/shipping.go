@@ -168,51 +168,65 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		}
 	}
 
-	// Helper to use DB value or fallback to default
-	weightOrDefault := func(dbVal interface{}, category string, itemCount int) float64 {
-		if itemCount == 0 {
-			return 0
+	// Helper to calculate weight: DB weight + (missing count * default weight per item)
+	// This handles mixed carts where some items have data and some don't
+	weightWithMissing := func(dbWeight interface{}, missingCount interface{}, category string) float64 {
+		weight := toFloat(dbWeight)
+		missing := int(toFloat(missingCount))
+		if missing > 0 {
+			weight += defaultWeights[category] * float64(missing)
 		}
-		v := toFloat(dbVal)
-		if v > 0 {
-			return v
-		}
-		// Use default weight per item * count
-		return defaultWeights[category] * float64(itemCount)
+		return weight
 	}
 
-	dimsOrDefault := func(l, w, h interface{}, category string) shipping.DimensionGuard {
+	// Helper for dimensions: use max of DB dims and default dims (for missing items)
+	// If any items are missing, we need to consider default dims could be larger
+	dimsWithMissing := func(l, w, h, missingCount interface{}, category string) shipping.DimensionGuard {
 		dims := shipping.DimensionGuard{
 			L: toFloat(l),
 			W: toFloat(w),
 			H: toFloat(h),
 		}
-		// If any dimension is missing, use defaults for that category
 		def := defaultDims[category]
-		if dims.L <= 0 {
-			dims.L = def.L
+		missing := int(toFloat(missingCount))
+
+		// If there are missing items, ensure dims are at least the defaults
+		// (missing items might be the largest in the category)
+		if missing > 0 || dims.L <= 0 {
+			if def.L > dims.L {
+				dims.L = def.L
+			}
 		}
-		if dims.W <= 0 {
-			dims.W = def.W
+		if missing > 0 || dims.W <= 0 {
+			if def.W > dims.W {
+				dims.W = def.W
+			}
 		}
-		if dims.H <= 0 {
-			dims.H = def.H
+		if missing > 0 || dims.H <= 0 {
+			if def.H > dims.H {
+				dims.H = def.H
+			}
 		}
 		return dims
 	}
 
 	// Log if we're using fallbacks (helpful for debugging, not an error)
-	if small > 0 && toFloat(counts.SmallMissingShipping) > 0 {
-		slog.Debug("using default shipping data for small items", "missing_count", int(toFloat(counts.SmallMissingShipping)))
+	smallMissing := int(toFloat(counts.SmallMissingShipping))
+	mediumMissing := int(toFloat(counts.MediumMissingShipping))
+	largeMissing := int(toFloat(counts.LargeMissingShipping))
+	xlMissing := int(toFloat(counts.XlargeMissingShipping))
+
+	if smallMissing > 0 {
+		slog.Debug("using default shipping data for small items", "missing_count", smallMissing)
 	}
-	if medium > 0 && toFloat(counts.MediumMissingShipping) > 0 {
-		slog.Debug("using default shipping data for medium items", "missing_count", int(toFloat(counts.MediumMissingShipping)))
+	if mediumMissing > 0 {
+		slog.Debug("using default shipping data for medium items", "missing_count", mediumMissing)
 	}
-	if large > 0 && toFloat(counts.LargeMissingShipping) > 0 {
-		slog.Debug("using default shipping data for large items", "missing_count", int(toFloat(counts.LargeMissingShipping)))
+	if largeMissing > 0 {
+		slog.Debug("using default shipping data for large items", "missing_count", largeMissing)
 	}
-	if xl > 0 && toFloat(counts.XlargeMissingShipping) > 0 {
-		slog.Debug("using default shipping data for xlarge items", "missing_count", int(toFloat(counts.XlargeMissingShipping)))
+	if xlMissing > 0 {
+		slog.Debug("using default shipping data for xlarge items", "missing_count", xlMissing)
 	}
 
 	itemCounts := &shipping.ItemCounts{
@@ -220,14 +234,14 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		Medium:         medium,
 		Large:          large,
 		XL:             xl,
-		SmallWeightOz:  weightOrDefault(counts.SmallWeightOz, "small", small),
-		MediumWeightOz: weightOrDefault(counts.MediumWeightOz, "medium", medium),
-		LargeWeightOz:  weightOrDefault(counts.LargeWeightOz, "large", large),
-		XLWeightOz:     weightOrDefault(counts.XlargeWeightOz, "xlarge", xl),
-		SmallMaxDims:   dimsOrDefault(counts.SmallMaxLengthIn, counts.SmallMaxWidthIn, counts.SmallMaxHeightIn, "small"),
-		MediumMaxDims:  dimsOrDefault(counts.MediumMaxLengthIn, counts.MediumMaxWidthIn, counts.MediumMaxHeightIn, "medium"),
-		LargeMaxDims:   dimsOrDefault(counts.LargeMaxLengthIn, counts.LargeMaxWidthIn, counts.LargeMaxHeightIn, "large"),
-		XLMaxDims:      dimsOrDefault(counts.XlargeMaxLengthIn, counts.XlargeMaxWidthIn, counts.XlargeMaxHeightIn, "xlarge"),
+		SmallWeightOz:  weightWithMissing(counts.SmallWeightOz, counts.SmallMissingShipping, "small"),
+		MediumWeightOz: weightWithMissing(counts.MediumWeightOz, counts.MediumMissingShipping, "medium"),
+		LargeWeightOz:  weightWithMissing(counts.LargeWeightOz, counts.LargeMissingShipping, "large"),
+		XLWeightOz:     weightWithMissing(counts.XlargeWeightOz, counts.XlargeMissingShipping, "xlarge"),
+		SmallMaxDims:   dimsWithMissing(counts.SmallMaxLengthIn, counts.SmallMaxWidthIn, counts.SmallMaxHeightIn, counts.SmallMissingShipping, "small"),
+		MediumMaxDims:  dimsWithMissing(counts.MediumMaxLengthIn, counts.MediumMaxWidthIn, counts.MediumMaxHeightIn, counts.MediumMissingShipping, "medium"),
+		LargeMaxDims:   dimsWithMissing(counts.LargeMaxLengthIn, counts.LargeMaxWidthIn, counts.LargeMaxHeightIn, counts.LargeMissingShipping, "large"),
+		XLMaxDims:      dimsWithMissing(counts.XlargeMaxLengthIn, counts.XlargeMaxWidthIn, counts.XlargeMaxHeightIn, counts.XlargeMissingShipping, "xlarge"),
 	}
 
 	return itemCounts, nil
