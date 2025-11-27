@@ -183,9 +183,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	withAuth.POST("/custom/quote", s.handleCustomQuote)
 
 	// Stripe Checkout routes
-	withAuth.POST("/checkout/create-session", s.handleCreateStripeCheckoutSession)
 	withAuth.POST("/checkout/create-session-single", s.handleCreateStripeCheckoutSessionSingle)
-	withAuth.POST("/checkout/create-session-multi", s.handleCreateStripeCheckoutSessionMulti)
 	withAuth.POST("/checkout/create-session-cart", s.handleCreateStripeCheckoutSessionCart)
 	withAuth.GET("/checkout/success", s.handleCheckoutSuccess)
 	withAuth.GET("/checkout/cancel", s.handleCheckoutCancel)
@@ -983,100 +981,6 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received"})
 }
 
-// handleCreateStripeCheckoutSession handles the legacy checkout flow (form-based)
-//
-// INTENTIONAL: This handler does NOT block checkout when stock is zero.
-// Products with zero stock can still be purchased - the customer will see
-// extended shipping times (e.g., "Ships in 2-3 weeks") in their cart and order.
-// Stock is decremented in the webhook handler with protection against going negative.
-// This is a business decision to allow pre-orders/backorders rather than losing sales.
-func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	// Parse form data
-	productID := c.FormValue("product_id")
-	quantityStr := c.FormValue("quantity")
-
-	if productID == "" || quantityStr == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing product_id or quantity")
-	}
-
-	quantity, err := strconv.ParseInt(quantityStr, 10, 64)
-	if err != nil || quantity <= 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quantity")
-	}
-
-	// Get product details from database
-	product, err := s.storage.Queries.GetProduct(ctx, productID)
-	if err != nil {
-		slog.Error("failed to get product", "error", err, "product_id", productID)
-		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
-	}
-
-	// Reject variant products - they must use the modern checkout flow that handles SKUs
-	if product.HasVariants.Valid && product.HasVariants.Bool {
-		slog.Warn("legacy checkout attempted for variant product", "product_id", productID)
-		return echo.NewHTTPError(http.StatusBadRequest, "Please select a variant before checkout")
-	}
-
-	// Get primary product image (handles variants correctly)
-	imageURL := s.getProductImageURL(ctx, product)
-	if imageURL != "" {
-		// Convert relative path to absolute URL for Stripe
-		imageURL = s.config.BaseURL + imageURL
-	}
-
-	// Create Stripe Checkout Session with dynamic product
-	stripe.Key = s.config.Stripe.SecretKey
-
-	params := &stripe.CheckoutSessionParams{
-		Mode:                stripe.String(string(stripe.CheckoutSessionModePayment)),
-		AllowPromotionCodes: stripe.Bool(true),
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			{
-				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-					Currency:   stripe.String("usd"),
-					UnitAmount: stripe.Int64(product.PriceCents),
-					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name:        stripe.String(product.Name),
-						Description: &product.Description.String,
-						Metadata: map[string]string{
-							"product_id": productID,
-						},
-					},
-				},
-				Quantity: stripe.Int64(quantity),
-			},
-		},
-		SuccessURL:       stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
-		CancelURL:        stripe.String(fmt.Sprintf("%s://%s/shop", c.Scheme(), c.Request().Host)),
-		CustomerCreation: stripe.String("always"), // Always create customer for order tracking
-		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
-			Metadata: map[string]string{
-				"product_id": productID,
-				"quantity":   quantityStr,
-			},
-		},
-	}
-
-	// Add product image if available
-	if imageURL != "" {
-		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
-	}
-
-	// Expand line_items for webhook processing
-	params.AddExpand("line_items")
-
-	session, err := checkoutsession.New(params)
-	if err != nil {
-		slog.Error("failed to create stripe checkout session", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
-	}
-
-	// Redirect to Stripe Checkout
-	return c.Redirect(http.StatusSeeOther, session.URL)
-}
-
 func (s *Service) handleCheckoutCancel(c echo.Context) error {
 	return c.Redirect(http.StatusSeeOther, "/shop")
 }
@@ -1368,103 +1272,6 @@ func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error 
 		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
 	}
 
-	params.AddExpand("line_items")
-
-	session, err := checkoutsession.New(params)
-	if err != nil {
-		slog.Error("failed to create stripe checkout session", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"url": session.URL})
-}
-
-// handleCreateStripeCheckoutSessionMulti handles multi-item checkout (Cart)
-//
-// INTENTIONAL: This handler does NOT block checkout when stock is zero.
-// Products with zero stock can still be purchased - the customer will see
-// extended shipping times (e.g., "Ships in 2-3 weeks") in their cart and order.
-// Stock is decremented in the webhook handler with protection against going negative.
-// This is a business decision to allow pre-orders/backorders rather than losing sales.
-func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	// Parse JSON data
-	var request struct {
-		Items []struct {
-			ProductID string `json:"productId"`
-			Name      string `json:"name"`
-			Price     int64  `json:"price"` // price in cents
-			ImageURL  string `json:"imageUrl"`
-			Quantity  int64  `json:"quantity"`
-		} `json:"items"`
-	}
-
-	if err := c.Bind(&request); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
-	}
-
-	if len(request.Items) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "No items in cart")
-	}
-
-	// Validate each item and build line items with SERVER-SIDE prices
-	var lineItems []*stripe.CheckoutSessionLineItemParams
-
-	for _, item := range request.Items {
-		if item.ProductID == "" || item.Quantity <= 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid item data")
-		}
-
-		// Get product from database - use SERVER-SIDE price, not client-supplied
-		product, err := s.storage.Queries.GetProduct(ctx, item.ProductID)
-		if err != nil {
-			slog.Error("failed to get product", "error", err, "product_id", item.ProductID)
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Product %s not found", item.ProductID))
-		}
-
-		// Get product image from database
-		imageURL := s.getProductImageURL(ctx, product)
-		if imageURL != "" {
-			imageURL = s.config.BaseURL + imageURL
-		}
-
-		// Create line item with server-side price and metadata for webhook
-		lineItem := &stripe.CheckoutSessionLineItemParams{
-			PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-				Currency:   stripe.String("usd"),
-				UnitAmount: stripe.Int64(product.PriceCents), // SERVER-SIDE price
-				ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-					Name: stripe.String(product.Name),
-					Metadata: map[string]string{
-						"product_id": product.ID,
-					},
-				},
-			},
-			Quantity: stripe.Int64(item.Quantity),
-		}
-
-		// Add product image if available
-		if imageURL != "" {
-			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
-		}
-
-		lineItems = append(lineItems, lineItem)
-	}
-
-	// Create Stripe Checkout Session with multiple items
-	stripe.Key = s.config.Stripe.SecretKey
-
-	params := &stripe.CheckoutSessionParams{
-		Mode:                stripe.String(string(stripe.CheckoutSessionModePayment)),
-		LineItems:           lineItems,
-		SuccessURL:          stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
-		CancelURL:           stripe.String(fmt.Sprintf("%s://%s/cart", c.Scheme(), c.Request().Host)),
-		CustomerCreation:    stripe.String("always"),
-		AllowPromotionCodes: stripe.Bool(true),
-	}
-
-	// Expand line_items for webhook processing
 	params.AddExpand("line_items")
 
 	session, err := checkoutsession.New(params)
