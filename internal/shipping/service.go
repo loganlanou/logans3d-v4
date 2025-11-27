@@ -417,10 +417,6 @@ func (s *ShippingService) addressFromConfigOther() Address {
 	}
 }
 
-func (s *ShippingService) sortShippingOptions(options []ShippingOption) []ShippingOption {
-	return SortShippingOptions(options, s.config.Shipping.RatePreferences.Sort)
-}
-
 func (s *ShippingService) CreateLabel(rateID string) (*Label, error) {
 	// NOTE: EasyPost requires both shipment ID and rate ID
 	// For now, we'll try to use the client method, but this may need refactoring

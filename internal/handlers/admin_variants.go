@@ -491,13 +491,6 @@ func int64FromNull(n sql.NullInt64) int64 {
 	return 0
 }
 
-func float64FromNull(n sql.NullFloat64) float64 {
-	if n.Valid {
-		return n.Float64
-	}
-	return 0
-}
-
 func parseCurrencyToCents(value string) (int64, error) {
 	val, err := strconv.ParseFloat(value, 64)
 	if err != nil {
@@ -528,17 +521,6 @@ func normalizeVariantCode(value string) string {
 		return "style"
 	}
 	return slug
-}
-
-func parseFloat64(value string) float64 {
-	if value == "" {
-		return 0
-	}
-	v, err := strconv.ParseFloat(value, 64)
-	if err != nil {
-		return 0
-	}
-	return v
 }
 
 // ============================================
