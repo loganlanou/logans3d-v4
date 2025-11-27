@@ -157,6 +157,17 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 	defaultWeights := h.shippingService.GetDefaultItemWeights()
 	defaultDims := h.shippingService.GetDefaultDimensions()
 
+	// Safety fallback if config is missing data (shouldn't happen with validation, but be defensive)
+	if len(defaultWeights) == 0 {
+		defaultWeights = map[string]float64{"small": 3.0, "medium": 7.05, "large": 15.0, "xlarge": 35.3}
+	}
+	if len(defaultDims) == 0 {
+		defaultDims = map[string]shipping.DimensionGuard{
+			"small": {L: 4, W: 4, H: 4}, "medium": {L: 8, W: 5, H: 5},
+			"large": {L: 20, W: 10, H: 6}, "xlarge": {L: 24, W: 12, H: 10},
+		}
+	}
+
 	// Helper to use DB value or fallback to default
 	weightOrDefault := func(dbVal interface{}, category string, itemCount int) float64 {
 		if itemCount == 0 {
