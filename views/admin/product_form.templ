@@ -264,6 +264,25 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									placeholder="0"
 								/>
 							</div>
+							<!-- Shipping Category (non-variant products only) -->
+							<div>
+								<label for="shipping_category" class="block text-sm font-medium text-muted-foreground mb-2">
+									Shipping Category
+								</label>
+								<select
+									id="shipping_category"
+									name="shipping_category"
+									class="w-full md:max-w-xs px-3 py-2 text-sm bg-background/50 border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+								>
+									<option value="small" selected?={ productShippingCategory(product) == "small" }>Small (~$6)</option>
+									<option value="medium" selected?={ productShippingCategory(product) == "medium" }>Medium (~$12)</option>
+									<option value="large" selected?={ productShippingCategory(product) == "large" }>Large (~$18)</option>
+									<option value="xlarge" selected?={ productShippingCategory(product) == "xlarge" }>XLarge (~$25)</option>
+								</select>
+								<p class="text-xs text-muted-foreground mt-1">
+									Determines shipping rate (variant products use size chart defaults)
+								</p>
+							</div>
 						</div>
 					}
 				}
@@ -1069,6 +1088,13 @@ func productStockQuantity(product *db.Product) string {
 		return fmt.Sprintf("%d", product.StockQuantity.Int64)
 	}
 	return "0"
+}
+
+func productShippingCategory(product *db.Product) string {
+	if product != nil && product.ShippingCategory.Valid && product.ShippingCategory.String != "" {
+		return product.ShippingCategory.String
+	}
+	return "small"
 }
 
 func productHasVariants(product *db.Product) bool {

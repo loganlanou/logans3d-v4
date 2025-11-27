@@ -61,6 +61,7 @@ SET name = ?, slug = ?, description = ?, short_description = ?,
     price_cents = ?, category_id = ?, sku = ?, stock_quantity = ?, has_variants = ?,
     weight_grams = ?, lead_time_days = ?, disclaimer = ?,
     seo_title = ?, seo_description = ?, seo_keywords = ?, og_image_url = ?,
+    shipping_category = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;

@@ -707,6 +707,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 	sku := c.FormValue("sku")
 	stockQuantityStr := c.FormValue("stock_quantity")
 	hasVariantsStr := c.FormValue("has_variants")
+	shippingCategory := strings.TrimSpace(c.FormValue("shipping_category"))
 	seoTitle := c.FormValue("seo_title")
 	seoDescription := c.FormValue("seo_description")
 	seoKeywords := c.FormValue("seo_keywords")
@@ -762,6 +763,7 @@ func (h *AdminHandler) HandleUpdateProduct(c echo.Context) error {
 		SeoDescription:   sql.NullString{String: seoDescription, Valid: seoDescription != ""},
 		SeoKeywords:      sql.NullString{String: seoKeywords, Valid: seoKeywords != ""},
 		OgImageUrl:       sql.NullString{String: ogImageUrl, Valid: ogImageUrl != ""},
+		ShippingCategory: sql.NullString{String: shippingCategory, Valid: shippingCategory != ""},
 	}
 
 	_, err = h.storage.Queries.UpdateProductFields(c.Request().Context(), params)
