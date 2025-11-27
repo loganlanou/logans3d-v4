@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"sort"
 
 	"github.com/loganlanou/logans3d-v4/storage/db"
 )
 
 type ShippingOption struct {
 	RateID          string           `json:"rate_id"`
-	ShipmentID      string           `json:"shipment_id"` // EasyPost shipment ID for label purchase
+	ShipmentID      string           `json:"shipment_id"`                // EasyPost shipment ID for label purchase
+	AllRateIDs      []string         `json:"all_rate_ids,omitempty"`     // All rate IDs for multi-box orders
+	AllShipmentIDs  []string         `json:"all_shipment_ids,omitempty"` // All shipment IDs for multi-box orders
 	CarrierName     string           `json:"carrier_name"`
 	ServiceName     string           `json:"service_name"`
 	Price           float64          `json:"price"`
@@ -141,44 +142,31 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 		"total_boxes", packingSolution.TotalBoxes,
 		"total_cost", packingSolution.TotalCost)
 
-	var allOptions []ShippingOption
-
-	for _, boxSelection := range packingSolution.Boxes {
+	// Get rates for each box
+	var boxRates []BoxRatesResult
+	for boxIdx, boxSelection := range packingSolution.Boxes {
 		rates, err := s.getRatesForBox(boxSelection, req.ShipTo)
 		if err != nil {
+			slog.Debug("GetShippingQuote: Failed to get rates for box",
+				"box_index", boxIdx,
+				"box_sku", boxSelection.Box.SKU,
+				"error", err)
 			continue
 		}
-
-		for _, rate := range rates {
-			totalCost := rate.ShippingAmount.Amount + boxSelection.BoxCost + boxSelection.PackingMaterialsCost
-
-			option := ShippingOption{
-				RateID:          rate.RateID,
-				ShipmentID:      rate.ShipmentID,
-				CarrierName:     rate.CarrierNickname,
-				ServiceName:     rate.ServiceType,
-				Price:           rate.ShippingAmount.Amount,
-				Currency:        rate.ShippingAmount.Currency,
-				DeliveryDays:    rate.DeliveryDays,
-				EstimatedDate:   rate.EstimatedDate,
-				BoxSKU:          boxSelection.Box.SKU,
-				BoxCost:         boxSelection.BoxCost,
-				HandlingCost:    boxSelection.PackingMaterialsCost,
-				TotalCost:       totalCost,
-				PackingSolution: packingSolution,
-			}
-
-			allOptions = append(allOptions, option)
-		}
+		boxRates = append(boxRates, BoxRatesResult{
+			BoxSelection: boxSelection,
+			Rates:        rates,
+		})
 	}
 
-	if len(allOptions) == 0 {
+	// Aggregate rates across all boxes using extracted pure function
+	sortedOptions := AggregateRates(boxRates, packingSolution, s.config.Shipping.RatePreferences.Sort)
+
+	if len(sortedOptions) == 0 {
 		return &ShippingQuoteResponse{
 			Error: "No shipping options available",
 		}, nil
 	}
-
-	sortedOptions := s.sortShippingOptions(allOptions)
 
 	slog.Debug("GetShippingQuote: Rate preferences",
 		"sort_order", s.config.Shipping.RatePreferences.Sort,
@@ -430,33 +418,7 @@ func (s *ShippingService) addressFromConfigOther() Address {
 }
 
 func (s *ShippingService) sortShippingOptions(options []ShippingOption) []ShippingOption {
-	sorted := make([]ShippingOption, len(options))
-	copy(sorted, options)
-
-	sortBy := s.config.Shipping.RatePreferences.Sort
-
-	switch sortBy {
-	case "price_then_days":
-		sort.Slice(sorted, func(i, j int) bool {
-			if sorted[i].TotalCost == sorted[j].TotalCost {
-				return sorted[i].DeliveryDays < sorted[j].DeliveryDays
-			}
-			return sorted[i].TotalCost < sorted[j].TotalCost
-		})
-	case "days_then_price":
-		sort.Slice(sorted, func(i, j int) bool {
-			if sorted[i].DeliveryDays == sorted[j].DeliveryDays {
-				return sorted[i].TotalCost < sorted[j].TotalCost
-			}
-			return sorted[i].DeliveryDays < sorted[j].DeliveryDays
-		})
-	default:
-		sort.Slice(sorted, func(i, j int) bool {
-			return sorted[i].TotalCost < sorted[j].TotalCost
-		})
-	}
-
-	return sorted
+	return SortShippingOptions(options, s.config.Shipping.RatePreferences.Sort)
 }
 
 func (s *ShippingService) CreateLabel(rateID string) (*Label, error) {
@@ -481,6 +443,43 @@ func (s *ShippingService) CreateLabelFromShipment(shipmentID, rateID string) (*L
 	return label, nil
 }
 
+// CreateLabelsForMultiBox creates labels for all shipments in a multi-box order.
+// Returns all labels created, or an error if any label purchase fails.
+// If a failure occurs partway through, already-purchased labels are still returned
+// so they can be voided if needed.
+func (s *ShippingService) CreateLabelsForMultiBox(shipmentIDs, rateIDs []string) ([]*Label, error) {
+	if len(shipmentIDs) != len(rateIDs) {
+		return nil, fmt.Errorf("shipment IDs and rate IDs must have same length: got %d and %d",
+			len(shipmentIDs), len(rateIDs))
+	}
+
+	if len(shipmentIDs) == 0 {
+		return nil, fmt.Errorf("no shipments provided")
+	}
+
+	var labels []*Label
+	for i := range shipmentIDs {
+		label, err := s.client.BuyShipment(shipmentIDs[i], rateIDs[i])
+		if err != nil {
+			slog.Error("failed to buy shipment in multi-box order",
+				"error", err,
+				"shipment_id", shipmentIDs[i],
+				"rate_id", rateIDs[i],
+				"box_index", i,
+				"total_boxes", len(shipmentIDs),
+				"labels_purchased_so_far", len(labels))
+			return labels, fmt.Errorf("failed to buy shipment %d of %d: %w", i+1, len(shipmentIDs), err)
+		}
+		labels = append(labels, label)
+	}
+
+	slog.Info("created labels for multi-box order",
+		"total_labels", len(labels),
+		"shipment_ids", shipmentIDs)
+
+	return labels, nil
+}
+
 func (s *ShippingService) VoidLabel(shipmentID string) error {
 	voidResp, err := s.client.VoidLabel(shipmentID)
 	if err != nil {
@@ -492,6 +491,10 @@ func (s *ShippingService) VoidLabel(shipmentID string) error {
 	}
 
 	return nil
+}
+
+func (s *ShippingService) IsUsingMockData() bool {
+	return s.client.IsUsingMockData()
 }
 
 func (s *ShippingService) DownloadLabelPDF(label *Label) ([]byte, error) {

@@ -154,9 +154,7 @@ func validateConfig(config *ShippingConfig) error {
 	if config.Packing.UnitVolumeIn3 <= 0 {
 		return fmt.Errorf("unit_volume_in3 must be positive")
 	}
-	if config.Packing.UnitWeightOz <= 0 {
-		return fmt.Errorf("unit_weight_oz must be positive")
-	}
+	// UnitWeightOz validation removed - field is deprecated, ItemWeights is validated below
 	if config.Packing.FillRatio <= 0 || config.Packing.FillRatio > 1 {
 		return fmt.Errorf("fill_ratio must be between 0 and 1")
 	}
