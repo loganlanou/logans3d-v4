@@ -259,17 +259,6 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 									>
 										Add to Cart
 									</button>
-									<button
-										type="button"
-										class="buy-now-btn w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-2.5 px-5 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
-										:disabled="disableAdd()"
-										:data-product-id="productId"
-										:data-product-name="variantTitle()"
-										:data-product-sku-id="selectedSkuId"
-										:data-quantity="quantity"
-									>
-										<span x-text="`Buy Now - ${formatPrice(priceCents)}`"></span>
-									</button>
 									<a href="/custom" class="block w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-2 px-5 rounded-lg font-medium text-xs text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm group">
 										<span class="group-hover:scale-105 transition-transform duration-200">Need a Custom Version?</span>
 									</a>
@@ -430,22 +419,6 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 										}
 									>
 										Add to Cart
-									</button>
-
-									<!-- Buy Now Button -->
-									<button
-										type="button"
-										class="buy-now-btn w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-2.5 px-5 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
-										data-product-id={ product.ID }
-										data-product-name={ product.Name }
-										data-product-price={ fmt.Sprintf("%d", product.PriceCents) }
-										if len(images) > 0 {
-											data-product-image={ images[0].ImageUrl }
-										} else {
-											data-product-image=""
-										}
-									>
-										Buy Now - ${ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
 									</button>
 									<a href="/custom" class="block w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-2 px-5 rounded-lg font-medium text-xs text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm group">
 										<span class="group-hover:scale-105 transition-transform duration-200">Need a Custom Version?</span>

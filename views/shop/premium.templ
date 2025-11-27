@@ -275,17 +275,6 @@ templ PremiumProductCard(product ProductWithImage) {
 					>
 						Add to Cart
 					</button>
-					<!-- Buy Now Button -->
-					<button
-						type="button"
-						class="buy-now-btn w-full bg-slate-700/50 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600/50 hover:text-white border border-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm"
-						data-product-id={ product.Product.ID }
-						data-product-name={ product.Product.Name }
-						data-product-price={ fmt.Sprintf("%d", product.Product.PriceCents) }
-						data-quantity="1"
-					>
-						Buy Now
-					</button>
 				}
 			</div>
 		</div>

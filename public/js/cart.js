@@ -35,40 +35,6 @@ if (document.readyState === 'loading') {
     validateCartSession();
 }
 
-// Buy Now functionality - goes directly to Stripe checkout
-async function buyNow(productId, productName, productPrice, quantity = 1, productSkuId = '') {
-    try {
-        const response = await fetch('/checkout/create-session-single', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                productId: productId,
-                productSkuId: productSkuId,
-                quantity: parseInt(quantity)
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to create checkout session');
-        }
-
-        const data = await response.json();
-        
-        // Redirect to Stripe checkout
-        if (data.url) {
-            window.location.href = data.url;
-        } else {
-            throw new Error('No checkout URL received');
-        }
-
-    } catch (error) {
-        console.error('Error creating checkout session:', error);
-        showToast('Failed to start checkout', 'error');
-    }
-}
-
 // Cart functionality
 async function addToCart(productId, quantity = 1, productName = '', productSkuId = '') {
     try {
@@ -305,29 +271,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialize interactive cart button
     initializeCartHoverEffects();
-    
-    // Buy Now buttons - direct to Stripe checkout
+
+    // Cart button click handlers
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('buy-now-btn')) {
-            e.preventDefault();
-            const productId = e.target.dataset.productId;
-            const productName = e.target.dataset.productName;
-            const productPrice = e.target.dataset.productPrice;
-            const productSkuId = e.target.dataset.productSkuId || '';
-
-            // Check for quantity from dropdown first, then fallback to data attribute
-            let quantity = e.target.dataset.quantity || '1';
-            const quantitySelect = document.getElementById('product-quantity');
-            if (quantitySelect) {
-                quantity = quantitySelect.value || '1';
-            }
-
-            if (productId && productName && productPrice) {
-                buyNow(productId, productName, productPrice, parseInt(quantity), productSkuId);
-            }
-        }
-        
-        // Add to Cart buttons - now functional
+        // Add to Cart buttons
         if (e.target.classList.contains('add-to-cart-btn')) {
             e.preventDefault();
             const productId = e.target.dataset.productId;
