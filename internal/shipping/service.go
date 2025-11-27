@@ -142,16 +142,19 @@ func (s *ShippingService) GetShippingQuote(req *ShippingQuoteRequest) (*Shipping
 		"total_boxes", packingSolution.TotalBoxes,
 		"total_cost", packingSolution.TotalCost)
 
-	// Get rates for each box
+	// Get rates for each box - ALL boxes must succeed or we fail the quote
 	var boxRates []BoxRatesResult
 	for boxIdx, boxSelection := range packingSolution.Boxes {
 		rates, err := s.getRatesForBox(boxSelection, req.ShipTo)
 		if err != nil {
-			slog.Debug("GetShippingQuote: Failed to get rates for box",
+			slog.Error("GetShippingQuote: Failed to get rates for box",
 				"box_index", boxIdx,
+				"total_boxes", packingSolution.TotalBoxes,
 				"box_sku", boxSelection.Box.SKU,
 				"error", err)
-			continue
+			return &ShippingQuoteResponse{
+				Error: fmt.Sprintf("Unable to get shipping rates for box %d of %d: %v", boxIdx+1, packingSolution.TotalBoxes, err),
+			}, nil
 		}
 		boxRates = append(boxRates, BoxRatesResult{
 			BoxSelection: boxSelection,
