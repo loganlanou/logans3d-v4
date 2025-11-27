@@ -1040,6 +1040,9 @@ func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
 					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
 						Name:        stripe.String(product.Name),
 						Description: &product.Description.String,
+						Metadata: map[string]string{
+							"product_id": productID,
+						},
 					},
 				},
 				Quantity: stripe.Int64(quantity),
@@ -1405,7 +1408,7 @@ func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "No items in cart")
 	}
 
-	// Validate each item and check stock
+	// Validate each item and build line items with SERVER-SIDE prices
 	var lineItems []*stripe.CheckoutSessionLineItemParams
 
 	for _, item := range request.Items {
@@ -1413,29 +1416,36 @@ func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid item data")
 		}
 
-		// Verify product exists
-		_, err := s.storage.Queries.GetProduct(ctx, item.ProductID)
+		// Get product from database - use SERVER-SIDE price, not client-supplied
+		product, err := s.storage.Queries.GetProduct(ctx, item.ProductID)
 		if err != nil {
 			slog.Error("failed to get product", "error", err, "product_id", item.ProductID)
 			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Product %s not found", item.ProductID))
 		}
 
-		// Create line item
+		// Get product image from database
+		imageURL := s.getProductImageURL(ctx, product)
+		if imageURL != "" {
+			imageURL = s.config.BaseURL + imageURL
+		}
+
+		// Create line item with server-side price and metadata for webhook
 		lineItem := &stripe.CheckoutSessionLineItemParams{
 			PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 				Currency:   stripe.String("usd"),
-				UnitAmount: stripe.Int64(item.Price),
+				UnitAmount: stripe.Int64(product.PriceCents), // SERVER-SIDE price
 				ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-					Name: stripe.String(item.Name),
+					Name: stripe.String(product.Name),
+					Metadata: map[string]string{
+						"product_id": product.ID,
+					},
 				},
 			},
 			Quantity: stripe.Int64(item.Quantity),
 		}
 
 		// Add product image if available
-		if item.ImageURL != "" {
-			// Ensure we have an absolute URL for Stripe - database contains only filename
-			imageURL := fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, item.ImageURL)
+		if imageURL != "" {
 			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
 		}
 
