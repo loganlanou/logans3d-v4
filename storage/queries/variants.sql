@@ -37,6 +37,12 @@ UPDATE product_styles
 SET is_primary = TRUE
 WHERE id = ?;
 
+-- name: HasPrimaryProductStyle :one
+SELECT EXISTS(
+    SELECT 1 FROM product_styles
+    WHERE product_id = ? AND is_primary = TRUE
+) as has_primary;
+
 -- ============================================
 -- Product Style Images
 -- ============================================
