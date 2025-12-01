@@ -204,7 +204,7 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 													</div>
 													<div class="p-3 space-y-1">
 														<div class="text-xs font-semibold text-white" x-text="color.displayName"></div>
-														<div class="text-xs text-emerald-300 font-bold" x-text="formatPrice(basePriceCents + ((color.sizes && color.sizes[0]) ? color.sizes[0].priceAdjustmentCents : 0))"></div>
+														<div class="text-xs text-emerald-300 font-bold" x-text="formatPrice(colorPriceWithSelectedSize(color))"></div>
 														<template x-if="!colorHasStock(color)">
 															<div class="text-[10px] text-amber-400 font-semibold" x-text="shippingConfig.outOfStock"></div>
 														</template>
@@ -227,7 +227,7 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 												>
 													<div class="flex items-center gap-2">
 														<span x-text="size.displayName"></span>
-														<span class="text-xs text-slate-300" x-text="size.priceAdjustmentCents ? `(+${formatPrice(size.priceAdjustmentCents)})` : '(Included)'"></span>
+														<span class="text-xs" :class="size.valueId === selectedSizeId ? 'text-white/80' : 'text-slate-300'" x-text="relativePriceLabel(size)"></span>
 													</div>
 													<div :class="size.stockQuantity > 0 ? 'text-emerald-400' : 'text-amber-400'" class="text-[10px]" x-text="shippingTimeText(size.stockQuantity)"></div>
 												</button>
@@ -553,6 +553,23 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 					},
 					formatPrice(cents) {
 						return `$${(cents / 100).toFixed(2)}`;
+					},
+					relativePriceLabel(size) {
+						// Show price relative to currently selected size
+						if (!this.selectedSize) return size.priceAdjustmentCents ? `(+${this.formatPrice(size.priceAdjustmentCents)})` : '(Included)';
+						const diff = size.priceAdjustmentCents - this.selectedSize.priceAdjustmentCents;
+						if (diff === 0) return '(Included)';
+						if (diff > 0) return `(+${this.formatPrice(diff)})`;
+						return `(-${this.formatPrice(Math.abs(diff))})`;
+					},
+					colorPriceWithSelectedSize(color) {
+						// Get the price for a color using the equivalent size to currently selected
+						if (!color || !color.sizes || color.sizes.length === 0) return this.basePriceCents;
+						// Find same size in this color, or fall back to first size
+						const matchingSize = this.selectedSize
+							? color.sizes.find(s => s.displayName === this.selectedSize.displayName) || color.sizes[0]
+							: color.sizes[0];
+						return this.basePriceCents + (matchingSize ? matchingSize.priceAdjustmentCents : 0);
 					},
 					colorHasStock(color) {
 						if (!color || !color.sizes) return false;
