@@ -154,9 +154,7 @@ func validateConfig(config *ShippingConfig) error {
 	if config.Packing.UnitVolumeIn3 <= 0 {
 		return fmt.Errorf("unit_volume_in3 must be positive")
 	}
-	if config.Packing.UnitWeightOz <= 0 {
-		return fmt.Errorf("unit_weight_oz must be positive")
-	}
+	// UnitWeightOz validation removed - field is deprecated, ItemWeights is validated below
 	if config.Packing.FillRatio <= 0 || config.Packing.FillRatio > 1 {
 		return fmt.Errorf("fill_ratio must be between 0 and 1")
 	}
@@ -174,6 +172,30 @@ func validateConfig(config *ShippingConfig) error {
 			return fmt.Errorf("box %d: cost cannot be negative", i)
 		}
 	}
+
+	// Validate ItemWeights for required categories
+	requiredCategories := []string{"small", "medium", "large", "xlarge"}
+	for _, cat := range requiredCategories {
+		iw, exists := config.Packing.ItemWeights[cat]
+		if !exists {
+			return fmt.Errorf("item_weights missing required category: %s", cat)
+		}
+		if iw.AvgOz <= 0 {
+			return fmt.Errorf("item_weights[%s].avg_oz must be positive", cat)
+		}
+	}
+
+	// Validate DimensionGuard for required categories
+	for _, cat := range requiredCategories {
+		dg, exists := config.Packing.DimensionGuard[cat]
+		if !exists {
+			return fmt.Errorf("dimension_guard_in missing required category: %s", cat)
+		}
+		if dg.L <= 0 || dg.W <= 0 || dg.H <= 0 {
+			return fmt.Errorf("dimension_guard_in[%s] dimensions must be positive", cat)
+		}
+	}
+
 	return nil
 }
 

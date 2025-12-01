@@ -69,12 +69,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>' +
                     '</svg>' +
                 '</div>';
-                
+            const variantLabel = item.variant_name || '';
+            const variantSku = item.variant_sku || '';
+            const variantLine = variantLabel ? `<p class="text-sm text-slate-300">${variantLabel}${variantSku ? ` · ${variantSku}` : ''}</p>` : '';
+
+            // Shipping time based on stock quantity
+            const shippingConfig = cart.shippingConfig || { inStockMessage: 'Ships in 1-3 days', outOfStockMessage: 'Ships in 4-5 days' };
+            const stockQuantity = item.stock_quantity || 0;
+            const shippingTimeText = stockQuantity > 0 ? shippingConfig.inStockMessage : shippingConfig.outOfStockMessage;
+            const shippingTimeClass = stockQuantity > 0 ? 'text-emerald-400' : 'text-amber-400';
+            const shippingTimeLine = `<p class="text-xs ${shippingTimeClass} flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>${shippingTimeText}</p>`;
+
             return '<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-xl p-6">' +
                 '<div class="flex flex-col md:flex-row gap-6">' +
                     '<div class="flex-shrink-0">' + imageHtml + '</div>' +
                     '<div class="flex-1 min-w-0">' +
-                        '<h3 class="text-xl font-bold text-white mb-2">' + item.name + '</h3>' +
+                        '<h3 class="text-xl font-bold text-white mb-1">' + item.name + '</h3>' +
+                        variantLine +
+                        shippingTimeLine +
                         '<p class="text-lg font-semibold text-emerald-400 mb-4">$' + (item.price_cents / 100).toFixed(2) + '</p>' +
                         '<div class="flex items-center justify-between">' +
                             '<div class="flex items-center space-x-3">' +

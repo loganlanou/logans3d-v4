@@ -8,10 +8,11 @@ WITH cart_summary AS (
         MIN(ci.created_at) as created_at,
         MAX(ci.updated_at) as last_activity,
         COUNT(DISTINCT ci.id) as item_count,
-        SUM(p.price_cents * ci.quantity) as cart_value_cents,
+        SUM((p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) * ci.quantity) as cart_value_cents,
         ci.user_id as raw_user_id
     FROM cart_items ci
     JOIN products p ON ci.product_id = p.id
+    LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
     GROUP BY COALESCE(ci.session_id, ''), COALESCE(ci.user_id, ''), ci.user_id
     HAVING item_count > 0
 )
@@ -54,9 +55,10 @@ SELECT
     MIN(ci.created_at) as created_at,
     MAX(ci.updated_at) as last_activity,
     COUNT(DISTINCT ci.id) as item_count,
-    SUM(p.price_cents * ci.quantity) as cart_value_cents
+    SUM((p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) * ci.quantity) as cart_value_cents
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
 WHERE ci.session_id = sqlc.arg(session_id)
 GROUP BY ci.session_id;
 
@@ -69,9 +71,10 @@ SELECT
     MIN(ci.created_at) as created_at,
     MAX(ci.updated_at) as last_activity,
     COUNT(DISTINCT ci.id) as item_count,
-    SUM(p.price_cents * ci.quantity) as cart_value_cents
+    SUM((p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) * ci.quantity) as cart_value_cents
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
 LEFT JOIN users u ON ci.user_id = u.id
 WHERE ci.user_id = sqlc.arg(user_id)
 GROUP BY ci.user_id, u.email, u.full_name, u.profile_image_url;
@@ -80,20 +83,23 @@ GROUP BY ci.user_id, u.email, u.full_name, u.profile_image_url;
 SELECT
     ci.id,
     ci.product_id,
-    ci.product_variant_id,
+    ci.product_sku_id,
     ci.quantity,
     ci.created_at,
     ci.updated_at,
     p.name as product_name,
-    p.price_cents,
-    pi.image_url as product_image,
-    pv.sku as variant_sku,
-    pv.name as variant_name,
-    (p.price_cents * ci.quantity) as line_total_cents
+    (p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) as price_cents,
+    COALESCE(psi.image_url, pi.image_url) as product_image,
+    ps.sku as variant_sku,
+    COALESCE(pst.name || ' - ' || sz.display_name, '') as variant_name,
+    ((p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) * ci.quantity) as line_total_cents
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
-LEFT JOIN product_variants pv ON ci.product_variant_id = pv.id
+LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
+LEFT JOIN product_styles pst ON ps.product_style_id = pst.id
+LEFT JOIN sizes sz ON ps.size_id = sz.id
 LEFT JOIN product_images pi ON ci.product_id = pi.product_id AND pi.is_primary = TRUE
+LEFT JOIN product_style_images psi ON psi.product_style_id = pst.id AND psi.is_primary = TRUE
 WHERE (ci.session_id = sqlc.narg(session_id) OR ci.user_id = sqlc.narg(user_id))
 ORDER BY ci.created_at DESC;
 
@@ -117,9 +123,10 @@ FROM (
 LEFT JOIN (
     SELECT
         COALESCE(ci2.session_id, ci2.user_id) as cart_id,
-        SUM(p2.price_cents * ci2.quantity) as cart_value
+        SUM((p2.price_cents + COALESCE(ps2.price_adjustment_cents, 0)) * ci2.quantity) as cart_value
     FROM cart_items ci2
     JOIN products p2 ON ci2.product_id = p2.id
+    LEFT JOIN product_skus ps2 ON ci2.product_sku_id = ps2.id
     GROUP BY COALESCE(ci2.session_id, ci2.user_id)
 ) cart_totals ON cart_activity.cart_id = cart_totals.cart_id;
 
@@ -149,11 +156,12 @@ SELECT
     MIN(ci.created_at) as created_at,
     MAX(ci.updated_at) as last_activity,
     COUNT(DISTINCT ci.id) as item_count,
-    SUM(p.price_cents * ci.quantity) as cart_value_cents,
+    SUM((p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) * ci.quantity) as cart_value_cents,
     u.email as customer_email,
     u.full_name as customer_name
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
 LEFT JOIN users u ON ci.user_id = u.id
 WHERE (
     u.email LIKE '%' || sqlc.arg(search_query) || '%' OR

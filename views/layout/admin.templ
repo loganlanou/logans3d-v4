@@ -1,12 +1,15 @@
 package layout
 
 import (
+	"fmt"
 	"os"
+	"strings"
+
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"github.com/loganlanou/logans3d-v4/components/dialog"
 	"github.com/loganlanou/logans3d-v4/components/sidebar"
 	"github.com/loganlanou/logans3d-v4/components/theme"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 )
 
 func getSubitemClass(c echo.Context, targetPath string) string {
@@ -15,6 +18,11 @@ func getSubitemClass(c echo.Context, targetPath string) string {
 		return "admin-sidebar-subitem active"
 	}
 	return "admin-sidebar-subitem"
+}
+
+func isShippingSection(c echo.Context) bool {
+	path := c.Request().URL.Path
+	return strings.HasPrefix(path, "/admin/shipping")
 }
 
 templ AdminBase(c echo.Context, title string) {
@@ -256,7 +264,7 @@ templ AdminSidebar(c echo.Context) {
 				<span class="admin-sidebar-text">Social Media</span>
 			</a>
 				<!-- Shipping Section (Collapsible) -->
-				<div x-data="{ shippingOpen: false }">
+				<div x-data={ fmt.Sprintf("{ shippingOpen: %t }", isShippingSection(c)) }>
 					<button
 						@click="shippingOpen = !shippingOpen"
 						class="admin-sidebar-item w-full"

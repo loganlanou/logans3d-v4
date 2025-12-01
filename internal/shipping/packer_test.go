@@ -439,3 +439,172 @@ func TestDistributeItemsToBox(t *testing.T) {
 		})
 	}
 }
+
+// TestEstimateWeight_BugRegressions tests weight calculation edge cases
+// that have caused bugs in production.
+func TestEstimateWeight_BugRegressions(t *testing.T) {
+	config := CreateDefaultConfig()
+	packer := NewPacker(config)
+	box := Box{L: 10, W: 8, H: 6, BoxWeightOz: 6.0, UnitCostUSD: 0.54, SKU: "TEST", Name: "Test Box"}
+
+	// Default weights from config for reference
+	defaultSmallOz := config.Packing.ItemWeights["small"].AvgOz   // 3.0 oz
+	defaultMediumOz := config.Packing.ItemWeights["medium"].AvgOz // 7.05 oz
+
+	// Packing materials per box (fixed)
+	materials := config.Packing.PackingMaterials
+	baseMaterialsOz := materials.PackingPaperPerBoxOz + materials.TapeAndLabelsPerBoxOz + materials.AirPillowsPerBoxOz
+
+	tests := []struct {
+		name        string
+		counts      ItemCounts
+		wantMinOz   float64
+		wantMaxOz   float64
+		description string
+	}{
+		{
+			name: "weight_override_used_when_provided",
+			counts: ItemCounts{
+				Small:         2,
+				SmallWeightOz: 5.0, // Override: 5oz total for 2 items (handler calculated)
+			},
+			// Expected: box(6) + override(5) + bubble(0.4) + base_materials(2.3) ≈ 13.7
+			wantMinOz:   13.0,
+			wantMaxOz:   14.5,
+			description: "When SmallWeightOz override is provided, use it instead of config default",
+		},
+		{
+			name: "zero_override_falls_back_to_default",
+			counts: ItemCounts{
+				Small:         2,
+				SmallWeightOz: 0, // No override - should use config default
+			},
+			// Expected: box(6) + 2*default(6) + bubble(0.4) + base_materials(2.3) ≈ 14.7
+			wantMinOz:   14.0,
+			wantMaxOz:   15.5,
+			description: "Zero weight override should fall back to config ItemWeights default",
+		},
+		{
+			name: "mixed_categories_with_overrides",
+			counts: ItemCounts{
+				Small:          2,
+				Medium:         1,
+				SmallWeightOz:  4.0, // Override for small
+				MediumWeightOz: 8.0, // Override for medium
+			},
+			// Expected: box(6) + small(4) + medium(8) + bubble(0.6) + base_materials(2.3) ≈ 20.9
+			wantMinOz:   20.0,
+			wantMaxOz:   22.0,
+			description: "Multiple category overrides should be used correctly",
+		},
+		{
+			name: "partial_override_mixed_with_default",
+			counts: ItemCounts{
+				Small:          2,
+				Medium:         1,
+				SmallWeightOz:  4.0, // Override for small
+				MediumWeightOz: 0,   // No override - use default
+			},
+			// Expected: box(6) + small(4) + medium_default(7.05) + bubble(0.6) + base_materials(2.3) ≈ 19.95
+			wantMinOz:   19.0,
+			wantMaxOz:   21.0,
+			description: "Mix of override (small) and default (medium) weights",
+		},
+		{
+			name: "no_items_only_box_and_materials",
+			counts: ItemCounts{
+				Small: 0, Medium: 0, Large: 0, XL: 0,
+			},
+			// Expected: box(6) + no_items(0) + no_bubble(0) + base_materials(2.3) ≈ 8.3
+			wantMinOz:   8.0,
+			wantMaxOz:   9.0,
+			description: "Empty box should only have box weight and base materials",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Logf("Bug regression test: %s", tt.description)
+
+			weight := packer.EstimateWeight(box, tt.counts)
+
+			if weight < tt.wantMinOz || weight > tt.wantMaxOz {
+				t.Errorf("EstimateWeight() = %.2f oz, want between %.2f and %.2f oz",
+					weight, tt.wantMinOz, tt.wantMaxOz)
+			}
+
+			t.Logf("Result: %.2f oz (expected %.2f - %.2f oz)", weight, tt.wantMinOz, tt.wantMaxOz)
+			t.Logf("Box weight: %.2f oz", box.BoxWeightOz)
+			t.Logf("Default small: %.2f oz, default medium: %.2f oz", defaultSmallOz, defaultMediumOz)
+			t.Logf("Base materials: %.2f oz", baseMaterialsOz)
+		})
+	}
+}
+
+// TestCategoryWeight tests the categoryWeight helper function directly
+func TestCategoryWeight(t *testing.T) {
+	config := CreateDefaultConfig()
+	packer := NewPacker(config)
+
+	tests := []struct {
+		name     string
+		category string
+		count    int
+		override float64
+		wantOz   float64
+	}{
+		{
+			name:     "small_with_default",
+			category: "small",
+			count:    2,
+			override: 0,
+			wantOz:   6.0, // 2 * 3.0 (default)
+		},
+		{
+			name:     "small_with_override",
+			category: "small",
+			count:    2,
+			override: 5.0,
+			wantOz:   5.0, // override used directly
+		},
+		{
+			name:     "medium_with_default",
+			category: "medium",
+			count:    1,
+			override: 0,
+			wantOz:   7.05, // 1 * 7.05 (default)
+		},
+		{
+			name:     "zero_count_returns_zero",
+			category: "small",
+			count:    0,
+			override: 5.0,
+			wantOz:   0, // count is 0, so return 0
+		},
+		{
+			name:     "negative_count_returns_zero",
+			category: "small",
+			count:    -1,
+			override: 5.0,
+			wantOz:   0, // negative count treated as 0
+		},
+		{
+			name:     "negative_override_uses_default",
+			category: "small",
+			count:    2,
+			override: -1.0,
+			wantOz:   6.0, // negative override ignored, uses default
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			weight := packer.categoryWeight(tt.category, tt.count, tt.override)
+
+			if weight != tt.wantOz {
+				t.Errorf("categoryWeight(%s, %d, %.2f) = %.2f, want %.2f",
+					tt.category, tt.count, tt.override, weight, tt.wantOz)
+			}
+		})
+	}
+}

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/internal/jobs"
 	"github.com/loganlanou/logans3d-v4/internal/recaptcha"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
+	"github.com/loganlanou/logans3d-v4/internal/utils"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/about"
@@ -49,6 +49,7 @@ type Service struct {
 	authHandler              *handlers.AuthHandler
 	abandonedCartDetector    *jobs.AbandonedCartDetector
 	abandonedCartEmailSender *jobs.AbandonedCartEmailSender
+	ogImageRefresher         *jobs.OGImageRefresher
 }
 
 func New(storage *storage.Storage, config *Config) *Service {
@@ -87,6 +88,10 @@ func New(storage *storage.Storage, config *Config) *Service {
 	// Start the email sender
 	abandonedCartEmailSender.Start(ctx)
 
+	// Initialize OG image refresher (runs once at startup in background)
+	ogImageRefresher := jobs.NewOGImageRefresher(storage)
+	ogImageRefresher.Start(ctx)
+
 	return &Service{
 		storage:                  storage,
 		config:                   config,
@@ -97,6 +102,7 @@ func New(storage *storage.Storage, config *Config) *Service {
 		authHandler:              handlers.NewAuthHandler(),
 		abandonedCartDetector:    abandonedCartDetector,
 		abandonedCartEmailSender: abandonedCartEmailSender,
+		ogImageRefresher:         ogImageRefresher,
 	}
 }
 
@@ -176,9 +182,6 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	withAuth.POST("/custom/quote", s.handleCustomQuote)
 
 	// Stripe Checkout routes
-	withAuth.POST("/checkout/create-session", s.handleCreateStripeCheckoutSession)
-	withAuth.POST("/checkout/create-session-single", s.handleCreateStripeCheckoutSessionSingle)
-	withAuth.POST("/checkout/create-session-multi", s.handleCreateStripeCheckoutSessionMulti)
 	withAuth.POST("/checkout/create-session-cart", s.handleCreateStripeCheckoutSessionCart)
 	withAuth.GET("/checkout/success", s.handleCheckoutSuccess)
 	withAuth.GET("/checkout/cancel", s.handleCheckoutCancel)
@@ -196,7 +199,9 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 	// Open Graph image generation
 	ogImageHandler := handlers.NewOGImageHandler(s.storage)
+	api.GET("/og-image/multi/:product_id", ogImageHandler.HandleGenerateMultiVariantOGImage) // Must be before :product_id route
 	api.GET("/og-image/:product_id", ogImageHandler.HandleGenerateOGImage)
+	api.GET("/carousel/:product_id", ogImageHandler.HandleDownloadCarouselImages) // Instagram carousel ZIP download
 
 	// Promotion routes (public)
 	promotionsHandler := handlers.NewPromotionsHandler(s.storage.Queries, s.emailService)
@@ -238,6 +243,24 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/product/:id/toggle-new", adminHandler.HandleToggleProductNew)
 	admin.DELETE("/product/image/:imageId/delete", adminHandler.HandleDeleteProductImage)
 	admin.PUT("/product/image/:imageId/set-primary", adminHandler.HandleSetPrimaryProductImage)
+	admin.POST("/style-image/:imageId/primary", adminHandler.HandleSetPrimaryStyleImage)
+	admin.POST("/product/:id/styles", adminHandler.HandleCreateProductStyle)
+	admin.POST("/product/:id/sizes", adminHandler.HandleSaveProductSizes)
+	admin.POST("/product/:id/skus", adminHandler.HandleCreateProductSKU)
+
+	// Style panel routes (for admin SKU management UI)
+	admin.GET("/style/:styleId/panel", adminHandler.HandleGetStylePanel)
+	admin.PUT("/sku/:skuId/price", adminHandler.HandleUpdateSkuPrice)
+	admin.PUT("/sku/:skuId/stock", adminHandler.HandleUpdateSkuStock)
+	admin.PUT("/sku/:skuId/active", adminHandler.HandleToggleSkuActive)
+	admin.POST("/style/:styleId/sku", adminHandler.HandleAddStyleSku)
+	admin.DELETE("/sku/:skuId", adminHandler.HandleDeleteSkuFromPanel)
+	admin.POST("/style/:styleId/set-primary", adminHandler.HandleSetPrimaryStyleFromPanel)
+	admin.DELETE("/style/:styleId", adminHandler.HandleDeleteStyleFromPanel)
+	admin.POST("/style-image/:imageId/set-primary", adminHandler.HandleSetPrimaryStyleImageFromPanel)
+	admin.DELETE("/style-image/:imageId", adminHandler.HandleDeleteStyleImageFromPanel)
+	admin.POST("/style/:styleId/images", adminHandler.HandleAddStyleImages)
+
 	admin.GET("/product/search", adminHandler.HandleProductSearch)
 	admin.GET("/product/:id/row", adminHandler.HandleGetProductRow)
 	admin.GET("/product/:id/edit-row", adminHandler.HandleGetProductEditRow)
@@ -357,6 +380,45 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	e.GET("/health", s.handleHealth)
 }
 
+// getProductImageURL returns the primary image URL for a product, correctly handling variants
+func (s *Service) getProductImageURL(ctx context.Context, product db.Product) string {
+	// For products with variants, use the primary style's primary image
+	if product.HasVariants.Valid && product.HasVariants.Bool {
+		styles, err := s.storage.Queries.GetProductStyles(ctx, product.ID)
+		if err == nil && len(styles) > 0 {
+			// First style is primary (ordered by is_primary DESC)
+			primaryStyle := styles[0]
+			styleImage, err := s.storage.Queries.GetPrimaryStyleImage(ctx, primaryStyle.ID)
+			if err == nil && styleImage.ImageUrl != "" {
+				return "/public/images/products/styles/" + styleImage.ImageUrl
+			}
+		}
+	}
+
+	// Fall back to regular product images
+	images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
+	if err != nil || len(images) == 0 {
+		return ""
+	}
+
+	// Get the primary image or the first one
+	rawImageURL := ""
+	for _, img := range images {
+		if img.IsPrimary.Valid && img.IsPrimary.Bool {
+			rawImageURL = img.ImageUrl
+			break
+		}
+	}
+	if rawImageURL == "" {
+		rawImageURL = images[0].ImageUrl
+	}
+
+	if rawImageURL != "" {
+		return "/public/images/products/" + rawImageURL
+	}
+	return ""
+}
+
 // Basic handler implementations
 func (s *Service) handleHome(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -370,37 +432,12 @@ func (s *Service) handleHome(c echo.Context) error {
 	}
 	slog.Debug("fetched featured products", "count", len(featuredProducts))
 
-	// Combine with images
+	// Combine with images (handles variants correctly)
 	productsWithImages := make([]home.ProductWithImage, 0, len(featuredProducts))
 	for _, product := range featuredProducts {
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		productsWithImages = append(productsWithImages, home.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
 	}
 
@@ -442,37 +479,12 @@ func (s *Service) handleShop(c echo.Context) error {
 	}
 	slog.Debug("fetched products", "count", len(products))
 
-	// Combine with images
+	// Combine with images (handles variants correctly)
 	productsWithImages := make([]shop.ProductWithImage, 0, len(products))
 	for _, product := range products {
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		productsWithImages = append(productsWithImages, shop.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
 	}
 
@@ -660,44 +672,16 @@ func (s *Service) handlePremium(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load products")
 	}
 
-	// Sort products by price descending and take top 8
+	// Sort products by price descending and take top 8 (handles variants correctly)
 	featuredProducts := make([]shop.ProductWithImage, 0, 8)
-	count := 0
-	for _, product := range products {
-		if count >= 8 {
+	for i, product := range products {
+		if i >= 8 {
 			break
 		}
-
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		featuredProducts = append(featuredProducts, shop.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
-		count++
 	}
 
 	// Build page metadata
@@ -712,6 +696,10 @@ func (s *Service) handlePremium(c echo.Context) error {
 func (s *Service) handleProduct(c echo.Context) error {
 	slug := c.Param("slug")
 	ctx := c.Request().Context()
+
+	// Parse variant query params for sharing/pre-selection
+	selectedColorID := c.QueryParam("color")
+	selectedSizeID := c.QueryParam("size")
 
 	// Get product by slug (only active products)
 	product, err := s.storage.Queries.GetProductBySlug(ctx, slug)
@@ -754,18 +742,77 @@ func (s *Service) handleProduct(c echo.Context) error {
 			relatedProductsList = []db.Product{}
 		}
 
-		// Build ProductWithImage for each related product
+		// Build ProductWithImage for each related product (handles variants correctly)
 		for _, relatedProduct := range relatedProductsList {
-			primaryImage, err := s.storage.Queries.GetPrimaryProductImage(ctx, relatedProduct.ID)
-			imageURL := ""
-			if err == nil {
-				imageURL = fmt.Sprintf("/public/images/products/%s", primaryImage.ImageUrl)
-			}
-
 			relatedProducts = append(relatedProducts, shop.ProductWithImage{
 				Product:  relatedProduct,
-				ImageURL: imageURL,
+				ImageURL: s.getProductImageURL(ctx, relatedProduct),
 			})
+		}
+	}
+
+	// Load variant data if applicable
+	var variantData *shop.ProductVariantData
+	if product.HasVariants.Valid && product.HasVariants.Bool {
+		data := shop.ProductVariantData{
+			BasePriceCents: product.PriceCents,
+		}
+
+		styles, err := s.storage.Queries.GetProductVariantStyles(ctx, product.ID)
+		if err != nil {
+			slog.Error("failed to load product styles", "error", err, "product_id", product.ID)
+		}
+
+		for _, style := range styles {
+			styleImages, _ := s.storage.Queries.GetProductStyleImages(ctx, style.ID)
+			imagePaths := make([]string, 0, len(styleImages))
+			for _, img := range styleImages {
+				imagePaths = append(imagePaths, fmt.Sprintf("/public/images/products/styles/%s", img.ImageUrl))
+			}
+			if len(imagePaths) == 0 {
+				for _, img := range images {
+					imagePaths = append(imagePaths, fmt.Sprintf("/public/images/products/%s", img.ImageUrl))
+				}
+			}
+
+			sizes, _ := s.storage.Queries.GetProductVariantSizesForStyle(ctx, db.GetProductVariantSizesForStyleParams{
+				ProductID:      product.ID,
+				ProductStyleID: style.ID,
+			})
+
+			sizeOptions := make([]shop.VariantSizeOption, 0, len(sizes))
+			for _, size := range sizes {
+				sizeOptions = append(sizeOptions, shop.VariantSizeOption{
+					ValueID:              size.SizeID,
+					Value:                size.SizeName,
+					DisplayName:          size.SizeDisplayName,
+					SkuID:                size.ProductSkuID,
+					SKU:                  size.Sku,
+					PriceAdjustmentCents: int64FromNull(size.PriceAdjustmentCents),
+					StockQuantity:        int64FromNull(size.StockQuantity),
+				})
+			}
+
+			primaryImage := ""
+			if style.PrimaryImage != "" {
+				primaryImage = fmt.Sprintf("/public/images/products/styles/%s", style.PrimaryImage)
+			}
+			if primaryImage == "" && len(imagePaths) > 0 {
+				primaryImage = imagePaths[0]
+			}
+
+			data.Colors = append(data.Colors, shop.VariantColorOption{
+				ID:           style.ID,
+				Value:        style.Name,
+				DisplayName:  style.Name,
+				PrimaryImage: primaryImage,
+				Images:       imagePaths,
+				Sizes:        sizeOptions,
+			})
+		}
+
+		if len(data.Colors) > 0 {
+			variantData = &data
 		}
 	}
 
@@ -796,7 +843,38 @@ func (s *Service) handleProduct(c echo.Context) error {
 	// Add category for breadcrumbs and schema
 	meta = meta.WithCategories([]db.Category{category})
 
-	return Render(c, shop.Product(c, meta, product, category, images, relatedProducts))
+	// If variant params provided, validate and apply variant-specific meta for sharing
+	if selectedColorID != "" && selectedSizeID != "" && variantData != nil {
+		// Find the matching color and size in variant data
+		for _, color := range variantData.Colors {
+			if color.ID == selectedColorID {
+				for _, size := range color.Sizes {
+					if size.ValueID == selectedSizeID {
+						// Valid variant - build VariantInfo and apply to meta
+						variantInfo := layout.VariantInfo{
+							StyleID:      color.ID,
+							StyleName:    color.DisplayName,
+							SizeID:       size.ValueID,
+							SizeName:     size.DisplayName,
+							SkuID:        size.SkuID,
+							SKU:          size.SKU,
+							PriceCents:   variantData.BasePriceCents + size.PriceAdjustmentCents,
+							PrimaryImage: color.PrimaryImage,
+						}
+						meta = meta.WithVariant(variantInfo)
+						slog.Debug("applied variant to page meta",
+							"product_id", product.ID,
+							"style", color.DisplayName,
+							"size", size.DisplayName)
+						break
+					}
+				}
+				break
+			}
+		}
+	}
+
+	return Render(c, shop.Product(c, meta, product, category, images, relatedProducts, variantData))
 }
 
 func (s *Service) handleProductNotFound(c echo.Context, slug string) error {
@@ -812,42 +890,18 @@ func (s *Service) handleProductNotFound(c echo.Context, slug string) error {
 	// Try to find the product regardless of active status to get its category
 	var relatedProducts []shop.ProductWithImage
 
-	// Get a few featured products as suggestions
+	// Get a few featured products as suggestions (handles variants correctly)
 	featuredProducts, err := s.storage.Queries.ListFeaturedProducts(ctx)
 	if err == nil && len(featuredProducts) > 0 {
-		// Limit to 4 products
 		limit := 4
 		if len(featuredProducts) < limit {
 			limit = len(featuredProducts)
 		}
-
 		for i := 0; i < limit; i++ {
 			product := featuredProducts[i]
-			images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-			if err != nil {
-				continue
-			}
-
-			imageURL := ""
-			if len(images) > 0 {
-				rawImageURL := ""
-				for _, img := range images {
-					if img.IsPrimary.Valid && img.IsPrimary.Bool {
-						rawImageURL = img.ImageUrl
-						break
-					}
-				}
-				if rawImageURL == "" {
-					rawImageURL = images[0].ImageUrl
-				}
-				if rawImageURL != "" {
-					imageURL = "/public/images/products/" + rawImageURL
-				}
-			}
-
 			relatedProducts = append(relatedProducts, shop.ProductWithImage{
 				Product:  product,
-				ImageURL: imageURL,
+				ImageURL: s.getProductImageURL(ctx, product),
 			})
 		}
 	}
@@ -887,37 +941,12 @@ func (s *Service) handleCategory(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load products")
 	}
 
-	// Combine with images
+	// Combine with images (handles variants correctly)
 	productsWithImages := make([]shop.ProductWithImage, 0, len(products))
 	for _, product := range products {
-		images, err := s.storage.Queries.GetProductImages(ctx, product.ID)
-		if err != nil {
-			slog.Error("failed to fetch product images", "product_id", product.ID, "error", err)
-			continue
-		}
-
-		imageURL := ""
-		if len(images) > 0 {
-			// Get the primary image or the first one
-			rawImageURL := ""
-			for _, img := range images {
-				if img.IsPrimary.Valid && img.IsPrimary.Bool {
-					rawImageURL = img.ImageUrl
-					break
-				}
-			}
-			if rawImageURL == "" {
-				rawImageURL = images[0].ImageUrl
-			}
-
-			if rawImageURL != "" {
-				imageURL = "/public/images/products/" + rawImageURL
-			}
-		}
-
 		productsWithImages = append(productsWithImages, shop.ProductWithImage{
 			Product:  product,
-			ImageURL: imageURL,
+			ImageURL: s.getProductImageURL(ctx, product),
 		})
 	}
 
@@ -948,90 +977,6 @@ func (s *Service) handleCustom(c echo.Context) error {
 
 func (s *Service) handleCustomQuote(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received"})
-}
-
-func (s *Service) handleCreateStripeCheckoutSession(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	// Parse form data
-	productID := c.FormValue("product_id")
-	quantityStr := c.FormValue("quantity")
-
-	if productID == "" || quantityStr == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing product_id or quantity")
-	}
-
-	quantity, err := strconv.ParseInt(quantityStr, 10, 64)
-	if err != nil || quantity <= 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid quantity")
-	}
-
-	// Get product details from database
-	product, err := s.storage.Queries.GetProduct(ctx, productID)
-	if err != nil {
-		slog.Error("failed to get product", "error", err, "product_id", productID)
-		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
-	}
-
-	// Check stock
-	if product.StockQuantity.Valid && product.StockQuantity.Int64 < quantity {
-		return echo.NewHTTPError(http.StatusBadRequest, "Not enough stock available")
-	}
-
-	// Get primary product image (optional)
-	imageURL := ""
-	images, err := s.storage.Queries.GetProductImages(ctx, productID)
-	if err == nil && len(images) > 0 {
-		// Ensure we have an absolute URL for Stripe - database contains only filename
-		imageURL = fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, images[0].ImageUrl)
-	}
-
-	// Create Stripe Checkout Session with dynamic product
-	stripe.Key = s.config.Stripe.SecretKey
-
-	params := &stripe.CheckoutSessionParams{
-		Mode:                stripe.String(string(stripe.CheckoutSessionModePayment)),
-		AllowPromotionCodes: stripe.Bool(true),
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			{
-				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-					Currency:   stripe.String("usd"),
-					UnitAmount: stripe.Int64(product.PriceCents),
-					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name:        stripe.String(product.Name),
-						Description: &product.Description.String,
-					},
-				},
-				Quantity: stripe.Int64(quantity),
-			},
-		},
-		SuccessURL:       stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
-		CancelURL:        stripe.String(fmt.Sprintf("%s://%s/shop", c.Scheme(), c.Request().Host)),
-		CustomerCreation: stripe.String("always"), // Always create customer for order tracking
-		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
-			Metadata: map[string]string{
-				"product_id": productID,
-				"quantity":   quantityStr,
-			},
-		},
-	}
-
-	// Add product image if available
-	if imageURL != "" {
-		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
-	}
-
-	// Expand line_items for webhook processing
-	params.AddExpand("line_items")
-
-	session, err := checkoutsession.New(params)
-	if err != nil {
-		slog.Error("failed to create stripe checkout session", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
-	}
-
-	// Redirect to Stripe Checkout
-	return c.Redirect(http.StatusSeeOther, session.URL)
 }
 
 func (s *Service) handleCheckoutCancel(c echo.Context) error {
@@ -1123,13 +1068,21 @@ func (s *Service) handleAccount(c echo.Context) error {
 		orders = []db.Order{}
 	}
 
+	// Fetch buy-again items (products from past orders that are still available)
+	buyAgainItems, err := s.storage.Queries.GetBuyAgainItems(ctx, user.ID)
+	if err != nil {
+		slog.Debug("failed to fetch buy-again items", "error", err, "user_id", user.ID)
+		// Don't fail - just show empty buy-again section
+		buyAgainItems = []db.GetBuyAgainItemsRow{}
+	}
+
 	// Build page metadata
 	meta := layout.NewPageMeta(c, s.storage.Queries)
 	meta.Title = "My Account - Logan's 3D Creations"
 	meta.Description = "Manage your account and view order history"
 
 	// Render account page
-	return Render(c, account.Index(c, user, orders, meta))
+	return Render(c, account.Index(c, user, orders, buyAgainItems, meta))
 }
 
 func (s *Service) handleAccountOrderDetail(c echo.Context) error {
@@ -1168,190 +1121,58 @@ func (s *Service) handleAccountOrderDetail(c echo.Context) error {
 		orderItems = []db.OrderItem{}
 	}
 
+	// Enrich order items with product availability and images
+	itemsWithProduct := make([]account.OrderItemWithProduct, len(orderItems))
+	for i, item := range orderItems {
+		itemsWithProduct[i] = account.OrderItemWithProduct{
+			Item: item,
+		}
+
+		// Try to get product info
+		product, err := s.storage.Queries.GetProduct(ctx, item.ProductID)
+		if err != nil {
+			slog.Debug("product not found for order item", "product_id", item.ProductID)
+			continue
+		}
+
+		itemsWithProduct[i].ProductSlug = product.Slug
+		itemsWithProduct[i].IsAvailable = product.IsActive.Valid && product.IsActive.Bool
+
+		// Get product image - check for style images first if there's a SKU
+		if item.ProductSkuID.Valid && item.ProductSkuID.String != "" {
+			sku, err := s.storage.Queries.GetProductSku(ctx, item.ProductSkuID.String)
+			if err == nil && sku.ProductStyleID != "" {
+				styleImages, err := s.storage.Queries.GetProductStyleImages(ctx, sku.ProductStyleID)
+				if err == nil && len(styleImages) > 0 {
+					itemsWithProduct[i].ImageURL = "/public/images/products/styles/" + styleImages[0].ImageUrl
+					continue
+				}
+			}
+		}
+
+		// Fall back to regular product images
+		images, err := s.storage.Queries.GetProductImages(ctx, item.ProductID)
+		if err == nil && len(images) > 0 {
+			itemsWithProduct[i].ImageURL = "/public/images/products/" + images[0].ImageUrl
+		}
+	}
+
 	// Build page metadata
 	meta := layout.NewPageMeta(c, s.storage.Queries)
 	meta.Title = fmt.Sprintf("Order #%s - Logan's 3D Creations", order.ID[:8])
 	meta.Description = "View order details and tracking information"
 
 	// Render order detail page
-	return Render(c, account.OrderDetail(c, order, orderItems, meta))
-}
-
-// handleCreateStripeCheckoutSessionSingle handles single item checkout (Buy Now)
-func (s *Service) handleCreateStripeCheckoutSessionSingle(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	// Parse JSON data
-	var request struct {
-		ProductID string `json:"productId"`
-		Quantity  int64  `json:"quantity"`
-	}
-
-	if err := c.Bind(&request); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
-	}
-
-	if request.ProductID == "" || request.Quantity <= 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "Missing or invalid productId or quantity")
-	}
-
-	// Get product details from database
-	product, err := s.storage.Queries.GetProduct(ctx, request.ProductID)
-	if err != nil {
-		slog.Error("failed to get product", "error", err, "product_id", request.ProductID)
-		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
-	}
-
-	// Check stock
-	if product.StockQuantity.Valid && product.StockQuantity.Int64 < request.Quantity {
-		return echo.NewHTTPError(http.StatusBadRequest, "Not enough stock available")
-	}
-
-	// Get primary product image (optional)
-	imageURL := ""
-	images, err := s.storage.Queries.GetProductImages(ctx, request.ProductID)
-	if err == nil && len(images) > 0 {
-		// Ensure we have an absolute URL for Stripe - database contains only filename
-		imageURL = fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, images[0].ImageUrl)
-	}
-
-	// Create Stripe Checkout Session with dynamic product
-	stripe.Key = s.config.Stripe.SecretKey
-
-	params := &stripe.CheckoutSessionParams{
-		Mode: stripe.String(string(stripe.CheckoutSessionModePayment)),
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			{
-				PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-					Currency:   stripe.String("usd"),
-					UnitAmount: stripe.Int64(product.PriceCents),
-					ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-						Name:        stripe.String(product.Name),
-						Description: &product.Description.String,
-					},
-				},
-				Quantity: stripe.Int64(request.Quantity),
-			},
-		},
-		SuccessURL:          stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
-		CancelURL:           stripe.String(fmt.Sprintf("%s://%s/shop", c.Scheme(), c.Request().Host)),
-		CustomerCreation:    stripe.String("always"),
-		AllowPromotionCodes: stripe.Bool(true),
-		PaymentIntentData: &stripe.CheckoutSessionPaymentIntentDataParams{
-			Metadata: map[string]string{
-				"product_id": request.ProductID,
-				"quantity":   strconv.FormatInt(request.Quantity, 10),
-			},
-		},
-	}
-
-	// Add product image if available
-	if imageURL != "" {
-		params.LineItems[0].PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
-	}
-
-	// Expand line_items for webhook processing
-	params.AddExpand("line_items")
-
-	session, err := checkoutsession.New(params)
-	if err != nil {
-		slog.Error("failed to create stripe checkout session", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"url": session.URL})
-}
-
-// handleCreateStripeCheckoutSessionMulti handles multi-item checkout (Cart)
-func (s *Service) handleCreateStripeCheckoutSessionMulti(c echo.Context) error {
-	ctx := c.Request().Context()
-
-	// Parse JSON data
-	var request struct {
-		Items []struct {
-			ProductID string `json:"productId"`
-			Name      string `json:"name"`
-			Price     int64  `json:"price"` // price in cents
-			ImageURL  string `json:"imageUrl"`
-			Quantity  int64  `json:"quantity"`
-		} `json:"items"`
-	}
-
-	if err := c.Bind(&request); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request data")
-	}
-
-	if len(request.Items) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "No items in cart")
-	}
-
-	// Validate each item and check stock
-	var lineItems []*stripe.CheckoutSessionLineItemParams
-
-	for _, item := range request.Items {
-		if item.ProductID == "" || item.Quantity <= 0 {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid item data")
-		}
-
-		// Get product details to verify and check stock
-		product, err := s.storage.Queries.GetProduct(ctx, item.ProductID)
-		if err != nil {
-			slog.Error("failed to get product", "error", err, "product_id", item.ProductID)
-			return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf("Product %s not found", item.ProductID))
-		}
-
-		// Check stock
-		if product.StockQuantity.Valid && product.StockQuantity.Int64 < item.Quantity {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Not enough stock available for %s", product.Name))
-		}
-
-		// Create line item
-		lineItem := &stripe.CheckoutSessionLineItemParams{
-			PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
-				Currency:   stripe.String("usd"),
-				UnitAmount: stripe.Int64(item.Price),
-				ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-					Name: stripe.String(item.Name),
-				},
-			},
-			Quantity: stripe.Int64(item.Quantity),
-		}
-
-		// Add product image if available
-		if item.ImageURL != "" {
-			// Ensure we have an absolute URL for Stripe - database contains only filename
-			imageURL := fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, item.ImageURL)
-			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
-		}
-
-		lineItems = append(lineItems, lineItem)
-	}
-
-	// Create Stripe Checkout Session with multiple items
-	stripe.Key = s.config.Stripe.SecretKey
-
-	params := &stripe.CheckoutSessionParams{
-		Mode:                stripe.String(string(stripe.CheckoutSessionModePayment)),
-		LineItems:           lineItems,
-		SuccessURL:          stripe.String(fmt.Sprintf("%s://%s/checkout/success?session_id={CHECKOUT_SESSION_ID}", c.Scheme(), c.Request().Host)),
-		CancelURL:           stripe.String(fmt.Sprintf("%s://%s/cart", c.Scheme(), c.Request().Host)),
-		CustomerCreation:    stripe.String("always"),
-		AllowPromotionCodes: stripe.Bool(true),
-	}
-
-	// Expand line_items for webhook processing
-	params.AddExpand("line_items")
-
-	session, err := checkoutsession.New(params)
-	if err != nil {
-		slog.Error("failed to create stripe checkout session", "error", err)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create checkout session")
-	}
-
-	return c.JSON(http.StatusOK, map[string]string{"url": session.URL})
+	return Render(c, account.OrderDetail(c, order, itemsWithProduct, meta))
 }
 
 // handleCreateStripeCheckoutSessionCart handles checkout from cart session
+//
+// INTENTIONAL: This handler does NOT block checkout when stock is zero.
+// Products with zero stock can still be purchased - the customer will see
+// extended shipping times (e.g., "Ships in 2-3 weeks") in their cart and order.
+// Stock is decremented in the webhook handler with protection against going negative.
+// This is a business decision to allow pre-orders/backorders rather than losing sales.
 func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 	ctx := c.Request().Context()
 
@@ -1415,24 +1236,60 @@ func (s *Service) handleCreateStripeCheckoutSessionCart(c echo.Context) error {
 	var lineItems []*stripe.CheckoutSessionLineItemParams
 
 	for _, item := range cartItems {
+		product, err := s.storage.Queries.GetProduct(ctx, item.ProductID)
+		if err != nil {
+			slog.Error("failed to load product for cart item", "error", err, "product_id", item.ProductID)
+			return echo.NewHTTPError(http.StatusBadRequest, "One of your items is no longer available")
+		}
+
+		var sku *db.ProductSku
+		if item.ProductSkuID.Valid && item.ProductSkuID.String != "" {
+			skuRecord, skuErr := s.storage.Queries.GetProductSkuForProduct(ctx, db.GetProductSkuForProductParams{
+				ID:        item.ProductSkuID.String,
+				ProductID: item.ProductID,
+			})
+			if skuErr != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "A selected variant is no longer available")
+			}
+			if skuRecord.IsActive.Valid && !skuRecord.IsActive.Bool {
+				return echo.NewHTTPError(http.StatusBadRequest, "A selected variant is unavailable")
+			}
+			sku = &skuRecord
+		}
+
+		variantName, imageURL, attrs, effectivePrice, err := s.buildSkuPresentation(ctx, product, sku)
+		if err != nil {
+			slog.Error("failed to build variant presentation", "error", err, "product_id", product.ID)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Unable to prepare checkout")
+		}
+
+		metadata := map[string]string{
+			"product_id": item.ProductID,
+		}
+		if sku != nil {
+			metadata["sku_id"] = sku.ID
+			if sku.Sku != "" {
+				metadata["sku"] = sku.Sku
+			}
+			for key, val := range attrs {
+				metadata[key] = val
+			}
+		}
+
 		lineItem := &stripe.CheckoutSessionLineItemParams{
 			PriceData: &stripe.CheckoutSessionLineItemPriceDataParams{
 				Currency:   stripe.String("usd"),
-				UnitAmount: stripe.Int64(item.PriceCents),
+				UnitAmount: stripe.Int64(effectivePrice),
 				ProductData: &stripe.CheckoutSessionLineItemPriceDataProductDataParams{
-					Name: stripe.String(item.Name),
-					Metadata: map[string]string{
-						"product_id": item.ProductID,
-					},
+					Name:     stripe.String(variantName),
+					Metadata: metadata,
 				},
 			},
 			Quantity: stripe.Int64(item.Quantity),
 		}
 
 		// Add product image if available
-		if item.ImageUrl != "" {
-			// Ensure we have an absolute URL for Stripe - database contains only filename
-			imageURL := fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, item.ImageUrl)
+		if imageURL != "" {
 			lineItem.PriceData.ProductData.Images = []*string{stripe.String(imageURL)}
 		}
 
@@ -1696,8 +1553,9 @@ func (s *Service) handleHealth(c echo.Context) error {
 // handleAddToCart adds an item to the cart
 func (s *Service) handleAddToCart(c echo.Context) error {
 	var req struct {
-		ProductID string `json:"productId"`
-		Quantity  int64  `json:"quantity"`
+		ProductID    string `json:"productId"`
+		ProductSkuID string `json:"productSkuId"`
+		Quantity     int64  `json:"quantity"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -1724,21 +1582,42 @@ func (s *Service) handleAddToCart(c echo.Context) error {
 	ctx := c.Request().Context()
 
 	// Check if product exists
-	_, err = s.storage.Queries.GetProduct(ctx, req.ProductID)
+	product, err := s.storage.Queries.GetProduct(ctx, req.ProductID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
 	}
 
+	hasVariants := product.HasVariants.Valid && product.HasVariants.Bool
+
+	// When product has variants, require a specific SKU
+	if hasVariants {
+		if req.ProductSkuID == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Please select a variant before adding to cart")
+		}
+		sku, skuErr := s.storage.Queries.GetProductSkuForProduct(ctx, db.GetProductSkuForProductParams{
+			ID:        req.ProductSkuID,
+			ProductID: req.ProductID,
+		})
+		if skuErr != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid variant selection")
+		}
+		if sku.IsActive.Valid && !sku.IsActive.Bool {
+			return echo.NewHTTPError(http.StatusBadRequest, "This variant is unavailable")
+		}
+	}
+
 	// Check if item already exists in cart
 	existingItem, err := s.storage.Queries.GetExistingCartItem(ctx, db.GetExistingCartItemParams{
-		SessionID: sql.NullString{String: sessionID, Valid: !isAuthenticated},
-		UserID:    sql.NullString{String: userID, Valid: isAuthenticated},
-		ProductID: req.ProductID,
+		SessionID:    sql.NullString{String: sessionID, Valid: !isAuthenticated},
+		UserID:       sql.NullString{String: userID, Valid: isAuthenticated},
+		ProductID:    req.ProductID,
+		ProductSkuID: sql.NullString{String: req.ProductSkuID, Valid: req.ProductSkuID != ""},
 	})
 
 	if err == nil {
 		// Item exists, update quantity
 		newQuantity := existingItem.Quantity + req.Quantity
+
 		err = s.storage.Queries.UpdateCartItemQuantity(ctx, db.UpdateCartItemQuantityParams{
 			ID:       existingItem.ID,
 			Quantity: newQuantity,
@@ -1750,11 +1629,12 @@ func (s *Service) handleAddToCart(c echo.Context) error {
 		// Item doesn't exist, add new item
 		itemID := uuid.New().String()
 		err = s.storage.Queries.AddToCart(ctx, db.AddToCartParams{
-			ID:        itemID,
-			SessionID: sql.NullString{String: sessionID, Valid: !isAuthenticated},
-			UserID:    sql.NullString{String: userID, Valid: isAuthenticated},
-			ProductID: req.ProductID,
-			Quantity:  req.Quantity,
+			ID:           itemID,
+			SessionID:    sql.NullString{String: sessionID, Valid: !isAuthenticated},
+			UserID:       sql.NullString{String: userID, Valid: isAuthenticated},
+			ProductID:    req.ProductID,
+			ProductSkuID: sql.NullString{String: req.ProductSkuID, Valid: req.ProductSkuID != ""},
+			Quantity:     req.Quantity,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to add item to cart")
@@ -1902,11 +1782,15 @@ func (s *Service) handleGetCart(c echo.Context) error {
 		totalCents = int64(total.Float64)
 	}
 
-	// Format response
+	// Format response with shipping config for frontend
 	response := map[string]interface{}{
 		"items":       items,
 		"totalCents":  totalCents,
 		"totalDollar": float64(totalCents) / 100,
+		"shippingConfig": map[string]string{
+			"inStockMessage":    utils.ShippingTimeInStock,
+			"outOfStockMessage": utils.ShippingTimeOutOfStock,
+		},
 	}
 
 	return c.JSON(http.StatusOK, response)
@@ -1965,4 +1849,60 @@ func Render(c echo.Context, component templ.Component) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
 	// Don't call WriteHeader here - let Echo handle it on first Write()
 	return component.Render(c.Request().Context(), c.Response())
+}
+
+// buildSkuPresentation prepares display data for Stripe and UI when a SKU is present.
+func (s *Service) buildSkuPresentation(ctx context.Context, product db.Product, sku *db.ProductSku) (string, string, map[string]string, int64, error) {
+	attrs := map[string]string{}
+
+	if sku != nil {
+		// Get style name
+		if style, err := s.storage.Queries.GetProductStyle(ctx, sku.ProductStyleID); err == nil {
+			attrs["style"] = style.Name
+		}
+		// Get size name
+		if size, err := s.storage.Queries.GetSize(ctx, sku.SizeID); err == nil {
+			attrs["size"] = size.DisplayName
+		}
+	}
+
+	var variantParts []string
+	if style, ok := attrs["style"]; ok {
+		variantParts = append(variantParts, style)
+	}
+	if size, ok := attrs["size"]; ok {
+		variantParts = append(variantParts, size)
+	}
+
+	variantName := product.Name
+	if len(variantParts) > 0 {
+		variantName = fmt.Sprintf("%s - %s", product.Name, strings.Join(variantParts, ", "))
+	}
+
+	imageURL := ""
+	if sku != nil {
+		// Get primary image for the style
+		if img, err := s.storage.Queries.GetPrimaryStyleImage(ctx, sku.ProductStyleID); err == nil {
+			imageURL = fmt.Sprintf("%s/public/images/products/styles/%s", s.config.BaseURL, img.ImageUrl)
+		}
+	}
+	if imageURL == "" {
+		if primary, err := s.storage.Queries.GetPrimaryProductImage(ctx, product.ID); err == nil {
+			imageURL = fmt.Sprintf("%s/public/images/products/%s", s.config.BaseURL, primary.ImageUrl)
+		}
+	}
+
+	effectivePrice := product.PriceCents
+	if sku != nil {
+		effectivePrice += int64FromNull(sku.PriceAdjustmentCents)
+	}
+
+	return variantName, imageURL, attrs, effectivePrice, nil
+}
+
+func int64FromNull(n sql.NullInt64) int64 {
+	if n.Valid {
+		return n.Int64
+	}
+	return 0
 }

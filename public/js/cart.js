@@ -35,41 +35,8 @@ if (document.readyState === 'loading') {
     validateCartSession();
 }
 
-// Buy Now functionality - goes directly to Stripe checkout
-async function buyNow(productId, productName, productPrice, quantity = 1) {
-    try {
-        const response = await fetch('/checkout/create-session-single', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                productId: productId,
-                quantity: parseInt(quantity)
-            })
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to create checkout session');
-        }
-
-        const data = await response.json();
-        
-        // Redirect to Stripe checkout
-        if (data.url) {
-            window.location.href = data.url;
-        } else {
-            throw new Error('No checkout URL received');
-        }
-
-    } catch (error) {
-        console.error('Error creating checkout session:', error);
-        showToast('Failed to start checkout', 'error');
-    }
-}
-
 // Cart functionality
-async function addToCart(productId, quantity = 1, productName = '') {
+async function addToCart(productId, quantity = 1, productName = '', productSkuId = '') {
     try {
         const response = await fetch('/api/cart/add', {
             method: 'POST',
@@ -78,6 +45,7 @@ async function addToCart(productId, quantity = 1, productName = '') {
             },
             body: JSON.stringify({
                 productId: productId,
+                productSkuId: productSkuId,
                 quantity: parseInt(quantity)
             })
         });
@@ -303,32 +271,15 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Initialize interactive cart button
     initializeCartHoverEffects();
-    
-    // Buy Now buttons - direct to Stripe checkout
+
+    // Cart button click handlers
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('buy-now-btn')) {
-            e.preventDefault();
-            const productId = e.target.dataset.productId;
-            const productName = e.target.dataset.productName;
-            const productPrice = e.target.dataset.productPrice;
-
-            // Check for quantity from dropdown first, then fallback to data attribute
-            let quantity = e.target.dataset.quantity || '1';
-            const quantitySelect = document.getElementById('product-quantity');
-            if (quantitySelect) {
-                quantity = quantitySelect.value || '1';
-            }
-
-            if (productId && productName && productPrice) {
-                buyNow(productId, productName, productPrice, parseInt(quantity));
-            }
-        }
-        
-        // Add to Cart buttons - now functional
+        // Add to Cart buttons
         if (e.target.classList.contains('add-to-cart-btn')) {
             e.preventDefault();
             const productId = e.target.dataset.productId;
             const productName = e.target.dataset.productName || '';
+            const productSkuId = e.target.dataset.productSkuId || '';
 
             // Check for quantity from dropdown first, then fallback to data attribute
             let quantity = e.target.dataset.quantity || '1';
@@ -338,7 +289,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             if (productId) {
-                addToCart(productId, parseInt(quantity), productName);
+                addToCart(productId, parseInt(quantity), productName, productSkuId);
             }
         }
         
@@ -656,3 +607,10 @@ if (window.Clerk) {
         }
     });
 }
+
+// Global event listener for cart updates from any source
+// This allows components (like "Buy Again" buttons) to trigger cart count refresh
+window.addEventListener('cart-updated', () => {
+    console.debug('cart-updated event received, refreshing cart count');
+    updateCartCount();
+});

@@ -8,7 +8,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Index(c echo.Context, user *db.User, orders []db.Order, meta layout.PageMeta) {
+templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db.GetBuyAgainItemsRow, meta layout.PageMeta) {
 	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
 			<!-- Animated background orbs -->
@@ -94,39 +94,95 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, meta layout.PageMe
 						</div>
 					</div>
 
-					<!-- Order History Section -->
-					<div class="lg:col-span-2">
-						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl">
-							<h2 class="text-2xl font-bold text-white mb-6">Order History</h2>
+					<!-- Tabbed Section: Buy It Again & Order History -->
+					<div class="lg:col-span-2" x-data="{ activeTab: 'buy-again' }">
+						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
+							<!-- Tab Navigation -->
+							<div class="flex border-b border-slate-700/50">
+								<button
+									@click="activeTab = 'buy-again'"
+									:class="activeTab === 'buy-again' ? 'border-b-2 border-emerald-500 text-emerald-400 bg-slate-800/50' : 'text-slate-400 hover:text-white hover:bg-slate-800/30'"
+									class="flex-1 px-6 py-4 font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+								>
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+									</svg>
+									Buy It Again
+									if len(buyAgainItems) > 0 {
+										<span class="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-0.5 rounded-full">{ fmt.Sprintf("%d", len(buyAgainItems)) }</span>
+									}
+								</button>
+								<button
+									@click="activeTab = 'orders'"
+									:class="activeTab === 'orders' ? 'border-b-2 border-blue-500 text-blue-400 bg-slate-800/50' : 'text-slate-400 hover:text-white hover:bg-slate-800/30'"
+									class="flex-1 px-6 py-4 font-semibold transition-all duration-200 flex items-center justify-center gap-2"
+								>
+									<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+									</svg>
+									Order History
+									if len(orders) > 0 {
+										<span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-0.5 rounded-full">{ fmt.Sprintf("%d", len(orders)) }</span>
+									}
+								</button>
+							</div>
 
-							if len(orders) == 0 {
-								<!-- Empty State -->
-								<div class="text-center py-16">
-									<div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-slate-800/50 mb-6">
-										<svg class="w-10 h-10 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-										</svg>
-									</div>
-									<h3 class="text-xl font-semibold text-white mb-2">No Orders Yet</h3>
-									<p class="text-slate-400 mb-6">You haven't placed any orders yet. Start shopping to see your orders here!</p>
-									<a
-										href="/shop"
-										class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl"
-									>
-										Browse Shop
-										<svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-										</svg>
-									</a>
-								</div>
-							} else {
-								<!-- Orders List -->
-								<div class="space-y-4">
-									for _, order := range orders {
-										@OrderCard(order)
+							<!-- Tab Content -->
+							<div class="p-6">
+								<!-- Buy It Again Tab -->
+								<div x-show="activeTab === 'buy-again'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+									if len(buyAgainItems) == 0 {
+										<div class="text-center py-12">
+											<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800/50 mb-4">
+												<svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+												</svg>
+											</div>
+											<h3 class="text-lg font-semibold text-white mb-2">No Previous Purchases</h3>
+											<p class="text-slate-400 mb-4">Once you make a purchase, your items will appear here for easy reordering.</p>
+											<a href="/shop" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-medium rounded-lg transition-all">
+												Start Shopping
+												<svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+												</svg>
+											</a>
+										</div>
+									} else {
+										<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+											for _, item := range buyAgainItems {
+												@BuyAgainCard(item)
+											}
+										</div>
 									}
 								</div>
-							}
+
+								<!-- Order History Tab -->
+								<div x-show="activeTab === 'orders'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+									if len(orders) == 0 {
+										<div class="text-center py-12">
+											<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800/50 mb-4">
+												<svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+												</svg>
+											</div>
+											<h3 class="text-lg font-semibold text-white mb-2">No Orders Yet</h3>
+											<p class="text-slate-400 mb-4">You haven't placed any orders yet. Start shopping to see your orders here!</p>
+											<a href="/shop" class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all">
+												Browse Shop
+												<svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+												</svg>
+											</a>
+										</div>
+									} else {
+										<div class="space-y-4">
+											for _, order := range orders {
+												@OrderCard(order)
+											}
+										</div>
+									}
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -176,6 +232,91 @@ templ OrderStatusBadge(status string) {
 	<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-900/50 text-slate-400 border border-slate-700/50">
 		{ capitalizeStatus(status) }
 	</span>
+}
+
+templ BuyAgainCard(item db.GetBuyAgainItemsRow) {
+	<div class="flex flex-col bg-slate-900/70 rounded-xl border border-slate-700/50 overflow-hidden hover:border-emerald-500/50 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-200 group">
+		<!-- Product Image -->
+		<a href={ templ.SafeURL("/shop/product/" + item.ProductSlug.String) } class="block relative aspect-square overflow-hidden">
+			if item.ImageUrl != "" {
+				<img
+					src={ "/public/images/products/" + item.ImageUrl }
+					alt={ item.ProductName }
+					class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+				/>
+			} else {
+				<div class="w-full h-full bg-slate-800 flex items-center justify-center">
+					<svg class="w-12 h-12 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+					</svg>
+				</div>
+			}
+		</a>
+
+		<!-- Product Info -->
+		<div class="flex flex-col flex-1 p-3">
+			<a href={ templ.SafeURL("/shop/product/" + item.ProductSlug.String) } class="block">
+				<h3 class="text-sm font-semibold text-white line-clamp-2 group-hover:text-emerald-400 transition-colors min-h-[2.5rem]">
+					{ item.ProductName }
+				</h3>
+			</a>
+			if item.ProductSku.Valid && item.ProductSku.String != "" {
+				<p class="text-xs text-slate-500 truncate mt-0.5">{ item.ProductSku.String }</p>
+			}
+			<p class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 mt-auto pt-2">
+				${ formatCents(item.PriceCents.Int64) }
+			</p>
+
+			<!-- Add to Cart Button -->
+			<button
+				onclick={ buyAgainClickFromAccount(item.ProductID, item.ProductSkuID.String) }
+				class="w-full mt-2 px-3 py-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-sm font-medium rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5"
+			>
+				<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+				</svg>
+				Add to Cart
+			</button>
+		</div>
+	</div>
+}
+
+script buyAgainClickFromAccount(productID string, productSkuID string) {
+	fetch('/api/cart/add', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			productId: productID,
+			productSkuId: productSkuID || '',
+			quantity: 1
+		})
+	})
+	.then(response => {
+		if (response.ok) {
+			// Trigger cart update event
+			window.dispatchEvent(new CustomEvent('cart-updated'));
+			// Show success toast
+			if (window.showToast) {
+				window.showToast('Added to cart!', 'success');
+			} else {
+				alert('Added to cart!');
+			}
+		} else {
+			return response.json().then(data => {
+				throw new Error(data.message || 'Failed to add to cart');
+			});
+		}
+	})
+	.catch(error => {
+		console.error('Error adding to cart:', error);
+		if (window.showToast) {
+			window.showToast(error.message || 'Failed to add to cart', 'error');
+		} else {
+			alert(error.message || 'Failed to add to cart');
+		}
+	});
 }
 
 func getFullName(user *db.User) string {

@@ -134,25 +134,80 @@ LEFT JOIN order_shipping_selection oss ON o.id = oss.order_id
 LEFT JOIN shipping_labels sl ON o.id = sl.order_id
 WHERE o.id = ?;
 
--- name: CountItemsByShippingCategory :one
+WITH resolved AS (
+    SELECT
+        COALESCE(sc.default_shipping_class, p.shipping_category, 'unknown') AS category,
+        COALESCE(sc.default_shipping_weight_oz, p.weight_grams / 28.35) as weight_oz,
+        p.dimensions_length_mm / 25.4 as length_in,
+        p.dimensions_width_mm / 25.4 as width_in,
+        p.dimensions_height_mm / 25.4 as height_in,
+        oi.quantity
+    FROM order_items oi
+    JOIN products p ON oi.product_id = p.id
+    LEFT JOIN product_skus ps ON oi.product_sku_id = ps.id
+    LEFT JOIN size_charts sc ON sc.size_id = ps.size_id
+    WHERE oi.order_id = ?
+)
 SELECT
-    SUM(CASE WHEN p.shipping_category = 'small' THEN oi.quantity ELSE 0 END) as small_items,
-    SUM(CASE WHEN p.shipping_category = 'medium' THEN oi.quantity ELSE 0 END) as medium_items,
-    SUM(CASE WHEN p.shipping_category = 'large' THEN oi.quantity ELSE 0 END) as large_items,
-    SUM(CASE WHEN p.shipping_category = 'xlarge' THEN oi.quantity ELSE 0 END) as xlarge_items
-FROM order_items oi
-JOIN products p ON oi.product_id = p.id
-WHERE oi.order_id = ?;
+    SUM(CASE WHEN category = 'small' THEN quantity ELSE 0 END) as small_items,
+    SUM(CASE WHEN category = 'medium' THEN quantity ELSE 0 END) as medium_items,
+    SUM(CASE WHEN category = 'large' THEN quantity ELSE 0 END) as large_items,
+    SUM(CASE WHEN category = 'xlarge' THEN quantity ELSE 0 END) as xlarge_items,
+    SUM(CASE WHEN category = 'unknown' THEN quantity ELSE 0 END) as unknown_items,
+    SUM(CASE WHEN category = 'small' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as small_weight_oz,
+    SUM(CASE WHEN category = 'medium' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as medium_weight_oz,
+    SUM(CASE WHEN category = 'large' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as large_weight_oz,
+    SUM(CASE WHEN category = 'xlarge' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as xlarge_weight_oz
+FROM resolved;
 
 -- name: CountCartItemsByShippingCategory :one
+WITH resolved AS (
+    SELECT
+        COALESCE(sc.default_shipping_class, p.shipping_category, 'unknown') AS category,
+        COALESCE(sc.default_shipping_weight_oz, p.weight_grams / 28.35) as weight_oz,
+        p.dimensions_length_mm / 25.4 as length_in,
+        p.dimensions_width_mm / 25.4 as width_in,
+        p.dimensions_height_mm / 25.4 as height_in,
+        ci.quantity
+    FROM cart_items ci
+    JOIN products p ON ci.product_id = p.id
+    LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
+    LEFT JOIN size_charts sc ON sc.size_id = ps.size_id
+    WHERE (ci.session_id = ? OR ci.user_id = ?)
+)
 SELECT
-    SUM(CASE WHEN p.shipping_category = 'small' THEN ci.quantity ELSE 0 END) as small_items,
-    SUM(CASE WHEN p.shipping_category = 'medium' THEN ci.quantity ELSE 0 END) as medium_items,
-    SUM(CASE WHEN p.shipping_category = 'large' THEN ci.quantity ELSE 0 END) as large_items,
-    SUM(CASE WHEN p.shipping_category = 'xlarge' THEN ci.quantity ELSE 0 END) as xlarge_items
-FROM cart_items ci
-JOIN products p ON ci.product_id = p.id
-WHERE (ci.session_id = ? OR ci.user_id = ?);
+    SUM(CASE WHEN category = 'small' THEN quantity ELSE 0 END) as small_items,
+    SUM(CASE WHEN category = 'medium' THEN quantity ELSE 0 END) as medium_items,
+    SUM(CASE WHEN category = 'large' THEN quantity ELSE 0 END) as large_items,
+    SUM(CASE WHEN category = 'xlarge' THEN quantity ELSE 0 END) as xlarge_items,
+    SUM(CASE WHEN category = 'unknown' THEN quantity ELSE 0 END) as unknown_items,
+    SUM(CASE WHEN category = 'small' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as small_weight_oz,
+    SUM(CASE WHEN category = 'medium' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as medium_weight_oz,
+    SUM(CASE WHEN category = 'large' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as large_weight_oz,
+    SUM(CASE WHEN category = 'xlarge' THEN COALESCE(weight_oz,0) * quantity ELSE 0 END) as xlarge_weight_oz,
+    -- Missing weight counts (only items missing weight data)
+    SUM(CASE WHEN category = 'small' AND (weight_oz IS NULL OR weight_oz <= 0) THEN quantity ELSE 0 END) as small_missing_weight,
+    SUM(CASE WHEN category = 'medium' AND (weight_oz IS NULL OR weight_oz <= 0) THEN quantity ELSE 0 END) as medium_missing_weight,
+    SUM(CASE WHEN category = 'large' AND (weight_oz IS NULL OR weight_oz <= 0) THEN quantity ELSE 0 END) as large_missing_weight,
+    SUM(CASE WHEN category = 'xlarge' AND (weight_oz IS NULL OR weight_oz <= 0) THEN quantity ELSE 0 END) as xlarge_missing_weight,
+    -- Missing dimension counts (items missing any dimension)
+    SUM(CASE WHEN category = 'small' AND (length_in IS NULL OR length_in <= 0 OR width_in IS NULL OR width_in <= 0 OR height_in IS NULL OR height_in <= 0) THEN quantity ELSE 0 END) as small_missing_dims,
+    SUM(CASE WHEN category = 'medium' AND (length_in IS NULL OR length_in <= 0 OR width_in IS NULL OR width_in <= 0 OR height_in IS NULL OR height_in <= 0) THEN quantity ELSE 0 END) as medium_missing_dims,
+    SUM(CASE WHEN category = 'large' AND (length_in IS NULL OR length_in <= 0 OR width_in IS NULL OR width_in <= 0 OR height_in IS NULL OR height_in <= 0) THEN quantity ELSE 0 END) as large_missing_dims,
+    SUM(CASE WHEN category = 'xlarge' AND (length_in IS NULL OR length_in <= 0 OR width_in IS NULL OR width_in <= 0 OR height_in IS NULL OR height_in <= 0) THEN quantity ELSE 0 END) as xlarge_missing_dims,
+    MAX(CAST(CASE WHEN category = 'small' THEN COALESCE(length_in, 0.0) ELSE 0.0 END AS REAL)) as small_max_length_in,
+    MAX(CAST(CASE WHEN category = 'small' THEN COALESCE(width_in, 0.0) ELSE 0.0 END AS REAL)) as small_max_width_in,
+    MAX(CAST(CASE WHEN category = 'small' THEN COALESCE(height_in, 0.0) ELSE 0.0 END AS REAL)) as small_max_height_in,
+    MAX(CAST(CASE WHEN category = 'medium' THEN COALESCE(length_in, 0.0) ELSE 0.0 END AS REAL)) as medium_max_length_in,
+    MAX(CAST(CASE WHEN category = 'medium' THEN COALESCE(width_in, 0.0) ELSE 0.0 END AS REAL)) as medium_max_width_in,
+    MAX(CAST(CASE WHEN category = 'medium' THEN COALESCE(height_in, 0.0) ELSE 0.0 END AS REAL)) as medium_max_height_in,
+    MAX(CAST(CASE WHEN category = 'large' THEN COALESCE(length_in, 0.0) ELSE 0.0 END AS REAL)) as large_max_length_in,
+    MAX(CAST(CASE WHEN category = 'large' THEN COALESCE(width_in, 0.0) ELSE 0.0 END AS REAL)) as large_max_width_in,
+    MAX(CAST(CASE WHEN category = 'large' THEN COALESCE(height_in, 0.0) ELSE 0.0 END AS REAL)) as large_max_height_in,
+    MAX(CAST(CASE WHEN category = 'xlarge' THEN COALESCE(length_in, 0.0) ELSE 0.0 END AS REAL)) as xlarge_max_length_in,
+    MAX(CAST(CASE WHEN category = 'xlarge' THEN COALESCE(width_in, 0.0) ELSE 0.0 END AS REAL)) as xlarge_max_width_in,
+    MAX(CAST(CASE WHEN category = 'xlarge' THEN COALESCE(height_in, 0.0) ELSE 0.0 END AS REAL)) as xlarge_max_height_in
+FROM resolved;
 
 -- name: UpdateProductShippingCategory :one
 UPDATE products

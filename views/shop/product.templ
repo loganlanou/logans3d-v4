@@ -6,12 +6,37 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/auth"
+	"github.com/loganlanou/logans3d-v4/internal/utils"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/components"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category db.Category, images []db.ProductImage, relatedProducts []ProductWithImage) {
+type VariantSizeOption struct {
+	ValueID              string `json:"valueId"`
+	Value                string `json:"value"`
+	DisplayName          string `json:"displayName"`
+	SkuID                string `json:"skuId"`
+	SKU                  string `json:"sku"`
+	PriceAdjustmentCents int64  `json:"priceAdjustmentCents"`
+	StockQuantity        int64  `json:"stockQuantity"`
+}
+
+type VariantColorOption struct {
+	ID           string              `json:"id"`
+	Value        string              `json:"value"`
+	DisplayName  string              `json:"displayName"`
+	PrimaryImage string              `json:"primaryImage"`
+	Images       []string            `json:"images"`
+	Sizes        []VariantSizeOption `json:"sizes"`
+}
+
+type ProductVariantData struct {
+	Colors         []VariantColorOption `json:"colors"`
+	BasePriceCents int64                `json:"basePriceCents"`
+}
+
+templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category db.Category, images []db.ProductImage, relatedProducts []ProductWithImage, variantData *ProductVariantData) {
 	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
 			<!-- Animated Background Elements -->
@@ -56,133 +81,330 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 					</div>
 				</nav>
 				<div class="max-w-7xl mx-auto px-8 sm:px-12 lg:px-16 py-4">
-					<div class="grid md:grid-cols-2 gap-6">
-						<!-- Product Images -->
-						<div class="space-y-3" x-data={ fmt.Sprintf("{ selectedImageIndex: 0, images: %s }", buildImageURLsJSON(images)) }>
-							if len(images) > 0 {
-								<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl overflow-hidden group hover:border-emerald-500/30 transition-all duration-500">
-									<img x-bind:src="images[selectedImageIndex]" alt={ product.Name } class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+					if variantData != nil && len(variantData.Colors) > 0 {
+						<div id="variant-data-json" style="display:none;">{ variantDataJSON(variantData) }</div>
+						<div id="shipping-config" data-in-stock={ utils.ShippingTimeInStock } data-out-of-stock={ utils.ShippingTimeOutOfStock } style="display:none;"></div>
+						<div
+							class="grid md:grid-cols-2 gap-6"
+							data-product-id={ product.ID }
+							data-product-name={ product.Name }
+							x-data={ fmt.Sprintf("productVariants('variant-data-json', { basePriceCents: %d, productId: $el.dataset.productId, productName: $el.dataset.productName })", variantData.BasePriceCents) }
+						>
+							<!-- Variant Images -->
+							<div class="space-y-3">
+								<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 flex items-center justify-center">
+									<template x-if="selectedImages.length > 0">
+										<img :src="selectedImages[selectedImageIndex]" alt={ product.Name } class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+									</template>
+									<template x-if="selectedImages.length === 0">
+										<div class="text-center">
+											<svg class="w-24 h-24 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+											</svg>
+											<p class="text-slate-400 font-medium">No Image Available</p>
+										</div>
+									</template>
 								</div>
-								if len(images) > 1 {
+								<template x-if="selectedImages.length > 1">
 									<div class="grid grid-cols-4 gap-2">
-										for i, image := range images {
+										<template x-for="(image, idx) in selectedImages" :key="idx">
 											<div
-												@click={ fmt.Sprintf("selectedImageIndex = %d", i) }
-												:class={ fmt.Sprintf("selectedImageIndex === %d ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/30' : 'border-slate-700/50 hover:border-emerald-500/50'", i) }
+												@click="selectedImageIndex = idx"
+												:class="selectedImageIndex === idx ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/30' : 'border-slate-700/50 hover:border-emerald-500/50'"
 												class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 group"
 											>
-												<img src={ fmt.Sprintf("/public/images/products/%s", image.ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
+												<img :src="image" alt={ product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
 											</div>
+										</template>
+									</div>
+								</template>
+							</div>
+							<!-- Product Info with variants -->
+							<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-5 space-y-4">
+								<div class="flex justify-between items-start gap-3">
+									<div class="flex items-start gap-3 flex-1">
+										<h1 class="text-2xl font-bold text-white bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">{ product.Name }</h1>
+										if auth.IsAdmin(c) {
+											<a
+												href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.ID)) }
+												target="_blank"
+												rel="noopener noreferrer"
+												class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 font-medium text-sm flex-shrink-0 mt-0.5"
+												title="Edit this product (opens in new tab)"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+												</svg>
+												<span class="hidden sm:inline">Edit</span>
+											</a>
 										}
 									</div>
-								}
-							} else {
-								<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl flex items-center justify-center">
-									<div class="text-center">
-										<svg class="w-24 h-24 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-										</svg>
-										<p class="text-slate-400 font-medium">No Image Available</p>
-									</div>
+									@components.ShareButton()
 								</div>
-							}
-						</div>
-						<!-- Product Info -->
-						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-5">
-							<div class="flex justify-between items-start mb-3 gap-3">
-								<div class="flex items-start gap-3 flex-1">
-									<h1 class="text-2xl font-bold text-white bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">{ product.Name }</h1>
-									if auth.IsAdmin(c) {
-										<a
-											href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.ID)) }
-											target="_blank"
-											rel="noopener noreferrer"
-											class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 font-medium text-sm flex-shrink-0 mt-0.5"
-											title="Edit this product (opens in new tab)"
+								<div class="mb-2">
+									<div class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent" x-text="formatPrice(priceCents)"></div>
+								</div>
+								<div class="mb-2">
+									<template x-if="selectedSize">
+										<span
+											:class="selectedSize.stockQuantity > 0 ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-amber-400/10 text-amber-400 border-amber-400/20'"
+											class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold border backdrop-blur-sm"
 										>
-											<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+											<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
 											</svg>
-											<span class="hidden sm:inline">Edit</span>
-										</a>
-									}
+											<span x-text="shippingTimeText(selectedSize.stockQuantity)"></span>
+										</span>
+									</template>
 								</div>
-								@components.ShareButton()
-							</div>
-							<!-- Price -->
-							<div class="mb-3">
-								<div class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
-									${ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
+								<!-- Category -->
+								<div class="mb-3">
+									<span class="text-slate-400 text-xs">Category: </span>
+									<a
+										href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) }
+										class="text-blue-400 hover:text-emerald-400 font-semibold text-xs transition-colors duration-200 hover:underline"
+									>
+										{ category.Name }
+									</a>
 								</div>
-							</div>
-							<!-- Stock Status -->
-							<div class="mb-3">
-								if product.StockQuantity.Valid && product.StockQuantity.Int64 > 0 {
-									<span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-green-400/10 text-green-400 border border-green-400/20 backdrop-blur-sm">
-										<svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-											<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-										</svg>
-										In Stock ({ fmt.Sprintf("%d", product.StockQuantity.Int64) } available)
-									</span>
-								} else {
-									<span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-red-400/10 text-red-400 border border-red-400/20 backdrop-blur-sm">
-										<svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-											<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-										</svg>
-										Out of Stock
-									</span>
+								<!-- Description -->
+								if product.Description.Valid {
+									<div class="mb-3">
+										<h3 class="text-sm font-bold text-white mb-1.5">Description</h3>
+										<p class="text-slate-300 leading-relaxed text-xs" style="white-space: pre-line">{ product.Description.String }</p>
+									</div>
 								}
-							</div>
-							<!-- Category -->
-							<div class="mb-3">
-								<span class="text-slate-400 text-xs">Category: </span>
-								<a
-									href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) }
-									class="text-blue-400 hover:text-emerald-400 font-semibold text-xs transition-colors duration-200 hover:underline"
-								>
-									{ category.Name }
-								</a>
-							</div>
-							<!-- Description -->
-							if product.Description.Valid {
-								<div class="mb-4">
-									<h3 class="text-base font-bold text-white mb-1.5">Description</h3>
-									<p class="text-slate-300 leading-relaxed text-xs" style="white-space: pre-line">{ product.Description.String }</p>
-								</div>
-							}
-							<!-- Disclaimer/Warning -->
-							if product.Disclaimer.Valid && product.Disclaimer.String != "" {
-								<div class="mb-4 bg-amber-900/20 border border-amber-600/50 rounded-lg p-4 backdrop-blur-sm">
-									<div class="flex items-start space-x-3">
-										<svg class="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-										</svg>
-										<div class="flex-1">
-											<h3 class="text-base font-bold text-amber-400 mb-1.5">Important:</h3>
-											<p class="text-amber-200/90 leading-relaxed text-xs">{ product.Disclaimer.String }</p>
+								<!-- Disclaimer/Warning -->
+								if product.Disclaimer.Valid && product.Disclaimer.String != "" {
+									<div class="mb-3 bg-amber-900/20 border border-amber-600/50 rounded-lg p-3 backdrop-blur-sm">
+										<div class="flex items-start space-x-2">
+											<svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+											</svg>
+											<div class="flex-1">
+												<h3 class="text-sm font-bold text-amber-400 mb-1">Important:</h3>
+												<p class="text-amber-200/90 leading-relaxed text-xs">{ product.Disclaimer.String }</p>
+											</div>
+										</div>
+									</div>
+								}
+								<div class="space-y-3">
+									<div>
+										<h3 class="text-sm font-bold text-white mb-2">Color</h3>
+										<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+											<template x-for="color in colors" :key="color.id">
+												<button
+													type="button"
+													@click="selectColor(color.id)"
+													:class="color.id === selectedColorId ? 'ring-2 ring-emerald-400 border-emerald-400/60' : 'border-slate-700/50 hover:border-emerald-500/50'"
+													class="variant-card w-full rounded-xl border bg-slate-800/60 text-left overflow-hidden transition-all duration-200 shadow-sm hover:shadow-lg"
+												>
+													<div class="aspect-[4/3] bg-slate-900/50 overflow-hidden">
+														<img :src="color.primaryImage || (color.images[0] || '')" :alt="color.displayName" class="w-full h-full object-cover" :class="!colorHasStock(color) ? 'opacity-60' : ''"/>
+													</div>
+													<div class="p-3 space-y-1">
+														<div class="text-xs font-semibold text-white" x-text="color.displayName"></div>
+														<div class="text-xs text-emerald-300 font-bold" x-text="formatPrice(basePriceCents + ((color.sizes && color.sizes[0]) ? color.sizes[0].priceAdjustmentCents : 0))"></div>
+														<template x-if="!colorHasStock(color)">
+															<div class="text-[10px] text-amber-400 font-semibold" x-text="shippingConfig.outOfStock"></div>
+														</template>
+													</div>
+												</button>
+											</template>
+										</div>
+									</div>
+									<div>
+										<h3 class="text-sm font-bold text-white mb-2">Size</h3>
+										<div class="flex flex-wrap gap-2">
+											<template x-for="size in (selectedColor ? selectedColor.sizes : [])" :key="size.valueId">
+												<button
+													type="button"
+													@click="selectSize(size.valueId)"
+													:class="[
+														'px-4 py-2 border rounded-lg transition-all duration-200 text-sm font-semibold',
+														size.valueId === selectedSizeId ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-slate-800/50 text-slate-200 border-slate-700/50 hover:border-emerald-500/50'
+													].join(' ')"
+												>
+													<div class="flex items-center gap-2">
+														<span x-text="size.displayName"></span>
+														<span class="text-xs text-slate-300" x-text="size.priceAdjustmentCents ? `(+${formatPrice(size.priceAdjustmentCents)})` : '(Included)'"></span>
+													</div>
+													<div :class="size.stockQuantity > 0 ? 'text-emerald-400' : 'text-amber-400'" class="text-[10px]" x-text="shippingTimeText(size.stockQuantity)"></div>
+												</button>
+											</template>
 										</div>
 									</div>
 								</div>
-							}
-							<!-- Cart and Buy Options -->
-							<div class="space-y-2.5">
-								if product.StockQuantity.Valid && product.StockQuantity.Int64 > 0 {
+								<div class="space-y-3">
+									<div class="flex items-center space-x-3">
+										<label for="product-quantity" class="text-white font-semibold text-sm">Quantity:</label>
+										<input
+											id="product-quantity"
+											type="number"
+											min="1"
+											:max="quantityMax()"
+											x-model.number="quantity"
+											class="bg-slate-700/50 border border-slate-600/50 text-white rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 w-24"
+										/>
+										<span class="text-xs text-slate-400" x-text="`Max ${quantityMax()}`"></span>
+									</div>
+									<button
+										type="button"
+										class="add-to-cart-btn w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 px-5 rounded-lg font-bold text-sm hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+										:disabled="disableAdd()"
+										:data-product-id="productId"
+										:data-product-name="variantTitle()"
+										:data-product-sku-id="selectedSkuId"
+										:data-quantity="quantity"
+									>
+										Add to Cart
+									</button>
+									<a href="/custom" class="block w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-2 px-5 rounded-lg font-medium text-xs text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm group">
+										<span class="group-hover:scale-105 transition-transform duration-200">Need a Custom Version?</span>
+									</a>
+								</div>
+								<div class="mt-2 border-t border-slate-700/50 pt-3 space-y-2">
+									<h3 class="text-sm font-bold text-white">Product Details</h3>
+									<dl class="space-y-1.5 text-xs">
+										if product.LeadTimeDays.Valid {
+											<div class="flex justify-between items-center">
+												<dt class="text-slate-400">Lead Time:</dt>
+												<dd class="text-white font-semibold">{ fmt.Sprintf("%d days", product.LeadTimeDays.Int64) }</dd>
+											</div>
+										}
+										<div class="flex justify-between items-center">
+											<dt class="text-slate-400">SKU:</dt>
+											<dd
+												class="text-white font-semibold font-mono bg-slate-700/30 px-2 py-0.5 rounded text-xs border border-slate-600/50"
+												data-base-sku={ product.Sku.String }
+												x-text="selectedSize && selectedSize.sku ? selectedSize.sku : ($el.dataset.baseSku || 'N/A')"
+											></dd>
+										</div>
+									</dl>
+								</div>
+							</div>
+						</div>
+					} else {
+						<div class="grid md:grid-cols-2 gap-6">
+							<!-- Product Images -->
+							<div class="space-y-3" x-data={ fmt.Sprintf("{ selectedImageIndex: 0, images: %s }", buildImageURLsJSON(images)) }>
+								if len(images) > 0 {
+									<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl overflow-hidden group hover:border-emerald-500/30 transition-all duration-500">
+										<img x-bind:src="images[selectedImageIndex]" alt={ product.Name } class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+									</div>
+									if len(images) > 1 {
+										<div class="grid grid-cols-4 gap-2">
+											for i, image := range images {
+												<div
+													@click={ fmt.Sprintf("selectedImageIndex = %d", i) }
+													:class={ fmt.Sprintf("selectedImageIndex === %d ? 'border-emerald-500 ring-2 ring-emerald-500/50 shadow-lg shadow-emerald-500/30' : 'border-slate-700/50 hover:border-emerald-500/50'", i) }
+													class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-xl backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 group"
+												>
+													<img src={ fmt.Sprintf("/public/images/products/%s", image.ImageUrl) } alt={ product.Name } class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"/>
+												</div>
+											}
+										</div>
+									}
+								} else {
+									<div class="aspect-square bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl flex items-center justify-center">
+										<div class="text-center">
+											<svg class="w-24 h-24 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+											</svg>
+											<p class="text-slate-400 font-medium">No Image Available</p>
+										</div>
+									</div>
+								}
+							</div>
+							<!-- Product Info -->
+							<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-5">
+								<div class="flex justify-between items-start mb-3 gap-3">
+									<div class="flex items-start gap-3 flex-1">
+										<h1 class="text-2xl font-bold text-white bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent">{ product.Name }</h1>
+										if auth.IsAdmin(c) {
+											<a
+												href={ templ.SafeURL(fmt.Sprintf("/admin/product/edit?id=%s", product.ID)) }
+												target="_blank"
+												rel="noopener noreferrer"
+												class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 hover:text-blue-300 border border-blue-500/30 hover:border-blue-500/50 transition-all duration-200 font-medium text-sm flex-shrink-0 mt-0.5"
+												title="Edit this product (opens in new tab)"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+												</svg>
+												<span class="hidden sm:inline">Edit</span>
+											</a>
+										}
+									</div>
+									@components.ShareButton()
+								</div>
+								<!-- Price -->
+								<div class="mb-3">
+									<div class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
+										${ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
+									</div>
+								</div>
+								<!-- Shipping Time Status -->
+								<div class="mb-3">
+									if product.StockQuantity.Valid && product.StockQuantity.Int64 > 0 {
+										<span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 backdrop-blur-sm">
+											<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+											</svg>
+											{ utils.ShippingTimeInStock }
+										</span>
+									} else {
+										<span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-amber-400/10 text-amber-400 border border-amber-400/20 backdrop-blur-sm">
+											<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path>
+											</svg>
+											{ utils.ShippingTimeOutOfStock }
+										</span>
+									}
+								</div>
+								<!-- Category -->
+								<div class="mb-3">
+									<span class="text-slate-400 text-xs">Category: </span>
+									<a
+										href={ templ.URL(fmt.Sprintf("/shop/category/%s", category.Slug)) }
+										class="text-blue-400 hover:text-emerald-400 font-semibold text-xs transition-colors duration-200 hover:underline"
+									>
+										{ category.Name }
+									</a>
+								</div>
+								<!-- Description -->
+								if product.Description.Valid {
+									<div class="mb-4">
+										<h3 class="text-base font-bold text-white mb-1.5">Description</h3>
+										<p class="text-slate-300 leading-relaxed text-xs" style="white-space: pre-line">{ product.Description.String }</p>
+									</div>
+								}
+								<!-- Disclaimer/Warning -->
+								if product.Disclaimer.Valid && product.Disclaimer.String != "" {
+									<div class="mb-4 bg-amber-900/20 border border-amber-600/50 rounded-lg p-4 backdrop-blur-sm">
+										<div class="flex items-start space-x-3">
+											<svg class="w-6 h-6 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+											</svg>
+											<div class="flex-1">
+												<h3 class="text-base font-bold text-amber-400 mb-1.5">Important:</h3>
+												<p class="text-amber-200/90 leading-relaxed text-xs">{ product.Disclaimer.String }</p>
+											</div>
+										</div>
+									</div>
+								}
+								<!-- Cart and Buy Options -->
+								<div class="space-y-2.5">
 									<!-- Quantity Selector -->
 									<div class="flex items-center justify-center space-x-3">
 										<label for="product-quantity" class="text-white font-semibold text-sm">Quantity:</label>
 										<select id="product-quantity" class="bg-slate-700/50 border border-slate-600/50 text-white rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-											if product.StockQuantity.Int64 < 10 {
-												for i := 1; i <= int(product.StockQuantity.Int64); i++ {
-													<option value={ fmt.Sprintf("%d", i) }>{ fmt.Sprintf("%d", i) }</option>
-												}
-											} else {
-												for i := 1; i <= 10; i++ {
-													<option value={ fmt.Sprintf("%d", i) }>{ fmt.Sprintf("%d", i) }</option>
-												}
+											for i := 1; i <= 10; i++ {
+												<option value={ fmt.Sprintf("%d", i) }>{ fmt.Sprintf("%d", i) }</option>
 											}
 										</select>
 									</div>
-									
+
 									<!-- Add to Cart Button -->
 									<button
 										type="button"
@@ -198,51 +420,31 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 									>
 										Add to Cart
 									</button>
-
-									<!-- Buy Now Button -->
-									<button
-										type="button"
-										class="buy-now-btn w-full bg-gradient-to-r from-blue-600 to-emerald-600 text-white py-2.5 px-5 rounded-lg font-bold text-sm hover:from-blue-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-1"
-										data-product-id={ product.ID }
-										data-product-name={ product.Name }
-										data-product-price={ fmt.Sprintf("%d", product.PriceCents) }
-										if len(images) > 0 {
-											data-product-image={ images[0].ImageUrl }
-										} else {
-											data-product-image=""
+									<a href="/custom" class="block w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-2 px-5 rounded-lg font-medium text-xs text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm group">
+										<span class="group-hover:scale-105 transition-transform duration-200">Need a Custom Version?</span>
+									</a>
+								</div>
+								<!-- Product Details -->
+								<div class="mt-4 border-t border-slate-700/50 pt-3">
+									<h3 class="text-sm font-bold text-white mb-2">Product Details</h3>
+									<dl class="space-y-1.5 text-xs">
+										if product.LeadTimeDays.Valid {
+											<div class="flex justify-between items-center">
+												<dt class="text-slate-400">Lead Time:</dt>
+												<dd class="text-white font-semibold">{ fmt.Sprintf("%d days", product.LeadTimeDays.Int64) }</dd>
+											</div>
 										}
-									>
-										Buy Now - ${ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
-									</button>
-								} else {
-									<button class="w-full bg-slate-700/50 text-slate-400 py-2.5 px-5 rounded-lg font-bold text-sm cursor-not-allowed border border-slate-600/50 backdrop-blur-sm" disabled>
-										Out of Stock
-									</button>
-								}
-								<a href="/custom" class="block w-full bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-2 px-5 rounded-lg font-medium text-xs text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm group">
-									<span class="group-hover:scale-105 transition-transform duration-200">Need a Custom Version?</span>
-								</a>
-							</div>
-							<!-- Product Details -->
-							<div class="mt-4 border-t border-slate-700/50 pt-3">
-								<h3 class="text-sm font-bold text-white mb-2">Product Details</h3>
-								<dl class="space-y-1.5 text-xs">
-									if product.LeadTimeDays.Valid {
-										<div class="flex justify-between items-center">
-											<dt class="text-slate-400">Lead Time:</dt>
-											<dd class="text-white font-semibold">{ fmt.Sprintf("%d days", product.LeadTimeDays.Int64) }</dd>
-										</div>
-									}
-									if product.Sku.Valid {
-										<div class="flex justify-between items-center">
-											<dt class="text-slate-400">SKU:</dt>
-											<dd class="text-white font-semibold font-mono bg-slate-700/30 px-2 py-0.5 rounded text-xs border border-slate-600/50">{ product.Sku.String }</dd>
-										</div>
-									}
-								</dl>
+										if product.Sku.Valid {
+											<div class="flex justify-between items-center">
+												<dt class="text-slate-400">SKU:</dt>
+												<dd class="text-white font-semibold font-mono bg-slate-700/30 px-2 py-0.5 rounded text-xs border border-slate-600/50">{ product.Sku.String }</dd>
+											</div>
+										}
+									</dl>
+								</div>
 							</div>
 						</div>
-					</div>
+					}
 				</div>
 				<!-- Related Products Section -->
 				if len(relatedProducts) > 0 {
@@ -283,7 +485,132 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 				return fmt.Sprintf("Check out this amazing %s from Logan's 3D Creations!", product.Name)
 			}(),
 			ImageURL:    meta.OGImageURL,
+			ProductSlug: product.Slug,
+			ProductID:   product.ID,
+			SiteURL:     meta.SiteURL,
+			IsAdmin:     auth.IsAdmin(c),
+			HasVariants: product.HasVariants.Valid && product.HasVariants.Bool && variantData != nil && len(variantData.Colors) > 1,
 		})
+		<script>
+			function productVariants(jsonElementId, meta) {
+				const el = document.getElementById(jsonElementId);
+				const data = el ? JSON.parse(el.textContent) : { colors: [], basePriceCents: meta.basePriceCents || 0 };
+				const firstColor = data.colors && data.colors.length > 0 ? data.colors[0] : null;
+				const firstSize = firstColor && firstColor.sizes && firstColor.sizes.length > 0 ? firstColor.sizes[0] : null;
+
+				// Read shipping config from hidden element
+				const shippingEl = document.getElementById('shipping-config');
+				const shippingConfig = {
+					inStock: shippingEl ? shippingEl.dataset.inStock : 'Ships in 1-3 days',
+					outOfStock: shippingEl ? shippingEl.dataset.outOfStock : 'Ships in 4-5 days'
+				};
+
+				return {
+					colors: data.colors || [],
+					basePriceCents: data.basePriceCents || meta.basePriceCents || 0,
+					productId: meta.productId || '',
+					productName: meta.productName || '',
+					shippingConfig: shippingConfig,
+					selectedColorId: firstColor ? firstColor.id : null,
+					selectedSizeId: firstSize ? firstSize.valueId : null,
+					selectedImageIndex: 0,
+					quantity: 1,
+					get selectedColor() {
+						return this.colors.find(c => c.id === this.selectedColorId);
+					},
+					get selectedImages() {
+						return this.selectedColor && this.selectedColor.images ? this.selectedColor.images : [];
+					},
+					get selectedSize() {
+						return this.selectedColor && this.selectedColor.sizes ? this.selectedColor.sizes.find(s => s.valueId === this.selectedSizeId) : null;
+					},
+					get selectedSkuId() {
+						return this.selectedSize ? this.selectedSize.skuId : '';
+					},
+					get priceCents() {
+						return this.basePriceCents + (this.selectedSize ? this.selectedSize.priceAdjustmentCents : 0);
+					},
+					selectColor(id) {
+						this.selectedColorId = id;
+						const sizes = this.selectedColor && this.selectedColor.sizes ? this.selectedColor.sizes : [];
+						this.selectedSizeId = sizes.length > 0 ? sizes[0].valueId : null;
+						this.selectedImageIndex = 0;
+						this.emitShareUpdate();
+					},
+					selectSize(id) {
+						this.selectedSizeId = id;
+						this.emitShareUpdate();
+					},
+					emitShareUpdate() {
+						window.dispatchEvent(new CustomEvent('share-data-update', {
+							detail: {
+								colorId: this.selectedColorId,
+								sizeId: this.selectedSizeId,
+								title: this.variantTitle(),
+								price: this.priceCents
+							}
+						}));
+					},
+					formatPrice(cents) {
+						return `$${(cents / 100).toFixed(2)}`;
+					},
+					colorHasStock(color) {
+						if (!color || !color.sizes) return false;
+						return color.sizes.some(s => s.stockQuantity > 0);
+					},
+					shippingTimeText(stockQuantity) {
+						return stockQuantity > 0 ? this.shippingConfig.inStock : this.shippingConfig.outOfStock;
+					},
+					quantityMax() {
+						return 10;
+					},
+					disableAdd() {
+						return !this.selectedSize;
+					},
+					variantTitle() {
+						const parts = [];
+						if (this.selectedColor) parts.push(this.selectedColor.displayName);
+						if (this.selectedSize) parts.push(this.selectedSize.displayName);
+						return parts.length ? `${this.productName} - ${parts.join(', ')}` : this.productName;
+					},
+					init() {
+						// Check for variant selection from URL params (for shared links)
+						const params = new URLSearchParams(window.location.search);
+						const colorId = params.get('color');
+						const sizeId = params.get('size');
+
+						if (colorId) {
+							// Find the color by ID
+							const color = this.colors.find(c => c.id === colorId);
+							if (color) {
+								// Directly set the color without triggering selectColor (which auto-selects first size)
+								this.selectedColorId = colorId;
+								this.selectedImageIndex = 0;
+
+								// If size param provided, try to select it
+								if (sizeId && color.sizes) {
+									const size = color.sizes.find(s => s.valueId === sizeId);
+									if (size) {
+										this.selectedSizeId = sizeId;
+									} else {
+										// Size not found, select first available
+										this.selectedSizeId = color.sizes.length > 0 ? color.sizes[0].valueId : null;
+									}
+								} else {
+									// No size param, select first available
+									this.selectedSizeId = color.sizes && color.sizes.length > 0 ? color.sizes[0].valueId : null;
+								}
+							}
+						}
+
+						// Emit initial share data on page load
+						this.$nextTick(() => {
+							this.emitShareUpdate();
+						});
+					}
+				};
+			}
+		</script>
 	}
 }
 
@@ -310,17 +637,9 @@ templ CompactProductCard(product ProductWithImage) {
 					${ fmt.Sprintf("%.2f", float64(product.Product.PriceCents)/100) }
 				</div>
 				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
-					<span class="text-green-400 text-xs font-medium px-2 py-1 bg-green-400/10 rounded-full border border-green-400/20">
-						<svg class="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20">
-							<path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-						</svg>
-					</span>
+					<span class="text-emerald-400 text-[10px] font-medium">{ utils.ShippingTimeInStockShort }</span>
 				} else {
-					<span class="text-red-400 text-xs font-medium px-2 py-1 bg-red-400/10 rounded-full border border-red-400/20">
-						<svg class="w-3 h-3 inline" fill="currentColor" viewBox="0 0 20 20">
-							<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-						</svg>
-					</span>
+					<span class="text-amber-400 text-[10px] font-medium">{ utils.ShippingTimeOutOfStockShort }</span>
 				}
 			</div>
 			<div class="mt-auto space-y-2">
@@ -334,22 +653,20 @@ templ CompactProductCard(product ProductWithImage) {
 					</svg>
 					View
 				</a>
-				if product.Product.StockQuantity.Valid && product.Product.StockQuantity.Int64 > 0 {
-					<button
-						type="button"
-						class="add-to-cart-btn w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-0.5"
-						data-product-id={ product.Product.ID }
-						data-product-name={ product.Product.Name }
-						data-product-price={ fmt.Sprintf("%d", product.Product.PriceCents) }
-						data-product-image={ product.ImageURL }
-						data-quantity="1"
-					>
-						<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-						</svg>
-						Add
-					</button>
-				}
+				<button
+					type="button"
+					class="add-to-cart-btn w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:from-emerald-700 hover:to-teal-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 transform hover:-translate-y-0.5"
+					data-product-id={ product.Product.ID }
+					data-product-name={ product.Product.Name }
+					data-product-price={ fmt.Sprintf("%d", product.Product.PriceCents) }
+					data-product-image={ product.ImageURL }
+					data-quantity="1"
+				>
+					<svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+					</svg>
+					Add
+				</button>
 			</div>
 		</div>
 	</div>
@@ -370,6 +687,19 @@ func buildImageURLsJSON(images []db.ProductImage) string {
 	jsonBytes, err := json.Marshal(urls)
 	if err != nil {
 		return "[]"
+	}
+
+	return string(jsonBytes)
+}
+
+func variantDataJSON(data *ProductVariantData) string {
+	if data == nil {
+		return "{}"
+	}
+
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return "{}"
 	}
 
 	return string(jsonBytes)

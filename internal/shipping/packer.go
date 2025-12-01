@@ -12,6 +12,16 @@ type ItemCounts struct {
 	Medium int `json:"medium"`
 	Large  int `json:"large"`
 	XL     int `json:"xl"`
+
+	SmallWeightOz  float64 `json:"small_weight_oz,omitempty"`
+	MediumWeightOz float64 `json:"medium_weight_oz,omitempty"`
+	LargeWeightOz  float64 `json:"large_weight_oz,omitempty"`
+	XLWeightOz     float64 `json:"xl_weight_oz,omitempty"`
+
+	SmallMaxDims  DimensionGuard `json:"small_max_dims,omitempty"`
+	MediumMaxDims DimensionGuard `json:"medium_max_dims,omitempty"`
+	LargeMaxDims  DimensionGuard `json:"large_max_dims,omitempty"`
+	XLMaxDims     DimensionGuard `json:"xl_max_dims,omitempty"`
 }
 
 type PackingSolution struct {
@@ -40,6 +50,27 @@ func NewPacker(config *ShippingConfig) *Packer {
 	return &Packer{config: config}
 }
 
+func (p *Packer) categoryWeight(category string, count int, override float64) float64 {
+	if count <= 0 {
+		return 0
+	}
+	if override > 0 {
+		return override
+	}
+	if weight, exists := p.config.Packing.ItemWeights[category]; exists {
+		return weight.AvgOz * float64(count)
+	}
+	return 0
+}
+
+func (p *Packer) categoryGuard(category string, provided DimensionGuard) DimensionGuard {
+	guard := p.config.Packing.DimensionGuard[category]
+	if provided.L > 0 && provided.W > 0 && provided.H > 0 {
+		guard = provided
+	}
+	return guard
+}
+
 func (p *Packer) SmallUnits(counts ItemCounts) int {
 	eq := p.config.Packing.Equivalences
 	return counts.Small +
@@ -63,46 +94,28 @@ func (p *Packer) EstimateWeight(box Box, counts ItemCounts) float64 {
 		"box_weight_oz", box.BoxWeightOz)
 
 	// Add item weights based on actual categories and counts
-	itemWeights := p.config.Packing.ItemWeights
 	var itemWeightBreakdown []interface{}
 	totalItemWeight := 0.0
 
-	if weight, exists := itemWeights["small"]; exists && counts.Small > 0 {
-		smallWeight := weight.AvgOz * float64(counts.Small)
-		totalWeight += smallWeight
-		totalItemWeight += smallWeight
+	addCategoryWeight := func(category string, count int, override float64) {
+		if count == 0 {
+			return
+		}
+		weight := p.categoryWeight(category, count, override)
+		if weight <= 0 {
+			return
+		}
+		totalWeight += weight
+		totalItemWeight += weight
 		itemWeightBreakdown = append(itemWeightBreakdown,
-			"small_items", counts.Small,
-			"small_avg_oz", weight.AvgOz,
-			"small_total_oz", smallWeight)
+			category+"_items", count,
+			category+"_total_oz", weight)
 	}
-	if weight, exists := itemWeights["medium"]; exists && counts.Medium > 0 {
-		mediumWeight := weight.AvgOz * float64(counts.Medium)
-		totalWeight += mediumWeight
-		totalItemWeight += mediumWeight
-		itemWeightBreakdown = append(itemWeightBreakdown,
-			"medium_items", counts.Medium,
-			"medium_avg_oz", weight.AvgOz,
-			"medium_total_oz", mediumWeight)
-	}
-	if weight, exists := itemWeights["large"]; exists && counts.Large > 0 {
-		largeWeight := weight.AvgOz * float64(counts.Large)
-		totalWeight += largeWeight
-		totalItemWeight += largeWeight
-		itemWeightBreakdown = append(itemWeightBreakdown,
-			"large_items", counts.Large,
-			"large_avg_oz", weight.AvgOz,
-			"large_total_oz", largeWeight)
-	}
-	if weight, exists := itemWeights["xlarge"]; exists && counts.XL > 0 {
-		xlWeight := weight.AvgOz * float64(counts.XL)
-		totalWeight += xlWeight
-		totalItemWeight += xlWeight
-		itemWeightBreakdown = append(itemWeightBreakdown,
-			"xl_items", counts.XL,
-			"xl_avg_oz", weight.AvgOz,
-			"xl_total_oz", xlWeight)
-	}
+
+	addCategoryWeight("small", counts.Small, counts.SmallWeightOz)
+	addCategoryWeight("medium", counts.Medium, counts.MediumWeightOz)
+	addCategoryWeight("large", counts.Large, counts.LargeWeightOz)
+	addCategoryWeight("xlarge", counts.XL, counts.XLWeightOz)
 
 	if len(itemWeightBreakdown) > 0 {
 		slog.Debug("EstimateWeight: Item weights", itemWeightBreakdown...)
@@ -152,32 +165,28 @@ func (p *Packer) EstimateWeightLegacy(box Box, smallUnits int) float64 {
 }
 
 func (p *Packer) dimensionsOK(box Box, counts ItemCounts) bool {
-	guard := p.config.Packing.DimensionGuard
-
 	boxDims := []float64{box.L, box.W, box.H}
 	sort.Float64s(boxDims)
 
-	checkCategory := func(category string, count int) bool {
+	checkCategory := func(guardDims DimensionGuard, count int) bool {
 		if count == 0 {
 			return true
 		}
-		if guardDims, exists := guard[category]; exists {
-			catDims := []float64{guardDims.L, guardDims.W, guardDims.H}
-			sort.Float64s(catDims)
+		catDims := []float64{guardDims.L, guardDims.W, guardDims.H}
+		sort.Float64s(catDims)
 
-			for i := 0; i < 3; i++ {
-				if catDims[i] > boxDims[i] {
-					return false
-				}
+		for i := 0; i < 3; i++ {
+			if catDims[i] > boxDims[i] {
+				return false
 			}
 		}
 		return true
 	}
 
-	return checkCategory("small", counts.Small) &&
-		checkCategory("medium", counts.Medium) &&
-		checkCategory("large", counts.Large) &&
-		checkCategory("xlarge", counts.XL)
+	return checkCategory(p.categoryGuard("small", counts.SmallMaxDims), counts.Small) &&
+		checkCategory(p.categoryGuard("medium", counts.MediumMaxDims), counts.Medium) &&
+		checkCategory(p.categoryGuard("large", counts.LargeMaxDims), counts.Large) &&
+		checkCategory(p.categoryGuard("xlarge", counts.XLMaxDims), counts.XL)
 }
 
 func (p *Packer) candidateBoxes(counts ItemCounts) []Box {
@@ -341,6 +350,24 @@ func (p *Packer) distributeItemsToBox(counts ItemCounts, capacity int) (boxCount
 	equivalences := p.config.Packing.Equivalences
 	remainingCapacity := capacity
 
+	// Compute average weights per item so we can split across boxes
+	avgSmall := 0.0
+	if counts.Small > 0 && counts.SmallWeightOz > 0 {
+		avgSmall = counts.SmallWeightOz / float64(counts.Small)
+	}
+	avgMedium := 0.0
+	if counts.Medium > 0 && counts.MediumWeightOz > 0 {
+		avgMedium = counts.MediumWeightOz / float64(counts.Medium)
+	}
+	avgLarge := 0.0
+	if counts.Large > 0 && counts.LargeWeightOz > 0 {
+		avgLarge = counts.LargeWeightOz / float64(counts.Large)
+	}
+	avgXL := 0.0
+	if counts.XL > 0 && counts.XLWeightOz > 0 {
+		avgXL = counts.XLWeightOz / float64(counts.XL)
+	}
+
 	// Pack XL items first
 	if remaining.XL > 0 && equivalences["xlarge"] <= remainingCapacity {
 		xlToPack := remainingCapacity / equivalences["xlarge"]
@@ -383,6 +410,27 @@ func (p *Packer) distributeItemsToBox(counts ItemCounts, capacity int) (boxCount
 		boxCounts.Small = smallToPack
 		remaining.Small -= smallToPack
 	}
+
+	// Carry forward dimension guards for reporting
+	boxCounts.SmallMaxDims = counts.SmallMaxDims
+	boxCounts.MediumMaxDims = counts.MediumMaxDims
+	boxCounts.LargeMaxDims = counts.LargeMaxDims
+	boxCounts.XLMaxDims = counts.XLMaxDims
+	remaining.SmallMaxDims = counts.SmallMaxDims
+	remaining.MediumMaxDims = counts.MediumMaxDims
+	remaining.LargeMaxDims = counts.LargeMaxDims
+	remaining.XLMaxDims = counts.XLMaxDims
+
+	// Split weights proportionally based on what we packed
+	boxCounts.SmallWeightOz = avgSmall * float64(boxCounts.Small)
+	boxCounts.MediumWeightOz = avgMedium * float64(boxCounts.Medium)
+	boxCounts.LargeWeightOz = avgLarge * float64(boxCounts.Large)
+	boxCounts.XLWeightOz = avgXL * float64(boxCounts.XL)
+
+	remaining.SmallWeightOz = math.Max(counts.SmallWeightOz-boxCounts.SmallWeightOz, 0)
+	remaining.MediumWeightOz = math.Max(counts.MediumWeightOz-boxCounts.MediumWeightOz, 0)
+	remaining.LargeWeightOz = math.Max(counts.LargeWeightOz-boxCounts.LargeWeightOz, 0)
+	remaining.XLWeightOz = math.Max(counts.XLWeightOz-boxCounts.XLWeightOz, 0)
 
 	return boxCounts, remaining
 }

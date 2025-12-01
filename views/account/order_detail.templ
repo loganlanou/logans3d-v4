@@ -7,7 +7,15 @@ import (
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, meta layout.PageMeta) {
+// OrderItemWithProduct contains order item data plus product availability info
+type OrderItemWithProduct struct {
+	Item        db.OrderItem
+	ProductSlug string // Product URL slug for linking
+	ImageURL    string // Primary product image
+	IsAvailable bool   // Whether product is still active and available
+}
+
+templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithProduct, meta layout.PageMeta) {
 	@layout.Base(c, meta) {
 		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-12 px-4 sm:px-6 lg:px-8">
 			<!-- Animated background orbs -->
@@ -124,8 +132,8 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, met
 						<p class="text-slate-400 text-center py-8">No items found for this order.</p>
 					} else {
 						<div class="space-y-4">
-							for _, item := range orderItems {
-								@OrderItemCard(item)
+							for _, itemWithProduct := range orderItems {
+								@OrderItemCard(itemWithProduct)
 							}
 						</div>
 
@@ -187,23 +195,112 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, met
 	}
 }
 
-templ OrderItemCard(item db.OrderItem) {
-	<div class="flex items-center gap-4 bg-slate-900/50 rounded-lg p-4 border border-slate-700/50">
-		<div class="flex-1">
-			<h3 class="text-lg font-semibold text-white">{ item.ProductName }</h3>
-			if item.ProductSku.Valid && item.ProductSku.String != "" {
-				<p class="text-sm text-slate-400">SKU: { item.ProductSku.String }</p>
+templ OrderItemCard(itemWithProduct OrderItemWithProduct) {
+	<div class="flex items-center gap-4 bg-slate-900/50 rounded-lg p-4 border border-slate-700/50 hover:border-slate-600/50 transition-all duration-200">
+		<!-- Product Image -->
+		<div class="flex-shrink-0">
+			if itemWithProduct.ImageURL != "" {
+				if itemWithProduct.IsAvailable {
+					<a href={ templ.SafeURL("/shop/product/" + itemWithProduct.ProductSlug) } class="block">
+						<img
+							src={ itemWithProduct.ImageURL }
+							alt={ itemWithProduct.Item.ProductName }
+							class="w-20 h-20 rounded-lg object-cover border-2 border-transparent hover:border-blue-500/50 transition-all"
+						/>
+					</a>
+				} else {
+					<img
+						src={ itemWithProduct.ImageURL }
+						alt={ itemWithProduct.Item.ProductName }
+						class="w-20 h-20 rounded-lg object-cover opacity-60"
+					/>
+				}
+			} else {
+				<div class="w-20 h-20 rounded-lg bg-slate-800 flex items-center justify-center">
+					<svg class="w-8 h-8 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+					</svg>
+				</div>
 			}
 		</div>
-		<div class="text-right">
-			<p class="text-slate-400 text-sm">Quantity: { fmt.Sprintf("%d", item.Quantity) }</p>
-			<p class="text-white font-semibold">${ formatCents(item.UnitPriceCents) } each</p>
+
+		<!-- Product Info -->
+		<div class="flex-1 min-w-0">
+			if itemWithProduct.IsAvailable {
+				<a href={ templ.SafeURL("/shop/product/" + itemWithProduct.ProductSlug) } class="group">
+					<h3 class="text-lg font-semibold text-white group-hover:text-blue-400 transition-colors truncate">
+						{ itemWithProduct.Item.ProductName }
+					</h3>
+				</a>
+			} else {
+				<h3 class="text-lg font-semibold text-slate-400 truncate">
+					{ itemWithProduct.Item.ProductName }
+					<span class="text-xs font-normal text-slate-500 ml-2">(No longer available)</span>
+				</h3>
+			}
+			if itemWithProduct.Item.ProductSku.Valid && itemWithProduct.Item.ProductSku.String != "" {
+				<p class="text-sm text-slate-400">{ itemWithProduct.Item.ProductSku.String }</p>
+			}
+			<p class="text-slate-400 text-sm mt-1">Qty: { fmt.Sprintf("%d", itemWithProduct.Item.Quantity) } × ${ formatCents(itemWithProduct.Item.UnitPriceCents) }</p>
 		</div>
-		<div class="text-right min-w-[100px]">
-			<p class="text-sm text-slate-400">Total</p>
-			<p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-				${ formatCents(item.TotalPriceCents) }
-			</p>
+
+		<!-- Price & Actions -->
+		<div class="flex flex-col items-end gap-2">
+			<div class="text-right">
+				<p class="text-sm text-slate-400">Total</p>
+				<p class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+					${ formatCents(itemWithProduct.Item.TotalPriceCents) }
+				</p>
+			</div>
+			if itemWithProduct.IsAvailable {
+				<button
+					onclick={ buyAgainClick(itemWithProduct.Item.ProductID, itemWithProduct.Item.ProductSkuID.String) }
+					class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+				>
+					<svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+					</svg>
+					Buy Again
+				</button>
+			}
 		</div>
 	</div>
+}
+
+script buyAgainClick(productID string, productSkuID string) {
+	fetch('/api/cart/add', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify({
+			productId: productID,
+			productSkuId: productSkuID || '',
+			quantity: 1
+		})
+	})
+	.then(response => {
+		if (response.ok) {
+			// Trigger cart update event
+			window.dispatchEvent(new CustomEvent('cart-updated'));
+			// Show success toast
+			if (window.showToast) {
+				window.showToast('Added to cart!', 'success');
+			} else {
+				alert('Added to cart!');
+			}
+		} else {
+			return response.json().then(data => {
+				throw new Error(data.message || 'Failed to add to cart');
+			});
+		}
+	})
+	.catch(error => {
+		console.error('Error adding to cart:', error);
+		if (window.showToast) {
+			window.showToast(error.message || 'Failed to add to cart', 'error');
+		} else {
+			alert(error.message || 'Failed to add to cart');
+		}
+	});
 }

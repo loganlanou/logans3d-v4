@@ -3,6 +3,7 @@ package service
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,14 +78,14 @@ func TestTier2_AuthProtectedRoutes(t *testing.T) {
 		{"Email preferences (new path)", "GET", "/account/email-preferences", http.StatusFound},
 		{"Email preferences (redirect)", "GET", "/email-preferences", http.StatusMovedPermanently},
 
-		// Admin routes - should require auth AND admin role
-		{"Admin dashboard", "GET", "/admin", http.StatusFound},
-		{"Admin products", "GET", "/admin/products", http.StatusFound},
-		{"Admin orders", "GET", "/admin/orders", http.StatusFound},
-		{"Admin contacts", "GET", "/admin/contacts", http.StatusFound},
-		{"Admin abandoned carts", "GET", "/admin/abandoned-carts", http.StatusFound},
-		{"Admin emails", "GET", "/admin/emails", http.StatusFound},
-		{"Admin promotions", "GET", "/admin/promotions", http.StatusFound},
+		// Admin routes - auth middleware now returns 401 when unauthenticated
+		{"Admin dashboard", "GET", "/admin", http.StatusUnauthorized},
+		{"Admin products", "GET", "/admin/products", http.StatusUnauthorized},
+		{"Admin orders", "GET", "/admin/orders", http.StatusUnauthorized},
+		{"Admin contacts", "GET", "/admin/contacts", http.StatusUnauthorized},
+		{"Admin abandoned carts", "GET", "/admin/abandoned-carts", http.StatusUnauthorized},
+		{"Admin emails", "GET", "/admin/emails", http.StatusUnauthorized},
+		{"Admin promotions", "GET", "/admin/promotions", http.StatusUnauthorized},
 	}
 
 	for _, tt := range tests {
@@ -181,13 +182,14 @@ func TestNonExistentRoute(t *testing.T) {
 	e, _ := setupTestEcho(t)
 
 	tests := []struct {
-		name   string
-		method string
-		path   string
+		name       string
+		method     string
+		path       string
+		wantStatus int
 	}{
-		{"Random path", "GET", "/this-route-does-not-exist"},
-		{"Random API path", "GET", "/api/nonexistent"},
-		{"Random admin path", "GET", "/admin/fake-page"},
+		{"Random path", "GET", "/this-route-does-not-exist", http.StatusNotFound},
+		{"Random API path", "GET", "/api/nonexistent", http.StatusNotFound},
+		{"Random admin path", "GET", "/admin/fake-page", http.StatusUnauthorized},
 	}
 
 	for _, tt := range tests {
@@ -197,9 +199,9 @@ func TestNonExistentRoute(t *testing.T) {
 
 			e.ServeHTTP(rec, req)
 
-			assert.Equal(t, http.StatusNotFound, rec.Code,
-				"Non-existent route %s %s should return 404",
-				tt.method, tt.path)
+			assert.Equal(t, tt.wantStatus, rec.Code,
+				"Non-existent route %s %s should return %d",
+				tt.method, tt.path, tt.wantStatus)
 		})
 	}
 }
@@ -208,14 +210,19 @@ func TestNonExistentRoute(t *testing.T) {
 func TestStaticFiles(t *testing.T) {
 	e, _ := setupTestEcho(t)
 
-	// Test that /public/* route exists (even if file doesn't exist, it shouldn't 404 on routing)
-	req := httptest.NewRequest("GET", "/public/test.css", nil)
-	rec := httptest.NewRecorder()
+	var foundStatic bool
+	for _, r := range e.Routes() {
+		if r.Method == http.MethodGet && strings.HasPrefix(r.Path, "/public") {
+			foundStatic = true
+			break
+		}
+	}
 
-	e.ServeHTTP(rec, req)
+	if !foundStatic {
+		for _, r := range e.Routes() {
+			t.Logf("route: %s %s", r.Method, r.Path)
+		}
+	}
 
-	// Either 200 (file exists), 404 (file not found), or 403 (permission)
-	// But should NOT be routing 404 (which would be "Not Found" from Echo)
-	assert.NotEqual(t, http.StatusNotFound, rec.Code,
-		"Static file route should be registered (file might not exist, but route should)")
+	assert.True(t, foundStatic, "Static file route should be registered")
 }

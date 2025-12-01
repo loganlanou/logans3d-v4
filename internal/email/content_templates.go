@@ -38,7 +38,10 @@ const customerOrderContentTemplate = `
                             <img src="https://www.logans3dcreations.com/public/images/products/{{.ProductImage}}" alt="{{.ProductName}}" width="60" height="60" style="display: block; width: 60px; height: 60px; border-radius: 4px; border: 1px solid #ddd;" />
                         </td>
                         {{end}}
-                        <td style="vertical-align: top;">{{.ProductName}}</td>
+                        <td style="vertical-align: top;">
+                            {{.ProductName}}
+                            {{if .ShippingTime}}<br><span style="font-size: 12px; color: {{if .NeedsPrinting}}#F59E0B{{else}}#10B981{{end}};">{{.ShippingTime}}</span>{{end}}
+                        </td>
                     </tr>
                 </table>
             </td>
@@ -174,7 +177,11 @@ const adminOrderContentTemplate = `
                             <img src="https://www.logans3dcreations.com/public/images/products/{{.ProductImage}}" alt="{{.ProductName}}" width="60" height="60" style="display: block; width: 60px; height: 60px; border-radius: 4px; border: 1px solid #ddd;" />
                         </td>
                         {{end}}
-                        <td style="vertical-align: top;"><strong>{{.ProductName}}</strong></td>
+                        <td style="vertical-align: top;">
+                            <strong>{{.ProductName}}</strong>
+                            {{if .NeedsPrinting}}<br><span style="font-size: 12px; color: #F59E0B; font-weight: bold;">🖨️ NEEDS PRINTING</span>{{end}}
+                            {{if .ShippingTime}}<br><span style="font-size: 12px; color: {{if .NeedsPrinting}}#F59E0B{{else}}#10B981{{end}};">{{.ShippingTime}}</span>{{end}}
+                        </td>
                     </tr>
                 </table>
             </td>

@@ -1,10 +1,12 @@
 -- name: AddToCart :exec
-INSERT INTO cart_items (id, session_id, user_id, product_id, product_variant_id, quantity)
+INSERT INTO cart_items (id, session_id, user_id, product_id, product_sku_id, quantity)
 VALUES (?, ?, ?, ?, ?, ?);
 
 -- name: GetExistingCartItem :one
 SELECT id, quantity FROM cart_items
-WHERE (session_id = ? OR user_id = ?) AND product_id = ?
+WHERE (session_id = ? OR user_id = ?)
+AND product_id = ?
+AND COALESCE(product_sku_id, '') = COALESCE(?, '')
 LIMIT 1;
 
 -- name: UpdateCartItemQuantity :exec
@@ -15,16 +17,28 @@ WHERE id = ?;
 DELETE FROM cart_items WHERE id = ?;
 
 -- name: GetCartBySession :many
-SELECT 
+SELECT
     ci.id,
     ci.quantity,
     ci.product_id,
+    ci.product_sku_id,
     p.name,
-    p.price_cents,
-    COALESCE(pi.image_url, '') as image_url
+    (p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) AS price_cents,
+    COALESCE(
+        CASE WHEN psi.image_url IS NOT NULL THEN 'styles/' || psi.image_url END,
+        pi.image_url,
+        ''
+    ) as image_url,
+    COALESCE(ps.sku, '') as variant_sku,
+    COALESCE(pst.name || ' - ' || sz.display_name, '') as variant_name,
+    COALESCE(ps.stock_quantity, p.stock_quantity, 0) as stock_quantity
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
+LEFT JOIN product_styles pst ON ps.product_style_id = pst.id
+LEFT JOIN sizes sz ON ps.size_id = sz.id
 LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
+LEFT JOIN product_style_images psi ON psi.product_style_id = pst.id AND psi.is_primary = TRUE
 WHERE ci.session_id = ?
 ORDER BY ci.created_at DESC;
 
@@ -33,19 +47,32 @@ SELECT
     ci.id,
     ci.quantity,
     ci.product_id,
+    ci.product_sku_id,
     p.name,
-    p.price_cents,
-    COALESCE(pi.image_url, '') as image_url
+    (p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) AS price_cents,
+    COALESCE(
+        CASE WHEN psi.image_url IS NOT NULL THEN 'styles/' || psi.image_url END,
+        pi.image_url,
+        ''
+    ) as image_url,
+    COALESCE(ps.sku, '') as variant_sku,
+    COALESCE(pst.name || ' - ' || sz.display_name, '') as variant_name,
+    COALESCE(ps.stock_quantity, p.stock_quantity, 0) as stock_quantity
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
+LEFT JOIN product_styles pst ON ps.product_style_id = pst.id
+LEFT JOIN sizes sz ON ps.size_id = sz.id
 LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_primary = TRUE
+LEFT JOIN product_style_images psi ON psi.product_style_id = pst.id AND psi.is_primary = TRUE
 WHERE ci.user_id = sqlc.arg(user_id)
 ORDER BY ci.created_at DESC;
 
 -- name: GetCartTotal :one
-SELECT SUM(p.price_cents * ci.quantity) as total
+SELECT SUM((p.price_cents + COALESCE(ps.price_adjustment_cents, 0)) * ci.quantity) as total
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
 WHERE (ci.session_id = ? OR ci.user_id = ?);
 
 -- name: ClearCart :exec

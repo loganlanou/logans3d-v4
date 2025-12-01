@@ -3,8 +3,10 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -70,7 +72,14 @@ func (h *ShippingHandler) GetShippingRates(c echo.Context) error {
 
 	counts, err := h.getCartItemCounts(c, sessionID, userID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get cart items")
+		// Check if it's a validation error (starts with known prefix) or a server error
+		errMsg := err.Error()
+		if strings.HasPrefix(errMsg, "shipping category missing") {
+			return echo.NewHTTPError(http.StatusBadRequest, errMsg)
+		}
+		// Server-side error - log details but return generic message
+		slog.Error("failed to get cart item counts for shipping", "error", err, "session_id", sessionID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Unable to calculate shipping rates")
 	}
 
 	shippingReq := &shipping.ShippingQuoteRequest{
@@ -110,6 +119,10 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		return nil, err
 	}
 
+	if counts.UnknownItems.Valid && counts.UnknownItems.Float64 > 0 {
+		return nil, fmt.Errorf("shipping category missing for %d item(s); please configure size chart or SKU overrides", int(counts.UnknownItems.Float64))
+	}
+
 	var small, medium, large, xl int
 	if counts.SmallItems.Valid {
 		small = int(counts.SmallItems.Float64)
@@ -124,12 +137,118 @@ func (h *ShippingHandler) getCartItemCounts(c echo.Context, sessionID, userID st
 		xl = int(counts.XlargeItems.Float64)
 	}
 
-	return &shipping.ItemCounts{
-		Small:  small,
-		Medium: medium,
-		Large:  large,
-		XL:     xl,
-	}, nil
+	toFloat := func(v interface{}) float64 {
+		switch val := v.(type) {
+		case sql.NullFloat64:
+			if val.Valid {
+				return val.Float64
+			}
+		case float64:
+			return val
+		case int64:
+			return float64(val)
+		case int:
+			return float64(val)
+		}
+		return 0
+	}
+
+	// Get default weights/dimensions from database-driven shipping config
+	defaultWeights := h.shippingService.GetDefaultItemWeights()
+	defaultDims := h.shippingService.GetDefaultDimensions()
+
+	// Safety fallback if config is missing data (shouldn't happen with validation, but be defensive)
+	if len(defaultWeights) == 0 {
+		defaultWeights = map[string]float64{"small": 3.0, "medium": 7.05, "large": 15.0, "xlarge": 35.3}
+	}
+	if len(defaultDims) == 0 {
+		defaultDims = map[string]shipping.DimensionGuard{
+			"small": {L: 4, W: 4, H: 4}, "medium": {L: 8, W: 5, H: 5},
+			"large": {L: 20, W: 10, H: 6}, "xlarge": {L: 24, W: 12, H: 10},
+		}
+	}
+
+	// Helper to calculate weight: DB weight + (missing weight count * default weight per item)
+	// Only applies defaults for items actually missing weight data
+	weightWithMissing := func(dbWeight interface{}, missingWeightCount interface{}, category string) float64 {
+		weight := toFloat(dbWeight)
+		missing := int(toFloat(missingWeightCount))
+		if missing > 0 {
+			weight += defaultWeights[category] * float64(missing)
+		}
+		return weight
+	}
+
+	// Helper for dimensions: use max of DB dims and default dims (for missing items)
+	// Only considers defaults when items are actually missing dimension data
+	dimsWithMissing := func(l, w, h, missingDimsCount interface{}, category string) shipping.DimensionGuard {
+		dims := shipping.DimensionGuard{
+			L: toFloat(l),
+			W: toFloat(w),
+			H: toFloat(h),
+		}
+		def := defaultDims[category]
+		missing := int(toFloat(missingDimsCount))
+
+		// If there are items missing dims, ensure dims are at least the defaults
+		// (missing items might be the largest in the category)
+		if missing > 0 || dims.L <= 0 {
+			if def.L > dims.L {
+				dims.L = def.L
+			}
+		}
+		if missing > 0 || dims.W <= 0 {
+			if def.W > dims.W {
+				dims.W = def.W
+			}
+		}
+		if missing > 0 || dims.H <= 0 {
+			if def.H > dims.H {
+				dims.H = def.H
+			}
+		}
+		return dims
+	}
+
+	// Log if we're using fallbacks (helpful for debugging)
+	smallMissingWeight := int(toFloat(counts.SmallMissingWeight))
+	mediumMissingWeight := int(toFloat(counts.MediumMissingWeight))
+	largeMissingWeight := int(toFloat(counts.LargeMissingWeight))
+	xlMissingWeight := int(toFloat(counts.XlargeMissingWeight))
+	smallMissingDims := int(toFloat(counts.SmallMissingDims))
+	mediumMissingDims := int(toFloat(counts.MediumMissingDims))
+	largeMissingDims := int(toFloat(counts.LargeMissingDims))
+	xlMissingDims := int(toFloat(counts.XlargeMissingDims))
+
+	if smallMissingWeight > 0 || smallMissingDims > 0 {
+		slog.Debug("using default shipping data for small items", "missing_weight", smallMissingWeight, "missing_dims", smallMissingDims)
+	}
+	if mediumMissingWeight > 0 || mediumMissingDims > 0 {
+		slog.Debug("using default shipping data for medium items", "missing_weight", mediumMissingWeight, "missing_dims", mediumMissingDims)
+	}
+	if largeMissingWeight > 0 || largeMissingDims > 0 {
+		slog.Debug("using default shipping data for large items", "missing_weight", largeMissingWeight, "missing_dims", largeMissingDims)
+	}
+	if xlMissingWeight > 0 || xlMissingDims > 0 {
+		slog.Debug("using default shipping data for xlarge items", "missing_weight", xlMissingWeight, "missing_dims", xlMissingDims)
+	}
+
+	itemCounts := &shipping.ItemCounts{
+		Small:          small,
+		Medium:         medium,
+		Large:          large,
+		XL:             xl,
+		SmallWeightOz:  weightWithMissing(counts.SmallWeightOz, counts.SmallMissingWeight, "small"),
+		MediumWeightOz: weightWithMissing(counts.MediumWeightOz, counts.MediumMissingWeight, "medium"),
+		LargeWeightOz:  weightWithMissing(counts.LargeWeightOz, counts.LargeMissingWeight, "large"),
+		XLWeightOz:     weightWithMissing(counts.XlargeWeightOz, counts.XlargeMissingWeight, "xlarge"),
+		SmallMaxDims:   dimsWithMissing(counts.SmallMaxLengthIn, counts.SmallMaxWidthIn, counts.SmallMaxHeightIn, counts.SmallMissingDims, "small"),
+		MediumMaxDims:  dimsWithMissing(counts.MediumMaxLengthIn, counts.MediumMaxWidthIn, counts.MediumMaxHeightIn, counts.MediumMissingDims, "medium"),
+		LargeMaxDims:   dimsWithMissing(counts.LargeMaxLengthIn, counts.LargeMaxWidthIn, counts.LargeMaxHeightIn, counts.LargeMissingDims, "large"),
+		XLMaxDims:      dimsWithMissing(counts.XlargeMaxLengthIn, counts.XlargeMaxWidthIn, counts.XlargeMaxHeightIn, counts.XlargeMissingDims, "xlarge"),
+	}
+
+	return itemCounts, nil
 }
 
 // generateCartSnapshot creates a snapshot of current cart state for validation
@@ -150,7 +269,7 @@ func (h *ShippingHandler) generateCartSnapshot(c echo.Context, sessionID string)
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
 		})
-		snapshot.TotalCents += item.PriceCents * item.Quantity
+		snapshot.TotalCents += toInt64Value(item.PriceCents) * item.Quantity
 	}
 
 	return snapshot, nil
@@ -468,4 +587,24 @@ func (h *ShippingHandler) ValidateAddress(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"valid": true,
 	})
+}
+
+func toInt64Value(v interface{}) int64 {
+	switch val := v.(type) {
+	case int64:
+		return val
+	case float64:
+		return int64(val)
+	case int:
+		return int64(val)
+	case sql.NullFloat64:
+		if val.Valid {
+			return int64(val.Float64)
+		}
+	case sql.NullInt64:
+		if val.Valid {
+			return val.Int64
+		}
+	}
+	return 0
 }

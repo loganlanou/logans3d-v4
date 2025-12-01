@@ -15,6 +15,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/stripe"
+	"github.com/loganlanou/logans3d-v4/internal/utils"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	stripego "github.com/stripe/stripe-go/v80"
 	checkoutsession "github.com/stripe/stripe-go/v80/checkout/session"
@@ -182,9 +183,18 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 			"has_breakdown", session.TotalDetails.Breakdown != nil)
 	}
 
-	// If breakdown is missing and there's a discount, re-fetch session with expanded details
-	if session.TotalDetails != nil && session.TotalDetails.AmountDiscount > 0 && session.TotalDetails.Breakdown == nil {
-		slog.Debug("re-fetching session to get discount breakdown", "session_id", session.ID)
+	// Always fetch line items if missing - Stripe webhooks don't include them by default
+	// Also fetch breakdown if there's a discount and it's missing
+	needsRefetch := session.LineItems == nil || len(session.LineItems.Data) == 0
+	needsBreakdown := session.TotalDetails != nil && session.TotalDetails.AmountDiscount > 0 && session.TotalDetails.Breakdown == nil
+
+	if needsRefetch || needsBreakdown {
+		reason := "line items missing"
+		if needsBreakdown {
+			reason = "line items and discount breakdown missing"
+		}
+		slog.Debug("re-fetching session", "session_id", session.ID, "reason", reason)
+
 		stripego.Key = os.Getenv("STRIPE_SECRET_KEY")
 		params := &stripego.CheckoutSessionParams{}
 		params.AddExpand("total_details.breakdown")
@@ -192,14 +202,15 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 		params.AddExpand("line_items.data.price.product")
 		expandedSession, err := checkoutsession.Get(session.ID, params)
 		if err != nil {
-			slog.Warn("failed to re-fetch session for breakdown", "error", err, "session_id", session.ID)
-			// Continue with original session - we'll still have the discount amount
-		} else {
-			session = expandedSession
-			slog.Debug("successfully retrieved discount breakdown",
-				"session_id", session.ID,
-				"has_breakdown", session.TotalDetails != nil && session.TotalDetails.Breakdown != nil)
+			slog.Error("failed to re-fetch session with line items", "error", err, "session_id", session.ID)
+			// Return error so Stripe retries the webhook - without line items we can't create order items
+			return fmt.Errorf("failed to fetch line items from Stripe: %w", err)
 		}
+		session = expandedSession
+		slog.Debug("successfully retrieved session with expansions",
+			"session_id", session.ID,
+			"has_line_items", session.LineItems != nil && len(session.LineItems.Data) > 0,
+			"has_breakdown", session.TotalDetails != nil && session.TotalDetails.Breakdown != nil)
 	}
 
 	// Create order in database
@@ -456,31 +467,93 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 
 				// Only create order item if it's a real product (not shipping)
 				if hasProductID && productID != "" {
+					skuID := ""
+					skuCode := ""
+					if val, ok := item.Price.Product.Metadata["sku_id"]; ok {
+						skuID = val
+					}
+					if val, ok := item.Price.Product.Metadata["sku"]; ok {
+						skuCode = val
+					}
+
 					// Calculate item total (excluding tax - Stripe's AmountTotal includes tax)
 					itemTotal := item.Price.UnitAmount * item.Quantity
 
+					// Look up stock quantity to determine shipping time
+					// Calculate effective stock AFTER this order would be fulfilled
+					var stockQuantity int64
+					if skuID != "" {
+						// If SKU exists, get stock from SKU
+						sku, err := h.queries.GetProductSku(ctx, skuID)
+						if err != nil {
+							slog.Debug("failed to get SKU for shipping time", "error", err, "sku_id", skuID)
+						} else {
+							stockQuantity = sku.StockQuantity.Int64
+						}
+					} else {
+						// Otherwise, get stock from product
+						product, err := h.queries.GetProduct(ctx, productID)
+						if err != nil {
+							slog.Debug("failed to get product for shipping time", "error", err, "product_id", productID)
+						} else {
+							stockQuantity = product.StockQuantity.Int64
+						}
+					}
+
+					// Calculate effective stock after this order - shows correct shipping time
+					// if ordering more than available (e.g., stock=2, qty=5 → effectiveStock=-3 → backordered)
+					effectiveStock := stockQuantity - item.Quantity
+					if effectiveStock < 0 {
+						effectiveStock = 0
+					}
+
 					orderItems = append(orderItems, email.OrderItem{
-						ProductName: item.Description,
-						Quantity:    item.Quantity,
-						PriceCents:  item.Price.UnitAmount,
-						TotalCents:  itemTotal,
+						ProductName:   item.Description,
+						Quantity:      item.Quantity,
+						PriceCents:    item.Price.UnitAmount,
+						TotalCents:    itemTotal,
+						ShippingTime:  utils.ShippingTimeMessage(effectiveStock),
+						NeedsPrinting: utils.NeedsPrinting(effectiveStock),
 					})
 
 					// Create order item in database - CRITICAL: Must succeed or order is corrupt
 					_, itemErr := h.queries.CreateOrderItem(ctx, db.CreateOrderItemParams{
-						ID:               uuid.New().String(),
-						OrderID:          orderID,
-						ProductID:        productID,
-						ProductVariantID: sql.NullString{},
-						Quantity:         item.Quantity,
-						UnitPriceCents:   item.Price.UnitAmount,
-						TotalPriceCents:  itemTotal,
-						ProductName:      item.Description,
-						ProductSku:       sql.NullString{},
+						ID:              uuid.New().String(),
+						OrderID:         orderID,
+						ProductID:       productID,
+						ProductSkuID:    sql.NullString{String: skuID, Valid: skuID != ""},
+						Quantity:        item.Quantity,
+						UnitPriceCents:  item.Price.UnitAmount,
+						TotalPriceCents: itemTotal,
+						ProductName:     item.Description,
+						ProductSku:      sql.NullString{String: skuCode, Valid: skuCode != ""},
 					})
 					if itemErr != nil {
 						slog.Error("failed to create order item", "error", itemErr, "product_id", productID, "order_id", orderID)
 						return fmt.Errorf("failed to create order item for product %s: %w", productID, itemErr)
+					}
+
+					// Deduct inventory - INTENTIONAL DESIGN:
+					// - Stock CAN be zero at checkout time (allows pre-orders/backorders)
+					// - The SQL query has "WHERE stock_quantity >= delta" to prevent negative stock
+					// - If stock is insufficient, the query affects 0 rows (no error, just no decrement)
+					// - Customer sees extended shipping times for zero-stock items
+					if skuID != "" {
+						// Variant product: decrement SKU stock
+						if err := h.queries.DecrementProductSkuStock(ctx, db.DecrementProductSkuStockParams{
+							ID:    skuID,
+							Delta: sql.NullInt64{Int64: item.Quantity, Valid: true},
+						}); err != nil {
+							slog.Warn("failed to decrement SKU stock", "error", err, "sku_id", skuID)
+						}
+					} else {
+						// Non-variant product: decrement product stock
+						if err := h.queries.DecrementProductStock(ctx, db.DecrementProductStockParams{
+							ID:    productID,
+							Delta: sql.NullInt64{Int64: item.Quantity, Valid: true},
+						}); err != nil {
+							slog.Warn("failed to decrement product stock", "error", err, "product_id", productID)
+						}
 					}
 				}
 			}

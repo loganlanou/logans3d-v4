@@ -11,6 +11,18 @@ import (
 	"github.com/loganlanou/logans3d-v4/components/button"
 )
 
+// OrderItemWithImages wraps an order item with its associated images
+type OrderItemWithImages struct {
+	Item   db.OrderItem
+	Images []OrderItemImage
+}
+
+// OrderItemImage represents a product image for display
+type OrderItemImage struct {
+	URL       string // Full URL path like /public/images/products/xxx.jpg
+	IsPrimary bool
+}
+
 templ OrdersList(c echo.Context, orders []db.Order) {
 	@layout.AdminBase(c, "Orders") {
 		<!-- Header -->
@@ -339,7 +351,7 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 	}
 }
 
-templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shippingSelection db.OrderShippingSelection) {
+templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImages, shippingSelection db.OrderShippingSelection) {
 	@layout.AdminBase(c, fmt.Sprintf("Order #%s", order.ID[:8])) {
 		<!-- Back Button -->
 		<div class="mb-6">
@@ -572,7 +584,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 		</div>
 
 		<!-- Order Items -->
-		<div class="admin-card mb-6">
+		<div class="admin-card mb-6" x-data="{ expandedItem: null, lightboxImage: null }">
 			<div class="admin-card-header">
 				<h2 class="admin-card-title">Order Items</h2>
 			</div>
@@ -580,6 +592,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 				<table class="admin-table">
 					<thead>
 						<tr>
+							<th class="w-8"></th>
 							<th>Product</th>
 							<th>Quantity</th>
 							<th>Unit Price</th>
@@ -589,26 +602,124 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []db.OrderItem, shi
 					<tbody>
 						if len(orderItems) == 0 {
 							<tr>
-								<td colspan="4" class="text-center admin-text-muted-foreground py-8">
+								<td colspan="5" class="text-center admin-text-muted-foreground py-8">
 									No items found
 								</td>
 							</tr>
 						}
-						for _, item := range orderItems {
-							<tr>
-								<td>
-									<div class="admin-text-primary admin-font-medium">{ item.ProductName }</div>
-									if item.ProductSku.Valid && item.ProductSku.String != "" {
-										<div class="admin-text-muted-foreground admin-text-sm">SKU: { item.ProductSku.String }</div>
-									}
+						for i, itemWithImages := range orderItems {
+							<tr
+								class="cursor-pointer hover:bg-muted/50 transition-colors"
+								@click={ fmt.Sprintf("expandedItem = expandedItem === %d ? null : %d", i, i) }
+							>
+								<td class="text-center">
+									<svg
+										class="w-5 h-5 transition-transform duration-200 inline-block"
+										:class={ fmt.Sprintf("{ 'rotate-90': expandedItem === %d }", i) }
+										fill="none"
+										stroke="currentColor"
+										viewBox="0 0 24 24"
+									>
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+									</svg>
 								</td>
-								<td>{ fmt.Sprintf("%d", item.Quantity) }</td>
-								<td>${ fmt.Sprintf("%.2f", float64(item.UnitPriceCents)/100) }</td>
-								<td class="admin-font-semibold">${ fmt.Sprintf("%.2f", float64(item.TotalPriceCents)/100) }</td>
+								<td>
+									<div class="flex items-center gap-3">
+										if len(itemWithImages.Images) > 0 {
+											<img
+												src={ itemWithImages.Images[0].URL }
+												alt={ itemWithImages.Item.ProductName }
+												class="w-12 h-12 rounded-lg object-cover bg-gray-100"
+											/>
+										} else {
+											<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+												<svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+												</svg>
+											</div>
+										}
+										<div>
+											<div class="admin-text-primary admin-font-medium">{ itemWithImages.Item.ProductName }</div>
+											if itemWithImages.Item.ProductSku.Valid && itemWithImages.Item.ProductSku.String != "" {
+												<div class="admin-text-muted-foreground admin-text-sm">SKU: { itemWithImages.Item.ProductSku.String }</div>
+											}
+											if len(itemWithImages.Images) > 1 {
+												<div class="text-xs text-blue-600">{ fmt.Sprintf("%d images", len(itemWithImages.Images)) } - Click to expand</div>
+											}
+										</div>
+									</div>
+								</td>
+								<td>{ fmt.Sprintf("%d", itemWithImages.Item.Quantity) }</td>
+								<td>${ fmt.Sprintf("%.2f", float64(itemWithImages.Item.UnitPriceCents)/100) }</td>
+								<td class="admin-font-semibold">${ fmt.Sprintf("%.2f", float64(itemWithImages.Item.TotalPriceCents)/100) }</td>
+							</tr>
+							<!-- Expanded Row with Image Gallery -->
+							<tr x-show={ fmt.Sprintf("expandedItem === %d", i) } x-collapse>
+								<td colspan="5" class="bg-muted/30 p-4">
+									<div class="pl-8">
+										<h4 class="text-sm font-medium text-muted-foreground mb-3">Product Images ({ fmt.Sprintf("%d", len(itemWithImages.Images)) })</h4>
+										if len(itemWithImages.Images) > 0 {
+											<div class="flex flex-wrap gap-3">
+												for _, img := range itemWithImages.Images {
+													<div
+														class="relative group cursor-pointer"
+														@click.stop={ fmt.Sprintf("lightboxImage = '%s'", img.URL) }
+													>
+														<img
+															src={ img.URL }
+															alt="Product image"
+															class="w-24 h-24 rounded-lg object-cover border-2 border-transparent group-hover:border-blue-500 transition-all shadow-sm hover:shadow-md"
+														/>
+														if img.IsPrimary {
+															<span class="absolute top-1 left-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">Primary</span>
+														}
+														<div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded-lg transition-colors flex items-center justify-center">
+															<svg class="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"></path>
+															</svg>
+														</div>
+													</div>
+												}
+											</div>
+										} else {
+											<p class="text-sm text-muted-foreground">No images available for this product.</p>
+										}
+									</div>
+								</td>
 							</tr>
 						}
 					</tbody>
 				</table>
+			</div>
+
+			<!-- Lightbox Modal -->
+			<div
+				x-show="lightboxImage"
+				x-transition:enter="transition ease-out duration-200"
+				x-transition:enter-start="opacity-0"
+				x-transition:enter-end="opacity-100"
+				x-transition:leave="transition ease-in duration-150"
+				x-transition:leave-start="opacity-100"
+				x-transition:leave-end="opacity-0"
+				@click="lightboxImage = null"
+				@keydown.escape.window="lightboxImage = null"
+				class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+			>
+				<div class="relative max-w-4xl max-h-[90vh]" @click.stop>
+					<img
+						:src="lightboxImage"
+						alt="Product image enlarged"
+						class="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
+					/>
+					<button
+						@click="lightboxImage = null"
+						class="absolute -top-4 -right-4 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
+					>
+						<svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+				</div>
 			</div>
 
 			<!-- Order Totals -->

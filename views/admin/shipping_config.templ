@@ -1,13 +1,17 @@
 package admin
 
 import (
+	"database/sql"
 	"fmt"
+	"strings"
+
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
+	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
-templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig) {
+templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig, sizeCharts []db.GetSizeChartsRow) {
 	@layout.AdminBase(c, "Shipping Configuration") {
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6">
@@ -22,6 +26,53 @@ templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig) {
 		</div>
 
 		<form id="config-form" method="POST" action="/admin/shipping/config" class="space-y-6">
+			<!-- Size Charts Section -->
+			<div class="admin-card">
+				<div class="admin-card-header">
+					<h2 class="admin-card-title">Size Chart Defaults</h2>
+					<p class="text-sm text-muted-foreground mt-1">Set baseline shipping category and weight per size. These values are used when calculating shipping costs.</p>
+				</div>
+				<div class="admin-card-body space-y-4">
+					if len(sizeCharts) == 0 {
+						<div class="p-4 rounded-lg border border-border/70 bg-muted/50 text-sm text-muted-foreground">
+							No sizes configured yet.
+						</div>
+					} else {
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+							for _, chart := range sizeCharts {
+								<div class="rounded-lg border border-border/70 bg-background/60 p-4 space-y-3">
+									<div class="flex items-center justify-between">
+										<div>
+											<div class="text-sm font-semibold text-foreground">{ chart.DisplayName }</div>
+											<div class="text-xs text-muted-foreground uppercase tracking-wide">{ chart.Name }</div>
+										</div>
+									</div>
+									<div class="space-y-3">
+										<div>
+											<label class="block text-xs font-medium text-muted-foreground mb-1">Shipping Category</label>
+											<select name={ fmt.Sprintf("size_chart_%s_shipping_category", chart.SizeID) } class="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground">
+												<option value="">Select category</option>
+												<option value="small" selected?={ isSelectedOption(chartShippingCategory(chart), "small") }>Small</option>
+												<option value="medium" selected?={ isSelectedOption(chartShippingCategory(chart), "medium") }>Medium</option>
+												<option value="large" selected?={ isSelectedOption(chartShippingCategory(chart), "large") }>Large</option>
+												<option value="xlarge" selected?={ isSelectedOption(chartShippingCategory(chart), "xlarge") }>X-Large</option>
+											</select>
+										</div>
+										<div>
+											<label class="block text-xs font-medium text-muted-foreground mb-1">Weight (oz)</label>
+											<input type="number" step="0.1" name={ fmt.Sprintf("size_chart_%s_weight_oz", chart.SizeID) } value={ formatChartWeight(chart.DefaultShippingWeightOz) } class="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground"/>
+										</div>
+										<div>
+											<label class="block text-xs font-medium text-muted-foreground mb-1">Price Adjustment ($)</label>
+											<input type="number" step="0.01" name={ fmt.Sprintf("size_chart_%s_price_adjustment", chart.SizeID) } value={ formatPriceAdjustment(chart.DefaultPriceAdjustmentCents) } class="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground"/>
+										</div>
+									</div>
+								</div>
+							}
+						</div>
+					}
+				</div>
+			</div>
 			<!-- Item Weights Section -->
 			<div class="admin-card">
 				<div class="admin-card-header">
@@ -257,4 +308,29 @@ templ ShippingConfig(c echo.Context, config *shipping.ShippingConfig) {
 			</div>
 		</form>
 	}
+}
+
+func chartShippingCategory(chart db.GetSizeChartsRow) string {
+	if chart.DefaultShippingClass.Valid {
+		return chart.DefaultShippingClass.String
+	}
+	return ""
+}
+
+func formatChartWeight(value sql.NullFloat64) string {
+	if value.Valid && value.Float64 > 0 {
+		return fmt.Sprintf("%.1f", value.Float64)
+	}
+	return ""
+}
+
+func formatPriceAdjustment(value sql.NullInt64) string {
+	if value.Valid && value.Int64 != 0 {
+		return fmt.Sprintf("%.2f", float64(value.Int64)/100)
+	}
+	return ""
+}
+
+func isSelectedOption(value, target string) bool {
+	return strings.EqualFold(strings.TrimSpace(value), strings.TrimSpace(target))
 }

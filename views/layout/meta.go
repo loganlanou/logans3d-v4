@@ -42,8 +42,23 @@ type PageMeta struct {
 	Product    *db.Product
 	Categories []db.Category
 
+	// Variant information for sharing
+	SelectedVariant *VariantInfo
+
 	// Schema.org JSON-LD (pre-computed)
 	ProductSchemaJSON string
+}
+
+// VariantInfo contains selected variant details for variant-specific sharing
+type VariantInfo struct {
+	StyleID      string // product_style.id
+	StyleName    string // e.g., "Berry", "Rainbow"
+	SizeID       string // size.id
+	SizeName     string // e.g., "Medium", "Large"
+	SkuID        string // product_sku.id
+	SKU          string // e.g., "ARMADILLO-LIZARD-BERRY-MEDIUM"
+	PriceCents   int64  // Final price including adjustments
+	PrimaryImage string // URL path to style's primary image
 }
 
 // NewPageMeta creates a PageMeta with site-wide defaults
@@ -198,6 +213,106 @@ func (pm PageMeta) WithOGImage(imageURL string) PageMeta {
 	pm.OGImageURL = absoluteURL
 	pm.TwitterImageURL = absoluteURL
 	return pm
+}
+
+// WithVariant updates PageMeta with variant-specific information for sharing
+// This updates OG title, description, URL, and image to reflect the selected variant
+func (pm PageMeta) WithVariant(v VariantInfo) PageMeta {
+	if pm.Product == nil {
+		return pm
+	}
+
+	// Store variant info
+	pm.SelectedVariant = &v
+
+	// Update title to include variant: "Product Name - Color, Size"
+	variantTitle := fmt.Sprintf("%s - %s, %s", pm.Product.Name, v.StyleName, v.SizeName)
+	pm.Title = variantTitle + " - " + pm.OGSiteName
+	pm.OGTitle = variantTitle
+	pm.TwitterTitle = variantTitle
+
+	// Update description to include variant details and price
+	pm.OGDescription = fmt.Sprintf("%s in %s, %s - $%.2f",
+		pm.Product.Name, v.StyleName, v.SizeName,
+		float64(v.PriceCents)/100)
+	pm.TwitterDescription = pm.OGDescription
+
+	// Update URL to include variant query params
+	productURL := fmt.Sprintf("%s/shop/product/%s?color=%s&size=%s",
+		pm.SiteURL, pm.Product.Slug, v.StyleID, v.SizeID)
+	pm.CanonicalURL = productURL
+	pm.OGURL = productURL
+
+	// Update OG image to variant-specific generated image
+	ogImageURL := fmt.Sprintf("/api/og-image/%s?color=%s&size=%s",
+		pm.Product.ID, v.StyleID, v.SizeID)
+	pm.OGImageURL = BuildAbsoluteURL(pm.SiteURL, ogImageURL)
+	pm.TwitterImageURL = pm.OGImageURL
+
+	// Regenerate product schema with variant info
+	pm.ProductSchemaJSON = pm.generateVariantSchemaJSON(v)
+
+	return pm
+}
+
+// generateVariantSchemaJSON generates Schema.org Product JSON-LD for a specific variant
+func (pm PageMeta) generateVariantSchemaJSON(v VariantInfo) string {
+	if pm.Product == nil {
+		return "{}"
+	}
+
+	product := pm.Product
+
+	// Build category string from breadcrumb
+	category := ""
+	if len(pm.Categories) > 0 {
+		category = pm.Categories[len(pm.Categories)-1].Name
+	}
+
+	offers := map[string]interface{}{
+		"@type":         "Offer",
+		"url":           pm.OGURL,
+		"priceCurrency": "USD",
+		"price":         fmt.Sprintf("%.2f", float64(v.PriceCents)/100.0),
+		"availability":  "https://schema.org/InStock",
+	}
+
+	schema := map[string]interface{}{
+		"@context":    "https://schema.org/",
+		"@type":       "Product",
+		"name":        fmt.Sprintf("%s - %s, %s", product.Name, v.StyleName, v.SizeName),
+		"description": pm.OGDescription,
+		"brand": map[string]interface{}{
+			"@type": "Brand",
+			"name":  "Logan's 3D Creations",
+		},
+		"offers": offers,
+	}
+
+	// Add variant SKU
+	if v.SKU != "" {
+		schema["sku"] = v.SKU
+	}
+
+	// Add image
+	if pm.OGImageURL != "" {
+		schema["image"] = pm.OGImageURL
+	}
+
+	// Add category
+	if category != "" {
+		schema["category"] = category
+	}
+
+	// Add color and size as product properties
+	schema["color"] = v.StyleName
+	schema["size"] = v.SizeName
+
+	bytes, err := json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		return "{}"
+	}
+	return string(bytes)
 }
 
 // KeywordsString returns keywords as a comma-separated string
