@@ -179,12 +179,12 @@ deploy-production:
 .PHONY: deploy
 deploy: deploy-production
 
-.PHONY: log-production
-log-production:
+.PHONY: log
+log:
 	ssh -A apprunner@jarvis.digitaldrywood.com "sudo journalctl -u logans3d -f"
 
-.PHONY: log-web-production
-log-web-production:
+.PHONY: log-web
+log-web:
 	ssh -A apprunner@jarvis.digitaldrywood.com "sudo tail -f /var/log/logans3d/logans3d.log"
 
 .PHONY: env-view
@@ -237,8 +237,8 @@ help:
 	@echo "  ssh              - SSH to the deployment server"
 	@echo "  deploy           - Deploy to production (same as deploy-production)"
 	@echo "  deploy-production - Deploy to production (www.logans3dcreations.com)"
-	@echo "  log-production   - View production logs (journalctl)"
-	@echo "  log-web-production - View production web logs"
+	@echo "  log  - View production logs (journalctl)"
+	@echo "  log-web - View production web logs"
 	@echo ""
 	@echo "Environment Management:"
 	@echo "  env-view         - View production environment variables"
