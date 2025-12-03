@@ -199,27 +199,27 @@ func (g *AIGenerator) callGeminiAPI(info MultiVariantInfo) ([]byte, error) {
 func (g *AIGenerator) buildPrompt(info MultiVariantInfo) string {
 	styleList := strings.Join(info.StyleNames, ", ")
 
-	prompt := fmt.Sprintf(`Create a professional Open Graph image (1200x630 pixels) for social media sharing.
+	prompt := fmt.Sprintf(`Professional product photography of 3D printed collectible toys for e-commerce.
 
-The image should showcase these %d product variants of "%s" arranged attractively.
+Subject: %d color variants of "%s" (colors: %s)
 
-Style/color names shown: %s
-Price: %s
+Composition: Wide 1200x630 landscape format, toys arranged in a dynamic diagonal line or gentle arc formation, each facing slightly toward camera, positioned as if walking together or displayed as collectibles.
 
-Requirements:
-- Arrange all product images in a visually appealing composition
-- Use a clean, professional background (subtle gradient or solid color)
-- Make the products the focal point
-- Add subtle branding space at the bottom for text overlay
-- Maintain high quality and sharp details
-- Create a cohesive, premium look suitable for e-commerce social sharing
-- DO NOT add any text to the image - just the product arrangement
+Environment: Subtle thematic background that complements the creature/toy type - soft out-of-focus natural elements (moss, rocks, leaves) or a gentle gradient suggesting their habitat. Background should be heavily blurred (f/1.8 depth of field) so products remain the sharp focal point.
 
-The final image should look professional enough for sharing on Facebook, Twitter, and other social platforms.`,
+Lighting: Soft studio lighting from upper left, gentle rim lighting to separate subjects from background, no harsh shadows. Professional commercial photography style.
+
+Style: Photorealistic, high-end collectible toy photography, 8K detail on the products, cinematic color grading with rich but natural tones.
+
+Critical requirements:
+- Products must be tack-sharp and the clear focal point
+- Background stays subtle and out of focus - never distracting
+- NO text, watermarks, logos, labels, or signatures anywhere
+- Maintain exact appearance and colors of each toy from input images
+- Clean, professional result suitable for social media sharing`,
 		len(info.ImagePaths),
 		info.Name,
 		styleList,
-		info.PriceRange,
 	)
 
 	return prompt

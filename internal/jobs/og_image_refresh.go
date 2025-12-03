@@ -172,6 +172,14 @@ func (r *OGImageRefresher) generateProductOG(ctx context.Context, productID, pro
 		return false, nil
 	}
 
+	// Check if OG image already exists and is recent (less than 7 days old)
+	if info, err := os.Stat(ogImagePath); err == nil {
+		if time.Since(info.ModTime()) < 7*24*time.Hour {
+			slog.Debug("OG image already exists and is recent, skipping", "product_id", productID)
+			return false, nil
+		}
+	}
+
 	// Generate OG image
 	productInfo := ogimage.ProductInfo{
 		Name:         product.Name,
@@ -271,6 +279,14 @@ func (r *OGImageRefresher) generateMultiVariantOG(ctx context.Context, productID
 	// Build output path
 	ogImageFilename := fmt.Sprintf("product-%s-multi.png", productID)
 	ogImagePath := filepath.Join("public", "og-images", ogImageFilename)
+
+	// Check if OG image already exists and is recent (less than 7 days old)
+	if info, err := os.Stat(ogImagePath); err == nil {
+		if time.Since(info.ModTime()) < 7*24*time.Hour {
+			slog.Debug("multi-variant OG image already exists and is recent, skipping", "product_id", productID)
+			return false, nil
+		}
+	}
 
 	// Generate multi-variant OG image
 	info := ogimage.MultiVariantInfo{
