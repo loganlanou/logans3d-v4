@@ -920,7 +920,9 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 				},
 				refresh() {
 					this.loading = true;
-					const refreshUrl = this.baseUrl + (this.baseUrl.includes('?') ? '&' : '?') + 'refresh=true';
+					// Add timestamp to force new request (browser won't re-fetch if URL unchanged)
+					const timestamp = Date.now();
+					const refreshUrl = this.baseUrl + (this.baseUrl.includes('?') ? '&' : '?') + 'refresh=true&t=' + timestamp;
 					this.imageUrl = refreshUrl;
 				}
 			}"
