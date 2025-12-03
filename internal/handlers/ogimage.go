@@ -365,16 +365,28 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 	}
 
 	// Use AI generator if available, otherwise fall back to grid method
+	var modelUsed string
 	if h.useAI && h.aiGenerator != nil {
-		err = h.aiGenerator.GenerateMultiVariantOGImage(info, ogImagePath)
+		modelUsed, err = h.aiGenerator.GenerateMultiVariantOGImageWithModel(info, ogImagePath)
 	} else {
 		err = ogimage.GenerateMultiVariantOGImage(info, ogImagePath)
+		modelUsed = "grid"
 	}
 	if err != nil {
 		slog.Error("failed to generate multi-variant OG image", "error", err, "product_id", product.ID)
+		// If refresh was requested and AI failed, serve existing image if available
+		if refresh {
+			if _, statErr := os.Stat(ogImagePath); statErr == nil {
+				c.Response().Header().Set("X-OG-Model", "cached")
+				c.Response().Header().Set("X-OG-Error", err.Error())
+				return c.File(ogImagePath)
+			}
+		}
 		return h.serveDefaultOGImage(c)
 	}
 
+	// Add model info to response header
+	c.Response().Header().Set("X-OG-Model", modelUsed)
 	return c.File(ogImagePath)
 }
 

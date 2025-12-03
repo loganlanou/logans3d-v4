@@ -15,9 +15,13 @@ import (
 )
 
 const (
-	// Gemini 2.5 Flash Image - production-ready, stable availability
-	geminiAPIEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent"
-	defaultTimeout    = 120 * time.Second
+	// Primary: Nano Banana Pro - best quality
+	geminiPrimaryModel = "gemini-3-pro-image-preview"
+	// Fallback: Gemini 2.5 Flash - stable availability
+	geminiFallbackModel = "gemini-2.5-flash-preview-05-20"
+
+	geminiAPIBase  = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
+	defaultTimeout = 120 * time.Second
 )
 
 type AIGenerator struct {
@@ -91,35 +95,52 @@ type apiError struct {
 	Status  string `json:"status"`
 }
 
-func (g *AIGenerator) GenerateMultiVariantOGImage(info MultiVariantInfo, outputPath string) error {
+// GenerateMultiVariantOGImageWithModel generates an OG image and returns which model was used
+func (g *AIGenerator) GenerateMultiVariantOGImageWithModel(info MultiVariantInfo, outputPath string) (modelUsed string, err error) {
 	if g.apiKey == "" || g.apiKey == "invalid-key" {
 		slog.Debug("AI generator: no valid API key, falling back to grid method")
-		return GenerateMultiVariantOGImage(info, outputPath)
+		return "grid", GenerateMultiVariantOGImage(info, outputPath)
 	}
 
-	imageData, err := g.callGeminiAPI(info)
+	// Try primary model first (Nano Banana Pro)
+	imageData, err := g.callGeminiAPIWithModel(info, geminiPrimaryModel)
+	modelUsed = geminiPrimaryModel
+
 	if err != nil {
-		// Don't fall back to grid - keep existing image if API fails
-		slog.Error("AI image generation failed, keeping existing image", "error", err)
-		return fmt.Errorf("AI generation failed: %w", err)
+		slog.Warn("primary model failed, trying fallback", "primary", geminiPrimaryModel, "error", err)
+
+		// Try fallback model (Gemini 2.5 Flash)
+		imageData, err = g.callGeminiAPIWithModel(info, geminiFallbackModel)
+		modelUsed = geminiFallbackModel
+
+		if err != nil {
+			slog.Error("all AI models failed, keeping existing image", "error", err)
+			return "", fmt.Errorf("all AI models failed: %w", err)
+		}
 	}
 
 	outputDir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		slog.Error("failed to create output directory", "error", err, "dir", outputDir)
-		return fmt.Errorf("create output dir: %w", err)
+		return "", fmt.Errorf("create output dir: %w", err)
 	}
 
 	if err := os.WriteFile(outputPath, imageData, 0644); err != nil {
 		slog.Error("failed to write AI-generated image", "error", err, "path", outputPath)
-		return fmt.Errorf("write image: %w", err)
+		return "", fmt.Errorf("write image: %w", err)
 	}
 
-	slog.Info("generated AI multi-variant OG image", "product", info.Name, "output", outputPath)
-	return nil
+	slog.Info("generated AI multi-variant OG image", "product", info.Name, "model", modelUsed, "output", outputPath)
+	return modelUsed, nil
 }
 
-func (g *AIGenerator) callGeminiAPI(info MultiVariantInfo) ([]byte, error) {
+// GenerateMultiVariantOGImage generates an OG image (legacy method, doesn't return model)
+func (g *AIGenerator) GenerateMultiVariantOGImage(info MultiVariantInfo, outputPath string) error {
+	_, err := g.GenerateMultiVariantOGImageWithModel(info, outputPath)
+	return err
+}
+
+func (g *AIGenerator) callGeminiAPIWithModel(info MultiVariantInfo, model string) ([]byte, error) {
 	parts := []geminiPart{
 		{Text: g.buildPrompt(info)},
 	}
@@ -159,7 +180,8 @@ func (g *AIGenerator) callGeminiAPI(info MultiVariantInfo) ([]byte, error) {
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequest("POST", geminiAPIEndpoint, bytes.NewReader(jsonBody))
+	endpoint := fmt.Sprintf(geminiAPIBase, model)
+	httpReq, err := http.NewRequest("POST", endpoint, bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
