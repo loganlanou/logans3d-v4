@@ -429,15 +429,22 @@ func (h *AdminHandler) buildProductsWithImages(ctx context.Context, products []d
 
 		imageURL := ""
 
-		// For products with variants, get the primary style's primary image
+		// For products with variants, prefer the AI-generated multi-variant OG image
 		if product.HasVariants.Valid && product.HasVariants.Bool {
-			styles, err := h.storage.Queries.GetProductStyles(ctx, product.ID)
-			if err == nil && len(styles) > 0 {
-				// First style is primary (ordered by is_primary DESC)
-				primaryStyle := styles[0]
-				styleImage, err := h.storage.Queries.GetPrimaryStyleImage(ctx, primaryStyle.ID)
-				if err == nil && styleImage.ImageUrl != "" {
-					imageURL = "/public/images/products/styles/" + styleImage.ImageUrl
+			// Check if multi-variant OG image exists
+			multiOGPath := fmt.Sprintf("public/og-images/product-%s-multi.png", product.ID)
+			if _, err := os.Stat(multiOGPath); err == nil {
+				imageURL = "/" + multiOGPath
+			} else {
+				// Fall back to primary style's primary image
+				styles, err := h.storage.Queries.GetProductStyles(ctx, product.ID)
+				if err == nil && len(styles) > 0 {
+					// First style is primary (ordered by is_primary DESC)
+					primaryStyle := styles[0]
+					styleImage, err := h.storage.Queries.GetPrimaryStyleImage(ctx, primaryStyle.ID)
+					if err == nil && styleImage.ImageUrl != "" {
+						imageURL = "/public/images/products/styles/" + styleImage.ImageUrl
+					}
 				}
 			}
 		}

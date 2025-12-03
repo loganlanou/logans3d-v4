@@ -301,3 +301,150 @@ func (g *AIGenerator) loadImageAsBase64(imagePath string) (string, string, error
 	encoded := base64.StdEncoding.EncodeToString(data)
 	return encoded, mimeType, nil
 }
+
+// SingleProductBackgroundInfo contains info for generating a single product background
+type SingleProductBackgroundInfo struct {
+	Name      string
+	ImagePath string
+}
+
+// GenerateSingleProductBackground generates an AI background for a single product image (no text overlay)
+func (g *AIGenerator) GenerateSingleProductBackground(info SingleProductBackgroundInfo, outputPath string) (modelUsed string, err error) {
+	if g.apiKey == "" || g.apiKey == "invalid-key" {
+		return "", fmt.Errorf("no valid API key for AI generation")
+	}
+
+	// Try primary model first (Nano Banana Pro)
+	imageData, err := g.callSingleProductAPI(info, geminiPrimaryModel)
+	modelUsed = geminiPrimaryModel
+
+	if err != nil {
+		slog.Warn("primary model failed for single product, trying fallback", "primary", geminiPrimaryModel, "error", err)
+
+		// Try fallback model (Gemini 2.5 Flash)
+		imageData, err = g.callSingleProductAPI(info, geminiFallbackModel)
+		modelUsed = geminiFallbackModel
+
+		if err != nil {
+			slog.Error("all AI models failed for single product background", "error", err)
+			return "", fmt.Errorf("all AI models failed: %w", err)
+		}
+	}
+
+	outputDir := filepath.Dir(outputPath)
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		slog.Error("failed to create output directory", "error", err, "dir", outputDir)
+		return "", fmt.Errorf("create output dir: %w", err)
+	}
+
+	if err := os.WriteFile(outputPath, imageData, 0644); err != nil {
+		slog.Error("failed to write AI-generated background", "error", err, "path", outputPath)
+		return "", fmt.Errorf("write image: %w", err)
+	}
+
+	slog.Info("generated AI single-product background", "product", info.Name, "model", modelUsed, "output", outputPath)
+	return modelUsed, nil
+}
+
+func (g *AIGenerator) callSingleProductAPI(info SingleProductBackgroundInfo, model string) ([]byte, error) {
+	parts := []geminiPart{
+		{Text: g.buildSingleProductPrompt(info)},
+	}
+
+	// Load the source image
+	imageData, mimeType, err := g.loadImageAsBase64(info.ImagePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load source image: %w", err)
+	}
+	parts = append(parts, geminiPart{
+		InlineData: &inlineData{
+			MimeType: mimeType,
+			Data:     imageData,
+		},
+	})
+
+	req := geminiRequest{
+		Contents: []geminiContent{
+			{Parts: parts},
+		},
+		GenerationConfig: &generationConfig{
+			ResponseModalities: []string{"TEXT", "IMAGE"},
+			ImageConfig: &imageConfig{
+				AspectRatio: "16:9",
+			},
+		},
+	}
+
+	jsonBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("marshal request: %w", err)
+	}
+
+	endpoint := fmt.Sprintf(geminiAPIBase, model)
+	httpReq, err := http.NewRequest("POST", endpoint, bytes.NewReader(jsonBody))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+
+	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("x-goog-api-key", g.apiKey)
+
+	resp, err := g.httpClient.Do(httpReq)
+	if err != nil {
+		return nil, fmt.Errorf("API request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var geminiResp geminiResponse
+	if err := json.Unmarshal(body, &geminiResp); err != nil {
+		return nil, fmt.Errorf("unmarshal response: %w", err)
+	}
+
+	if geminiResp.Error != nil {
+		return nil, fmt.Errorf("API error: %s", geminiResp.Error.Message)
+	}
+
+	for _, candidate := range geminiResp.Candidates {
+		for _, part := range candidate.Content.Parts {
+			if part.InlineData != nil && part.InlineData.Data != "" {
+				imageBytes, err := base64.StdEncoding.DecodeString(part.InlineData.Data)
+				if err != nil {
+					return nil, fmt.Errorf("decode image: %w", err)
+				}
+				return imageBytes, nil
+			}
+		}
+	}
+
+	return nil, fmt.Errorf("no image in API response")
+}
+
+func (g *AIGenerator) buildSingleProductPrompt(info SingleProductBackgroundInfo) string {
+	prompt := fmt.Sprintf(`Create a professional e-commerce product photograph. This must be a wide 16:9 landscape format image.
+
+The image shows a single 3D printed collectible toy figure of "%s" positioned prominently in the center-right of the frame, facing slightly toward the camera.
+
+Behind the toy is a softly blurred natural environment - imagine a forest floor with moss, small rocks, and scattered leaves, all rendered with beautiful bokeh (f/1.8 depth of field). The background complements the creature and suggests its natural habitat while keeping the product as the sharp focal point.
+
+The lighting is soft and professional: main light from upper left, gentle rim lighting to separate subject from background, no harsh shadows. Style is photorealistic, high-end collectible toy photography with rich cinematic color grading.
+
+CRITICAL REQUIREMENTS:
+- 16:9 wide landscape aspect ratio
+- Product centered in frame, sharp focus
+- Natural thematic background with bokeh - NO plain white or studio backgrounds
+- NO text, watermarks, logos, banners, or overlays of any kind
+- Preserve the exact colors and appearance of the toy from the input image`,
+		info.Name,
+	)
+
+	return prompt
+}

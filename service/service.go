@@ -264,6 +264,13 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 	admin.GET("/product/search", adminHandler.HandleProductSearch)
 	admin.GET("/product/:id/row", adminHandler.HandleGetProductRow)
+
+	// AI Background generation routes
+	aiBackgroundHandler := handlers.NewAIBackgroundHandler(s.storage, geminiAPIKey)
+	admin.POST("/product/:id/generate-background", aiBackgroundHandler.HandleGenerateAIBackground)
+	admin.GET("/product/:id/pending-backgrounds", aiBackgroundHandler.HandleGetPendingBackgrounds)
+	admin.POST("/pending-background/:id/approve", aiBackgroundHandler.HandleApproveBackground)
+	admin.POST("/pending-background/:id/reject", aiBackgroundHandler.HandleRejectBackground)
 	admin.GET("/product/:id/edit-row", adminHandler.HandleGetProductEditRow)
 	admin.PUT("/product/:id/inline", adminHandler.HandleUpdateProductInline)
 	admin.GET("/product/:id/row-mobile", adminHandler.HandleGetProductRowMobile)
@@ -383,8 +390,15 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 // getProductImageURL returns the primary image URL for a product, correctly handling variants
 func (s *Service) getProductImageURL(ctx context.Context, product db.Product) string {
-	// For products with variants, use the primary style's primary image
+	// For products with variants, prefer the AI-generated multi-variant OG image
 	if product.HasVariants.Valid && product.HasVariants.Bool {
+		// Check if multi-variant OG image exists
+		multiOGPath := fmt.Sprintf("public/og-images/product-%s-multi.png", product.ID)
+		if _, err := os.Stat(multiOGPath); err == nil {
+			return "/" + multiOGPath
+		}
+
+		// Fall back to primary style's primary image
 		styles, err := s.storage.Queries.GetProductStyles(ctx, product.ID)
 		if err == nil && len(styles) > 0 {
 			// First style is primary (ordered by is_primary DESC)
