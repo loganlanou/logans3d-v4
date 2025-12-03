@@ -399,6 +399,58 @@ func RenderContactRequestEmail(data *ContactRequestData) (string, error) {
 	return WrapEmailContent(content.String(), subject)
 }
 
+// QuoteRequestData contains all data for quote request notification emails
+type QuoteRequestData struct {
+	ID                 string
+	CustomerName       string
+	CustomerEmail      string
+	CustomerPhone      string
+	ProjectType        string
+	Material           string
+	Size               string
+	ProjectDescription string
+	SubmittedAt        string
+}
+
+// SendQuoteRequestNotification sends a quote request notification to admin
+func (s *Service) SendQuoteRequestNotification(data *QuoteRequestData) error {
+	html, err := RenderQuoteRequestEmail(data)
+	if err != nil {
+		return err
+	}
+
+	internalEmail := os.Getenv("EMAIL_TO_INTERNAL")
+	if internalEmail == "" {
+		internalEmail = "prints@logans3dcreations.com"
+	}
+
+	email := &Email{
+		To:      []string{internalEmail},
+		Subject: fmt.Sprintf("New Quote Request - %s", data.ProjectType),
+		Body:    html,
+		IsHTML:  true,
+	}
+
+	if data.CustomerEmail != "" {
+		email.ReplyTo = data.CustomerEmail
+	}
+
+	return s.Send(email)
+}
+
+// RenderQuoteRequestEmail renders the quote request email template
+func RenderQuoteRequestEmail(data *QuoteRequestData) (string, error) {
+	tmpl := template.Must(template.New("quote").Parse(quoteRequestContentTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render quote request email content: %w", err)
+	}
+
+	subject := fmt.Sprintf("New Quote Request - %s", data.ProjectType)
+	return WrapEmailContent(content.String(), subject)
+}
+
 // AbandonedCartItem represents an item in an abandoned cart
 type AbandonedCartItem struct {
 	ProductName  string

@@ -587,6 +587,48 @@ const contactRequestContentTemplate = `
 </div>
 `
 
+// quoteRequestContentTemplate is the content section for quote request notification emails
+const quoteRequestContentTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <span style="display: inline-block; background-color: #10B981; color: white; padding: 5px 15px; border-radius: 20px; font-weight: 600; font-size: 14px; margin-bottom: 10px;">NEW QUOTE REQUEST</span>
+    <h1 style="color: #10B981; margin: 10px 0; font-size: 28px;">Custom Order Quote Request</h1>
+    <p style="font-size: 16px; color: #666; margin: 10px 0;">Someone wants a custom 3D print!</p>
+</div>
+
+<div style="background-color: #ECFDF5; padding: 20px; border-left: 4px solid #10B981; margin-bottom: 25px;">
+    <p style="margin: 8px 0;"><strong style="color: #065F46; min-width: 150px; display: inline-block;">Quote ID:</strong> #{{.ID}}</p>
+    <p style="margin: 8px 0;"><strong style="color: #065F46; min-width: 150px; display: inline-block;">Submitted:</strong> {{.SubmittedAt}}</p>
+    <p style="margin: 8px 0;"><strong style="color: #065F46; min-width: 150px; display: inline-block;">Project Type:</strong> {{.ProjectType}}</p>
+</div>
+
+<div style="background-color: #F0FDF4; padding: 20px; border-radius: 8px; border-left: 4px solid #10B981; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #065F46; font-size: 16px;">Customer Information</h3>
+    <p style="margin: 5px 0;"><strong>Name:</strong> {{.CustomerName}}</p>
+    <p style="margin: 5px 0;"><strong>Email:</strong> <a href="mailto:{{.CustomerEmail}}" style="color: #10B981; text-decoration: none;">{{.CustomerEmail}}</a></p>
+    {{if .CustomerPhone}}
+    <p style="margin: 5px 0;"><strong>Phone:</strong> <a href="tel:{{.CustomerPhone}}" style="color: #10B981; text-decoration: none;">{{.CustomerPhone}}</a></p>
+    {{end}}
+</div>
+
+<div style="background-color: #F9FAFB; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #374151; font-size: 16px;">Project Specifications</h3>
+    {{if .Material}}
+    <p style="margin: 5px 0;"><strong>Material:</strong> {{.Material}}</p>
+    {{end}}
+    {{if .Size}}
+    <p style="margin: 5px 0;"><strong>Size:</strong> {{.Size}}</p>
+    {{end}}
+    {{if .ProjectDescription}}
+    <p style="margin: 10px 0;"><strong>Description:</strong></p>
+    <p style="margin: 5px 0; white-space: pre-wrap; line-height: 1.6; background-color: #fff; padding: 10px; border-radius: 4px;">{{.ProjectDescription}}</p>
+    {{end}}
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <a href="https://logans3dcreations.com/admin/quotes" style="display: inline-block; background-color: #10B981; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Quote in Admin</a>
+</div>
+`
+
 // welcomeCouponContentTemplate is the content section for welcome coupon emails
 const welcomeCouponContentTemplate = `
 <div style="text-align: center; margin-bottom: 30px;">

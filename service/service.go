@@ -229,7 +229,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Cart recovery email tracking - uses adminHandler but no auth required (customers click from email)
 	withAuth.GET("/cart/recover", adminHandler.HandleRecoveryEmailTracking)
 
-	admin := withAuth.Group("/admin", auth.RequireAdmin())
+	admin := withAuth.Group("/admin", auth.RequireAdmin(), s.adminBadgeMiddleware())
 	admin.GET("", adminHandler.HandleAdminDashboard)
 	admin.GET("/products", adminHandler.HandleProductsList)
 	admin.GET("/categories", adminHandler.HandleCategoriesTab)
@@ -1002,7 +1002,93 @@ func (s *Service) handleCustom(c echo.Context) error {
 }
 
 func (s *Service) handleCustomQuote(c echo.Context) error {
-	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received"})
+	ctx := c.Request().Context()
+
+	var req struct {
+		ProjectType string `json:"projectType"`
+		Material    string `json:"material"`
+		Size        string `json:"size"`
+		Name        string `json:"name"`
+		Email       string `json:"email"`
+		Phone       string `json:"phone"`
+		Description string `json:"description"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		slog.Error("failed to parse quote request", "error", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request format"})
+	}
+
+	// Validate required fields
+	if strings.TrimSpace(req.Name) == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Name is required"})
+	}
+
+	if strings.TrimSpace(req.Email) == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Email is required"})
+	}
+
+	if strings.TrimSpace(req.ProjectType) == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Project type is required"})
+	}
+
+	// Build project description from form data
+	var descParts []string
+	descParts = append(descParts, fmt.Sprintf("Project Type: %s", req.ProjectType))
+	if req.Size != "" {
+		descParts = append(descParts, fmt.Sprintf("Size: %s", req.Size))
+	}
+	if req.Description != "" {
+		descParts = append(descParts, fmt.Sprintf("Details: %s", req.Description))
+	}
+	projectDescription := strings.Join(descParts, "\n")
+
+	id := ulid.Make().String()
+
+	// Create quote request in database
+	_, err := s.storage.Queries.CreateQuoteRequest(ctx, db.CreateQuoteRequestParams{
+		ID:                 id,
+		CustomerName:       req.Name,
+		CustomerEmail:      req.Email,
+		CustomerPhone:      sql.NullString{String: req.Phone, Valid: req.Phone != ""},
+		ProjectDescription: projectDescription,
+		Quantity:           sql.NullInt64{Int64: 1, Valid: true},
+		MaterialPreference: sql.NullString{String: req.Material, Valid: req.Material != ""},
+		FinishPreference:   sql.NullString{},
+		DeadlineDate:       sql.NullTime{},
+		BudgetRange:        sql.NullString{String: req.Size, Valid: req.Size != ""},
+		Status:             sql.NullString{String: "pending", Valid: true},
+		AdminNotes:         sql.NullString{},
+		QuotedPriceCents:   sql.NullInt64{},
+	})
+
+	if err != nil {
+		slog.Error("failed to create quote request", "error", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to submit quote request"})
+	}
+
+	// Send email notification asynchronously
+	go func() {
+		quoteData := &email.QuoteRequestData{
+			ID:                 id,
+			CustomerName:       req.Name,
+			CustomerEmail:      req.Email,
+			CustomerPhone:      req.Phone,
+			ProjectType:        req.ProjectType,
+			Material:           req.Material,
+			Size:               req.Size,
+			ProjectDescription: req.Description,
+			SubmittedAt:        time.Now().Format("January 2, 2006 at 3:04 PM MST"),
+		}
+
+		if err := s.emailService.SendQuoteRequestNotification(quoteData); err != nil {
+			slog.Error("failed to send quote request notification", "error", err, "quote_id", id)
+		}
+	}()
+
+	slog.Debug("quote request created successfully", "quote_id", id, "email", req.Email)
+
+	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received", "quote_id": id})
 }
 
 func (s *Service) handleCheckoutCancel(c echo.Context) error {
@@ -1931,4 +2017,29 @@ func int64FromNull(n sql.NullInt64) int64 {
 		return n.Int64
 	}
 	return 0
+}
+
+// adminBadgeMiddleware fetches badge counts for the admin sidebar
+func (s *Service) adminBadgeMiddleware() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			ctx := c.Request().Context()
+
+			// Fetch badge counts from database
+			counts, err := s.storage.Queries.GetSidebarBadgeCounts(ctx)
+			if err != nil {
+				slog.Debug("failed to fetch sidebar badge counts", "error", err)
+				// Continue without badges - don't fail the request
+				return next(c)
+			}
+
+			// Store badge counts in context for the sidebar template
+			c.Set(layout.AdminBadgeCountsKey, layout.AdminBadgeCounts{
+				NewContacts:   counts.NewContacts,
+				PendingQuotes: counts.PendingQuotes,
+			})
+
+			return next(c)
+		}
+	}
 }
