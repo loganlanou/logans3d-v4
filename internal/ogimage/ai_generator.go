@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"log/slog"
 	"net/http"
@@ -12,11 +14,22 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/fogleman/gg"
+	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/font/gofont/goregular"
+
+	_ "image/jpeg"
 )
 
 const (
-	geminiAPIEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent"
-	defaultTimeout    = 60 * time.Second
+	// Nano Banana Pro - best consistency and text rendering
+	geminiAPIEndpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image-preview:generateContent"
+	defaultTimeout    = 120 * time.Second // Increased for larger model
+
+	// OG image dimensions
+	ogWidth  = 1200
+	ogHeight = 630
 )
 
 type AIGenerator struct {
@@ -52,8 +65,13 @@ type inlineData struct {
 	Data     string `json:"data"`
 }
 
+type imageConfig struct {
+	AspectRatio string `json:"aspectRatio,omitempty"`
+}
+
 type generationConfig struct {
-	ResponseModalities []string `json:"responseModalities,omitempty"`
+	ResponseModalities []string     `json:"responseModalities,omitempty"`
+	ImageConfig        *imageConfig `json:"imageConfig,omitempty"`
 }
 
 type geminiResponse struct {
@@ -91,24 +109,33 @@ func (g *AIGenerator) GenerateMultiVariantOGImage(info MultiVariantInfo, outputP
 		return GenerateMultiVariantOGImage(info, outputPath)
 	}
 
-	imageData, err := g.callGeminiAPI(info)
+	// Step 1: Get AI-generated image (no text)
+	aiImageData, err := g.callGeminiAPI(info)
 	if err != nil {
 		slog.Error("AI image generation failed, falling back to grid method", "error", err)
 		return GenerateMultiVariantOGImage(info, outputPath)
 	}
 
+	// Step 2: Overlay text banner programmatically (guaranteed consistent)
+	finalImageData, err := g.overlayTextBanner(aiImageData, info)
+	if err != nil {
+		slog.Error("failed to overlay text banner, falling back to grid method", "error", err)
+		return GenerateMultiVariantOGImage(info, outputPath)
+	}
+
+	// Step 3: Save the final image
 	outputDir := filepath.Dir(outputPath)
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		slog.Error("failed to create output directory", "error", err, "dir", outputDir)
 		return fmt.Errorf("create output dir: %w", err)
 	}
 
-	if err := os.WriteFile(outputPath, imageData, 0644); err != nil {
+	if err := os.WriteFile(outputPath, finalImageData, 0644); err != nil {
 		slog.Error("failed to write AI-generated image", "error", err, "path", outputPath)
 		return fmt.Errorf("write image: %w", err)
 	}
 
-	slog.Info("generated AI multi-variant OG image", "product", info.Name, "output", outputPath)
+	slog.Info("generated AI multi-variant OG image", "product", info.Name, "output", outputPath, "dimensions", fmt.Sprintf("%dx%d", ogWidth, ogHeight))
 	return nil
 }
 
@@ -141,6 +168,9 @@ func (g *AIGenerator) callGeminiAPI(info MultiVariantInfo) ([]byte, error) {
 		},
 		GenerationConfig: &generationConfig{
 			ResponseModalities: []string{"TEXT", "IMAGE"},
+			ImageConfig: &imageConfig{
+				AspectRatio: "16:9", // Closest to 1200x630 (1.9:1)
+			},
 		},
 	}
 
@@ -199,53 +229,21 @@ func (g *AIGenerator) callGeminiAPI(info MultiVariantInfo) ([]byte, error) {
 func (g *AIGenerator) buildPrompt(info MultiVariantInfo) string {
 	styleList := strings.Join(info.StyleNames, ", ")
 
-	// Build the second line text based on available variants
-	var line2Text string
-	switch {
-	case info.StyleCount > 1 && info.SizeCount > 1:
-		line2Text = fmt.Sprintf("%d Colors • %d Sizes • %s", info.StyleCount, info.SizeCount, info.PriceRange)
-	case info.StyleCount > 1:
-		line2Text = fmt.Sprintf("%d Colors • %s", info.StyleCount, info.PriceRange)
-	case info.SizeCount > 1:
-		line2Text = fmt.Sprintf("%d Sizes • %s", info.SizeCount, info.PriceRange)
-	default:
-		line2Text = fmt.Sprintf("%s • Shop Now", info.PriceRange)
-	}
+	// Narrative prompt - AI generates image only, we overlay text programmatically
+	prompt := fmt.Sprintf(`Imagine a professional product photograph for an e-commerce website showcasing multiple 3D printed collectible toys. The scene features %d color variants of "%s" in the colors %s, arranged in a dynamic diagonal composition across a wide 16:9 landscape frame.
 
-	prompt := fmt.Sprintf(`CRITICAL IMAGE DIMENSIONS: Generate a WIDE LANDSCAPE image at exactly 1200x630 pixels (1.9:1 aspect ratio). This is for Open Graph social sharing and MUST be horizontal/landscape orientation.
+The toys are positioned in the upper two-thirds of the image, each facing slightly toward the camera as if walking together in a friendly group. They should be spread across the width of the frame to take advantage of the wide landscape format.
 
-Professional product photography of 3D printed collectible toys for e-commerce social sharing.
+Behind them, a softly blurred natural environment creates depth and visual interest. Think of a forest floor with moss, small rocks, and fallen leaves - all rendered with beautiful bokeh effect at f/1.8 aperture. The background should complement the creature type and feel like their natural habitat, but remain soft and out of focus so the products stay sharp.
 
-Subject: %d color variants of "%s" (colors: %s)
+Soft studio lighting comes from the upper left, with gentle rim lighting that separates the subjects from the background. No harsh shadows. The overall style is photorealistic, high-end collectible toy photography with tack-sharp product detail and cinematic color grading.
 
-Composition: WIDE 1200x630 LANDSCAPE format (almost twice as wide as tall). Toys arranged in a dynamic diagonal line or gentle arc formation in the UPPER 70%% of the image, each facing slightly toward camera, positioned as if walking together or displayed as collectibles. Use the full width of the landscape format.
+The bottom portion of the image (roughly the lower 20%%) should continue the blurred background - leave this area clear for a text overlay that will be added separately.
 
-Environment: MUST have a subtle thematic background - NOT white/plain. Use soft out-of-focus natural elements (moss, rocks, leaves, forest floor) or a gentle gradient suggesting their habitat. Background should be heavily blurred (f/1.8 depth of field) so products remain the sharp focal point. NO WHITE BACKGROUNDS.
-
-Lighting: Soft studio lighting from upper left, gentle rim lighting to separate subjects from background, no harsh shadows. Professional commercial photography style.
-
-Style: Photorealistic, high-end collectible toy photography, 8K detail on the products, cinematic color grading with rich but natural tones.
-
-TEXT BANNER (REQUIRED):
-Add a semi-transparent dark banner across the BOTTOM of the image (approximately 100-120 pixels tall) containing:
-- Line 1 (large, bold, white text, centered): "%s"
-- Line 2 (smaller, white text, centered): "%s"
-
-The text must be clearly readable, professionally styled, and centered on the dark banner.
-
-MANDATORY requirements:
-- IMAGE MUST BE 1200x630 PIXELS (LANDSCAPE, 1.9:1 ratio) - NOT square, NOT portrait
-- Products must be tack-sharp and the clear focal point
-- Products should be in the upper portion, NOT overlapping the text banner
-- Background MUST be thematic/natural - NO plain white backgrounds
-- NO watermarks, logos, or signatures - ONLY the required text banner
-- Maintain exact appearance and colors of each toy from input images
-- The text banner is MANDATORY - do not skip it`,
+Critical: Do NOT add any text, watermarks, logos, labels, or banners to the image. The image should be purely the product photograph with the thematic background. No white or plain studio backgrounds - the environment must be natural and thematic.`,
 		len(info.ImagePaths),
 		info.Name,
 		styleList,
-		info.Name,
-		line2Text,
 	)
 
 	return prompt
@@ -274,4 +272,91 @@ func (g *AIGenerator) loadImageAsBase64(imagePath string) (string, string, error
 
 	encoded := base64.StdEncoding.EncodeToString(data)
 	return encoded, mimeType, nil
+}
+
+// overlayTextBanner takes the AI-generated image and adds a text banner at the bottom
+// This ensures consistent text rendering regardless of AI output
+func (g *AIGenerator) overlayTextBanner(imageData []byte, info MultiVariantInfo) ([]byte, error) {
+	// Decode the AI-generated image
+	img, _, err := image.Decode(bytes.NewReader(imageData))
+	if err != nil {
+		return nil, fmt.Errorf("decode AI image: %w", err)
+	}
+
+	// Create a new context at exact OG dimensions
+	dc := gg.NewContext(ogWidth, ogHeight)
+
+	// Calculate scaling to fit AI image into OG dimensions (cover/crop approach)
+	srcWidth := float64(img.Bounds().Dx())
+	srcHeight := float64(img.Bounds().Dy())
+	scaleX := float64(ogWidth) / srcWidth
+	scaleY := float64(ogHeight) / srcHeight
+
+	// Use the larger scale to cover the canvas (may crop edges)
+	scale := scaleX
+	if scaleY > scaleX {
+		scale = scaleY
+	}
+
+	// Calculate centered position
+	scaledWidth := srcWidth * scale
+	scaledHeight := srcHeight * scale
+	offsetX := (float64(ogWidth) - scaledWidth) / 2
+	offsetY := (float64(ogHeight) - scaledHeight) / 2
+
+	// Draw the scaled/cropped AI image
+	dc.Push()
+	dc.Translate(offsetX, offsetY)
+	dc.Scale(scale, scale)
+	dc.DrawImage(img, 0, 0)
+	dc.Pop()
+
+	// Add semi-transparent bar at bottom for text
+	textAreaHeight := 120.0
+	textAreaY := float64(ogHeight) - textAreaHeight
+	dc.SetRGBA(0, 0, 0, 0.85)
+	dc.DrawRectangle(0, textAreaY, float64(ogWidth), textAreaHeight)
+	dc.Fill()
+
+	// Load font
+	font, err := truetype.Parse(goregular.TTF)
+	if err != nil {
+		return nil, fmt.Errorf("parse font: %w", err)
+	}
+
+	// Draw product name (large)
+	dc.SetRGB(1, 1, 1)
+	face := truetype.NewFace(font, &truetype.Options{Size: 42})
+	dc.SetFontFace(face)
+
+	productName := truncateText(info.Name, 35)
+	textY := textAreaY + 45
+	dc.DrawStringAnchored(productName, float64(ogWidth)/2, textY, 0.5, 0.5)
+
+	// Build the second line text based on available variants
+	var secondLine string
+	switch {
+	case info.StyleCount > 1 && info.SizeCount > 1:
+		secondLine = fmt.Sprintf("%d Colors • %d Sizes • %s", info.StyleCount, info.SizeCount, info.PriceRange)
+	case info.StyleCount > 1:
+		secondLine = fmt.Sprintf("%d Colors • %s", info.StyleCount, info.PriceRange)
+	case info.SizeCount > 1:
+		secondLine = fmt.Sprintf("%d Sizes • %s", info.SizeCount, info.PriceRange)
+	default:
+		secondLine = fmt.Sprintf("%s • Shop Now", info.PriceRange)
+	}
+
+	// Draw variant info line
+	face = truetype.NewFace(font, &truetype.Options{Size: 28})
+	dc.SetFontFace(face)
+	textY += 45
+	dc.DrawStringAnchored(secondLine, float64(ogWidth)/2, textY, 0.5, 0.5)
+
+	// Encode to PNG
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, dc.Image()); err != nil {
+		return nil, fmt.Errorf("encode final image: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }
