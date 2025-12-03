@@ -21,13 +21,22 @@ const (
 )
 
 type OGImageRefresher struct {
-	storage *storage.Storage
+	storage     *storage.Storage
+	aiGenerator *ogimage.AIGenerator
 }
 
 func NewOGImageRefresher(storage *storage.Storage) *OGImageRefresher {
-	return &OGImageRefresher{
+	return NewOGImageRefresherWithAI(storage, "")
+}
+
+func NewOGImageRefresherWithAI(storage *storage.Storage, geminiAPIKey string) *OGImageRefresher {
+	r := &OGImageRefresher{
 		storage: storage,
 	}
+	if geminiAPIKey != "" {
+		r.aiGenerator = ogimage.NewAIGenerator(geminiAPIKey)
+	}
+	return r
 }
 
 // Start begins the OG image refresh process in a background goroutine
@@ -163,6 +172,14 @@ func (r *OGImageRefresher) generateProductOG(ctx context.Context, productID, pro
 		return false, nil
 	}
 
+	// Check if OG image already exists and is recent (less than 7 days old)
+	if info, err := os.Stat(ogImagePath); err == nil {
+		if time.Since(info.ModTime()) < 7*24*time.Hour {
+			slog.Debug("OG image already exists and is recent, skipping", "product_id", productID)
+			return false, nil
+		}
+	}
+
 	// Generate OG image
 	productInfo := ogimage.ProductInfo{
 		Name:         product.Name,
@@ -263,6 +280,14 @@ func (r *OGImageRefresher) generateMultiVariantOG(ctx context.Context, productID
 	ogImageFilename := fmt.Sprintf("product-%s-multi.png", productID)
 	ogImagePath := filepath.Join("public", "og-images", ogImageFilename)
 
+	// Check if OG image already exists and is recent (less than 7 days old)
+	if info, err := os.Stat(ogImagePath); err == nil {
+		if time.Since(info.ModTime()) < 7*24*time.Hour {
+			slog.Debug("multi-variant OG image already exists and is recent, skipping", "product_id", productID)
+			return false, nil
+		}
+	}
+
 	// Generate multi-variant OG image
 	info := ogimage.MultiVariantInfo{
 		Name:       product.Name,
@@ -272,9 +297,16 @@ func (r *OGImageRefresher) generateMultiVariantOG(ctx context.Context, productID
 		StyleNames: styleNames,
 	}
 
-	if err := ogimage.GenerateMultiVariantOGImage(info, ogImagePath); err != nil {
-		slog.Debug("failed to generate multi-variant OG image", "error", err, "product_id", productID)
-		return false, err
+	// Use AI generator if available, otherwise fall back to grid method
+	var genErr error
+	if r.aiGenerator != nil {
+		genErr = r.aiGenerator.GenerateMultiVariantOGImage(info, ogImagePath)
+	} else {
+		genErr = ogimage.GenerateMultiVariantOGImage(info, ogImagePath)
+	}
+	if genErr != nil {
+		slog.Debug("failed to generate multi-variant OG image", "error", genErr, "product_id", productID)
+		return false, genErr
 	}
 
 	slog.Debug("generated multi-variant OG image", "product", productName, "styles", styleCount, "output", ogImagePath)

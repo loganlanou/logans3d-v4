@@ -908,15 +908,25 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 				baseUrl: '',
 				title: '',
 				loading: true,
+				loadImage(url) {
+					this.loading = true;
+					this.imageUrl = url;
+					// Check if image is already cached (loads instantly)
+					this.$nextTick(() => {
+						if (this.$refs.ogImage && this.$refs.ogImage.complete && this.$refs.ogImage.naturalHeight !== 0) {
+							this.loading = false;
+						}
+					});
+				},
 				refresh() {
 					this.loading = true;
 					const refreshUrl = this.baseUrl + (this.baseUrl.includes('?') ? '&' : '?') + 'refresh=true';
-					this.$refs.ogImage.src = refreshUrl;
+					this.imageUrl = refreshUrl;
 				}
 			}"
 			x-show="open"
 			x-cloak
-			@show-og-preview.window="open = true; loading = true; baseUrl = $event.detail.url; imageUrl = $event.detail.url; title = $event.detail.title"
+			@show-og-preview.window="open = true; baseUrl = $event.detail.url; title = $event.detail.title; loadImage($event.detail.url)"
 			@keydown.escape.window="open = false"
 			class="fixed inset-0 z-50 overflow-y-auto"
 			aria-labelledby="og-preview-modal-title"

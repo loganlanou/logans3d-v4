@@ -89,7 +89,7 @@ func New(storage *storage.Storage, config *Config) *Service {
 	abandonedCartEmailSender.Start(ctx)
 
 	// Initialize OG image refresher (runs once at startup in background)
-	ogImageRefresher := jobs.NewOGImageRefresher(storage)
+	ogImageRefresher := jobs.NewOGImageRefresherWithAI(storage, os.Getenv("GEMINI_API_KEY"))
 	ogImageRefresher.Start(ctx)
 
 	return &Service{
@@ -198,7 +198,8 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	api.PUT("/email-preferences", emailPrefsHandler.HandleUpdateEmailPreferences)
 
 	// Open Graph image generation
-	ogImageHandler := handlers.NewOGImageHandler(s.storage)
+	geminiAPIKey := os.Getenv("GEMINI_API_KEY")
+	ogImageHandler := handlers.NewOGImageHandlerWithAI(s.storage, geminiAPIKey)
 	api.GET("/og-image/multi/:product_id", ogImageHandler.HandleGenerateMultiVariantOGImage) // Must be before :product_id route
 	api.GET("/og-image/:product_id", ogImageHandler.HandleGenerateOGImage)
 	api.GET("/carousel/:product_id", ogImageHandler.HandleDownloadCarouselImages) // Instagram carousel ZIP download
