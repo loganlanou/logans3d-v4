@@ -120,11 +120,11 @@ func (h *OGImageHandler) generateProductOGImage(c echo.Context, product db.Produ
 			if productUpdated.Valid {
 				ogImageCreated := info.ModTime()
 				if productUpdated.Time.Before(ogImageCreated) {
-					return c.File(ogImagePath)
+					return h.serveOGImage(c, ogImagePath)
 				}
 			} else {
 				if time.Since(info.ModTime()) < 7*24*time.Hour {
-					return c.File(ogImagePath)
+					return h.serveOGImage(c, ogImagePath)
 				}
 			}
 		}
@@ -143,7 +143,7 @@ func (h *OGImageHandler) generateProductOGImage(c echo.Context, product db.Produ
 		return h.serveDefaultOGImage(c)
 	}
 
-	return c.File(ogImagePath)
+	return h.serveOGImage(c, ogImagePath)
 }
 
 // generateVariantOGImage generates an OG image for a specific variant (style + size)
@@ -218,7 +218,7 @@ func (h *OGImageHandler) generateVariantOGImage(c echo.Context, product db.Produ
 	if !forceRefresh {
 		if info, err := os.Stat(ogImagePath); err == nil {
 			if time.Since(info.ModTime()) < 7*24*time.Hour {
-				return c.File(ogImagePath)
+				return h.serveOGImage(c, ogImagePath)
 			}
 		}
 	}
@@ -241,14 +241,21 @@ func (h *OGImageHandler) generateVariantOGImage(c echo.Context, product db.Produ
 		return h.serveDefaultOGImage(c)
 	}
 
-	return c.File(ogImagePath)
+	return h.serveOGImage(c, ogImagePath)
+}
+
+// serveOGImage serves an OG image with short cache headers
+func (h *OGImageHandler) serveOGImage(c echo.Context, path string) error {
+	// 5 minute cache - fresh enough for regenerated images, but reduces redundant fetches
+	c.Response().Header().Set("Cache-Control", "public, max-age=300")
+	return c.File(path)
 }
 
 // serveDefaultOGImage serves the default OG image as fallback
 func (h *OGImageHandler) serveDefaultOGImage(c echo.Context) error {
 	defaultOGPath := filepath.Join("public", "og-images", "default.png")
 	if _, err := os.Stat(defaultOGPath); err == nil {
-		return c.File(defaultOGPath)
+		return h.serveOGImage(c, defaultOGPath)
 	}
 	return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate OG image")
 }
@@ -290,7 +297,7 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 	if !refresh {
 		if info, err := os.Stat(ogImagePath); err == nil {
 			if time.Since(info.ModTime()) < 7*24*time.Hour {
-				return c.File(ogImagePath)
+				return h.serveOGImage(c, ogImagePath)
 			}
 		}
 	}
@@ -379,7 +386,7 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 			if _, statErr := os.Stat(ogImagePath); statErr == nil {
 				c.Response().Header().Set("X-OG-Model", "cached")
 				c.Response().Header().Set("X-OG-Error", err.Error())
-				return c.File(ogImagePath)
+				return h.serveOGImage(c, ogImagePath)
 			}
 		}
 		return h.serveDefaultOGImage(c)
@@ -387,7 +394,7 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 
 	// Add model info to response header
 	c.Response().Header().Set("X-OG-Model", modelUsed)
-	return c.File(ogImagePath)
+	return h.serveOGImage(c, ogImagePath)
 }
 
 // HandleDownloadCarouselImages generates a ZIP file containing individual style images
