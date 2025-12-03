@@ -99,8 +99,9 @@ func (g *AIGenerator) GenerateMultiVariantOGImage(info MultiVariantInfo, outputP
 
 	imageData, err := g.callGeminiAPI(info)
 	if err != nil {
-		slog.Error("AI image generation failed, falling back to grid method", "error", err)
-		return GenerateMultiVariantOGImage(info, outputPath)
+		// Don't fall back to grid - keep existing image if API fails
+		slog.Error("AI image generation failed, keeping existing image", "error", err)
+		return fmt.Errorf("AI generation failed: %w", err)
 	}
 
 	outputDir := filepath.Dir(outputPath)
