@@ -199,11 +199,11 @@ func (g *AIGenerator) callGeminiAPI(info MultiVariantInfo) ([]byte, error) {
 func (g *AIGenerator) buildPrompt(info MultiVariantInfo) string {
 	styleList := strings.Join(info.StyleNames, ", ")
 
-	prompt := fmt.Sprintf(`Professional product photography of 3D printed collectible toys for e-commerce.
+	prompt := fmt.Sprintf(`Professional product photography of 3D printed collectible toys for e-commerce social sharing.
 
 Subject: %d color variants of "%s" (colors: %s)
 
-Composition: Wide 1200x630 landscape format, toys arranged in a dynamic diagonal line or gentle arc formation, each facing slightly toward camera, positioned as if walking together or displayed as collectibles.
+Composition: Wide 1200x630 landscape format. Toys arranged in a dynamic diagonal line or gentle arc formation in the UPPER 75%% of the image, each facing slightly toward camera, positioned as if walking together or displayed as collectibles.
 
 Environment: Subtle thematic background that complements the creature/toy type - soft out-of-focus natural elements (moss, rocks, leaves) or a gentle gradient suggesting their habitat. Background should be heavily blurred (f/1.8 depth of field) so products remain the sharp focal point.
 
@@ -211,15 +211,26 @@ Lighting: Soft studio lighting from upper left, gentle rim lighting to separate 
 
 Style: Photorealistic, high-end collectible toy photography, 8K detail on the products, cinematic color grading with rich but natural tones.
 
+TEXT BANNER (REQUIRED):
+Add a semi-transparent dark banner across the BOTTOM of the image (approximately 100-120 pixels tall) containing:
+- Line 1 (large, bold, white text, centered): "%s"
+- Line 2 (smaller, white text, centered): "Available in %d colors! • %s"
+
+The text must be clearly readable, professionally styled, and centered on the dark banner.
+
 Critical requirements:
 - Products must be tack-sharp and the clear focal point
+- Products should be in the upper portion, NOT overlapping the text banner
 - Background stays subtle and out of focus - never distracting
-- NO text, watermarks, logos, labels, or signatures anywhere
+- NO watermarks, logos, or signatures - ONLY the required text banner
 - Maintain exact appearance and colors of each toy from input images
-- Clean, professional result suitable for social media sharing`,
+- The text banner is MANDATORY - do not skip it`,
 		len(info.ImagePaths),
 		info.Name,
 		styleList,
+		info.Name,
+		info.StyleCount,
+		info.PriceRange,
 	)
 
 	return prompt
