@@ -19,13 +19,24 @@ import (
 )
 
 type OGImageHandler struct {
-	storage *storage.Storage
+	storage     *storage.Storage
+	aiGenerator *ogimage.AIGenerator
+	useAI       bool
 }
 
 func NewOGImageHandler(storage *storage.Storage) *OGImageHandler {
-	return &OGImageHandler{
+	return NewOGImageHandlerWithAI(storage, "")
+}
+
+func NewOGImageHandlerWithAI(storage *storage.Storage, geminiAPIKey string) *OGImageHandler {
+	h := &OGImageHandler{
 		storage: storage,
 	}
+	if geminiAPIKey != "" {
+		h.aiGenerator = ogimage.NewAIGenerator(geminiAPIKey)
+		h.useAI = true
+	}
+	return h
 }
 
 // HandleGenerateOGImage generates an Open Graph image for a product
@@ -351,7 +362,12 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 		StyleNames: styleNames,
 	}
 
-	err = ogimage.GenerateMultiVariantOGImage(info, ogImagePath)
+	// Use AI generator if available, otherwise fall back to grid method
+	if h.useAI && h.aiGenerator != nil {
+		err = h.aiGenerator.GenerateMultiVariantOGImage(info, ogImagePath)
+	} else {
+		err = ogimage.GenerateMultiVariantOGImage(info, ogImagePath)
+	}
 	if err != nil {
 		slog.Error("failed to generate multi-variant OG image", "error", err, "product_id", product.ID)
 		return h.serveDefaultOGImage(c)
