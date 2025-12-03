@@ -337,7 +337,8 @@ SELECT
     p.price_cents as base_price,
     MIN(p.price_cents + COALESCE(psku.price_adjustment_cents, 0)) as min_price,
     MAX(p.price_cents + COALESCE(psku.price_adjustment_cents, 0)) as max_price,
-    COUNT(DISTINCT ps.id) as style_count
+    COUNT(DISTINCT ps.id) as style_count,
+    COUNT(DISTINCT psku.size_id) as size_count
 FROM products p
 LEFT JOIN product_styles ps ON ps.product_id = p.id
 LEFT JOIN product_skus psku ON psku.product_id = p.id AND psku.is_active = TRUE

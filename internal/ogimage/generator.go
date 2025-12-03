@@ -214,7 +214,8 @@ func GenerateVariantOGImage(product ProductInfo, variant VariantInfo, outputPath
 // MultiVariantInfo contains data for multi-variant OG image generation
 type MultiVariantInfo struct {
 	Name       string   // Product name
-	StyleCount int      // Total number of styles (could be 24)
+	StyleCount int      // Total number of styles/colors (could be 24)
+	SizeCount  int      // Total number of sizes
 	PriceRange string   // "$5.00 - $12.00" or "$5.00" if same
 	ImagePaths []string // Up to 4 image paths for 2x2 grid
 	StyleNames []string // Names of styles shown in grid
@@ -298,14 +299,19 @@ func GenerateMultiVariantOGImage(info MultiVariantInfo, outputPath string) error
 	textY := float64(textAreaY) + 45
 	dc.DrawStringAnchored(productName, float64(width)/2, textY, 0.5, 0.5)
 
-	// Draw "Available in X colors! | Price range"
+	// Draw variant info line (colors, sizes, price)
 	face = truetype.NewFace(font, &truetype.Options{Size: 28})
 	dc.SetFontFace(face)
 
 	var secondLine string
-	if info.StyleCount > 1 {
-		secondLine = fmt.Sprintf("Available in %d colors! • %s", info.StyleCount, info.PriceRange)
-	} else {
+	switch {
+	case info.StyleCount > 1 && info.SizeCount > 1:
+		secondLine = fmt.Sprintf("%d Colors • %d Sizes • %s", info.StyleCount, info.SizeCount, info.PriceRange)
+	case info.StyleCount > 1:
+		secondLine = fmt.Sprintf("%d Colors • %s", info.StyleCount, info.PriceRange)
+	case info.SizeCount > 1:
+		secondLine = fmt.Sprintf("%d Sizes • %s", info.SizeCount, info.PriceRange)
+	default:
 		secondLine = fmt.Sprintf("%s • Shop Now", info.PriceRange)
 	}
 

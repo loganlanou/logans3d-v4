@@ -199,6 +199,19 @@ func (g *AIGenerator) callGeminiAPI(info MultiVariantInfo) ([]byte, error) {
 func (g *AIGenerator) buildPrompt(info MultiVariantInfo) string {
 	styleList := strings.Join(info.StyleNames, ", ")
 
+	// Build the second line text based on available variants
+	var line2Text string
+	switch {
+	case info.StyleCount > 1 && info.SizeCount > 1:
+		line2Text = fmt.Sprintf("%d Colors • %d Sizes • %s", info.StyleCount, info.SizeCount, info.PriceRange)
+	case info.StyleCount > 1:
+		line2Text = fmt.Sprintf("%d Colors • %s", info.StyleCount, info.PriceRange)
+	case info.SizeCount > 1:
+		line2Text = fmt.Sprintf("%d Sizes • %s", info.SizeCount, info.PriceRange)
+	default:
+		line2Text = fmt.Sprintf("%s • Shop Now", info.PriceRange)
+	}
+
 	prompt := fmt.Sprintf(`Professional product photography of 3D printed collectible toys for e-commerce social sharing.
 
 Subject: %d color variants of "%s" (colors: %s)
@@ -214,7 +227,7 @@ Style: Photorealistic, high-end collectible toy photography, 8K detail on the pr
 TEXT BANNER (REQUIRED):
 Add a semi-transparent dark banner across the BOTTOM of the image (approximately 100-120 pixels tall) containing:
 - Line 1 (large, bold, white text, centered): "%s"
-- Line 2 (smaller, white text, centered): "Available in %d colors! • %s"
+- Line 2 (smaller, white text, centered): "%s"
 
 The text must be clearly readable, professionally styled, and centered on the dark banner.
 
@@ -229,8 +242,7 @@ Critical requirements:
 		info.Name,
 		styleList,
 		info.Name,
-		info.StyleCount,
-		info.PriceRange,
+		line2Text,
 	)
 
 	return prompt

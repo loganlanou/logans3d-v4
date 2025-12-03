@@ -315,11 +315,12 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 		priceRangeStr = fmt.Sprintf("$%.2f", float64(product.PriceCents)/100)
 	}
 
-	// Get style count
+	// Get style and size counts
 	styleCount := int(priceRange.StyleCount)
 	if styleCount == 0 {
 		styleCount = 1
 	}
+	sizeCount := int(priceRange.SizeCount)
 
 	// Get all style primary images
 	styleImages, err := h.storage.Queries.GetAllStylePrimaryImages(ctx, productID)
@@ -357,6 +358,7 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 	info := ogimage.MultiVariantInfo{
 		Name:       product.Name,
 		StyleCount: styleCount,
+		SizeCount:  sizeCount,
 		PriceRange: priceRangeStr,
 		ImagePaths: imagePaths,
 		StyleNames: styleNames,
