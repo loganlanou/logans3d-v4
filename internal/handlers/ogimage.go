@@ -397,8 +397,10 @@ func (h *OGImageHandler) HandleGenerateMultiVariantOGImage(c echo.Context) error
 	return h.serveOGImage(c, ogImagePath)
 }
 
-// HandleDownloadCarouselImages generates a ZIP file containing individual style images
+// HandleDownloadCarouselImages generates a ZIP file containing individual images
 // for posting as an Instagram carousel (up to 10 images)
+// For variant products: uses style primary images
+// For non-variant products: uses product images
 // Route: GET /api/carousel/:product_id
 func (h *OGImageHandler) HandleDownloadCarouselImages(c echo.Context) error {
 	ctx := c.Request().Context()
@@ -418,56 +420,100 @@ func (h *OGImageHandler) HandleDownloadCarouselImages(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load product")
 	}
 
-	// Get all style primary images
-	styleImages, err := h.storage.Queries.GetAllStylePrimaryImages(ctx, productID)
-	if err != nil {
-		slog.Error("failed to get style images", "error", err, "product_id", productID)
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load style images")
-	}
-
-	if len(styleImages) == 0 {
-		return echo.NewHTTPError(http.StatusNotFound, "No style images found for this product")
-	}
-
-	// Limit to 10 images (Instagram carousel max)
-	maxImages := 10
-	if len(styleImages) > maxImages {
-		styleImages = styleImages[:maxImages]
-	}
-
 	// Create ZIP file in memory
 	buf := new(bytes.Buffer)
 	zipWriter := zip.NewWriter(buf)
 
-	// Add each style image to the ZIP
-	for i, img := range styleImages {
-		imagePath := filepath.Join("public", "images", "products", "styles", img.ImageUrl)
+	// Try to get style images first (for variant products)
+	styleImages, err := h.storage.Queries.GetAllStylePrimaryImages(ctx, productID)
+	if err != nil {
+		slog.Debug("failed to get style images", "error", err, "product_id", productID)
+		styleImages = nil
+	}
 
-		// Read the source image
-		imageData, err := os.ReadFile(imagePath)
+	imagesAdded := 0
+	maxImages := 10 // Instagram carousel max
+
+	if len(styleImages) > 0 {
+		// Use style images for variant products
+		for i, img := range styleImages {
+			if imagesAdded >= maxImages {
+				break
+			}
+
+			imagePath := filepath.Join("public", "images", "products", "styles", img.ImageUrl)
+
+			// Read the source image
+			imageData, err := os.ReadFile(imagePath)
+			if err != nil {
+				slog.Debug("failed to read style image, skipping", "error", err, "path", imagePath)
+				continue
+			}
+
+			// Create a safe filename: 01_StyleName.ext
+			ext := filepath.Ext(img.ImageUrl)
+			safeName := strings.ReplaceAll(img.StyleName, " ", "_")
+			safeName = strings.ReplaceAll(safeName, "/", "-")
+			filename := fmt.Sprintf("%02d_%s%s", i+1, safeName, ext)
+
+			// Add to ZIP
+			writer, err := zipWriter.Create(filename)
+			if err != nil {
+				slog.Debug("failed to create zip entry", "error", err, "filename", filename)
+				continue
+			}
+
+			_, err = writer.Write(imageData)
+			if err != nil {
+				slog.Debug("failed to write to zip", "error", err, "filename", filename)
+				continue
+			}
+			imagesAdded++
+		}
+	} else {
+		// Fall back to product images for non-variant products
+		productImages, err := h.storage.Queries.GetProductImages(ctx, productID)
 		if err != nil {
-			slog.Debug("failed to read style image, skipping", "error", err, "path", imagePath)
-			continue
+			slog.Error("failed to get product images", "error", err, "product_id", productID)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to load product images")
 		}
 
-		// Create a safe filename: 01_StyleName.ext
-		ext := filepath.Ext(img.ImageUrl)
-		safeName := strings.ReplaceAll(img.StyleName, " ", "_")
-		safeName = strings.ReplaceAll(safeName, "/", "-")
-		filename := fmt.Sprintf("%02d_%s%s", i+1, safeName, ext)
+		for i, img := range productImages {
+			if imagesAdded >= maxImages {
+				break
+			}
 
-		// Add to ZIP
-		writer, err := zipWriter.Create(filename)
-		if err != nil {
-			slog.Debug("failed to create zip entry", "error", err, "filename", filename)
-			continue
-		}
+			imagePath := filepath.Join("public", "images", "products", img.ImageUrl)
 
-		_, err = writer.Write(imageData)
-		if err != nil {
-			slog.Debug("failed to write to zip", "error", err, "filename", filename)
-			continue
+			// Read the source image
+			imageData, err := os.ReadFile(imagePath)
+			if err != nil {
+				slog.Debug("failed to read product image, skipping", "error", err, "path", imagePath)
+				continue
+			}
+
+			// Create a safe filename: 01_image.ext
+			ext := filepath.Ext(img.ImageUrl)
+			filename := fmt.Sprintf("%02d_image%s", i+1, ext)
+
+			// Add to ZIP
+			writer, err := zipWriter.Create(filename)
+			if err != nil {
+				slog.Debug("failed to create zip entry", "error", err, "filename", filename)
+				continue
+			}
+
+			_, err = writer.Write(imageData)
+			if err != nil {
+				slog.Debug("failed to write to zip", "error", err, "filename", filename)
+				continue
+			}
+			imagesAdded++
 		}
+	}
+
+	if imagesAdded == 0 {
+		return echo.NewHTTPError(http.StatusNotFound, "No images found for this product")
 	}
 
 	// Close the ZIP writer
