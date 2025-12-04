@@ -14,6 +14,39 @@ The user manages the development server, and it's always available. AI assistant
 - **ALWAYS** assume the dev server is running
 - **Check logs** in `./tmp/` directory when troubleshooting (logs are always available)
 - **Make code changes** and let Air automatically detect and rebuild
+- **ALWAYS check `./tmp/air-combined.log` after making code changes** to verify the build succeeded (see below)
+
+### CRITICAL: Always Verify Build Success After Code Changes
+
+**AI assistants MUST check `./tmp/air-combined.log` after EVERY code change to verify there are no build errors.**
+
+This is NON-NEGOTIABLE. A code change is NOT complete until you have:
+
+1. Made the code change
+2. Read the last ~50 lines of `./tmp/air-combined.log`
+3. Verified there are no compilation errors, templ errors, or runtime panics
+4. If errors exist, fix them BEFORE moving on to the next task
+
+**Why this matters:**
+- Air rebuilds automatically but errors are silent to the AI
+- Build errors will cause the application to fail
+- The user should NEVER have to tell you about build errors - you should catch them yourself
+
+**How to check:**
+```bash
+# Read the last 50 lines of the combined log
+tail -50 ./tmp/air-combined.log
+```
+
+**What to look for:**
+- `build failed` - compilation error
+- `error:` - general errors
+- `panic:` - runtime panic
+- `undefined:` - missing imports or typos
+- `cannot use` - type mismatches
+- Any red/error output
+
+**NEVER mark a task as complete without checking the build logs first.**
 
 ### What `make dev` Does (For Reference)
 
