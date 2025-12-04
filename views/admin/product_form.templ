@@ -565,6 +565,8 @@ templ ProductFormPartial(c echo.Context, product *db.Product, categories []db.Ca
 									hx-trigger="load"
 									hx-target="this"
 									hx-swap="innerHTML"
+									hx-indicator="#pending-backgrounds"
+									hx-disabled-elt="this"
 								>
 									<p class="text-sm text-muted-foreground">Loading pending backgrounds...</p>
 								</div>

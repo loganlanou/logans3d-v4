@@ -56,17 +56,17 @@ func (h *AdminHandler) HandleCreateProductStyle(c echo.Context) error {
 	if styleName == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "style name is required")
 	}
-	isPrimary := c.FormValue("is_primary") == "on" || c.FormValue("is_primary") == "true" || c.FormValue("is_primary") == "1"
-
-	// Check if a primary style already exists - if not, make this one primary
+	// Check if a primary style already exists
 	hasPrimary, err := h.storage.Queries.HasPrimaryProductStyle(ctx, productID)
 	if err != nil {
 		slog.Error("failed to check for primary style", "error", err, "product_id", productID)
-		// On error, default to making this style primary if user requested it
-	} else if hasPrimary == 0 {
-		// No primary exists, so this style should be primary regardless of form value
-		isPrimary = true
+		// On error, assume a primary exists to avoid overwriting
+		hasPrimary = 1
 	}
+
+	// Only make this the primary if no primary style exists yet
+	// Never auto-promote to primary if a primary already exists
+	isPrimary := hasPrimary == 0
 
 	form, err := c.MultipartForm()
 	if err != nil {
