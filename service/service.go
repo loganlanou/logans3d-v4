@@ -852,7 +852,13 @@ func (s *Service) handleProduct(c echo.Context) error {
 	}
 
 	// Use dynamically generated OG image with text overlay
-	ogImageURL := fmt.Sprintf("/api/og-image/%s", product.ID)
+	// For multi-variant products, use the multi-variant OG image showing all colors
+	var ogImageURL string
+	if product.HasVariants.Valid && product.HasVariants.Bool && variantData != nil && len(variantData.Colors) > 1 {
+		ogImageURL = fmt.Sprintf("/api/og-image/multi/%s", product.ID)
+	} else {
+		ogImageURL = fmt.Sprintf("/api/og-image/%s", product.ID)
+	}
 	meta = meta.WithOGImage(ogImageURL)
 
 	// Add category for breadcrumbs and schema
