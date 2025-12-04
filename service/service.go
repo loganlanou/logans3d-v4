@@ -386,6 +386,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 
 	// Health check - no auth
 	e.GET("/health", s.handleHealth)
+
+	// Facebook domain verification
+	e.GET("/ov2w2j24qs2aozezx1wy0xyv0cf963.html", func(c echo.Context) error {
+		return c.String(http.StatusOK, "ov2w2j24qs2aozezx1wy0xyv0cf963")
+	})
 }
 
 // getProductImageURL returns the primary image URL for a product, correctly handling variants
