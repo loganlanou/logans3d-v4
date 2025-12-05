@@ -3,10 +3,14 @@ package service
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -180,6 +184,9 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	// Custom quote routes
 	withAuth.GET("/custom", s.handleCustom)
 	withAuth.POST("/custom/quote", s.handleCustomQuote)
+	withAuth.GET("/api/custom/draft", s.handleGetCustomDraft)
+	withAuth.POST("/api/custom/draft", s.handleSaveCustomDraft)
+	withAuth.DELETE("/api/custom/draft", s.handleDeleteCustomDraft)
 
 	// Stripe Checkout routes
 	withAuth.POST("/checkout/create-session-cart", s.handleCreateStripeCheckoutSessionCart)
@@ -293,10 +300,12 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/orders/:id/shipping/rates", adminHandler.HandleGetOrderShippingRates)
 	admin.POST("/orders/:id/shipping/buy-label", adminHandler.HandleBuyShippingLabel)
 
-	// Quotes management routes
-	admin.GET("/quotes", adminHandler.HandleQuotesList)
-	admin.GET("/quotes/:id", adminHandler.HandleQuoteDetail)
-	admin.POST("/quotes/:id", adminHandler.HandleUpdateQuote)
+	// Quote Drafts management routes (custom quote wizard submissions)
+	admin.GET("/quotes", adminHandler.HandleQuoteDraftsList)
+	admin.GET("/quotes/:id", adminHandler.HandleQuoteDraftDetail)
+	admin.POST("/quotes/:id/send-recovery", adminHandler.HandleSendQuoteDraftRecoveryEmail)
+	admin.POST("/quotes/:id/archive", adminHandler.HandleArchiveQuoteDraft)
+	admin.POST("/quotes/:id/unarchive", adminHandler.HandleUnarchiveQuoteDraft)
 
 	// Events management routes
 	admin.GET("/events", adminHandler.HandleEventsList)
@@ -1004,18 +1013,44 @@ func (s *Service) handleCustom(c echo.Context) error {
 func (s *Service) handleCustomQuote(c echo.Context) error {
 	ctx := c.Request().Context()
 
+	// Get session ID for draft lookup
+	sessionID, err := s.getOrCreateSessionID(c)
+	if err != nil {
+		slog.Error("failed to get session ID", "error", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Session error"})
+	}
+
+	// Parse multipart form (32MB max memory)
+	if err := c.Request().ParseMultipartForm(32 << 20); err != nil {
+		slog.Error("failed to parse multipart form", "error", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request format"})
+	}
+
+	// Get JSON data from form field
+	jsonData := c.FormValue("data")
+	if jsonData == "" {
+		slog.Error("missing data field in form")
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Missing form data"})
+	}
+
 	var req struct {
 		ProjectType string `json:"projectType"`
 		Material    string `json:"material"`
 		Size        string `json:"size"`
+		Color       string `json:"color"`
 		Name        string `json:"name"`
 		Email       string `json:"email"`
 		Phone       string `json:"phone"`
 		Description string `json:"description"`
+		Timeline    string `json:"timeline"`
+		Finishing   bool   `json:"finishing"`
+		Painting    bool   `json:"painting"`
+		Rush        bool   `json:"rush"`
+		NeedDesign  bool   `json:"needDesign"`
 	}
 
-	if err := c.Bind(&req); err != nil {
-		slog.Error("failed to parse quote request", "error", err)
+	if err := json.Unmarshal([]byte(jsonData), &req); err != nil {
+		slog.Error("failed to parse quote request JSON", "error", err)
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request format"})
 	}
 
@@ -1032,21 +1067,111 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Project type is required"})
 	}
 
-	// Build project description from form data
+	// Update the draft with all final data before marking complete
+	var draft db.CustomQuoteDraft
+	draft, err = s.storage.Queries.GetDraftBySessionID(ctx, sessionID)
+	if err == sql.ErrNoRows {
+		slog.Debug("no active draft found for session, files will only be saved to quote_files", "session_id", sessionID)
+	} else if err != nil {
+		slog.Error("failed to get draft for completion", "error", err, "session_id", sessionID)
+	}
+	if err == nil {
+		// Update step 1 (project type)
+		if err := s.storage.Queries.UpdateDraftStep1(ctx, db.UpdateDraftStep1Params{
+			ProjectType: sql.NullString{String: req.ProjectType, Valid: req.ProjectType != ""},
+			ID:          draft.ID,
+		}); err != nil {
+			slog.Error("failed to update draft step 1", "error", err, "draft_id", draft.ID)
+		}
+
+		// Update step 2 (name/email)
+		if err := s.storage.Queries.UpdateDraftStep2(ctx, db.UpdateDraftStep2Params{
+			Name:  sql.NullString{String: req.Name, Valid: req.Name != ""},
+			Email: sql.NullString{String: req.Email, Valid: req.Email != ""},
+			ID:    draft.ID,
+		}); err != nil {
+			slog.Error("failed to update draft step 2", "error", err, "draft_id", draft.ID)
+		}
+
+		// Update step 3 (material, size, budget, color)
+		if err := s.storage.Queries.UpdateDraftStep3(ctx, db.UpdateDraftStep3Params{
+			Material: sql.NullString{String: req.Material, Valid: req.Material != ""},
+			Size:     sql.NullString{String: req.Size, Valid: req.Size != ""},
+			Budget:   sql.NullString{},
+			Color:    sql.NullString{String: req.Color, Valid: req.Color != ""},
+			ID:       draft.ID,
+		}); err != nil {
+			slog.Error("failed to update draft step 3", "error", err, "draft_id", draft.ID)
+		}
+
+		// Update step 4 (timeline, description)
+		if err := s.storage.Queries.UpdateDraftStep4(ctx, db.UpdateDraftStep4Params{
+			Timeline:    sql.NullString{String: req.Timeline, Valid: req.Timeline != ""},
+			Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
+			ID:          draft.ID,
+		}); err != nil {
+			slog.Error("failed to update draft step 4", "error", err, "draft_id", draft.ID)
+		}
+
+		// Update checkbox options
+		if err := s.storage.Queries.UpdateDraftOptions(ctx, db.UpdateDraftOptionsParams{
+			Finishing:  sql.NullInt64{Int64: boolToInt64(req.Finishing), Valid: true},
+			Painting:   sql.NullInt64{Int64: boolToInt64(req.Painting), Valid: true},
+			Rush:       sql.NullInt64{Int64: boolToInt64(req.Rush), Valid: true},
+			NeedDesign: sql.NullInt64{Int64: boolToInt64(req.NeedDesign), Valid: true},
+			ID:         draft.ID,
+		}); err != nil {
+			slog.Error("failed to update draft options", "error", err, "draft_id", draft.ID)
+		}
+
+		slog.Debug("draft updated with options", "draft_id", draft.ID, "finishing", req.Finishing, "painting", req.Painting, "rush", req.Rush, "need_design", req.NeedDesign)
+	} else if err != sql.ErrNoRows {
+		slog.Error("failed to get draft for completion", "error", err, "session_id", sessionID)
+	}
+
+	id := ulid.Make().String()
+
+	// Build comprehensive project description
 	var descParts []string
 	descParts = append(descParts, fmt.Sprintf("Project Type: %s", req.ProjectType))
 	if req.Size != "" {
 		descParts = append(descParts, fmt.Sprintf("Size: %s", req.Size))
 	}
+	if req.Material != "" {
+		descParts = append(descParts, fmt.Sprintf("Material: %s", req.Material))
+	}
+	if req.Color != "" {
+		descParts = append(descParts, fmt.Sprintf("Color: %s", req.Color))
+	}
+	if req.Timeline != "" {
+		descParts = append(descParts, fmt.Sprintf("Timeline: %s", req.Timeline))
+	}
+
+	// Collect options
+	var options []string
+	if req.Finishing {
+		options = append(options, "Professional Finishing")
+	}
+	if req.Painting {
+		options = append(options, "Hand Painting")
+	}
+	if req.Rush {
+		options = append(options, "Rush Order")
+	}
+	if req.NeedDesign {
+		options = append(options, "Design Help Needed")
+	}
+	if len(options) > 0 {
+		descParts = append(descParts, fmt.Sprintf("Options: %s", strings.Join(options, ", ")))
+	}
+
 	if req.Description != "" {
-		descParts = append(descParts, fmt.Sprintf("Details: %s", req.Description))
+		descParts = append(descParts, fmt.Sprintf("\nDetails: %s", req.Description))
 	}
 	projectDescription := strings.Join(descParts, "\n")
 
-	id := ulid.Make().String()
-
 	// Create quote request in database
-	_, err := s.storage.Queries.CreateQuoteRequest(ctx, db.CreateQuoteRequestParams{
+	_, err = s.storage.Queries.CreateQuoteRequest(ctx, db.CreateQuoteRequestParams{
 		ID:                 id,
 		CustomerName:       req.Name,
 		CustomerEmail:      req.Email,
@@ -1054,7 +1179,7 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 		ProjectDescription: projectDescription,
 		Quantity:           sql.NullInt64{Int64: 1, Valid: true},
 		MaterialPreference: sql.NullString{String: req.Material, Valid: req.Material != ""},
-		FinishPreference:   sql.NullString{},
+		FinishPreference:   sql.NullString{String: req.Color, Valid: req.Color != ""},
 		DeadlineDate:       sql.NullTime{},
 		BudgetRange:        sql.NullString{String: req.Size, Valid: req.Size != ""},
 		Status:             sql.NullString{String: "pending", Valid: true},
@@ -1067,7 +1192,56 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to submit quote request"})
 	}
 
-	// Send email notification asynchronously
+	// Link draft to quote request and mark completed
+	if draft.ID != "" {
+		if err := s.storage.Queries.LinkDraftToQuoteRequest(ctx, db.LinkDraftToQuoteRequestParams{
+			QuoteRequestID: sql.NullString{String: id, Valid: true},
+			ID:             draft.ID,
+		}); err != nil {
+			slog.Error("failed to link draft to quote request", "error", err, "draft_id", draft.ID, "quote_id", id)
+		}
+
+		// Mark draft as completed
+		if err := s.storage.Queries.MarkDraftCompleted(ctx, draft.ID); err != nil {
+			slog.Error("failed to mark draft completed", "error", err, "draft_id", draft.ID)
+		}
+
+		slog.Debug("draft linked to quote request and marked complete", "draft_id", draft.ID, "quote_id", id)
+	}
+
+	// Handle model file upload
+	modelFile, uploadErr := c.FormFile("modelFile")
+	if uploadErr == nil && modelFile != nil {
+		// Save to legacy quote_files table
+		if _, err := s.saveQuoteFile(ctx, id, modelFile); err != nil {
+			slog.Error("failed to save model file", "error", err, "quote_id", id)
+		}
+		// Also save to draft files table if we have a draft
+		if draft.ID != "" {
+			if err := s.saveDraftFile(ctx, draft.ID, modelFile); err != nil {
+				slog.Error("failed to save model file to draft", "error", err, "draft_id", draft.ID)
+			}
+		}
+	}
+
+	// Handle reference images (multiple files)
+	form := c.Request().MultipartForm
+	if form != nil && form.File["referenceImages"] != nil {
+		for _, fh := range form.File["referenceImages"] {
+			// Save to legacy quote_files table
+			if _, err := s.saveQuoteFile(ctx, id, fh); err != nil {
+				slog.Error("failed to save reference image", "error", err, "quote_id", id, "filename", fh.Filename)
+			}
+			// Also save to draft files table if we have a draft
+			if draft.ID != "" {
+				if err := s.saveDraftFile(ctx, draft.ID, fh); err != nil {
+					slog.Error("failed to save reference image to draft", "error", err, "draft_id", draft.ID, "filename", fh.Filename)
+				}
+			}
+		}
+	}
+
+	// Send email notifications asynchronously
 	go func() {
 		quoteData := &email.QuoteRequestData{
 			ID:                 id,
@@ -1077,18 +1251,360 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 			ProjectType:        req.ProjectType,
 			Material:           req.Material,
 			Size:               req.Size,
+			Color:              req.Color,
+			Timeline:           req.Timeline,
+			Finishing:          req.Finishing,
+			Painting:           req.Painting,
+			Rush:               req.Rush,
+			NeedDesign:         req.NeedDesign,
 			ProjectDescription: req.Description,
 			SubmittedAt:        time.Now().Format("January 2, 2006 at 3:04 PM MST"),
 		}
 
+		// Send notification to admin
 		if err := s.emailService.SendQuoteRequestNotification(quoteData); err != nil {
-			slog.Error("failed to send quote request notification", "error", err, "quote_id", id)
+			slog.Error("failed to send quote request notification to admin", "error", err, "quote_id", id)
+		}
+
+		// Send confirmation to customer
+		if err := s.emailService.SendQuoteRequestCustomerConfirmation(quoteData); err != nil {
+			slog.Error("failed to send quote request confirmation to customer", "error", err, "quote_id", id, "email", req.Email)
 		}
 	}()
 
 	slog.Debug("quote request created successfully", "quote_id", id, "email", req.Email)
 
 	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received", "quote_id": id})
+}
+
+// saveQuoteFile saves an uploaded file to disk and records it in the database
+func (s *Service) saveQuoteFile(ctx context.Context, quoteID string, fh *multipart.FileHeader) (string, error) {
+	// Create directory for quote files
+	uploadDir := filepath.Join("data", "quote-files", quoteID)
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		return "", fmt.Errorf("create upload directory: %w", err)
+	}
+
+	// Generate safe filename using ULID
+	ext := filepath.Ext(fh.Filename)
+	filename := fmt.Sprintf("%s%s", ulid.Make().String(), ext)
+	filePath := filepath.Join(uploadDir, filename)
+
+	// Open source file
+	src, err := fh.Open()
+	if err != nil {
+		return "", fmt.Errorf("open uploaded file: %w", err)
+	}
+	defer src.Close()
+
+	// Create destination file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return "", fmt.Errorf("create destination file: %w", err)
+	}
+	defer dst.Close()
+
+	// Copy file
+	if _, err := io.Copy(dst, src); err != nil {
+		return "", fmt.Errorf("copy file: %w", err)
+	}
+
+	// Determine MIME type
+	mimeType := fh.Header.Get("Content-Type")
+	if mimeType == "" {
+		mimeType = "application/octet-stream"
+	}
+
+	// Record file in database
+	_, err = s.storage.Queries.CreateQuoteFile(ctx, db.CreateQuoteFileParams{
+		ID:               ulid.Make().String(),
+		QuoteRequestID:   quoteID,
+		Filename:         filename,
+		OriginalFilename: fh.Filename,
+		FilePath:         filePath,
+		FileSize:         fh.Size,
+		MimeType:         mimeType,
+	})
+	if err != nil {
+		// Clean up the file if database insert fails
+		os.Remove(filePath)
+		return "", fmt.Errorf("record file in database: %w", err)
+	}
+
+	slog.Debug("saved quote file", "quote_id", quoteID, "filename", filename, "original", fh.Filename, "size", fh.Size)
+
+	return filePath, nil
+}
+
+// saveDraftFile saves an uploaded file to disk and records it in the custom_quote_draft_files table
+func (s *Service) saveDraftFile(ctx context.Context, draftID string, fh *multipart.FileHeader) error {
+	// Create directory for draft files
+	uploadDir := filepath.Join("data", "draft-files", draftID)
+	if err := os.MkdirAll(uploadDir, 0755); err != nil {
+		return fmt.Errorf("create upload directory: %w", err)
+	}
+
+	// Generate safe filename using ULID
+	ext := filepath.Ext(fh.Filename)
+	safeFilename := fmt.Sprintf("%s%s", ulid.Make().String(), ext)
+	filePath := filepath.Join(uploadDir, safeFilename)
+
+	// Open source file
+	src, err := fh.Open()
+	if err != nil {
+		return fmt.Errorf("open uploaded file: %w", err)
+	}
+	defer src.Close()
+
+	// Create destination file
+	dst, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("create destination file: %w", err)
+	}
+	defer dst.Close()
+
+	// Copy file
+	if _, err := io.Copy(dst, src); err != nil {
+		return fmt.Errorf("copy file: %w", err)
+	}
+
+	// Determine file type
+	fileType := fh.Header.Get("Content-Type")
+	if fileType == "" {
+		fileType = "application/octet-stream"
+	}
+
+	// Record file in database
+	_, err = s.storage.Queries.AddDraftFile(ctx, db.AddDraftFileParams{
+		DraftID:  draftID,
+		Filename: fh.Filename, // Store original filename
+		FilePath: filePath,
+		FileSize: fh.Size,
+		FileType: fileType,
+	})
+	if err != nil {
+		// Clean up the file if database insert fails
+		os.Remove(filePath)
+		return fmt.Errorf("record file in database: %w", err)
+	}
+
+	slog.Debug("saved draft file", "draft_id", draftID, "filename", fh.Filename, "size", fh.Size)
+	return nil
+}
+
+// boolToInt64 converts a bool to int64 for SQLite storage
+func boolToInt64(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+// handleGetCustomDraft returns the current draft for the session
+func (s *Service) handleGetCustomDraft(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	sessionID, err := s.getOrCreateSessionID(c)
+	if err != nil {
+		slog.Error("failed to get session ID", "error", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Session error"})
+	}
+
+	draft, err := s.storage.Queries.GetDraftBySessionID(ctx, sessionID)
+	if err == sql.ErrNoRows {
+		// No draft exists - return empty response with Clerk user info for pre-fill
+		response := map[string]interface{}{
+			"draft": nil,
+		}
+
+		// Check if user is logged in via Clerk
+		user, isAuthenticated := auth.GetDBUser(c)
+		if isAuthenticated && user != nil {
+			response["user"] = map[string]string{
+				"name":  user.FullName,
+				"email": user.Email,
+			}
+		}
+
+		return c.JSON(http.StatusOK, response)
+	}
+	if err != nil {
+		slog.Error("failed to get draft", "error", err, "session_id", sessionID)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load draft"})
+	}
+
+	// Get draft files
+	files, err := s.storage.Queries.GetDraftFiles(ctx, draft.ID)
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("failed to get draft files", "error", err, "draft_id", draft.ID)
+	}
+
+	response := map[string]interface{}{
+		"draft": map[string]interface{}{
+			"id":           draft.ID,
+			"current_step": draft.CurrentStep,
+			"project_type": draft.ProjectType.String,
+			"name":         draft.Name.String,
+			"email":        draft.Email.String,
+			"material":     draft.Material.String,
+			"size":         draft.Size.String,
+			"color":        draft.Color.String,
+			"budget":       draft.Budget.String,
+			"timeline":     draft.Timeline.String,
+			"description":  draft.Description.String,
+			"files":        files,
+		},
+	}
+
+	// Also include user info if logged in
+	user, isAuthenticated := auth.GetDBUser(c)
+	if isAuthenticated && user != nil {
+		response["user"] = map[string]string{
+			"name":  user.FullName,
+			"email": user.Email,
+		}
+	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// handleSaveCustomDraft saves or updates a draft for the session
+func (s *Service) handleSaveCustomDraft(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	sessionID, err := s.getOrCreateSessionID(c)
+	if err != nil {
+		slog.Error("failed to get session ID", "error", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Session error"})
+	}
+
+	var req struct {
+		Step        int    `json:"step"`
+		ProjectType string `json:"project_type"`
+		Name        string `json:"name"`
+		Email       string `json:"email"`
+		Material    string `json:"material"`
+		Size        string `json:"size"`
+		Color       string `json:"color"`
+		Budget      string `json:"budget"`
+		Timeline    string `json:"timeline"`
+		Description string `json:"description"`
+	}
+
+	if err := c.Bind(&req); err != nil {
+		slog.Error("failed to bind draft request", "error", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request"})
+	}
+
+	// Get user ID if logged in
+	var userID sql.NullString
+	user, isAuthenticated := auth.GetDBUser(c)
+	if isAuthenticated && user != nil {
+		userID = sql.NullString{String: user.ID, Valid: true}
+	}
+
+	// Check for existing draft
+	draft, err := s.storage.Queries.GetDraftBySessionID(ctx, sessionID)
+	if err == sql.ErrNoRows {
+		// Create new draft
+		draft, err = s.storage.Queries.CreateDraft(ctx, db.CreateDraftParams{
+			SessionID:   sessionID,
+			UserID:      userID,
+			ProjectType: sql.NullString{String: req.ProjectType, Valid: req.ProjectType != ""},
+		})
+		if err != nil {
+			slog.Error("failed to create draft", "error", err, "session_id", sessionID)
+			return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to create draft"})
+		}
+		slog.Debug("created new draft", "draft_id", draft.ID, "session_id", sessionID)
+	} else if err != nil {
+		slog.Error("failed to get draft", "error", err, "session_id", sessionID)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load draft"})
+	}
+
+	// Update draft based on step
+	// Step flow: 1=Project Type, 2=Lead Capture, 3=Model Upload, 4=Customization, 5=Review
+	switch req.Step {
+	case 1:
+		err = s.storage.Queries.UpdateDraftStep1(ctx, db.UpdateDraftStep1Params{
+			ProjectType: sql.NullString{String: req.ProjectType, Valid: req.ProjectType != ""},
+			ID:          draft.ID,
+		})
+	case 2:
+		err = s.storage.Queries.UpdateDraftStep2(ctx, db.UpdateDraftStep2Params{
+			Name:  sql.NullString{String: req.Name, Valid: req.Name != ""},
+			Email: sql.NullString{String: req.Email, Valid: req.Email != ""},
+			ID:    draft.ID,
+		})
+	case 3:
+		// Model upload step - no database fields to update, just advance step
+		// The step counter in UpdateDraftStep2 already advances to step 3
+		// Nothing to save here, files are handled separately
+	case 4:
+		// Customization step - save material, size, color, timeline, description all at once
+		err = s.storage.Queries.UpdateDraftStep3(ctx, db.UpdateDraftStep3Params{
+			Material: sql.NullString{String: req.Material, Valid: req.Material != ""},
+			Size:     sql.NullString{String: req.Size, Valid: req.Size != ""},
+			Budget:   sql.NullString{String: req.Budget, Valid: req.Budget != ""},
+			Color:    sql.NullString{String: req.Color, Valid: req.Color != ""},
+			ID:       draft.ID,
+		})
+		if err == nil {
+			err = s.storage.Queries.UpdateDraftStep4(ctx, db.UpdateDraftStep4Params{
+				Timeline:    sql.NullString{String: req.Timeline, Valid: req.Timeline != ""},
+				Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
+				ID:          draft.ID,
+			})
+		}
+	}
+
+	if err != nil {
+		slog.Error("failed to update draft", "error", err, "draft_id", draft.ID, "step", req.Step)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to save draft"})
+	}
+
+	slog.Debug("saved draft", "draft_id", draft.ID, "step", req.Step)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success":  true,
+		"draft_id": draft.ID,
+	})
+}
+
+// handleDeleteCustomDraft abandons the draft for the current session (for "Start Over" functionality)
+// The draft remains in the system for admin follow-up, but the user gets a fresh start
+func (s *Service) handleDeleteCustomDraft(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	sessionID, err := s.getOrCreateSessionID(c)
+	if err != nil {
+		slog.Error("failed to get session ID", "error", err)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Session error"})
+	}
+
+	// Get the draft
+	draft, err := s.storage.Queries.GetDraftBySessionID(ctx, sessionID)
+	if err == sql.ErrNoRows {
+		// No draft to abandon, that's fine
+		return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
+	}
+	if err != nil {
+		slog.Error("failed to get draft for abandonment", "error", err, "session_id", sessionID)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to find draft"})
+	}
+
+	// Mark the draft as abandoned - this changes the session_id so a new draft
+	// can be created for this session, but keeps the old draft in the system
+	// for admin follow-up and recovery emails
+	err = s.storage.Queries.MarkDraftAbandoned(ctx, draft.ID)
+	if err != nil {
+		slog.Error("failed to mark draft as abandoned", "error", err, "draft_id", draft.ID)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to reset draft"})
+	}
+
+	slog.Info("draft abandoned by user", "draft_id", draft.ID, "session_id", sessionID, "email", draft.Email.String)
+
+	return c.JSON(http.StatusOK, map[string]interface{}{"success": true})
 }
 
 func (s *Service) handleCheckoutCancel(c echo.Context) error {

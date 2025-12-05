@@ -1,0 +1,751 @@
+package admin
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/components/badge"
+	"github.com/loganlanou/logans3d-v4/components/button"
+)
+
+// DraftCounts mirrors the handler struct
+type DraftCounts struct {
+	Total      int64
+	Completed  int64
+	Abandoned  int64
+	InProgress int64
+	WithEmail  int64
+	Archived   int64
+}
+
+// DraftFilters mirrors the handler struct
+type DraftFilters struct {
+	Status string
+	Search string
+}
+
+// QuoteFile represents a file from either draft or quote tables
+type QuoteFile struct {
+	ID           string
+	Filename     string
+	OriginalName string
+	FilePath     string
+	FileSize     int64
+	FileType     string
+}
+
+// Helper to get project type display name
+func getProjectTypeDisplay(projectType string) string {
+	names := map[string]string{
+		"figurine":   "Figurines & Miniatures",
+		"prototype":  "Prototypes & Parts",
+		"decorative": "Decorative Items",
+		"custom":     "Something Else",
+	}
+	if name, ok := names[projectType]; ok {
+		return name
+	}
+	if projectType == "" {
+		return "Not selected"
+	}
+	return projectType
+}
+
+// Helper to determine draft status
+func getDraftStatusDisplay(draft db.CustomQuoteDraft) string {
+	if draft.CompletedAt.Valid {
+		return "completed"
+	}
+	if draft.Email.Valid && draft.Email.String != "" {
+		if time.Since(draft.UpdatedAt) > 24*time.Hour {
+			return "abandoned"
+		}
+	}
+	return "in_progress"
+}
+
+// hasAnyOption checks if any option checkbox was selected
+func hasAnyOption(draft db.CustomQuoteDraft) bool {
+	return (draft.Finishing.Valid && draft.Finishing.Int64 == 1) ||
+		(draft.Painting.Valid && draft.Painting.Int64 == 1) ||
+		(draft.Rush.Valid && draft.Rush.Int64 == 1) ||
+		(draft.NeedDesign.Valid && draft.NeedDesign.Int64 == 1)
+}
+
+// Helper to format time ago
+func formatDraftTimeAgo(t time.Time) string {
+	duration := time.Since(t)
+	if duration < time.Minute {
+		return "just now"
+	} else if duration < time.Hour {
+		mins := int(duration.Minutes())
+		if mins == 1 {
+			return "1 min ago"
+		}
+		return fmt.Sprintf("%d mins ago", mins)
+	} else if duration < 24*time.Hour {
+		hours := int(duration.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	} else if duration < 7*24*time.Hour {
+		days := int(duration.Hours() / 24)
+		if days == 1 {
+			return "1 day ago"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	}
+	return t.Format("Jan 2, 2006")
+}
+
+templ QuoteDraftsList(c echo.Context, drafts []db.CustomQuoteDraft, counts DraftCounts, filters DraftFilters) {
+	@layout.AdminBase(c, "Custom Quotes") {
+		@layout.AdminContainer() {
+			<!-- Header -->
+			<div class="flex justify-between items-center mb-6">
+				<h1 class="text-2xl font-bold text-foreground">Custom Quotes</h1>
+			</div>
+
+			<!-- Stat Cards -->
+			<div class="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+				<a href="/admin/quotes?status=all" class={ "block p-4 rounded-lg border transition-colors", templ.KV("bg-blue-500/10 border-blue-500 dark:bg-blue-500/20 dark:border-blue-400", filters.Status == "all"), templ.KV("bg-card border-border hover:border-border hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "all") }>
+					<div class="text-2xl font-bold text-foreground">{ fmt.Sprintf("%d", counts.Total) }</div>
+					<div class="text-sm text-muted-foreground">Total</div>
+				</a>
+				<a href="/admin/quotes?status=completed" class={ "block p-4 rounded-lg border transition-colors", templ.KV("bg-green-500/10 border-green-500 dark:bg-green-500/20 dark:border-green-400", filters.Status == "completed"), templ.KV("bg-card border-border hover:border-border hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "completed") }>
+					<div class="text-2xl font-bold text-green-600 dark:text-green-400">{ fmt.Sprintf("%d", counts.Completed) }</div>
+					<div class="text-sm text-muted-foreground">Completed</div>
+				</a>
+				<a href="/admin/quotes?status=abandoned" class={ "block p-4 rounded-lg border transition-colors", templ.KV("bg-orange-500/10 border-orange-500 dark:bg-orange-500/20 dark:border-orange-400", filters.Status == "abandoned"), templ.KV("bg-card border-border hover:border-border hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "abandoned") }>
+					<div class="text-2xl font-bold text-orange-600 dark:text-orange-400">{ fmt.Sprintf("%d", counts.Abandoned) }</div>
+					<div class="text-sm text-muted-foreground">Abandoned</div>
+				</a>
+				<a href="/admin/quotes?status=in_progress" class={ "block p-4 rounded-lg border transition-colors", templ.KV("bg-yellow-500/10 border-yellow-500 dark:bg-yellow-500/20 dark:border-yellow-400", filters.Status == "in_progress"), templ.KV("bg-card border-border hover:border-border hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "in_progress") }>
+					<div class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{ fmt.Sprintf("%d", counts.InProgress) }</div>
+					<div class="text-sm text-muted-foreground">In Progress</div>
+				</a>
+				<a href="/admin/quotes?status=archived" class={ "block p-4 rounded-lg border transition-colors", templ.KV("bg-gray-500/10 border-gray-500 dark:bg-gray-500/20 dark:border-gray-400", filters.Status == "archived"), templ.KV("bg-card border-border hover:border-border hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "archived") }>
+					<div class="text-2xl font-bold text-gray-600 dark:text-gray-400">{ fmt.Sprintf("%d", counts.Archived) }</div>
+					<div class="text-sm text-muted-foreground">Archived</div>
+				</a>
+				<div class="p-4 rounded-lg border bg-card border-border">
+					<div class="text-2xl font-bold text-foreground">{ fmt.Sprintf("%d", counts.WithEmail) }</div>
+					<div class="text-sm text-muted-foreground">With Email</div>
+				</div>
+			</div>
+
+			<!-- Filters -->
+			<div class="mb-6 flex flex-wrap gap-4 items-center">
+				<!-- Status Filter Buttons -->
+				<div class="flex gap-2">
+					<a href="/admin/quotes?status=completed" class={ "px-3 py-1.5 rounded-md text-sm font-medium transition-colors", templ.KV("bg-blue-600 text-white", filters.Status == "completed"), templ.KV("bg-muted text-foreground hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "completed") }>
+						Completed
+					</a>
+					<a href="/admin/quotes?status=abandoned" class={ "px-3 py-1.5 rounded-md text-sm font-medium transition-colors", templ.KV("bg-blue-600 text-white", filters.Status == "abandoned"), templ.KV("bg-muted text-foreground hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "abandoned") }>
+						Abandoned
+					</a>
+					<a href="/admin/quotes?status=in_progress" class={ "px-3 py-1.5 rounded-md text-sm font-medium transition-colors", templ.KV("bg-blue-600 text-white", filters.Status == "in_progress"), templ.KV("bg-muted text-foreground hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "in_progress") }>
+						In Progress
+					</a>
+					<a href="/admin/quotes?status=archived" class={ "px-3 py-1.5 rounded-md text-sm font-medium transition-colors", templ.KV("bg-blue-600 text-white", filters.Status == "archived"), templ.KV("bg-muted text-foreground hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "archived") }>
+						Archived
+					</a>
+					<a href="/admin/quotes?status=all" class={ "px-3 py-1.5 rounded-md text-sm font-medium transition-colors", templ.KV("bg-blue-600 text-white", filters.Status == "all"), templ.KV("bg-muted text-foreground hover:bg-muted/80 dark:hover:bg-secondary", filters.Status != "all") }>
+						All
+					</a>
+				</div>
+
+				<!-- Search -->
+				<form action="/admin/quotes" method="GET" class="flex-1 max-w-md">
+					<input type="hidden" name="status" value={ filters.Status }/>
+					<div class="relative">
+						<input
+							type="text"
+							name="search"
+							value={ filters.Search }
+							placeholder="Search by name, email, or description..."
+							class="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:bg-muted/80 dark:hover:bg-secondary transition-colors"
+						/>
+						<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+							<svg class="h-5 w-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+							</svg>
+						</div>
+					</div>
+				</form>
+			</div>
+
+			<!-- Table -->
+			@card.Card() {
+				@card.Content() {
+					if len(drafts) == 0 {
+						<div class="text-center py-8 text-muted-foreground">
+							No quote drafts found
+							if filters.Search != "" {
+								<span> matching "{ filters.Search }"</span>
+							}
+						</div>
+					} else {
+						<div class="overflow-x-auto">
+							@table.Table() {
+								@table.Header() {
+									@table.Row() {
+										@table.Head() { Name }
+										@table.Head() { Email }
+										@table.Head() { Project Type }
+										@table.Head() { Step }
+										@table.Head() { Status }
+										@table.Head() { Updated }
+										@table.Head() { }
+									}
+								}
+								@table.Body() {
+									for _, draft := range drafts {
+										<tr
+											onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/quotes/%s'", draft.ID)} }
+											class="cursor-pointer hover:bg-muted/80 dark:hover:bg-secondary"
+										>
+											@table.Cell() {
+												if draft.Name.Valid && draft.Name.String != "" {
+													<span class="font-medium text-foreground">{ draft.Name.String }</span>
+												} else {
+													<span class="text-muted-foreground italic">No name</span>
+												}
+											}
+											@table.Cell() {
+												if draft.Email.Valid && draft.Email.String != "" {
+													<a href={ templ.SafeURL("mailto:" + draft.Email.String) } onclick="event.stopPropagation()" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+														{ draft.Email.String }
+													</a>
+												} else {
+													<span class="text-muted-foreground italic">No email</span>
+												}
+											}
+											@table.Cell() {
+												<span class="text-foreground">{ getProjectTypeDisplay(draft.ProjectType.String) }</span>
+											}
+											@table.Cell() {
+												<span class="text-muted-foreground">{ fmt.Sprintf("%d/5", draft.CurrentStep) }</span>
+											}
+											@table.Cell() {
+												if draft.ArchivedAt.Valid {
+													@badge.Badge(badge.Props{Variant: badge.VariantOutline, Class: "text-gray-500 border-gray-400"}) {
+														Archived
+													}
+												} else {
+													@draftStatusBadge(getDraftStatusDisplay(draft))
+												}
+											}
+											@table.Cell() {
+												<span class="text-muted-foreground text-sm">{ formatDraftTimeAgo(draft.UpdatedAt) }</span>
+											}
+											@table.Cell() {
+												<div class="flex justify-end" onclick="event.stopPropagation()">
+													if draft.ArchivedAt.Valid {
+														<form action={ templ.SafeURL("/admin/quotes/" + draft.ID + "/unarchive") } method="POST">
+															<button type="submit" class="p-1.5 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded transition-colors" title="Unarchive">
+																<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+																</svg>
+															</button>
+														</form>
+													} else {
+														<form action={ templ.SafeURL("/admin/quotes/" + draft.ID + "/archive") } method="POST">
+															<button type="submit" class="p-1.5 text-gray-500 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded transition-colors" title="Archive">
+																<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+																	<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path>
+																</svg>
+															</button>
+														</form>
+													}
+												</div>
+											}
+										</tr>
+									}
+								}
+							}
+						</div>
+					}
+				}
+			}
+		}
+	}
+}
+
+templ draftStatusBadge(status string) {
+	switch status {
+		case "completed":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault, Class: "bg-green-600 dark:bg-green-500"}) {
+				Completed
+			}
+		case "abandoned":
+			@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+				Abandoned
+			}
+		case "in_progress":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				In Progress
+			}
+	}
+}
+
+templ QuoteDraftDetail(c echo.Context, draft db.CustomQuoteDraft, files []QuoteFile) {
+	@layout.AdminBase(c, "Quote Draft Details") {
+		@layout.AdminContainer() {
+			<!-- Back Link & Header Row -->
+			<div class="flex items-center justify-between mb-8">
+				<a href="/admin/quotes" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2 text-sm font-medium">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+					</svg>
+					Back to Quotes
+				</a>
+				<div class="flex items-center gap-3">
+					if draft.ArchivedAt.Valid {
+						@badge.Badge(badge.Props{Variant: badge.VariantOutline, Class: "text-gray-500 border-gray-400"}) {
+							Archived
+						}
+						<form action={ templ.SafeURL("/admin/quotes/" + draft.ID + "/unarchive") } method="POST">
+							@button.Button(button.Props{
+								Type:    button.TypeSubmit,
+								Variant: button.VariantOutline,
+								Size:    button.SizeSm,
+							}) {
+								Unarchive
+							}
+						</form>
+					} else {
+						@draftStatusBadge(getDraftStatusDisplay(draft))
+						<form action={ templ.SafeURL("/admin/quotes/" + draft.ID + "/archive") } method="POST">
+							@button.Button(button.Props{
+								Type:    button.TypeSubmit,
+								Variant: button.VariantOutline,
+								Size:    button.SizeSm,
+							}) {
+								Archive
+							}
+						</form>
+					}
+				</div>
+			</div>
+
+			<!-- Success Message -->
+			if c.QueryParam("success") == "email_sent" {
+				<div class="mb-6 p-4 bg-green-500/10 border border-green-500 dark:border-green-400 rounded-lg text-green-800 dark:text-green-300">
+					Recovery email sent successfully!
+				</div>
+			}
+
+			<!-- Main Header Card -->
+			<div class="bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 rounded-xl p-6 mb-6 text-white">
+				<div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+					<div>
+						<h1 class="text-2xl font-bold mb-1">
+							if draft.Name.Valid && draft.Name.String != "" {
+								{ draft.Name.String }
+							} else {
+								Anonymous Quote Request
+							}
+						</h1>
+						if draft.Email.Valid && draft.Email.String != "" {
+							<a href={ templ.SafeURL("mailto:" + draft.Email.String) } class="text-blue-100 hover:text-white flex items-center gap-2">
+								<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+								</svg>
+								{ draft.Email.String }
+							</a>
+						}
+					</div>
+					<div class="text-right text-sm">
+						<div class="text-blue-100">Quote ID</div>
+						<div class="font-mono text-xs text-blue-200">{ draft.ID }</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Two Column Layout -->
+			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+				<!-- Left Column - Main Content (2/3 width) -->
+				<div class="lg:col-span-2 space-y-6">
+					<!-- Project Details Card -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								<div class="flex items-center gap-2">
+									<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+									</svg>
+									Project Details
+								</div>
+							}
+						}
+						@card.Content() {
+							<div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+								<div>
+									<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Project Type</div>
+									<div class="text-foreground font-medium">{ getProjectTypeDisplay(draft.ProjectType.String) }</div>
+								</div>
+								<div>
+									<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Material</div>
+									<div class="text-foreground">
+										if draft.Material.Valid && draft.Material.String != "" {
+											{ draft.Material.String }
+										} else {
+											<span class="text-muted-foreground italic">Not specified</span>
+										}
+									</div>
+								</div>
+								<div>
+									<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Size</div>
+									<div class="text-foreground">
+										if draft.Size.Valid && draft.Size.String != "" {
+											{ draft.Size.String }
+										} else {
+											<span class="text-muted-foreground italic">Not specified</span>
+										}
+									</div>
+								</div>
+								<div>
+									<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Color</div>
+									<div class="text-foreground">
+										if draft.Color.Valid && draft.Color.String != "" {
+											{ draft.Color.String }
+										} else {
+											<span class="text-muted-foreground italic">Not specified</span>
+										}
+									</div>
+								</div>
+								<div>
+									<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Timeline</div>
+									<div class="text-foreground">
+										if draft.Timeline.Valid && draft.Timeline.String != "" {
+											if draft.Timeline.String == "rush" {
+												<span class="inline-flex items-center gap-1 text-orange-600 dark:text-orange-400 font-medium">
+													<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+														<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+													</svg>
+													Rush (24-48 hrs)
+												</span>
+											} else {
+												Standard (3-5 days)
+											}
+										} else {
+											<span class="text-muted-foreground italic">Not specified</span>
+										}
+									</div>
+								</div>
+								<div>
+									<div class="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1">Progress</div>
+									<div class="flex items-center gap-2">
+										<div class="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+											<div class={ "h-full bg-blue-500 rounded-full", fmt.Sprintf("w-[%d%%]", draft.CurrentStep*20) }></div>
+										</div>
+										<span class="text-sm text-muted-foreground">{ fmt.Sprintf("%d/5", draft.CurrentStep) }</span>
+									</div>
+								</div>
+							</div>
+						}
+					}
+
+					<!-- Options Card -->
+					if hasAnyOption(draft) {
+						@card.Card() {
+							@card.Header() {
+								@card.Title() {
+									<div class="flex items-center gap-2">
+										<svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+										</svg>
+										Selected Options
+									</div>
+								}
+							}
+							@card.Content() {
+								<div class="flex flex-wrap gap-2">
+									if draft.Finishing.Valid && draft.Finishing.Int64 == 1 {
+										@badge.Badge(badge.Props{Variant: badge.VariantDefault, Class: "bg-blue-500"}) {
+											Professional Finishing
+										}
+									}
+									if draft.Painting.Valid && draft.Painting.Int64 == 1 {
+										@badge.Badge(badge.Props{Variant: badge.VariantDefault, Class: "bg-purple-500"}) {
+											Hand Painting
+										}
+									}
+									if draft.Rush.Valid && draft.Rush.Int64 == 1 {
+										@badge.Badge(badge.Props{Variant: badge.VariantDefault, Class: "bg-orange-500"}) {
+											<div class="flex items-center gap-1">
+												<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+												</svg>
+												Rush Order
+											</div>
+										}
+									}
+									if draft.NeedDesign.Valid && draft.NeedDesign.Int64 == 1 {
+										@badge.Badge(badge.Props{Variant: badge.VariantDefault, Class: "bg-green-500"}) {
+											Design Help Needed
+										}
+									}
+								</div>
+							}
+						}
+					}
+
+					<!-- Description Card -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								<div class="flex items-center gap-2">
+									<svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+									</svg>
+									Project Description
+								</div>
+							}
+						}
+						@card.Content() {
+							if draft.Description.Valid && draft.Description.String != "" {
+								<p class="text-foreground whitespace-pre-wrap leading-relaxed">{ draft.Description.String }</p>
+							} else {
+								<p class="text-muted-foreground italic">No description provided</p>
+							}
+						}
+					}
+
+					<!-- Files Card -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								<div class="flex items-center gap-2">
+									<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+									</svg>
+									Uploaded Files
+									if len(files) > 0 {
+										<span class="ml-2 px-2 py-0.5 text-xs bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full">{ fmt.Sprintf("%d", len(files)) }</span>
+									}
+								</div>
+							}
+						}
+						@card.Content() {
+							if len(files) > 0 {
+								<div class="space-y-3">
+									for _, file := range files {
+										<div class="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
+											<div class="flex items-center gap-3">
+												<div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+													if isImageFile(file.FileType) {
+														<svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+														</svg>
+													} else {
+														<svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+															<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+														</svg>
+													}
+												</div>
+												<div>
+													<div class="font-medium text-foreground">{ file.OriginalName }</div>
+													<div class="text-xs text-muted-foreground">{ file.FileType } · { formatFileSize(file.FileSize) }</div>
+												</div>
+											</div>
+											<a href={ templ.SafeURL("/" + file.FilePath) } target="_blank" class="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors">
+												<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+												</svg>
+											</a>
+										</div>
+									}
+								</div>
+							} else {
+								<div class="text-center py-8 text-muted-foreground">
+									<svg class="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+									</svg>
+									<p>No files uploaded</p>
+								</div>
+							}
+						}
+					}
+
+					<!-- Recovery Email Section (only for abandoned drafts) -->
+					if !draft.CompletedAt.Valid && draft.Email.Valid && draft.Email.String != "" && time.Since(draft.UpdatedAt) > 24*time.Hour {
+						@card.Card() {
+							@card.Header() {
+								@card.Title() {
+									<div class="flex items-center gap-2">
+										<svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+										</svg>
+										Send Recovery Email
+									</div>
+								}
+							}
+							@card.Content() {
+								<form action={ templ.SafeURL("/admin/quotes/" + draft.ID + "/send-recovery") } method="POST" class="space-y-4">
+									<p class="text-sm text-muted-foreground">
+										Send a personalized email to encourage them to complete their quote request.
+									</p>
+									<div>
+										<label for="subject" class="block text-sm font-medium text-foreground mb-1">Subject</label>
+										<input
+											type="text"
+											id="subject"
+											name="subject"
+											value="Continue Your Custom Quote - Logan's 3D Creations"
+											class="w-full px-3 py-2 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+										/>
+									</div>
+									<div>
+										<label for="custom_message" class="block text-sm font-medium text-foreground mb-1">Personal Message (optional)</label>
+										<textarea
+											id="custom_message"
+											name="custom_message"
+											rows="3"
+											placeholder="Add a personal touch..."
+											class="w-full px-3 py-2 bg-card border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+										></textarea>
+									</div>
+									<div class="flex items-center justify-between pt-2">
+										<div class="text-sm text-muted-foreground">
+											if draft.RecoveryEmailSentAt.Valid {
+												<span class="text-yellow-600 dark:text-yellow-400">Last sent: { draft.RecoveryEmailSentAt.Time.Format("Jan 2, 2006") }</span>
+											} else {
+												No recovery email sent yet
+											}
+										</div>
+										@button.Button(button.Props{
+											Type:    button.TypeSubmit,
+											Variant: button.VariantDefault,
+											Class:   "bg-orange-600 hover:bg-orange-700 text-white border-orange-600",
+										}) {
+											Send Email
+										}
+									</div>
+								</form>
+							}
+						}
+					}
+				</div>
+
+				<!-- Right Column - Sidebar (1/3 width) -->
+				<div class="space-y-6">
+					<!-- Timeline Card -->
+					@card.Card() {
+						@card.Header() {
+							@card.Title() {
+								<div class="flex items-center gap-2">
+									<svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+									</svg>
+									Activity
+								</div>
+							}
+						}
+						@card.Content() {
+							<div class="space-y-4">
+								<div class="flex items-start gap-3">
+									<div class="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0">
+										<svg class="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+										</svg>
+									</div>
+									<div>
+										<div class="text-sm font-medium text-foreground">Created</div>
+										<div class="text-xs text-muted-foreground">{ draft.CreatedAt.Format("Jan 2, 2006 3:04 PM") }</div>
+									</div>
+								</div>
+								<div class="flex items-start gap-3">
+									<div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center flex-shrink-0">
+										<svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+										</svg>
+									</div>
+									<div>
+										<div class="text-sm font-medium text-foreground">Last Updated</div>
+										<div class="text-xs text-muted-foreground">{ draft.UpdatedAt.Format("Jan 2, 2006 3:04 PM") }</div>
+										<div class="text-xs text-muted-foreground">({ formatDraftTimeAgo(draft.UpdatedAt) })</div>
+									</div>
+								</div>
+								if draft.CompletedAt.Valid {
+									<div class="flex items-start gap-3">
+										<div class="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center flex-shrink-0">
+											<svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+											</svg>
+										</div>
+										<div>
+											<div class="text-sm font-medium text-foreground">Completed</div>
+											<div class="text-xs text-muted-foreground">{ draft.CompletedAt.Time.Format("Jan 2, 2006 3:04 PM") }</div>
+										</div>
+									</div>
+								}
+								if draft.RecoveryEmailSentAt.Valid {
+									<div class="flex items-start gap-3">
+										<div class="w-8 h-8 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center flex-shrink-0">
+											<svg class="w-4 h-4 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+											</svg>
+										</div>
+										<div>
+											<div class="text-sm font-medium text-foreground">Recovery Email Sent</div>
+											<div class="text-xs text-muted-foreground">{ draft.RecoveryEmailSentAt.Time.Format("Jan 2, 2006 3:04 PM") }</div>
+										</div>
+									</div>
+								}
+							</div>
+						}
+					}
+
+					<!-- Quick Actions Card -->
+					if draft.Email.Valid && draft.Email.String != "" {
+						@card.Card() {
+							@card.Header() {
+								@card.Title() {
+									<div class="flex items-center gap-2">
+										<svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+										</svg>
+										Quick Actions
+									</div>
+								}
+							}
+							@card.Content() {
+								<div class="space-y-2">
+									<a href={ templ.SafeURL("mailto:" + draft.Email.String) } class="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors text-foreground">
+										<svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+										</svg>
+										<span class="text-sm font-medium">Send Email</span>
+									</a>
+								</div>
+							}
+						}
+					}
+				</div>
+			</div>
+		}
+	}
+}
+
+// Helper to format file size
+func formatFileSize(bytes int64) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d B", bytes)
+	} else if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1f KB", float64(bytes)/1024)
+	}
+	return fmt.Sprintf("%.1f MB", float64(bytes)/(1024*1024))
+}
+
+// Helper to check if file is an image
+func isImageFile(fileType string) bool {
+	return fileType == "image/png" || fileType == "image/jpeg" || fileType == "image/gif" || fileType == "image/webp"
+}

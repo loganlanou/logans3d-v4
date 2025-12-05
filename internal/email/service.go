@@ -408,6 +408,12 @@ type QuoteRequestData struct {
 	ProjectType        string
 	Material           string
 	Size               string
+	Color              string
+	Timeline           string
+	Finishing          bool
+	Painting           bool
+	Rush               bool
+	NeedDesign         bool
 	ProjectDescription string
 	SubmittedAt        string
 }
@@ -449,6 +455,35 @@ func RenderQuoteRequestEmail(data *QuoteRequestData) (string, error) {
 
 	subject := fmt.Sprintf("New Quote Request - %s", data.ProjectType)
 	return WrapEmailContent(content.String(), subject)
+}
+
+// SendQuoteRequestCustomerConfirmation sends a confirmation email to the customer
+func (s *Service) SendQuoteRequestCustomerConfirmation(data *QuoteRequestData) error {
+	html, err := RenderQuoteRequestCustomerConfirmation(data)
+	if err != nil {
+		return err
+	}
+
+	email := &Email{
+		To:      []string{data.CustomerEmail},
+		Subject: "We've Received Your Custom Quote Request - Logan's 3D Creations",
+		Body:    html,
+		IsHTML:  true,
+	}
+
+	return s.Send(email)
+}
+
+// RenderQuoteRequestCustomerConfirmation renders the customer confirmation email template
+func RenderQuoteRequestCustomerConfirmation(data *QuoteRequestData) (string, error) {
+	tmpl := template.Must(template.New("quote_customer").Parse(quoteRequestCustomerConfirmationTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render quote request customer email content: %w", err)
+	}
+
+	return WrapEmailContent(content.String(), "We've Received Your Custom Quote Request")
 }
 
 // AbandonedCartItem represents an item in an abandoned cart
@@ -603,6 +638,20 @@ type WelcomeCouponData struct {
 	ExpiresAt    string
 }
 
+// QuoteDraftRecoveryData contains data for quote draft recovery emails
+type QuoteDraftRecoveryData struct {
+	CustomerName  string
+	CustomerEmail string
+	ProjectType   string
+	CurrentStep   int64
+	Material      string
+	Size          string
+	Color         string
+	CustomMessage string // Admin's personalized message
+	ResumeURL     string
+	DraftID       string
+}
+
 // RenderWelcomeCouponEmail renders the welcome coupon email
 func RenderWelcomeCouponEmail(data *WelcomeCouponData) (string, error) {
 	return RenderWelcomeCouponEmailWithToken(data, "")
@@ -618,4 +667,82 @@ func RenderWelcomeCouponEmailWithToken(data *WelcomeCouponData, unsubscribeToken
 	}
 
 	return WrapEmailContentWithUnsubscribe(content.String(), "Welcome! Here's your exclusive discount", unsubscribeToken)
+}
+
+// SendQuoteDraftRecoveryEmail sends a recovery email for an abandoned quote draft
+func (s *Service) SendQuoteDraftRecoveryEmail(ctx context.Context, draft db.CustomQuoteDraft, subject, customMessage string) error {
+	customerName := "there"
+	if draft.Name.Valid && draft.Name.String != "" {
+		customerName = draft.Name.String
+	}
+
+	projectType := "Custom Project"
+	if draft.ProjectType.Valid && draft.ProjectType.String != "" {
+		projectType = draft.ProjectType.String
+	}
+
+	material := ""
+	if draft.Material.Valid {
+		material = draft.Material.String
+	}
+
+	size := ""
+	if draft.Size.Valid {
+		size = draft.Size.String
+	}
+
+	color := ""
+	if draft.Color.Valid {
+		color = draft.Color.String
+	}
+
+	data := &QuoteDraftRecoveryData{
+		CustomerName:  customerName,
+		CustomerEmail: draft.Email.String,
+		ProjectType:   projectType,
+		CurrentStep:   draft.CurrentStep,
+		Material:      material,
+		Size:          size,
+		Color:         color,
+		CustomMessage: customMessage,
+		ResumeURL:     "https://www.logans3dcreations.com/custom",
+		DraftID:       draft.ID,
+	}
+
+	html, err := RenderQuoteDraftRecoveryEmail(data)
+	if err != nil {
+		return err
+	}
+
+	email := &Email{
+		To:      []string{draft.Email.String},
+		Subject: subject,
+		Body:    html,
+		IsHTML:  true,
+	}
+
+	sendErr := s.Send(email)
+
+	logErr := s.LogEmailSend(ctx, draft.Email.String, "quote_draft_recovery", subject, "quote_draft_recovery", "", map[string]interface{}{
+		"draft_id":     draft.ID,
+		"project_type": projectType,
+		"current_step": draft.CurrentStep,
+	})
+	if logErr != nil {
+		slog.Error("failed to log email send", "error", logErr)
+	}
+
+	return sendErr
+}
+
+// RenderQuoteDraftRecoveryEmail renders the quote draft recovery email
+func RenderQuoteDraftRecoveryEmail(data *QuoteDraftRecoveryData) (string, error) {
+	tmpl := template.Must(template.New("quote_draft_recovery").Parse(quoteDraftRecoveryTemplate))
+
+	var content bytes.Buffer
+	if err := tmpl.Execute(&content, data); err != nil {
+		return "", fmt.Errorf("failed to render quote draft recovery email: %w", err)
+	}
+
+	return WrapEmailContent(content.String(), "Continue Your Custom Quote")
 }

@@ -618,6 +618,23 @@ const quoteRequestContentTemplate = `
     {{if .Size}}
     <p style="margin: 5px 0;"><strong>Size:</strong> {{.Size}}</p>
     {{end}}
+    {{if .Color}}
+    <p style="margin: 5px 0;"><strong>Color:</strong> {{.Color}}</p>
+    {{end}}
+    {{if .Timeline}}
+    <p style="margin: 5px 0;"><strong>Timeline:</strong> {{if eq .Timeline "rush"}}Rush (24-48 hours){{else}}Standard (3-5 days){{end}}</p>
+    {{end}}
+    {{if or .Finishing .Painting .Rush .NeedDesign}}
+    <p style="margin: 5px 0;"><strong>Options:</strong>
+        {{if .Finishing}}Professional Finishing{{end}}
+        {{if and .Finishing (or .Painting .Rush .NeedDesign)}}, {{end}}
+        {{if .Painting}}Hand Painting{{end}}
+        {{if and .Painting (or .Rush .NeedDesign)}}, {{end}}
+        {{if .Rush}}Rush Order{{end}}
+        {{if and .Rush .NeedDesign}}, {{end}}
+        {{if .NeedDesign}}Design Help Needed{{end}}
+    </p>
+    {{end}}
     {{if .ProjectDescription}}
     <p style="margin: 10px 0;"><strong>Description:</strong></p>
     <p style="margin: 5px 0; white-space: pre-wrap; line-height: 1.6; background-color: #fff; padding: 10px; border-radius: 4px;">{{.ProjectDescription}}</p>
@@ -626,6 +643,164 @@ const quoteRequestContentTemplate = `
 
 <div style="text-align: center; margin: 30px 0;">
     <a href="https://logans3dcreations.com/admin/quotes" style="display: inline-block; background-color: #10B981; color: white; padding: 12px 30px; border-radius: 8px; text-decoration: none; font-weight: 600;">View Quote in Admin</a>
+</div>
+`
+
+// quoteRequestCustomerConfirmationTemplate is the content section for customer quote confirmation emails
+const quoteRequestCustomerConfirmationTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <h1 style="color: #E85D5D; margin: 0; font-size: 28px;">Quote Request Received!</h1>
+    <p style="font-size: 18px; color: #666; margin: 10px 0;">Thank you for your interest, {{.CustomerName}}!</p>
+</div>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f9f9f9" style="background-color: #f9f9f9; margin-bottom: 25px;">
+    <tr>
+        <td style="padding: 20px; border-left: 4px solid #E85D5D;">
+            <p style="margin: 5px 0;"><strong style="color: #555;">Reference Number:</strong> #{{.ID}}</p>
+            <p style="margin: 5px 0;"><strong style="color: #555;">Submitted:</strong> {{.SubmittedAt}}</p>
+            <p style="margin: 5px 0;"><strong style="color: #555;">Project Type:</strong> {{.ProjectType}}</p>
+        </td>
+    </tr>
+</table>
+
+<div style="background-color: #FEF2F2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #991B1B; font-size: 16px;">What Happens Next?</h3>
+    <ol style="margin: 10px 0; padding-left: 20px; color: #555; line-height: 1.8;">
+        <li>Our team will review your project details</li>
+        <li>We'll prepare a custom quote based on your specifications</li>
+        <li>You'll receive your quote via email within 1-2 business days</li>
+        <li>Feel free to reply to this email with any questions!</li>
+    </ol>
+</div>
+
+<div style="background-color: #F9FAFB; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <h3 style="margin-top: 0; color: #374151; font-size: 16px;">Your Project Details</h3>
+    {{if .Material}}
+    <p style="margin: 5px 0;"><strong>Material:</strong> {{.Material}}</p>
+    {{end}}
+    {{if .Size}}
+    <p style="margin: 5px 0;"><strong>Size:</strong> {{.Size}}</p>
+    {{end}}
+    {{if .Color}}
+    <p style="margin: 5px 0;"><strong>Color:</strong> {{.Color}}</p>
+    {{end}}
+    {{if .Timeline}}
+    <p style="margin: 5px 0;"><strong>Timeline:</strong> {{if eq .Timeline "rush"}}Rush (24-48 hours){{else}}Standard (3-5 days){{end}}</p>
+    {{end}}
+    {{if or .Finishing .Painting .Rush .NeedDesign}}
+    <p style="margin: 5px 0;"><strong>Options:</strong>
+        {{if .Finishing}}Professional Finishing{{end}}
+        {{if and .Finishing (or .Painting .Rush .NeedDesign)}}, {{end}}
+        {{if .Painting}}Hand Painting{{end}}
+        {{if and .Painting (or .Rush .NeedDesign)}}, {{end}}
+        {{if .Rush}}Rush Order{{end}}
+        {{if and .Rush .NeedDesign}}, {{end}}
+        {{if .NeedDesign}}Design Help Needed{{end}}
+    </p>
+    {{end}}
+    {{if .ProjectDescription}}
+    <p style="margin: 10px 0;"><strong>Description:</strong></p>
+    <p style="margin: 5px 0; white-space: pre-wrap; line-height: 1.6; background-color: #fff; padding: 10px; border-radius: 4px;">{{.ProjectDescription}}</p>
+    {{end}}
+</div>
+
+<div style="text-align: center; margin: 30px 0;">
+    <p style="color: #555; margin-bottom: 15px;">Want to browse our ready-to-ship products?</p>
+    <table cellpadding="0" cellspacing="0" border="0" align="center">
+        <tr>
+            <td bgcolor="#E85D5D" style="background-color: #E85D5D; padding: 14px 35px; border-radius: 5px;">
+                <a href="https://www.logans3dcreations.com/shop" style="color: white; text-decoration: none; font-weight: 600; font-size: 16px; display: block;">Browse Shop</a>
+            </td>
+        </tr>
+    </table>
+</div>
+
+<div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">
+    <p>Have questions? Just reply to this email or contact us at<br>
+    <a href="mailto:prints@logans3dcreations.com" style="color: #E85D5D; text-decoration: none;">prints@logans3dcreations.com</a></p>
+</div>
+`
+
+// quoteDraftRecoveryTemplate is the content section for quote draft recovery emails
+const quoteDraftRecoveryTemplate = `
+<div style="text-align: center; margin-bottom: 30px;">
+    <h1 style="color: #E85D5D; margin: 0; font-size: 28px;">Continue Your Custom Quote</h1>
+    <p style="font-size: 18px; color: #666; margin: 10px 0;">We saved your progress for you!</p>
+</div>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f9f9f9" style="background-color: #f9f9f9; margin-bottom: 25px;">
+    <tr>
+        <td style="padding: 20px; border-left: 4px solid #E85D5D;">
+            <p style="font-size: 16px; margin: 5px 0;">Hi {{.CustomerName}},</p>
+            <p style="font-size: 16px; margin: 15px 0;">We noticed you started a custom quote request but didn't finish. Don't worry - we've saved everything for you!</p>
+        </td>
+    </tr>
+</table>
+
+{{if .CustomMessage}}
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#EFF6FF" style="background-color: #EFF6FF; margin: 20px 0; border-left: 4px solid #3B82F6;">
+    <tr>
+        <td style="padding: 20px;">
+            <p style="font-size: 14px; color: #1E40AF; margin: 0 0 8px 0; font-weight: 600;">A message from Logan:</p>
+            <p style="font-size: 16px; color: #374151; margin: 0; white-space: pre-wrap; line-height: 1.6;">{{.CustomMessage}}</p>
+        </td>
+    </tr>
+</table>
+{{end}}
+
+<h2 style="color: #555; font-size: 20px; margin-top: 30px;">Your Quote Progress</h2>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 20px 0;">
+    <tr>
+        <td style="padding: 15px; background-color: #f9f9f9; border-radius: 8px;">
+            <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                    <td style="padding: 8px 0;"><strong style="color: #555;">Project Type:</strong> {{.ProjectType}}</td>
+                </tr>
+                {{if .Material}}
+                <tr>
+                    <td style="padding: 8px 0;"><strong style="color: #555;">Material:</strong> {{.Material}}</td>
+                </tr>
+                {{end}}
+                {{if .Size}}
+                <tr>
+                    <td style="padding: 8px 0;"><strong style="color: #555;">Size:</strong> {{.Size}}</td>
+                </tr>
+                {{end}}
+                {{if .Color}}
+                <tr>
+                    <td style="padding: 8px 0;"><strong style="color: #555;">Color:</strong> {{.Color}}</td>
+                </tr>
+                {{end}}
+                <tr>
+                    <td style="padding: 8px 0;"><strong style="color: #555;">Progress:</strong> Step {{.CurrentStep}} of 5</td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+
+<div style="text-align: center; margin: 40px 0;">
+    <table cellpadding="0" cellspacing="0" border="0" align="center">
+        <tr>
+            <td bgcolor="#E85D5D" style="background-color: #E85D5D; padding: 16px 40px; border-radius: 5px;">
+                <a href="{{.ResumeURL}}" style="color: white; text-decoration: none; font-weight: 600; font-size: 18px; display: block;">Continue Your Quote</a>
+            </td>
+        </tr>
+    </table>
+    <p style="font-size: 14px; color: #999; margin-top: 15px;">Pick up right where you left off!</p>
+</div>
+
+<table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#fff9e6" style="background-color: #fff9e6; margin: 30px 0; border: 2px dashed #FFA000;">
+    <tr>
+        <td style="padding: 20px; text-align: center;">
+            <p style="font-size: 16px; margin: 0; color: #555;">💡 <strong>Need help?</strong> Reply to this email and we'll get back to you right away!</p>
+        </td>
+    </tr>
+</table>
+
+<div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 14px;">
+    <p>Questions? We're here to help!<br>
+    <a href="mailto:prints@logans3dcreations.com" style="color: #E85D5D; text-decoration: none;">prints@logans3dcreations.com</a></p>
 </div>
 `
 

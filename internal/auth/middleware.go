@@ -101,6 +101,18 @@ func ClerkAuthMiddleware(storage *storage.Storage) echo.MiddlewareFunc {
 			})
 
 			if err != nil {
+				// Check if this is just a token expiry (not a completely invalid session)
+				// If __client cookie exists, the session may still be valid and just needs refresh
+				if clientCookie, cookieErr := c.Request().Cookie("__client"); cookieErr == nil && clientCookie.Value != "" {
+					// Session exists but token expired - let client-side refresh handle it
+					// Don't clear cookies, just mark as unauthenticated for this request
+					slog.Debug("=== MIDDLEWARE: JWT expired but __client exists, allowing for client-side refresh ===", "error", err)
+					c.Set(IsAuthenticatedKey, false)
+					c.Set("needs_token_refresh", true)
+					return next(c)
+				}
+
+				// No __client cookie means session is truly gone - clear everything
 				slog.Warn("=== MIDDLEWARE: JWT verification failed - clearing cookies ===", "error", err)
 				clearAuthCookie(c)
 				c.Set(IsAuthenticatedKey, false)
