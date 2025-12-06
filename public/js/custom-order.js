@@ -71,7 +71,28 @@ async function resetForm() {
 // Load existing draft on page load
 async function loadDraft() {
     try {
-        const response = await fetch('/api/custom/draft');
+        // Check if there's a resume parameter in the URL (from recovery email)
+        const urlParams = new URLSearchParams(window.location.search);
+        const resumeId = urlParams.get('resume');
+
+        let response;
+        if (resumeId) {
+            // Load draft by ID (from recovery email link)
+            response = await fetch(`/api/custom/draft/${resumeId}`);
+            if (response.status === 410) {
+                // Draft already completed
+                alert('This quote has already been submitted. Starting a new quote.');
+                // Clear the resume parameter from URL
+                window.history.replaceState({}, '', '/custom');
+                response = await fetch('/api/custom/draft');
+            } else if (!response.ok) {
+                console.error('Failed to load draft by ID, falling back to session draft');
+                response = await fetch('/api/custom/draft');
+            }
+        } else {
+            response = await fetch('/api/custom/draft');
+        }
+
         if (!response.ok) return;
 
         const data = await response.json();
@@ -95,6 +116,11 @@ async function loadDraft() {
                 goToStep(savedStep);
             }
             draftLoaded = true;
+
+            // Clear the resume parameter from URL after loading
+            if (resumeId) {
+                window.history.replaceState({}, '', '/custom');
+            }
         }
     } catch (error) {
         console.error('Error loading draft:', error);
@@ -152,6 +178,28 @@ function restoreFormState(draft) {
         formData.description = draft.description;
         const descField = document.getElementById('description');
         if (descField) descField.value = draft.description;
+    }
+
+    // Restore checkbox options
+    if (draft.finishing) {
+        formData.finishing = true;
+        const finishingCheckbox = document.getElementById('finishing');
+        if (finishingCheckbox) finishingCheckbox.checked = true;
+    }
+    if (draft.painting) {
+        formData.painting = true;
+        const paintingCheckbox = document.getElementById('painting');
+        if (paintingCheckbox) paintingCheckbox.checked = true;
+    }
+    if (draft.rush) {
+        formData.rush = true;
+        const rushCheckbox = document.getElementById('rush');
+        if (rushCheckbox) rushCheckbox.checked = true;
+    }
+    if (draft.need_design) {
+        formData.needDesign = true;
+        const needDesignCheckbox = document.getElementById('need-design');
+        if (needDesignCheckbox) needDesignCheckbox.checked = true;
     }
 }
 
@@ -216,7 +264,12 @@ async function saveDraft(step) {
         color: formData.color || '',
         budget: formData.budget || '',
         timeline: formData.timeline || document.querySelector('input[name="timeline"]:checked')?.value || '',
-        description: formData.description || document.getElementById('description')?.value?.trim() || ''
+        description: formData.description || document.getElementById('description')?.value?.trim() || '',
+        // Include checkbox options
+        finishing: formData.finishing || document.getElementById('finishing')?.checked || false,
+        painting: formData.painting || document.getElementById('painting')?.checked || false,
+        rush: formData.rush || document.getElementById('rush')?.checked || false,
+        need_design: formData.needDesign || document.getElementById('need-design')?.checked || false
     };
 
     try {

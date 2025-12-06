@@ -185,6 +185,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	withAuth.GET("/custom", s.handleCustom)
 	withAuth.POST("/custom/quote", s.handleCustomQuote)
 	withAuth.GET("/api/custom/draft", s.handleGetCustomDraft)
+	withAuth.GET("/api/custom/draft/:id", s.handleGetCustomDraftByID) // For recovery emails
 	withAuth.POST("/api/custom/draft", s.handleSaveCustomDraft)
 	withAuth.DELETE("/api/custom/draft", s.handleDeleteCustomDraft)
 
@@ -1452,6 +1453,10 @@ func (s *Service) handleGetCustomDraft(c echo.Context) error {
 			"budget":       draft.Budget.String,
 			"timeline":     draft.Timeline.String,
 			"description":  draft.Description.String,
+			"finishing":    draft.Finishing.Valid && draft.Finishing.Int64 == 1,
+			"painting":     draft.Painting.Valid && draft.Painting.Int64 == 1,
+			"rush":         draft.Rush.Valid && draft.Rush.Int64 == 1,
+			"need_design":  draft.NeedDesign.Valid && draft.NeedDesign.Int64 == 1,
 			"files":        files,
 		},
 	}
@@ -1464,6 +1469,62 @@ func (s *Service) handleGetCustomDraft(c echo.Context) error {
 			"email": user.Email,
 		}
 	}
+
+	return c.JSON(http.StatusOK, response)
+}
+
+// handleGetCustomDraftByID returns a draft by its ID (for recovery email links)
+// This allows users to resume their draft from a different device/session
+func (s *Service) handleGetCustomDraftByID(c echo.Context) error {
+	ctx := c.Request().Context()
+	draftID := c.Param("id")
+
+	if draftID == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Draft ID is required"})
+	}
+
+	draft, err := s.storage.Queries.GetDraftByID(ctx, draftID)
+	if err == sql.ErrNoRows {
+		return c.JSON(http.StatusNotFound, map[string]string{"error": "Draft not found"})
+	}
+	if err != nil {
+		slog.Error("failed to get draft by ID", "error", err, "draft_id", draftID)
+		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to load draft"})
+	}
+
+	// Check if draft is already completed - don't allow resuming completed drafts
+	if draft.CompletedAt.Valid {
+		return c.JSON(http.StatusGone, map[string]string{"error": "This quote has already been submitted"})
+	}
+
+	// Get draft files
+	files, err := s.storage.Queries.GetDraftFiles(ctx, draft.ID)
+	if err != nil && err != sql.ErrNoRows {
+		slog.Error("failed to get draft files", "error", err, "draft_id", draft.ID)
+	}
+
+	response := map[string]interface{}{
+		"draft": map[string]interface{}{
+			"id":           draft.ID,
+			"current_step": draft.CurrentStep,
+			"project_type": draft.ProjectType.String,
+			"name":         draft.Name.String,
+			"email":        draft.Email.String,
+			"material":     draft.Material.String,
+			"size":         draft.Size.String,
+			"color":        draft.Color.String,
+			"budget":       draft.Budget.String,
+			"timeline":     draft.Timeline.String,
+			"description":  draft.Description.String,
+			"finishing":    draft.Finishing.Valid && draft.Finishing.Int64 == 1,
+			"painting":     draft.Painting.Valid && draft.Painting.Int64 == 1,
+			"rush":         draft.Rush.Valid && draft.Rush.Int64 == 1,
+			"need_design":  draft.NeedDesign.Valid && draft.NeedDesign.Int64 == 1,
+			"files":        files,
+		},
+	}
+
+	slog.Debug("loaded draft by ID for recovery", "draft_id", draftID)
 
 	return c.JSON(http.StatusOK, response)
 }
@@ -1489,6 +1550,10 @@ func (s *Service) handleSaveCustomDraft(c echo.Context) error {
 		Budget      string `json:"budget"`
 		Timeline    string `json:"timeline"`
 		Description string `json:"description"`
+		Finishing   bool   `json:"finishing"`
+		Painting    bool   `json:"painting"`
+		Rush        bool   `json:"rush"`
+		NeedDesign  bool   `json:"need_design"`
 	}
 
 	if err := c.Bind(&req); err != nil {
@@ -1554,6 +1619,16 @@ func (s *Service) handleSaveCustomDraft(c echo.Context) error {
 				Timeline:    sql.NullString{String: req.Timeline, Valid: req.Timeline != ""},
 				Description: sql.NullString{String: req.Description, Valid: req.Description != ""},
 				ID:          draft.ID,
+			})
+		}
+		// Also save checkbox options
+		if err == nil {
+			err = s.storage.Queries.UpdateDraftOptions(ctx, db.UpdateDraftOptionsParams{
+				Finishing:  sql.NullInt64{Int64: boolToInt64(req.Finishing), Valid: true},
+				Painting:   sql.NullInt64{Int64: boolToInt64(req.Painting), Valid: true},
+				Rush:       sql.NullInt64{Int64: boolToInt64(req.Rush), Valid: true},
+				NeedDesign: sql.NullInt64{Int64: boolToInt64(req.NeedDesign), Valid: true},
+				ID:         draft.ID,
 			})
 		}
 	}

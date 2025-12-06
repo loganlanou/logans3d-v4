@@ -705,7 +705,7 @@ func (s *Service) SendQuoteDraftRecoveryEmail(ctx context.Context, draft db.Cust
 		Size:          size,
 		Color:         color,
 		CustomMessage: customMessage,
-		ResumeURL:     "https://www.logans3dcreations.com/custom",
+		ResumeURL:     "https://www.logans3dcreations.com/custom?resume=" + draft.ID,
 		DraftID:       draft.ID,
 	}
 
