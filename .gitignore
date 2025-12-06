@@ -84,6 +84,8 @@ yarn-error.log*
 /public/uploads/
 /uploads/
 /public/images/products/
+/data/draft-files/
+/data/quote-files/
 
 # Backup files
 *.backup

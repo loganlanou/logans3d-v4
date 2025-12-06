@@ -2,6 +2,8 @@ package custom
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
@@ -13,7 +15,9 @@ type CustomOrderData struct {
 
 templ Index(c echo.Context, meta layout.PageMeta) {
 	@layout.Base(c, meta) {
-		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+		<!-- reCAPTCHA v3 Script -->
+		<script src={ "https://www.google.com/recaptcha/api.js?render=" + os.Getenv("RECAPTCHA_SITE_KEY") }></script>
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden" data-recaptcha-key={ os.Getenv("RECAPTCHA_SITE_KEY") }>
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">
 				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
@@ -22,8 +26,8 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 			</div>
 			<div class="relative z-10 py-16">
 				<div class="max-w-4xl mx-auto px-8 sm:px-12 lg:px-16">
-					<!-- Header -->
-					<div class="text-center mb-16">
+					<!-- Header (hidden after step 1) -->
+					<div id="hero-header" class="text-center mb-16 transition-all duration-300">
 						<div class="group inline-flex items-center px-6 py-4 bg-gradient-to-r from-blue-600/20 to-emerald-600/20 rounded-full border border-blue-500/30 mb-12 hover:border-emerald-500/50 hover:bg-gradient-to-r hover:from-blue-600/30 hover:to-emerald-600/30 transition-all duration-300 cursor-pointer">
 							<span class="text-blue-300 text-sm font-medium group-hover:text-emerald-300 transition-colors duration-200">🎨 Custom Service</span>
 						</div>
@@ -63,32 +67,42 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 								<div id="step-1" class="step-content">
 									@StepProjectType()
 								</div>
-								<!-- Step 2: Model Selection -->
+								<!-- Step 2: Lead Capture (Name/Email) -->
 								<div id="step-2" class="step-content hidden">
+									@StepLeadCapture()
+								</div>
+								<!-- Step 3: Model Selection -->
+								<div id="step-3" class="step-content hidden">
 									@StepModelSelection()
 								</div>
-								<!-- Step 3: Customization -->
-								<div id="step-3" class="step-content hidden">
-									@StepCustomization()
-								</div>
-								<!-- Step 4: Contact Info -->
+								<!-- Step 4: Customization -->
 								<div id="step-4" class="step-content hidden">
-									@StepContactInfo()
+									@StepCustomization()
 								</div>
 								<!-- Step 5: Review & Submit -->
 								<div id="step-5" class="step-content hidden">
 									@StepReviewSubmit()
 								</div>
 								<!-- Navigation Buttons -->
-								<div class="flex justify-between mt-12">
-									<button
-										type="button"
-										id="prevBtn"
-										onclick="changeStep(-1)"
-										class="hidden px-8 py-4 bg-slate-700/50 border border-slate-600/50 text-slate-300 hover:text-white rounded-xl font-semibold hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm"
-									>
-										← Previous
-									</button>
+								<div class="flex justify-between items-center mt-12">
+									<div class="flex items-center gap-3">
+										<button
+											type="button"
+											id="prevBtn"
+											onclick="changeStep(-1)"
+											class="hidden px-8 py-4 bg-slate-700/50 border border-slate-600/50 text-slate-300 hover:text-white rounded-xl font-semibold hover:bg-slate-600/50 hover:border-slate-500/50 transition-all duration-300 backdrop-blur-sm"
+										>
+											← Previous
+										</button>
+										<button
+											type="button"
+											id="resetBtn"
+											onclick="confirmReset()"
+											class="hidden px-4 py-2 text-slate-400 hover:text-red-400 text-sm font-medium transition-colors duration-200"
+										>
+											Start Over
+										</button>
+									</div>
 									<button
 										type="button"
 										id="nextBtn"
@@ -135,6 +149,52 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 				</div>
 			</div>
 		</div>
+		<!-- Start Over Confirmation Modal -->
+		<div id="resetModal" class="fixed inset-0 z-50 hidden">
+			<!-- Backdrop -->
+			<div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeResetModal()"></div>
+			<!-- Modal -->
+			<div class="absolute inset-0 flex items-center justify-center p-4">
+				<div class="relative bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700/50 max-w-md w-full transform transition-all duration-300 scale-95 opacity-0" id="resetModalContent">
+					<!-- Close button -->
+					<button onclick="closeResetModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+						<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+						</svg>
+					</button>
+					<!-- Content -->
+					<div class="p-8">
+						<!-- Icon -->
+						<div class="mx-auto w-16 h-16 bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-full flex items-center justify-center mb-6 border border-orange-500/30">
+							<svg class="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+							</svg>
+						</div>
+						<!-- Title -->
+						<h3 class="text-2xl font-bold text-white text-center mb-3">Start Over?</h3>
+						<!-- Description -->
+						<p class="text-slate-300 text-center mb-8 leading-relaxed">
+							All your progress will be lost and you'll need to start from the beginning. This action cannot be undone.
+						</p>
+						<!-- Buttons -->
+						<div class="flex gap-4">
+							<button
+								onclick="closeResetModal()"
+								class="flex-1 px-6 py-3 bg-slate-700/50 border border-slate-600/50 text-slate-300 hover:text-white rounded-xl font-semibold hover:bg-slate-600/50 transition-all duration-200"
+							>
+								Keep Working
+							</button>
+							<button
+								onclick="confirmResetAction()"
+								class="flex-1 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-xl font-semibold hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-lg hover:shadow-orange-500/25"
+							>
+								Start Over
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
 		<!-- Load Custom Order JavaScript -->
 		<script src="/public/js/custom-order.js"></script>
 	}
@@ -162,11 +222,11 @@ templ ProgressIndicator(currentStep int, totalSteps int) {
 							case 1:
 								Project
 							case 2:
-								Model
-							case 3:
-								Customize
-							case 4:
 								Contact
+							case 3:
+								Model
+							case 4:
+								Customize
 							case 5:
 								Review
 						}
@@ -196,7 +256,8 @@ templ StepProjectType() {
 		<div class="grid grid-cols-1 sm:grid-cols-2 gap-8">
 			<button
 				type="button"
-				onclick="selectProjectType('figurine')"
+				data-project-type="figurine"
+				onclick="selectProjectType('figurine', this)"
 				class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1"
 			>
 				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">🎭</div>
@@ -205,7 +266,8 @@ templ StepProjectType() {
 			</button>
 			<button
 				type="button"
-				onclick="selectProjectType('prototype')"
+				data-project-type="prototype"
+				onclick="selectProjectType('prototype', this)"
 				class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1"
 			>
 				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">⚙️</div>
@@ -214,7 +276,8 @@ templ StepProjectType() {
 			</button>
 			<button
 				type="button"
-				onclick="selectProjectType('decorative')"
+				data-project-type="decorative"
+				onclick="selectProjectType('decorative', this)"
 				class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1"
 			>
 				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">🏺</div>
@@ -223,7 +286,8 @@ templ StepProjectType() {
 			</button>
 			<button
 				type="button"
-				onclick="selectProjectType('custom')"
+				data-project-type="custom"
+				onclick="selectProjectType('custom', this)"
 				class="project-type-card group p-8 border-2 border-slate-600/50 bg-slate-700/30 rounded-2xl hover:border-emerald-500/50 hover:bg-slate-600/30 transition-all duration-300 cursor-pointer text-left backdrop-blur-sm hover:-translate-y-1"
 			>
 				<div class="text-4xl mb-6 group-hover:scale-110 transition-transform duration-300">✨</div>
@@ -234,185 +298,18 @@ templ StepProjectType() {
 	</div>
 }
 
-templ StepModelSelection() {
+templ StepLeadCapture() {
 	<div>
-		<h2 class="text-3xl font-bold text-white mb-12 text-center">
-			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Upload Your 3D Model</span>
+		<h2 class="text-3xl font-bold text-white mb-8 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Let's Get Started!</span>
 		</h2>
-		<!-- File Upload -->
-		<div class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-blue-400 transition-colors">
-			<input type="file" id="model-file" accept=".stl,.obj,.3mf,.step,.stp" onchange="handleFileUpload(event)" class="hidden"/>
-			<label for="model-file" class="cursor-pointer">
-				<div class="text-5xl mb-4">📁</div>
-				<p class="text-lg font-semibold text-gray-700 mb-2">Drop your 3D file here or click to browse</p>
-				<p class="text-sm text-gray-500">Supports STL, OBJ, 3MF, STEP files (max 50MB)</p>
-			</label>
-		</div>
-		<!-- File Info (hidden initially) -->
-		<div id="file-info" class="hidden mt-4 p-4 bg-green-50 rounded-lg">
-			<p class="text-green-800">
-				<span class="font-semibold">File uploaded:</span>
-				<span id="file-name"></span>
-			</p>
-		</div>
-		<!-- No Model Option -->
-		<div class="mt-6 p-4 bg-blue-50 rounded-lg">
-			<h3 class="font-semibold text-blue-900 mb-2">Don't have a 3D model?</h3>
-			<p class="text-sm text-blue-800 mb-3">No problem! We can help create one for you.</p>
-			<label class="flex items-center">
-				<input type="checkbox" name="need-design" class="mr-2"/>
-				<span class="text-sm">I need help designing my model (+$25-100 design fee)</span>
-			</label>
-		</div>
-		<!-- Reference Images -->
-		<div class="mt-6">
-			<label class="block text-sm font-medium text-gray-700 mb-2">Reference Images (optional)</label>
-			<input type="file" multiple accept="image/*" class="w-full p-2 border border-gray-300 rounded-lg"/>
-			<p class="text-xs text-gray-500 mt-1">Upload images to help us understand your vision</p>
-		</div>
-	</div>
-}
-
-templ StepCustomization() {
-	<div>
-		<h2 class="text-3xl font-bold text-white mb-12 text-center">
-			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Customize Your Print</span>
-		</h2>
-		<!-- Material Selection -->
-		<div class="mb-8">
-			<h3 class="font-semibold text-lg mb-4">Select Material</h3>
-			<div class="grid grid-cols-2 gap-4">
-				<button
-					type="button"
-					onclick="updateMaterial('pla')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left"
-				>
-					<h4 class="font-semibold mb-1">PLA</h4>
-					<p class="text-sm text-gray-600">Eco-friendly, great for display</p>
-					<p class="text-sm font-semibold text-blue-600 mt-2">From $10</p>
-				</button>
-				<button
-					type="button"
-					onclick="updateMaterial('abs')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left"
-				>
-					<h4 class="font-semibold mb-1">ABS</h4>
-					<p class="text-sm text-gray-600">Durable, heat resistant</p>
-					<p class="text-sm font-semibold text-blue-600 mt-2">From $15</p>
-				</button>
-				<button
-					type="button"
-					onclick="updateMaterial('petg')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left"
-				>
-					<h4 class="font-semibold mb-1">PETG</h4>
-					<p class="text-sm text-gray-600">Strong, chemical resistant</p>
-					<p class="text-sm font-semibold text-blue-600 mt-2">From $20</p>
-				</button>
-				<button
-					type="button"
-					onclick="updateMaterial('tpu')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all text-left"
-				>
-					<h4 class="font-semibold mb-1">TPU</h4>
-					<p class="text-sm text-gray-600">Flexible, rubber-like</p>
-					<p class="text-sm font-semibold text-blue-600 mt-2">From $25</p>
-				</button>
-			</div>
-		</div>
-		<!-- Size Selection -->
-		<div class="mb-8">
-			<h3 class="font-semibold text-lg mb-4">Select Size</h3>
-			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-				<button
-					type="button"
-					onclick="updateSize('small')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all"
-				>
-					<div class="text-2xl mb-2">📏</div>
-					<p class="font-semibold">Small</p>
-					<p class="text-xs text-gray-600">&lt; 5cm</p>
-				</button>
-				<button
-					type="button"
-					onclick="updateSize('medium')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all"
-				>
-					<div class="text-2xl mb-2">📐</div>
-					<p class="font-semibold">Medium</p>
-					<p class="text-xs text-gray-600">5-10cm</p>
-				</button>
-				<button
-					type="button"
-					onclick="updateSize('large')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all"
-				>
-					<div class="text-2xl mb-2">📦</div>
-					<p class="font-semibold">Large</p>
-					<p class="text-xs text-gray-600">10-20cm</p>
-				</button>
-				<button
-					type="button"
-					onclick="updateSize('xlarge')"
-					class="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-600 transition-all"
-				>
-					<div class="text-2xl mb-2">🏗️</div>
-					<p class="font-semibold">X-Large</p>
-					<p class="text-xs text-gray-600">&gt; 20cm</p>
-				</button>
-			</div>
-		</div>
-		<!-- Color Selection -->
-		<div class="mb-8">
-			<h3 class="font-semibold text-lg mb-4">Choose Colors</h3>
-			<div class="flex flex-wrap gap-3">
-				<button type="button" class="w-12 h-12 rounded-full bg-red-500 border-2 border-gray-300 hover:border-blue-600"></button>
-				<button type="button" class="w-12 h-12 rounded-full bg-blue-500 border-2 border-gray-300 hover:border-blue-600"></button>
-				<button type="button" class="w-12 h-12 rounded-full bg-green-500 border-2 border-gray-300 hover:border-blue-600"></button>
-				<button type="button" class="w-12 h-12 rounded-full bg-yellow-500 border-2 border-gray-300 hover:border-blue-600"></button>
-				<button type="button" class="w-12 h-12 rounded-full bg-purple-500 border-2 border-gray-300 hover:border-blue-600"></button>
-				<button type="button" class="w-12 h-12 rounded-full bg-gray-800 border-2 border-gray-300 hover:border-blue-600"></button>
-				<button type="button" class="w-12 h-12 rounded-full bg-white border-2 border-gray-300 hover:border-blue-600"></button>
-				<button type="button" class="w-12 h-12 rounded-full bg-orange-500 border-2 border-gray-300 hover:border-blue-600"></button>
-			</div>
-		</div>
-		<!-- Additional Options -->
-		<div class="mb-8">
-			<h3 class="font-semibold text-lg mb-4">Additional Options</h3>
-			<div class="space-y-3">
-				<label class="flex items-center">
-					<input type="checkbox" name="finishing" class="mr-3"/>
-					<span>Professional finishing & smoothing (+$15)</span>
-				</label>
-				<label class="flex items-center">
-					<input type="checkbox" name="painting" class="mr-3"/>
-					<span>Hand painting service (+$25-50)</span>
-				</label>
-				<label class="flex items-center">
-					<input type="checkbox" name="rush" class="mr-3"/>
-					<span>Rush order - 24hr turnaround (+50%)</span>
-				</label>
-			</div>
-		</div>
-		<!-- Price Estimate -->
-		<div class="p-4 bg-blue-50 rounded-lg">
-			<p class="text-lg font-semibold text-blue-900">
-				Estimated Price: <span id="price-estimate" class="text-2xl">$10 - $50</span>
-			</p>
-			<p class="text-sm text-blue-700 mt-1">Final price confirmed after review</p>
-		</div>
-	</div>
-}
-
-templ StepContactInfo() {
-	<div>
-		<h2 class="text-3xl font-bold text-white mb-12 text-center">
-			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Your Contact Information</span>
-		</h2>
-		<div class="space-y-6">
+		<p class="text-center text-slate-300 mb-10 max-w-lg mx-auto">
+			We'll use this to send you updates about your quote and keep your progress saved.
+		</p>
+		<div class="space-y-6 max-w-md mx-auto">
 			<!-- Name -->
 			<div>
-				<label for="name" class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+				<label for="name" class="block text-sm font-medium text-slate-300 mb-2">Your Name *</label>
 				<input
 					type="text"
 					id="name"
@@ -424,7 +321,269 @@ templ StepContactInfo() {
 			</div>
 			<!-- Email -->
 			<div>
-				<label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
+				<label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email Address *</label>
+				<input
+					type="email"
+					id="email"
+					name="email"
+					required
+					class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
+					placeholder="john@example.com"
+				/>
+			</div>
+		</div>
+		<!-- Benefits -->
+		<div class="mt-10 bg-slate-800/30 border border-slate-600/30 rounded-xl p-6">
+			<h3 class="font-semibold text-emerald-400 mb-4 text-center">Why we need this:</h3>
+			<ul class="space-y-3 text-sm text-slate-300">
+				<li class="flex items-center gap-3">
+					<span class="text-emerald-400">✓</span>
+					<span>Save your progress - come back anytime to finish</span>
+				</li>
+				<li class="flex items-center gap-3">
+					<span class="text-emerald-400">✓</span>
+					<span>Receive your personalized quote within 24 hours</span>
+				</li>
+				<li class="flex items-center gap-3">
+					<span class="text-emerald-400">✓</span>
+					<span>Get updates on your order status</span>
+				</li>
+			</ul>
+		</div>
+	</div>
+}
+
+templ StepModelSelection() {
+	<div>
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Upload Your 3D Model</span>
+		</h2>
+		<!-- File Upload -->
+		<div class="border-2 border-dashed border-slate-500 rounded-xl p-8 text-center hover:border-emerald-400 transition-colors bg-slate-800/30">
+			<input type="file" id="model-file" accept=".stl,.obj,.3mf,.step,.stp" onchange="handleFileUpload(event)" class="hidden"/>
+			<label for="model-file" class="cursor-pointer">
+				<div class="text-5xl mb-4">📁</div>
+				<p class="text-lg font-semibold text-white mb-2">Drop your 3D file here or click to browse</p>
+				<p class="text-sm text-slate-400">Supports STL, OBJ, 3MF, STEP files (max 50MB)</p>
+			</label>
+		</div>
+		<!-- File Info (hidden initially) -->
+		<div id="file-info" class="hidden mt-4 p-4 bg-emerald-900/30 border border-emerald-500/50 rounded-lg">
+			<p class="text-emerald-300">
+				<span class="font-semibold">File uploaded:</span>
+				<span id="file-name"></span>
+			</p>
+		</div>
+		<!-- No Model Option -->
+		<div class="mt-6 p-4 bg-slate-800/50 border border-slate-600 rounded-lg">
+			<h3 class="font-semibold text-white mb-2">Don't have a 3D model?</h3>
+			<p class="text-sm text-slate-300 mb-3">No problem! We can help create one for you.</p>
+			<label class="flex items-center text-slate-300">
+				<input type="checkbox" id="need-design" name="need-design" class="mr-2"/>
+				<span class="text-sm">I need help designing my model (+$25-100 design fee)</span>
+			</label>
+		</div>
+		<!-- Reference Images -->
+		<div class="mt-6">
+			<label class="block text-sm font-medium text-slate-300 mb-2">Reference Images (optional)</label>
+			<input type="file" id="reference-images" multiple accept="image/*" class="w-full p-2 border border-slate-600 rounded-lg bg-slate-700/50 text-white"/>
+			<p class="text-xs text-slate-400 mt-1">Upload images to help us understand your vision</p>
+		</div>
+	</div>
+}
+
+templ StepCustomization() {
+	<div>
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Customize Your Print</span>
+		</h2>
+		<!-- Material Selection -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4 text-white">Select Material</h3>
+			<div class="grid grid-cols-2 gap-4">
+				<button
+					type="button"
+					data-material="pla"
+					onclick="updateMaterial('pla')"
+					class="material-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all text-left bg-slate-800/50"
+				>
+					<h4 class="font-semibold mb-1 text-white">PLA</h4>
+					<p class="text-sm text-slate-400">Eco-friendly, great for display</p>
+					<p class="text-sm font-semibold text-emerald-400 mt-2">From $10</p>
+				</button>
+				<button
+					type="button"
+					data-material="abs"
+					onclick="updateMaterial('abs')"
+					class="material-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all text-left bg-slate-800/50"
+				>
+					<h4 class="font-semibold mb-1 text-white">ABS</h4>
+					<p class="text-sm text-slate-400">Durable, heat resistant</p>
+					<p class="text-sm font-semibold text-emerald-400 mt-2">From $15</p>
+				</button>
+				<button
+					type="button"
+					data-material="petg"
+					onclick="updateMaterial('petg')"
+					class="material-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all text-left bg-slate-800/50"
+				>
+					<h4 class="font-semibold mb-1 text-white">PETG</h4>
+					<p class="text-sm text-slate-400">Strong, chemical resistant</p>
+					<p class="text-sm font-semibold text-emerald-400 mt-2">From $20</p>
+				</button>
+				<button
+					type="button"
+					data-material="tpu"
+					onclick="updateMaterial('tpu')"
+					class="material-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all text-left bg-slate-800/50"
+				>
+					<h4 class="font-semibold mb-1 text-white">TPU</h4>
+					<p class="text-sm text-slate-400">Flexible, rubber-like</p>
+					<p class="text-sm font-semibold text-emerald-400 mt-2">From $25</p>
+				</button>
+			</div>
+		</div>
+		<!-- Size Selection -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4 text-white">Select Size</h3>
+			<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+				<button
+					type="button"
+					data-size="small"
+					onclick="updateSize('small')"
+					class="size-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all bg-slate-800/50"
+				>
+					<div class="text-2xl mb-2">📏</div>
+					<p class="font-semibold text-white">Small</p>
+					<p class="text-xs text-slate-400">&lt; 5cm</p>
+				</button>
+				<button
+					type="button"
+					data-size="medium"
+					onclick="updateSize('medium')"
+					class="size-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all bg-slate-800/50"
+				>
+					<div class="text-2xl mb-2">📐</div>
+					<p class="font-semibold text-white">Medium</p>
+					<p class="text-xs text-slate-400">5-10cm</p>
+				</button>
+				<button
+					type="button"
+					data-size="large"
+					onclick="updateSize('large')"
+					class="size-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all bg-slate-800/50"
+				>
+					<div class="text-2xl mb-2">📦</div>
+					<p class="font-semibold text-white">Large</p>
+					<p class="text-xs text-slate-400">10-20cm</p>
+				</button>
+				<button
+					type="button"
+					data-size="xlarge"
+					onclick="updateSize('xlarge')"
+					class="size-btn p-4 border-2 border-slate-600 rounded-lg hover:border-blue-500 transition-all bg-slate-800/50"
+				>
+					<div class="text-2xl mb-2">🏗️</div>
+					<p class="font-semibold text-white">X-Large</p>
+					<p class="text-xs text-slate-400">&gt; 20cm</p>
+				</button>
+			</div>
+		</div>
+		<!-- Color Selection -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4 text-white">Choose Color</h3>
+			<div class="flex flex-wrap gap-3">
+				<button type="button" data-color="red" onclick="selectColor('red')" class="color-btn w-12 h-12 rounded-full bg-red-500 border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+				<button type="button" data-color="blue" onclick="selectColor('blue')" class="color-btn w-12 h-12 rounded-full bg-blue-500 border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+				<button type="button" data-color="green" onclick="selectColor('green')" class="color-btn w-12 h-12 rounded-full bg-green-500 border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+				<button type="button" data-color="yellow" onclick="selectColor('yellow')" class="color-btn w-12 h-12 rounded-full bg-yellow-500 border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+				<button type="button" data-color="purple" onclick="selectColor('purple')" class="color-btn w-12 h-12 rounded-full bg-purple-500 border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+				<button type="button" data-color="black" onclick="selectColor('black')" class="color-btn w-12 h-12 rounded-full bg-gray-800 border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+				<button type="button" data-color="white" onclick="selectColor('white')" class="color-btn w-12 h-12 rounded-full bg-white border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+				<button type="button" data-color="orange" onclick="selectColor('orange')" class="color-btn w-12 h-12 rounded-full bg-orange-500 border-2 border-slate-600 hover:border-blue-500 transition-all"></button>
+			</div>
+		</div>
+		<!-- Additional Options -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4 text-white">Additional Options</h3>
+			<div class="space-y-3">
+				<label class="flex items-center text-slate-300">
+					<input type="checkbox" id="finishing" name="finishing" class="mr-3"/>
+					<span>Professional finishing & smoothing (+$15)</span>
+				</label>
+				<label class="flex items-center text-slate-300">
+					<input type="checkbox" id="painting" name="painting" class="mr-3"/>
+					<span>Hand painting service (+$25-50)</span>
+				</label>
+				<label class="flex items-center text-slate-300">
+					<input type="checkbox" id="rush" name="rush" class="mr-3"/>
+					<span>Rush order - 24hr turnaround (+50%)</span>
+				</label>
+			</div>
+		</div>
+		<!-- Timeline -->
+		<div class="mb-8">
+			<h3 class="font-semibold text-lg mb-4 text-white">When do you need this?</h3>
+			<div class="grid grid-cols-2 gap-4">
+				<label class="flex items-center p-3 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-700/50 bg-slate-800/50">
+					<input type="radio" id="timeline-standard" name="timeline" value="standard" class="mr-3" checked/>
+					<div>
+						<p class="font-semibold text-white">Standard (3-5 days)</p>
+						<p class="text-xs text-slate-400">Regular pricing</p>
+					</div>
+				</label>
+				<label class="flex items-center p-3 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-700/50 bg-slate-800/50">
+					<input type="radio" id="timeline-rush" name="timeline" value="rush" class="mr-3"/>
+					<div>
+						<p class="font-semibold text-white">Rush (24-48 hours)</p>
+						<p class="text-xs text-slate-400">+50% rush fee</p>
+					</div>
+				</label>
+			</div>
+		</div>
+		<!-- Project Description -->
+		<div class="mb-8">
+			<label for="description" class="block text-sm font-medium text-slate-300 mb-2">Project Description (optional)</label>
+			<textarea
+				id="description"
+				name="description"
+				rows="3"
+				class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
+				placeholder="Any special requirements, deadlines, or details about your project..."
+			></textarea>
+		</div>
+		<!-- Price Estimate -->
+		<div class="p-4 bg-slate-800/50 border border-slate-600 rounded-lg">
+			<p class="text-lg font-semibold text-white">
+				Estimated Price: <span id="price-estimate" class="text-2xl text-emerald-400">$10 - $50</span>
+			</p>
+			<p class="text-sm text-slate-400 mt-1">Final price confirmed after review</p>
+		</div>
+	</div>
+}
+
+// StepContactInfo is no longer used - name/email is now in StepLeadCapture
+templ StepContactInfo() {
+	<div>
+		<h2 class="text-3xl font-bold text-white mb-12 text-center">
+			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Your Contact Information</span>
+		</h2>
+		<div class="space-y-6">
+			<!-- Name -->
+			<div>
+				<label for="name" class="block text-sm font-medium text-slate-300 mb-2">Full Name *</label>
+				<input
+					type="text"
+					id="name"
+					name="name"
+					required
+					class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
+					placeholder="John Doe"
+				/>
+			</div>
+			<!-- Email -->
+			<div>
+				<label for="email" class="block text-sm font-medium text-slate-300 mb-2">Email Address *</label>
 				<input
 					type="email"
 					id="email"
@@ -436,7 +595,7 @@ templ StepContactInfo() {
 			</div>
 			<!-- Phone -->
 			<div>
-				<label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number (optional)</label>
+				<label for="phone" class="block text-sm font-medium text-slate-300 mb-2">Phone Number (optional)</label>
 				<input
 					type="tel"
 					id="phone"
@@ -447,31 +606,31 @@ templ StepContactInfo() {
 			</div>
 			<!-- Project Description -->
 			<div>
-				<label for="description" class="block text-sm font-medium text-gray-700 mb-2">Project Description</label>
+				<label for="description" class="block text-sm font-medium text-slate-300 mb-2">Project Description</label>
 				<textarea
 					id="description"
 					name="description"
 					rows="4"
-					class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+					class="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 backdrop-blur-sm transition-all duration-300"
 					placeholder="Tell us more about your project, any special requirements, deadlines, etc."
 				></textarea>
 			</div>
 			<!-- Timeline -->
 			<div>
-				<label class="block text-sm font-medium text-gray-700 mb-2">When do you need this?</label>
+				<label class="block text-sm font-medium text-slate-300 mb-2">When do you need this?</label>
 				<div class="grid grid-cols-2 gap-4">
-					<label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-						<input type="radio" name="timeline" value="standard" class="mr-3" checked/>
+					<label class="flex items-center p-3 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-700/50 bg-slate-800/50">
+						<input type="radio" id="timeline-standard" name="timeline" value="standard" class="mr-3" checked/>
 						<div>
-							<p class="font-semibold">Standard (3-5 days)</p>
-							<p class="text-xs text-gray-600">Regular pricing</p>
+							<p class="font-semibold text-white">Standard (3-5 days)</p>
+							<p class="text-xs text-slate-400">Regular pricing</p>
 						</div>
 					</label>
-					<label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-						<input type="radio" name="timeline" value="rush" class="mr-3"/>
+					<label class="flex items-center p-3 border border-slate-600 rounded-lg cursor-pointer hover:bg-slate-700/50 bg-slate-800/50">
+						<input type="radio" id="timeline-rush" name="timeline" value="rush" class="mr-3"/>
 						<div>
-							<p class="font-semibold">Rush (24-48 hours)</p>
-							<p class="text-xs text-gray-600">+50% rush fee</p>
+							<p class="font-semibold text-white">Rush (24-48 hours)</p>
+							<p class="text-xs text-slate-400">+50% rush fee</p>
 						</div>
 					</label>
 				</div>
@@ -486,36 +645,69 @@ templ StepReviewSubmit() {
 			<span class="bg-gradient-to-r from-blue-300 to-emerald-400 bg-clip-text text-transparent">Review Your Order</span>
 		</h2>
 		<!-- Order Summary -->
-		<div class="bg-gray-50 rounded-lg p-6 mb-6">
-			<h3 class="font-semibold text-lg mb-4">Order Summary</h3>
+		<div class="bg-slate-800/50 border border-slate-600 rounded-xl p-6 mb-6">
+			<h3 class="font-semibold text-lg mb-4 text-white">Order Summary</h3>
 			<div class="space-y-3 text-sm">
 				<div class="flex justify-between">
-					<span class="text-gray-600">Project Type:</span>
-					<span id="review-project-type" class="font-semibold"></span>
+					<span class="text-slate-400">Project Type:</span>
+					<span id="review-project-type" class="font-semibold text-white"></span>
 				</div>
 				<div class="flex justify-between">
-					<span class="text-gray-600">Material:</span>
-					<span id="review-material" class="font-semibold"></span>
+					<span class="text-slate-400">Material:</span>
+					<span id="review-material" class="font-semibold text-white"></span>
 				</div>
 				<div class="flex justify-between">
-					<span class="text-gray-600">Size:</span>
-					<span id="review-size" class="font-semibold"></span>
+					<span class="text-slate-400">Size:</span>
+					<span id="review-size" class="font-semibold text-white"></span>
 				</div>
 				<div class="flex justify-between">
-					<span class="text-gray-600">Contact Name:</span>
-					<span id="review-name" class="font-semibold"></span>
+					<span class="text-slate-400">Color:</span>
+					<span id="review-color" class="font-semibold text-white"></span>
 				</div>
 				<div class="flex justify-between">
-					<span class="text-gray-600">Email:</span>
-					<span id="review-email" class="font-semibold"></span>
+					<span class="text-slate-400">Timeline:</span>
+					<span id="review-timeline" class="font-semibold text-white"></span>
+				</div>
+				<div id="review-options-row" class="flex justify-between gap-4">
+					<span class="text-slate-400 shrink-0">Options:</span>
+					<span id="review-options" class="font-semibold text-right text-white"></span>
+				</div>
+				<div id="review-file-row" class="flex justify-between gap-4 hidden">
+					<span class="text-slate-400 shrink-0">3D Model:</span>
+					<span id="review-file" class="font-semibold text-right text-white break-all"></span>
+				</div>
+				<div id="review-reference-images-row" class="flex justify-between hidden">
+					<span class="text-slate-400">Reference Images:</span>
+					<span id="review-reference-images" class="font-semibold text-right text-white"></span>
 				</div>
 			</div>
-			<div class="mt-6 pt-4 border-t border-gray-200">
-				<div class="flex justify-between text-lg font-semibold">
-					<span>Estimated Total:</span>
-					<span class="text-blue-600">Quote Pending</span>
+			<div class="mt-4 pt-4 border-t border-slate-600">
+				<h4 class="font-semibold text-white mb-2">Contact Information</h4>
+				<div class="space-y-2 text-sm">
+					<div class="flex justify-between">
+						<span class="text-slate-400">Name:</span>
+						<span id="review-name" class="font-semibold text-white"></span>
+					</div>
+					<div class="flex justify-between">
+						<span class="text-slate-400">Email:</span>
+						<span id="review-email" class="font-semibold text-white"></span>
+					</div>
+					<div id="review-phone-row" class="flex justify-between">
+						<span class="text-slate-400">Phone:</span>
+						<span id="review-phone" class="font-semibold text-white"></span>
+					</div>
 				</div>
-				<p class="text-xs text-gray-600 mt-2">
+			</div>
+			<div id="review-description-section" class="mt-4 pt-4 border-t border-slate-600 hidden">
+				<h4 class="font-semibold text-white mb-2">Project Details</h4>
+				<p id="review-description" class="text-sm text-slate-300"></p>
+			</div>
+			<div class="mt-6 pt-4 border-t border-slate-600">
+				<div class="flex justify-between text-lg font-semibold">
+					<span class="text-white">Estimated Total:</span>
+					<span class="text-emerald-400">Quote Pending</span>
+				</div>
+				<p class="text-xs text-slate-400 mt-2">
 					We'll send you a detailed quote within 24 hours
 				</p>
 			</div>
@@ -523,17 +715,23 @@ templ StepReviewSubmit() {
 		<!-- Terms Agreement -->
 		<div class="mb-6">
 			<label class="flex items-start">
-				<input type="checkbox" name="terms" required class="mt-1 mr-3"/>
-				<span class="text-sm text-gray-700">
-					I agree to the <a href="/terms" class="text-blue-600 hover:underline">Terms of Service</a>
-					and <a href="/custom-policy" class="text-blue-600 hover:underline">Custom Order Policy</a>
+				<input type="checkbox" id="terms" name="terms" required class="mt-1 mr-3"/>
+				<span class="text-sm text-slate-300">
+					I agree to the <a href="/terms" class="text-blue-400 hover:text-blue-300 hover:underline">Terms of Service</a>
+					and <a href="/custom-policy" class="text-blue-400 hover:text-blue-300 hover:underline">Custom Order Policy</a>
 				</span>
 			</label>
 		</div>
+		<!-- reCAPTCHA Privacy Notice -->
+		<p class="text-xs text-slate-400 text-center leading-relaxed mb-6">
+			This site is protected by reCAPTCHA and the Google
+			<a href="https://policies.google.com/privacy" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and
+			<a href="https://policies.google.com/terms" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Terms of Service</a> apply.
+		</p>
 		<!-- What Happens Next -->
-		<div class="bg-blue-50 rounded-lg p-6">
-			<h3 class="font-semibold text-blue-900 mb-3">What Happens Next?</h3>
-			<ol class="space-y-2 text-sm text-blue-800">
+		<div class="bg-slate-800/50 border border-emerald-500/30 rounded-xl p-6">
+			<h3 class="font-semibold text-emerald-400 mb-3">What Happens Next?</h3>
+			<ol class="space-y-2 text-sm text-slate-300">
 				<li>1. We'll review your request and 3D model</li>
 				<li>2. You'll receive a detailed quote within 24 hours</li>
 				<li>3. Once approved, we'll begin production</li>

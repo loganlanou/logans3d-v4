@@ -167,6 +167,50 @@ func (q *Queries) GetQuoteFiles(ctx context.Context, quoteRequestID string) ([]Q
 	return items, nil
 }
 
+const getQuoteFilesByEmailLatest = `-- name: GetQuoteFilesByEmailLatest :many
+SELECT qf.id, qf.quote_request_id, qf.filename, qf.original_filename, qf.file_path, qf.file_size, qf.mime_type, qf.created_at FROM quote_files qf
+WHERE qf.quote_request_id = (
+    SELECT id FROM quote_requests
+    WHERE customer_email = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+)
+ORDER BY qf.created_at
+`
+
+// Get quote files for the most recent quote request matching an email
+func (q *Queries) GetQuoteFilesByEmailLatest(ctx context.Context, customerEmail string) ([]QuoteFile, error) {
+	rows, err := q.db.QueryContext(ctx, getQuoteFilesByEmailLatest, customerEmail)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []QuoteFile{}
+	for rows.Next() {
+		var i QuoteFile
+		if err := rows.Scan(
+			&i.ID,
+			&i.QuoteRequestID,
+			&i.Filename,
+			&i.OriginalFilename,
+			&i.FilePath,
+			&i.FileSize,
+			&i.MimeType,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getQuoteRequest = `-- name: GetQuoteRequest :one
 SELECT id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at FROM quote_requests WHERE id = ?
 `

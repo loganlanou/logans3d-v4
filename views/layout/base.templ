@@ -105,11 +105,25 @@ templ Base(c echo.Context, meta PageMeta) {
 			<!-- Cart Preview Modal -->
 			@CartModal()
 
-			<!-- Initialize Clerk for token refresh -->
+			<!-- Initialize Clerk for session maintenance -->
 			<script>
 				window.addEventListener('load', async function() {
 					try {
 						await window.Clerk.load();
+
+						// If user is logged in, set up session maintenance
+						// This keeps the session alive by touching it every 45 seconds
+						if (window.Clerk.user) {
+							setInterval(async () => {
+								try {
+									if (window.Clerk.session) {
+										await window.Clerk.session.touch();
+									}
+								} catch (err) {
+									console.error('Session touch failed:', err);
+								}
+							}, 45000); // Every 45 seconds (before 60s token expiry)
+						}
 					} catch (err) {
 						console.error('Failed to load Clerk:', err);
 					}

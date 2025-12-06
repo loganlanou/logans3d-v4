@@ -63,6 +63,17 @@ DELETE FROM quote_requests WHERE id = ?;
 -- name: GetQuoteFiles :many
 SELECT * FROM quote_files WHERE quote_request_id = ?;
 
+-- name: GetQuoteFilesByEmailLatest :many
+-- Get quote files for the most recent quote request matching an email
+SELECT qf.* FROM quote_files qf
+WHERE qf.quote_request_id = (
+    SELECT id FROM quote_requests
+    WHERE customer_email = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+)
+ORDER BY qf.created_at;
+
 -- name: CreateQuoteFile :one
 INSERT INTO quote_files (
     id, quote_request_id, filename, original_filename, file_path, file_size, mime_type

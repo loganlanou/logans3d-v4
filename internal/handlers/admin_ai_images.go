@@ -161,7 +161,9 @@ func (h *AIBackgroundHandler) HandleApproveBackground(c echo.Context) error {
 	if err != nil {
 		slog.Error("failed to create product image", "error", err)
 		// Try to move file back
-		os.Rename(newPath, pendingPath)
+		if renameErr := os.Rename(newPath, pendingPath); renameErr != nil {
+			slog.Error("failed to move file back to pending", "error", renameErr, "from", newPath, "to", pendingPath)
+		}
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save image")
 	}
 

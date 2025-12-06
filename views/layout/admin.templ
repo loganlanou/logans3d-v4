@@ -12,6 +12,23 @@ import (
 	"github.com/loganlanou/logans3d-v4/internal/auth"
 )
 
+// AdminBadgeCountsKey is the context key for admin badge counts
+const AdminBadgeCountsKey = "adminBadgeCounts"
+
+// AdminBadgeCounts holds counts for admin sidebar badges
+type AdminBadgeCounts struct {
+	NewContacts    int64
+	PendingQuotes  int64
+}
+
+// GetAdminBadgeCounts retrieves badge counts from the echo context
+func GetAdminBadgeCounts(c echo.Context) AdminBadgeCounts {
+	if counts, ok := c.Get(AdminBadgeCountsKey).(AdminBadgeCounts); ok {
+		return counts
+	}
+	return AdminBadgeCounts{}
+}
+
 func getSubitemClass(c echo.Context, targetPath string) string {
 	currentPath := c.Request().URL.Path
 	if currentPath == targetPath {
@@ -100,32 +117,31 @@ templ AdminBase(c echo.Context, title string) {
 				}
 			}
 
-			<!-- Initialize Clerk for automatic token refresh -->
+			<!-- Initialize Clerk for automatic session maintenance -->
 			<script>
 				window.addEventListener('load', async function() {
 					try {
 						await window.Clerk.load();
 						console.log('Clerk loaded successfully in admin panel');
 
-						// Set up proactive token refresh for admin dashboard
-						// Check every 30 seconds if token needs refresh
+						// Set up proactive session touch for admin dashboard
+						// touch() updates the session's last active timestamp and refreshes the cookie
+						// This runs every 45 seconds (before the 60-second token expiry)
 						setInterval(async () => {
 							try {
-								const session = window.Clerk.session;
-								if (session) {
-									// Get token with explicit refresh check
-									// This will trigger refresh if token is close to expiry
-									await session.getToken({ skipCache: true });
-									console.log('Admin: Token refresh check completed');
+								if (window.Clerk.session) {
+									// Touch the session to extend it and trigger cookie refresh
+									await window.Clerk.session.touch();
+									console.log('Admin: Session touched successfully');
 								}
 							} catch (err) {
-								console.error('Admin: Token refresh failed:', err);
-								// If refresh fails, redirect to login
-								if (err.message && err.message.includes('session')) {
+								console.error('Admin: Session touch failed:', err);
+								// Only redirect if session is truly expired (no user)
+								if (!window.Clerk.user) {
 									window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
 								}
 							}
-						}, 30000); // Check every 30 seconds
+						}, 45000); // Every 45 seconds (before 60s token expiry)
 					} catch (err) {
 						console.error('Failed to load Clerk in admin panel:', err);
 					}
@@ -224,6 +240,11 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 						<a href="/admin/quotes" class={ getSubitemClass(c, "/admin/quotes") } title="Quotes">
 							<span class="admin-sidebar-text">Quotes</span>
+							if GetAdminBadgeCounts(c).PendingQuotes > 0 {
+								<span class="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-medium bg-amber-500 text-white rounded-full">
+									{ fmt.Sprintf("%d", GetAdminBadgeCounts(c).PendingQuotes) }
+								</span>
+							}
 						</a>
 					</div>
 				</div>
@@ -240,6 +261,11 @@ templ AdminSidebar(c echo.Context) {
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
 					</svg>
 					<span class="admin-sidebar-text">Contacts</span>
+					if GetAdminBadgeCounts(c).NewContacts > 0 {
+						<span class="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-medium bg-blue-500 text-white rounded-full">
+							{ fmt.Sprintf("%d", GetAdminBadgeCounts(c).NewContacts) }
+						</span>
+					}
 				</a>
 
 				<a href="/admin/email-preview" class="admin-sidebar-item" title="Email Preview">
