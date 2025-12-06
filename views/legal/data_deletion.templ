@@ -1,0 +1,82 @@
+package legal
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ DataDeletion(c echo.Context, meta layout.PageMeta) {
+	@layout.Base(c, meta) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-16">
+			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div class="bg-white rounded-2xl shadow-lg p-8 lg:p-12">
+					<h1 class="text-4xl font-bold text-slate-900 mb-6">Data Deletion Request</h1>
+					<p class="text-slate-600 mb-8">
+						<strong>Last updated:</strong> January 1, 2025
+					</p>
+					<div class="prose max-w-none text-slate-700">
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">How to Request Data Deletion</h2>
+						<p class="mb-6">
+							If you would like to request the deletion of your personal data from Logan's 3D Creations,
+							please follow the instructions below. We are committed to honoring your data privacy rights.
+						</p>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Submit a Deletion Request</h2>
+						<p class="mb-4">
+							To request deletion of your data, please send an email to:
+						</p>
+						<div class="bg-slate-50 p-6 rounded-lg mb-6">
+							<p class="text-lg"><strong>Email:</strong> <a href="mailto:prints@logans3dcreations.com" class="text-blue-600 hover:underline">prints@logans3dcreations.com</a></p>
+							<p class="text-slate-600 mt-2">Subject line: "Data Deletion Request"</p>
+						</div>
+
+						<p class="mb-4">Please include the following information in your request:</p>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Your full name</li>
+							<li>Email address associated with your account</li>
+							<li>Description of the data you want deleted</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">What Happens Next</h2>
+						<p class="mb-4">Once we receive your request, we will:</p>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Verify your identity to protect your privacy</li>
+							<li>Process your request within 30 days</li>
+							<li>Send you a confirmation once your data has been deleted</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Data We May Retain</h2>
+						<p class="mb-6">
+							Please note that we may be required to retain certain information for legal or
+							legitimate business purposes, such as:
+						</p>
+						<ul class="list-disc pl-6 mb-6">
+							<li>Transaction records for tax and accounting purposes</li>
+							<li>Information necessary to resolve disputes</li>
+							<li>Data required by law to be retained</li>
+						</ul>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Facebook/Meta Users</h2>
+						<p class="mb-6">
+							If you signed up using Facebook Login, you can also manage your data through
+							<a href="https://www.facebook.com/settings?tab=applications" class="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">Facebook's App Settings</a>.
+							Removing our app from your Facebook account will prevent future data sharing,
+							but to delete existing data, please submit a request using the method above.
+						</p>
+
+						<h2 class="text-2xl font-semibold text-slate-900 mb-4">Contact Us</h2>
+						<p class="mb-4">
+							If you have questions about data deletion or our privacy practices, please contact us:
+						</p>
+						<div class="bg-slate-50 p-6 rounded-lg">
+							<p><strong>Logan's 3D Creations</strong></p>
+							<p>Email: prints@logans3dcreations.com</p>
+							<p>Phone: 715-703-3768</p>
+							<p>Address: 25892 County Hwy S, Cadott, WI 54727</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	}
+}

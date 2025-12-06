@@ -151,6 +151,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	withAuth.GET("/terms", s.handleTerms)
 	withAuth.GET("/shipping", s.handleShipping)
 	withAuth.GET("/custom-policy", s.handleCustomPolicy)
+	withAuth.GET("/data-deletion", s.handleDataDeletion)
 
 	// Shop routes
 	shop := withAuth.Group("/shop")
@@ -2318,6 +2319,15 @@ func (s *Service) handleCustomPolicy(c echo.Context) error {
 	meta.Keywords = []string{"custom order policy", "custom printing terms", "order requirements"}
 	meta.OGType = "website"
 	return Render(c, legal.CustomPolicy(c, meta))
+}
+
+func (s *Service) handleDataDeletion(c echo.Context) error {
+	meta := layout.NewPageMeta(c, s.storage.Queries)
+	meta.Title = "Data Deletion Request | Logan's 3D Creations"
+	meta.Description = "Learn how to request deletion of your personal data from Logan's 3D Creations."
+	meta.Keywords = []string{"data deletion", "privacy", "GDPR", "data request"}
+	meta.OGType = "website"
+	return Render(c, legal.DataDeletion(c, meta))
 }
 
 func (s *Service) handleHealth(c echo.Context) error {
