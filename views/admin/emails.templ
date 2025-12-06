@@ -10,13 +10,29 @@ import (
 	"fmt"
 )
 
-templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCount int) {
+templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCount int, emailFilter string) {
 	@layout.AdminBase(c, "Email History") {
+		<!-- Back link when filtered -->
+		if emailFilter != "" {
+			<div class="mb-4">
+				<a href="/admin/emails" class="text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 flex items-center gap-2">
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+					</svg>
+					Back to All Emails
+				</a>
+			</div>
+		}
+
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6">
 			<div>
 				<h1 class="text-2xl font-bold text-foreground">Email History</h1>
-				<p class="text-muted-foreground mt-1">All emails sent by the system</p>
+				if emailFilter != "" {
+					<p class="text-muted-foreground mt-1">Showing emails to: <span class="font-medium text-foreground">{ emailFilter }</span></p>
+				} else {
+					<p class="text-muted-foreground mt-1">All emails sent by the system</p>
+				}
 			</div>
 			<div class="text-sm text-muted-foreground">
 				Total: { fmt.Sprintf("%d", totalCount) } emails
@@ -77,15 +93,15 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 					if totalCount > 50 {
 						<div class="mt-4 flex justify-center gap-2">
 							if page > 1 {
-								<a href={ templ.SafeURL(fmt.Sprintf("/admin/emails?page=%d", page-1)) } class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+								<a href={ templ.SafeURL(paginationURL(page-1, emailFilter)) } class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-foreground">
 									Previous
 								</a>
 							}
-							<span class="px-4 py-2">
+							<span class="px-4 py-2 text-foreground">
 								Page { fmt.Sprintf("%d", page) }
 							</span>
 							if page * 50 < totalCount {
-								<a href={ templ.SafeURL(fmt.Sprintf("/admin/emails?page=%d", page+1)) } class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
+								<a href={ templ.SafeURL(paginationURL(page+1, emailFilter)) } class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 text-foreground">
 									Next
 								</a>
 							}
@@ -134,4 +150,11 @@ templ emailStatusBadges(email db.EmailHistory) {
 			<span class="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">Sent</span>
 		}
 	</div>
+}
+
+func paginationURL(page int, emailFilter string) string {
+	if emailFilter != "" {
+		return fmt.Sprintf("/admin/emails?email=%s&page=%d", emailFilter, page)
+	}
+	return fmt.Sprintf("/admin/emails?page=%d", page)
 }

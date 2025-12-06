@@ -271,24 +271,41 @@ func FormatCents(cents int64) string {
 
 // SendOrderConfirmation sends an order confirmation email to the customer
 func (s *Service) SendOrderConfirmation(data *OrderData) error {
+	ctx := context.Background()
+
 	// Render the full email (content + base template)
 	html, err := RenderCustomerOrderEmail(data)
 	if err != nil {
 		return err
 	}
 
+	subject := fmt.Sprintf("Order Confirmation - Order #%s", data.OrderID)
 	email := &Email{
 		To:      []string{data.CustomerEmail},
-		Subject: fmt.Sprintf("Order Confirmation - Order #%s", data.OrderID),
+		Subject: subject,
 		Body:    html,
 		IsHTML:  true,
 	}
 
-	return s.Send(email)
+	sendErr := s.Send(email)
+
+	// Log the email send
+	logErr := s.LogEmailSend(ctx, data.CustomerEmail, "order_confirmation", subject, "customer_order", "", map[string]interface{}{
+		"order_id":    data.OrderID,
+		"order_total": data.TotalCents,
+		"item_count":  len(data.Items),
+	})
+	if logErr != nil {
+		slog.Error("failed to log email send", "error", logErr)
+	}
+
+	return sendErr
 }
 
 // SendOrderNotificationToAdmin sends an order notification to the admin/internal email
 func (s *Service) SendOrderNotificationToAdmin(data *OrderData) error {
+	ctx := context.Background()
+
 	// Render the full email (content + base template)
 	html, err := RenderAdminOrderEmail(data)
 	if err != nil {
@@ -300,14 +317,26 @@ func (s *Service) SendOrderNotificationToAdmin(data *OrderData) error {
 		internalEmail = "prints@logans3dcreations.com"
 	}
 
+	subject := fmt.Sprintf("New Order Received - Order #%s", data.OrderID)
 	email := &Email{
 		To:      []string{internalEmail},
-		Subject: fmt.Sprintf("New Order Received - Order #%s", data.OrderID),
+		Subject: subject,
 		Body:    html,
 		IsHTML:  true,
 	}
 
-	return s.Send(email)
+	sendErr := s.Send(email)
+
+	// Log the email send
+	logErr := s.LogEmailSend(ctx, internalEmail, "order_notification_admin", subject, "admin_order", "", map[string]interface{}{
+		"order_id":       data.OrderID,
+		"customer_email": data.CustomerEmail,
+	})
+	if logErr != nil {
+		slog.Error("failed to log email send", "error", logErr)
+	}
+
+	return sendErr
 }
 
 // RenderCustomerOrderEmail renders the customer order email template for preview
@@ -362,6 +391,8 @@ type ContactRequestData struct {
 
 // SendContactRequestNotification sends a contact request notification to admin
 func (s *Service) SendContactRequestNotification(data *ContactRequestData) error {
+	ctx := context.Background()
+
 	html, err := RenderContactRequestEmail(data)
 	if err != nil {
 		return err
@@ -372,9 +403,10 @@ func (s *Service) SendContactRequestNotification(data *ContactRequestData) error
 		internalEmail = "prints@logans3dcreations.com"
 	}
 
+	subject := fmt.Sprintf("New Contact Request - %s", data.Subject)
 	email := &Email{
 		To:      []string{internalEmail},
-		Subject: fmt.Sprintf("New Contact Request - %s", data.Subject),
+		Subject: subject,
 		Body:    html,
 		IsHTML:  true,
 	}
@@ -383,7 +415,19 @@ func (s *Service) SendContactRequestNotification(data *ContactRequestData) error
 		email.ReplyTo = data.Email
 	}
 
-	return s.Send(email)
+	sendErr := s.Send(email)
+
+	// Log the email send
+	logErr := s.LogEmailSend(ctx, internalEmail, "contact_request", subject, "contact_request", "", map[string]interface{}{
+		"contact_name":  fmt.Sprintf("%s %s", data.FirstName, data.LastName),
+		"contact_email": data.Email,
+		"subject":       data.Subject,
+	})
+	if logErr != nil {
+		slog.Error("failed to log email send", "error", logErr)
+	}
+
+	return sendErr
 }
 
 // RenderContactRequestEmail renders the contact request email template
@@ -420,6 +464,8 @@ type QuoteRequestData struct {
 
 // SendQuoteRequestNotification sends a quote request notification to admin
 func (s *Service) SendQuoteRequestNotification(data *QuoteRequestData) error {
+	ctx := context.Background()
+
 	html, err := RenderQuoteRequestEmail(data)
 	if err != nil {
 		return err
@@ -430,9 +476,10 @@ func (s *Service) SendQuoteRequestNotification(data *QuoteRequestData) error {
 		internalEmail = "prints@logans3dcreations.com"
 	}
 
+	subject := fmt.Sprintf("New Quote Request - %s", data.ProjectType)
 	email := &Email{
 		To:      []string{internalEmail},
-		Subject: fmt.Sprintf("New Quote Request - %s", data.ProjectType),
+		Subject: subject,
 		Body:    html,
 		IsHTML:  true,
 	}
@@ -441,7 +488,19 @@ func (s *Service) SendQuoteRequestNotification(data *QuoteRequestData) error {
 		email.ReplyTo = data.CustomerEmail
 	}
 
-	return s.Send(email)
+	sendErr := s.Send(email)
+
+	// Log the email send
+	logErr := s.LogEmailSend(ctx, internalEmail, "quote_request_admin", subject, "quote_request", "", map[string]interface{}{
+		"project_type":   data.ProjectType,
+		"customer_email": data.CustomerEmail,
+		"customer_name":  data.CustomerName,
+	})
+	if logErr != nil {
+		slog.Error("failed to log email send", "error", logErr)
+	}
+
+	return sendErr
 }
 
 // RenderQuoteRequestEmail renders the quote request email template
@@ -459,19 +518,33 @@ func RenderQuoteRequestEmail(data *QuoteRequestData) (string, error) {
 
 // SendQuoteRequestCustomerConfirmation sends a confirmation email to the customer
 func (s *Service) SendQuoteRequestCustomerConfirmation(data *QuoteRequestData) error {
+	ctx := context.Background()
+
 	html, err := RenderQuoteRequestCustomerConfirmation(data)
 	if err != nil {
 		return err
 	}
 
+	subject := "We've Received Your Custom Quote Request - Logan's 3D Creations"
 	email := &Email{
 		To:      []string{data.CustomerEmail},
-		Subject: "We've Received Your Custom Quote Request - Logan's 3D Creations",
+		Subject: subject,
 		Body:    html,
 		IsHTML:  true,
 	}
 
-	return s.Send(email)
+	sendErr := s.Send(email)
+
+	// Log the email send
+	logErr := s.LogEmailSend(ctx, data.CustomerEmail, "quote_request_confirmation", subject, "quote_request_confirmation", "", map[string]interface{}{
+		"project_type":  data.ProjectType,
+		"customer_name": data.CustomerName,
+	})
+	if logErr != nil {
+		slog.Error("failed to log email send", "error", logErr)
+	}
+
+	return sendErr
 }
 
 // RenderQuoteRequestCustomerConfirmation renders the customer confirmation email template

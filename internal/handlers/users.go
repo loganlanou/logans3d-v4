@@ -138,6 +138,16 @@ func (h *UserHandler) HandleUserDetail(c echo.Context) error {
 		return c.String(http.StatusInternalServerError, "Failed to fetch collections: "+err.Error())
 	}
 
+	// Get email history by user's email address (catches emails sent before registration)
+	emails, err := h.storage.Queries.GetEmailHistoryByEmail(ctx, db.GetEmailHistoryByEmailParams{
+		RecipientEmail: userStats.Email,
+		Limit:          5,
+		Offset:         0,
+	})
+	if err != nil {
+		return c.String(http.StatusInternalServerError, "Failed to fetch email history: "+err.Error())
+	}
+
 	// Handle LifetimeSpendCents interface{}
 	var lifetimeSpend int64
 	if userStats.LifetimeSpendCents != nil {
@@ -273,7 +283,21 @@ func (h *UserHandler) HandleUserDetail(c echo.Context) error {
 		})
 	}
 
-	return Render(c, admin.UserDetail(c, user, orderList, activeCartList, abandonedCartList, favoriteList, collectionList))
+	// Convert emails
+	emailList := make([]admin.UserEmailHistoryItem, 0, len(emails))
+	for _, e := range emails {
+		emailList = append(emailList, admin.UserEmailHistoryItem{
+			ID:             e.ID,
+			RecipientEmail: e.RecipientEmail,
+			EmailType:      e.EmailType,
+			Subject:        e.Subject,
+			SentAt:         nullTimeToTime(e.SentAt),
+			OpenedAt:       nullTimeToTime(e.OpenedAt),
+			ClickedAt:      nullTimeToTime(e.ClickedAt),
+		})
+	}
+
+	return Render(c, admin.UserDetail(c, user, orderList, activeCartList, abandonedCartList, favoriteList, collectionList, emailList))
 }
 
 // Helper functions
