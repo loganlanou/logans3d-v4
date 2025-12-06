@@ -866,9 +866,25 @@ document.addEventListener('DOMContentLoaded', function() {
             const submitBtn = document.getElementById('submitBtn');
             const originalText = submitBtn.textContent;
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Submitting...';
+            submitBtn.textContent = 'Verifying...';
 
             try {
+                // Get reCAPTCHA token
+                const container = document.querySelector('[data-recaptcha-key]');
+                const siteKey = container ? container.dataset.recaptchaKey : '';
+                if (siteKey && typeof grecaptcha !== 'undefined') {
+                    try {
+                        const token = await grecaptcha.execute(siteKey, {action: 'custom_quote'});
+                        submitData.append('g-recaptcha-response', token);
+                    } catch (recaptchaError) {
+                        console.error('reCAPTCHA error:', recaptchaError);
+                        showFormError('Security verification failed. Please refresh the page and try again.');
+                        return;
+                    }
+                }
+
+                submitBtn.textContent = 'Submitting...';
+
                 const response = await fetch('/custom/quote', {
                     method: 'POST',
                     body: submitData // No Content-Type header - browser sets multipart boundary

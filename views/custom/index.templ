@@ -2,6 +2,8 @@ package custom
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/views/layout"
 )
@@ -13,7 +15,9 @@ type CustomOrderData struct {
 
 templ Index(c echo.Context, meta layout.PageMeta) {
 	@layout.Base(c, meta) {
-		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+		<!-- reCAPTCHA v3 Script -->
+		<script src={ "https://www.google.com/recaptcha/api.js?render=" + os.Getenv("RECAPTCHA_SITE_KEY") }></script>
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden" data-recaptcha-key={ os.Getenv("RECAPTCHA_SITE_KEY") }>
 			<!-- Animated Background Elements -->
 			<div class="absolute inset-0 opacity-10">
 				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
@@ -718,6 +722,12 @@ templ StepReviewSubmit() {
 				</span>
 			</label>
 		</div>
+		<!-- reCAPTCHA Privacy Notice -->
+		<p class="text-xs text-slate-400 text-center leading-relaxed mb-6">
+			This site is protected by reCAPTCHA and the Google
+			<a href="https://policies.google.com/privacy" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and
+			<a href="https://policies.google.com/terms" class="text-blue-400 hover:text-blue-300 underline" target="_blank" rel="noopener noreferrer">Terms of Service</a> apply.
+		</p>
 		<!-- What Happens Next -->
 		<div class="bg-slate-800/50 border border-emerald-500/30 rounded-xl p-6">
 			<h3 class="font-semibold text-emerald-400 mb-3">What Happens Next?</h3>

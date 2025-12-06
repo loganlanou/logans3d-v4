@@ -1014,17 +1014,71 @@ func (s *Service) handleCustom(c echo.Context) error {
 func (s *Service) handleCustomQuote(c echo.Context) error {
 	ctx := c.Request().Context()
 
+	// Parse multipart form (32MB max memory)
+	if err := c.Request().ParseMultipartForm(32 << 20); err != nil {
+		slog.Error("failed to parse multipart form", "error", err)
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request format"})
+	}
+
+	// Verify reCAPTCHA token
+	recaptchaToken := c.FormValue("g-recaptcha-response")
+	if recaptchaToken != "" {
+		valid, score, err := recaptcha.IsValid(recaptchaToken)
+		if err != nil {
+			slog.Error("reCAPTCHA verification error", "error", err)
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Security verification failed. Please try again."})
+		}
+		if !valid {
+			slog.Warn("reCAPTCHA verification failed", "score", score)
+			return c.JSON(http.StatusBadRequest, map[string]string{"error": "Security verification failed. Please try again."})
+		}
+		slog.Debug("reCAPTCHA verified for custom quote", "score", score)
+	} else {
+		slog.Warn("custom quote submission without reCAPTCHA token")
+	}
+
+	// Validate uploaded files (size and type limits)
+	form := c.Request().MultipartForm
+	if form != nil {
+		const maxFileSize = 50 * 1024 * 1024 // 50MB
+		allowedModelExt := map[string]bool{".stl": true, ".obj": true, ".3mf": true, ".step": true, ".stp": true}
+		allowedImageExt := map[string]bool{".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true}
+
+		// Validate model file
+		if files := form.File["modelFile"]; len(files) > 0 {
+			file := files[0]
+			if file.Size > maxFileSize {
+				slog.Warn("model file too large", "size", file.Size, "max", maxFileSize)
+				return c.JSON(http.StatusBadRequest, map[string]string{"error": "Model file must be less than 50MB"})
+			}
+			ext := strings.ToLower(filepath.Ext(file.Filename))
+			if !allowedModelExt[ext] {
+				slog.Warn("invalid model file type", "ext", ext, "filename", file.Filename)
+				return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid model file type. Allowed: STL, OBJ, 3MF, STEP"})
+			}
+		}
+
+		// Validate reference images
+		if files := form.File["referenceImages"]; len(files) > 0 {
+			for _, file := range files {
+				if file.Size > maxFileSize {
+					slog.Warn("reference image too large", "size", file.Size, "max", maxFileSize, "filename", file.Filename)
+					return c.JSON(http.StatusBadRequest, map[string]string{"error": "Each reference image must be less than 50MB"})
+				}
+				ext := strings.ToLower(filepath.Ext(file.Filename))
+				if !allowedImageExt[ext] {
+					slog.Warn("invalid reference image type", "ext", ext, "filename", file.Filename)
+					return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid image type. Allowed: JPG, PNG, GIF, WEBP"})
+				}
+			}
+		}
+	}
+
 	// Get session ID for draft lookup
 	sessionID, err := s.getOrCreateSessionID(c)
 	if err != nil {
 		slog.Error("failed to get session ID", "error", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Session error"})
-	}
-
-	// Parse multipart form (32MB max memory)
-	if err := c.Request().ParseMultipartForm(32 << 20); err != nil {
-		slog.Error("failed to parse multipart form", "error", err)
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Invalid request format"})
 	}
 
 	// Get JSON data from form field
@@ -1226,7 +1280,6 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 	}
 
 	// Handle reference images (multiple files)
-	form := c.Request().MultipartForm
 	if form != nil && form.File["referenceImages"] != nil {
 		for _, fh := range form.File["referenceImages"] {
 			// Save to legacy quote_files table

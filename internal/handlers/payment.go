@@ -103,19 +103,18 @@ func (h *PaymentHandler) HandleWebhook(c echo.Context) error {
 	endpointSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")
 	signatureHeader := c.Request().Header.Get("Stripe-Signature")
 
-	// Allow webhook processing without signature verification if webhook secret is not configured
+	// Fail closed: require webhook secret to be configured
+	if endpointSecret == "" {
+		slog.Error("STRIPE_WEBHOOK_SECRET not configured - rejecting webhook for security")
+		return echo.NewHTTPError(http.StatusInternalServerError, "Webhook not configured")
+	}
+
+	// Verify webhook signature
 	var event stripego.Event
-	if endpointSecret != "" {
-		event, err = webhook.ConstructEvent(payload, signatureHeader, endpointSecret)
-		if err != nil {
-			slog.Error("webhook signature verification failed", "error", err)
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid signature")
-		}
-	} else {
-		// For development/testing: parse event without verification
-		if err := json.Unmarshal(payload, &event); err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Error parsing webhook JSON")
-		}
+	event, err = webhook.ConstructEvent(payload, signatureHeader, endpointSecret)
+	if err != nil {
+		slog.Error("webhook signature verification failed", "error", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid signature")
 	}
 
 	switch event.Type {
