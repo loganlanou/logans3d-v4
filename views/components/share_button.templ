@@ -411,34 +411,52 @@ templ ShareDialog(props ShareButtonProps) {
 
 				showCopyToast() {
 					this.showToast = true;
+					// Track copy link as a share event
+					this.trackShare('Copy Link');
 					setTimeout(() => {
 						this.showToast = false;
 					}, 3000);
 				},
 
-				// Social media URL builders
+				// Track share event with Meta Pixel
+				trackShare(platform) {
+					if (typeof fbq !== 'undefined') {
+						fbq('trackCustom', 'Share', {
+							content_name: this.currentTitle,
+							content_category: platform
+						});
+					}
+				},
+
+				// Social media URL builders (with tracking)
 				facebookURL() {
+					this.trackShare('Facebook');
 					return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(this.currentURL)}`;
 				},
 
 				twitterURL() {
+					this.trackShare('Twitter');
 					return `https://twitter.com/intent/tweet?url=${encodeURIComponent(this.currentURL)}&text=${encodeURIComponent(this.currentTitle)}`;
 				},
 
 				pinterestURL() {
+					this.trackShare('Pinterest');
 					return `https://pinterest.com/pin/create/button/?url=${encodeURIComponent(this.currentURL)}&media=${encodeURIComponent(this.imageURL)}&description=${encodeURIComponent(this.description)}`;
 				},
 
 				whatsAppURL() {
+					this.trackShare('WhatsApp');
 					const message = `${this.currentTitle} ${this.currentURL}`;
 					return `https://wa.me/?text=${encodeURIComponent(message)}`;
 				},
 
 				emailURL() {
+					this.trackShare('Email');
 					return `mailto:?subject=${encodeURIComponent(this.currentTitle)}&body=${encodeURIComponent(this.currentURL)}`;
 				},
 
 				redditURL() {
+					this.trackShare('Reddit');
 					return `https://reddit.com/submit?url=${encodeURIComponent(this.currentURL)}&title=${encodeURIComponent(this.currentTitle)}`;
 				}
 			};

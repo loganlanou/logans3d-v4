@@ -58,7 +58,17 @@ async function addToCart(productId, quantity = 1, productName = '', productSkuId
         const data = await response.json();
         const displayName = productName || 'item';
         showToast(`Added ${displayName} to cart!`, 'success');
-        
+
+        // Track AddToCart event with Meta Pixel
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'AddToCart', {
+                content_name: displayName,
+                content_ids: [productId],
+                content_type: 'product',
+                currency: 'USD'
+            });
+        }
+
         // Update cart count if element exists
         await updateCartCount();
         
@@ -204,6 +214,14 @@ async function proceedToCheckout() {
         }
 
         const data = await response.json();
+
+        // Track InitiateCheckout event with Meta Pixel
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'InitiateCheckout', {
+                content_type: 'product',
+                currency: 'USD'
+            });
+        }
 
         // Redirect to Stripe checkout
         if (data.url) {

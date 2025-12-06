@@ -193,6 +193,14 @@
             const data = await response.json();
 
             if (response.ok && data.success) {
+                // Track Lead event with Meta Pixel
+                if (typeof fbq !== 'undefined') {
+                    fbq('track', 'Lead', {
+                        content_name: 'Email Capture Popup',
+                        content_category: 'Newsletter'
+                    });
+                }
+
                 // Show success message - code sent via email only
                 if (successDiv) {
                     successDiv.textContent = `Success! Check your email for your 15% discount code.`;

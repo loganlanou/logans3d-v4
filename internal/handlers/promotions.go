@@ -11,6 +11,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/email"
+	"github.com/loganlanou/logans3d-v4/internal/meta"
 	stripeutil "github.com/loganlanou/logans3d-v4/internal/stripe"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/oklog/ulid/v2"
@@ -154,6 +155,17 @@ func (h *PromotionsHandler) HandleCaptureEmail(c echo.Context) error {
 
 	// Send welcome email with code
 	go h.sendWelcomeEmail(req.Email, req.FirstName, codeStr)
+
+	// Track Lead event with Meta Conversions API
+	metaClient := meta.NewClient()
+	metaClient.TrackLead(
+		req.Email,
+		req.FirstName,
+		"Email Capture Popup",
+		c.RealIP(),
+		c.Request().UserAgent(),
+		c.Request().Referer(),
+	)
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,

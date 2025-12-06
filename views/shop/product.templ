@@ -491,6 +491,32 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 			IsAdmin:     auth.IsAdmin(c),
 			HasVariants: product.HasVariants.Valid && product.HasVariants.Bool && variantData != nil && len(variantData.Colors) > 1,
 		})
+		<!-- Meta Pixel ViewContent Event -->
+		<div
+			id="meta-pixel-data"
+			data-product-id={ product.ID }
+			data-product-name={ product.Name }
+			data-category-name={ category.Name }
+			data-price={ fmt.Sprintf("%.2f", float64(product.PriceCents)/100) }
+			style="display:none;"
+		></div>
+		<script>
+			(function() {
+				if (typeof fbq !== 'undefined') {
+					var el = document.getElementById('meta-pixel-data');
+					if (el) {
+						fbq('track', 'ViewContent', {
+							content_name: el.dataset.productName,
+							content_category: el.dataset.categoryName,
+							content_ids: [el.dataset.productId],
+							content_type: 'product',
+							value: parseFloat(el.dataset.price),
+							currency: 'USD'
+						});
+					}
+				}
+			})();
+		</script>
 		<script>
 			function productVariants(jsonElementId, meta) {
 				const el = document.getElementById(jsonElementId);

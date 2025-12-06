@@ -22,6 +22,7 @@ import (
 	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/handlers"
 	"github.com/loganlanou/logans3d-v4/internal/jobs"
+	"github.com/loganlanou/logans3d-v4/internal/meta"
 	"github.com/loganlanou/logans3d-v4/internal/recaptcha"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
 	"github.com/loganlanou/logans3d-v4/internal/utils"
@@ -1328,6 +1329,17 @@ func (s *Service) handleCustomQuote(c echo.Context) error {
 
 	slog.Debug("quote request created successfully", "quote_id", id, "email", req.Email)
 
+	// Track Lead event with Meta Conversions API
+	metaClient := meta.NewClient()
+	metaClient.TrackLead(
+		req.Email,
+		req.Name,
+		fmt.Sprintf("Custom Quote - %s", req.ProjectType),
+		c.RealIP(),
+		c.Request().UserAgent(),
+		"https://www.logans3dcreations.com/custom",
+	)
+
 	return c.JSON(http.StatusOK, map[string]string{"status": "quote_received", "quote_id": id})
 }
 
@@ -2229,6 +2241,18 @@ func (s *Service) handleContactSubmit(c echo.Context) error {
 			slog.Error("failed to send contact request notification", "error", err, "contact_id", id)
 		}
 	}()
+
+	// Track Contact event with Meta Conversions API
+	metaClient := meta.NewClient()
+	metaClient.TrackContact(
+		emailAddr,
+		firstName,
+		lastName,
+		subject,
+		ipAddress,
+		userAgent,
+		"https://www.logans3dcreations.com/contact",
+	)
 
 	return c.HTML(http.StatusOK, `<div class="mb-4 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-emerald-300 text-sm">Thank you! We've received your request and will get back to you soon.</div>`)
 }

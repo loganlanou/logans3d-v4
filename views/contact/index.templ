@@ -176,6 +176,12 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 											// Reset form on success
 											if (response.ok && html.includes('received your request')) {
 												form.reset();
+												// Track Contact event with Meta Pixel
+												if (typeof fbq !== 'undefined') {
+													fbq('track', 'Contact', {
+														content_name: document.getElementById('subject').value || 'Contact Form'
+													});
+												}
 											}
 										} catch (error) {
 											console.error('Error submitting form:', error);

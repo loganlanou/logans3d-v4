@@ -899,6 +899,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             console.error('Error clearing draft:', err);
                         }
                     }
+                    // Track Lead event with Meta Pixel
+                    if (typeof fbq !== 'undefined') {
+                        fbq('track', 'Lead', {
+                            content_name: 'Custom Quote Request',
+                            content_category: formData.projectType || 'Custom Order'
+                        });
+                    }
                     // Show success message
                     showSuccessMessage('Your custom order request has been submitted! We\'ll contact you within 24 hours with a detailed quote.');
                 } else {

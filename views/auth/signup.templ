@@ -8,6 +8,19 @@ templ SignUp(publishableKey string) {
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>Sign Up - Logan's 3D Creations</title>
 			<link href="/public/css/public-styles.css" rel="stylesheet"/>
+			<!-- Meta Pixel Code -->
+			<script>
+				!function(f,b,e,v,n,t,s)
+				{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+				n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+				if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+				n.queue=[];t=b.createElement(e);t.async=!0;
+				t.src=v;s=b.getElementsByTagName(e)[0];
+				s.parentNode.insertBefore(t,s)}(window, document,'script',
+				'https://connect.facebook.net/en_US/fbevents.js');
+				fbq('init', '1913191856215416');
+				fbq('track', 'PageView');
+			</script>
 			<!-- Clerk JS SDK Script with publishable key -->
 			<script
 				data-clerk-publishable-key={ publishableKey }
@@ -28,6 +41,10 @@ templ SignUp(publishableKey string) {
 					// Listen for sign-up completion to force full page reload
 					window.Clerk.addListener((event) => {
 						if (event.type === 'session' && event.session) {
+							// Track CompleteRegistration event with Meta Pixel
+							if (typeof fbq !== 'undefined') {
+								fbq('track', 'CompleteRegistration');
+							}
 							// Force full page reload to update server-side nav
 							window.location.href = '/';
 						}

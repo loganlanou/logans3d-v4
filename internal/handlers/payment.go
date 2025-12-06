@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/email"
+	"github.com/loganlanou/logans3d-v4/internal/meta"
 	"github.com/loganlanou/logans3d-v4/internal/stripe"
 	"github.com/loganlanou/logans3d-v4/internal/utils"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -609,6 +610,29 @@ func (h *PaymentHandler) handleCheckoutCompleted(c echo.Context, session *stripe
 		// Don't fail the webhook if email fails
 	} else {
 		slog.Info("admin notification email sent", "order_id", orderID)
+	}
+
+	// Track Purchase event with Meta Conversions API
+	metaClient := meta.NewClient()
+	if metaClient.IsConfigured() {
+		var metaItems []meta.ContentItem
+		for _, item := range emailData.Items {
+			metaItems = append(metaItems, meta.ContentItem{
+				ID:       item.ProductName, // Using product name as ID since we don't have product ID here
+				Quantity: int(item.Quantity),
+				Price:    float64(item.PriceCents) / 100,
+			})
+		}
+		metaClient.TrackPurchase(
+			orderID,
+			float64(session.AmountTotal)/100,
+			"USD",
+			customerEmail,
+			metaItems,
+			"", // IP address not available in webhook
+			"", // User agent not available in webhook
+			fmt.Sprintf("https://www.logans3dcreations.com/order/%s", orderID),
+		)
 	}
 
 	return nil
