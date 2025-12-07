@@ -1,0 +1,158 @@
+package giftcertificates
+
+import (
+	"database/sql"
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+type VerifyPageData struct {
+	NotFound       bool
+	ID             string
+	Amount         float64
+	Reference      string
+	IssuedAt       sql.NullTime
+	IsRedeemed     bool
+	RedeemedAt     sql.NullTime
+	IsVoided       bool
+	IsAdmin        bool
+	AdminDetailURL string
+}
+
+templ Verify(c echo.Context, data VerifyPageData) {
+	@layout.Base(c, layout.PageMeta{
+		Title:       "Gift Certificate Verification - Logan's 3D Creations",
+		Description: "Verify the authenticity of a Logan's 3D Creations gift certificate",
+		OGType:      "website",
+		OGSiteName:  "Logan's 3D Creations",
+	}) {
+		<div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+			<!-- Animated Background Elements -->
+			<div class="absolute inset-0 opacity-10">
+				<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-gradient-to-r from-blue-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
+			</div>
+
+			<div class="relative z-10">
+				<section class="px-4 sm:px-8 lg:px-16 pt-32 pb-24">
+					<div class="max-w-xl mx-auto">
+						if data.NotFound {
+							<!-- Certificate Not Found -->
+							<div class="bg-gradient-to-br from-red-900/30 to-red-800/20 rounded-2xl p-8 border border-red-500/50 backdrop-blur-sm text-center">
+								<div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+									<svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+									</svg>
+								</div>
+								<h1 class="text-2xl font-bold text-white mb-4">Certificate Not Found</h1>
+								<p class="text-slate-300">
+									The gift certificate you're looking for could not be found. Please verify the QR code or certificate ID and try again.
+								</p>
+							</div>
+						} else if data.IsVoided {
+							<!-- Certificate Voided -->
+							<div class="bg-gradient-to-br from-red-900/30 to-red-800/20 rounded-2xl p-8 border border-red-500/50 backdrop-blur-sm text-center">
+								<div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+									<svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+									</svg>
+								</div>
+								<h1 class="text-2xl font-bold text-white mb-2">Certificate Voided</h1>
+								<p class="text-red-300 mb-4">This gift certificate has been voided and is no longer valid.</p>
+								<div class="text-sm text-slate-400">
+									Certificate ID: <span class="font-mono">{ data.ID[:8] }...</span>
+								</div>
+							</div>
+						} else if data.IsRedeemed {
+							<!-- Certificate Already Redeemed -->
+							<div class="bg-gradient-to-br from-slate-800/50 to-slate-700/30 rounded-2xl p-8 border border-slate-600/50 backdrop-blur-sm text-center">
+								<div class="w-20 h-20 bg-slate-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+									<svg class="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+									</svg>
+								</div>
+								<h1 class="text-2xl font-bold text-white mb-2">Already Redeemed</h1>
+								<p class="text-slate-300 mb-6">This gift certificate has already been used.</p>
+								<div class="bg-slate-800/50 rounded-xl p-4 space-y-2 text-left">
+									<div class="flex justify-between">
+										<span class="text-slate-400">Amount:</span>
+										<span class="text-white font-bold">${ fmt.Sprintf("%.2f", data.Amount) }</span>
+									</div>
+									if data.RedeemedAt.Valid {
+										<div class="flex justify-between">
+											<span class="text-slate-400">Redeemed:</span>
+											<span class="text-slate-300">{ data.RedeemedAt.Time.Format("Jan 2, 2006") }</span>
+										</div>
+									}
+									<div class="flex justify-between">
+										<span class="text-slate-400">Certificate ID:</span>
+										<span class="text-slate-300 font-mono text-sm">{ data.ID[:8] }...</span>
+									</div>
+								</div>
+							</div>
+						} else {
+							<!-- Valid Active Certificate -->
+							<div class="bg-gradient-to-br from-emerald-900/30 to-emerald-800/20 rounded-2xl p-8 border border-emerald-500/50 backdrop-blur-sm text-center">
+								<div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+									<svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+									</svg>
+								</div>
+								<h1 class="text-2xl font-bold text-white mb-2">Valid Certificate</h1>
+								<p class="text-emerald-300 mb-6">This gift certificate is valid and ready to use!</p>
+
+								<!-- Amount Display -->
+								<div class="bg-slate-800/50 rounded-xl p-6 mb-6">
+									<div class="text-5xl font-bold text-white mb-2">
+										${ fmt.Sprintf("%.2f", data.Amount) }
+									</div>
+									<div class="text-slate-400">Certificate Value</div>
+								</div>
+
+								<!-- Details -->
+								<div class="bg-slate-800/50 rounded-xl p-4 space-y-2 text-left">
+									if data.Reference != "" {
+										<div class="flex justify-between">
+											<span class="text-slate-400">Reference:</span>
+											<span class="text-white">{ data.Reference }</span>
+										</div>
+									}
+									if data.IssuedAt.Valid {
+										<div class="flex justify-between">
+											<span class="text-slate-400">Issued:</span>
+											<span class="text-slate-300">{ data.IssuedAt.Time.Format("Jan 2, 2006") }</span>
+										</div>
+									}
+									<div class="flex justify-between">
+										<span class="text-slate-400">Certificate ID:</span>
+										<span class="text-slate-300 font-mono text-sm">{ data.ID[:8] }...</span>
+									</div>
+								</div>
+							</div>
+						}
+
+						<!-- Admin Link -->
+						if data.IsAdmin && !data.NotFound {
+							<div class="mt-6 text-center">
+								<a href={ templ.SafeURL(data.AdminDetailURL) } class="inline-flex items-center px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-lg transition-colors">
+									<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+										<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+									</svg>
+									View Admin Details
+								</a>
+							</div>
+						}
+
+						<!-- Footer Info -->
+						<div class="mt-8 text-center text-slate-400 text-sm">
+							<p>Logan's 3D Creations Gift Certificate</p>
+							<p class="mt-1">Present this certificate in-store to redeem</p>
+						</div>
+					</div>
+				</section>
+			</div>
+		</div>
+	}
+}

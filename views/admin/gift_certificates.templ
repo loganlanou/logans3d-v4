@@ -1,0 +1,179 @@
+package admin
+
+import (
+	"database/sql"
+	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+type GiftCertificateRow struct {
+	ID                  string
+	Amount              float64
+	Reference           sql.NullString
+	IssuedAt            sql.NullTime
+	RedeemedAt          sql.NullTime
+	RedeemerName        sql.NullString
+	RedemptionNotes     sql.NullString
+	CreatedByName       sql.NullString
+	ImagePngPath        sql.NullString
+	ImagePdfPath        sql.NullString
+	UpdatedAt           sql.NullTime
+	VoidedAt            sql.NullTime
+	VoidReason          sql.NullString
+	VoidedByName        sql.NullString
+	RedeemedByAdminName sql.NullString
+}
+
+type GiftCertificatesPageData struct {
+	Certificates  []GiftCertificateRow
+	ActiveCount   int64
+	RedeemedCount int64
+	TotalActive   float64
+	TotalRedeemed float64
+}
+
+templ GiftCertificates(c echo.Context, data GiftCertificatesPageData) {
+	@layout.AdminBase(c, "Gift Certificates") {
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-8">
+			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Gift Certificates</h1>
+			<a href="/admin/gift-certificates/new" class="admin-btn admin-btn-primary">+ New Certificate</a>
+		</div>
+
+		<!-- Stats Cards -->
+		<div class="admin-stats-grid">
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">{ fmt.Sprintf("%d", data.ActiveCount) }</div>
+				<div class="admin-stat-label">Active</div>
+			</div>
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">${ fmt.Sprintf("%.2f", data.TotalActive) }</div>
+				<div class="admin-stat-label">Active Value</div>
+			</div>
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">{ fmt.Sprintf("%d", data.RedeemedCount) }</div>
+				<div class="admin-stat-label">Redeemed</div>
+			</div>
+			<div class="admin-stat-card">
+				<div class="admin-stat-number">${ fmt.Sprintf("%.2f", data.TotalRedeemed) }</div>
+				<div class="admin-stat-label">Redeemed Value</div>
+			</div>
+		</div>
+
+		<!-- Certificates Table -->
+		<div class="admin-card">
+			<div class="admin-card-header">
+				<h2 class="admin-card-title">All Certificates ({ fmt.Sprintf("%d", len(data.Certificates)) })</h2>
+			</div>
+			<div class="overflow-x-auto">
+				<table class="admin-table">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Amount</th>
+							<th>Reference</th>
+							<th>Issued</th>
+							<th>Status</th>
+							<th>Customer/Reason</th>
+							<th>Action By</th>
+						</tr>
+					</thead>
+					<tbody>
+						if len(data.Certificates) == 0 {
+							<tr>
+								<td colspan="7" class="text-center admin-text-muted-foreground py-8">
+									No gift certificates found
+								</td>
+							</tr>
+						}
+						for _, cert := range data.Certificates {
+							<tr
+								onclick={ templ.ComponentScript{Call: fmt.Sprintf("window.location.href='/admin/gift-certificates/%s'", cert.ID)} }
+								style="cursor: pointer;"
+							>
+								<td>
+									<span class="admin-text-primary admin-font-medium font-mono text-sm">
+										{ cert.ID[:8] }...
+									</span>
+								</td>
+								<td>
+									<span class="admin-text-primary admin-font-bold">
+										${ fmt.Sprintf("%.2f", cert.Amount) }
+									</span>
+								</td>
+								<td>
+									if cert.Reference.Valid && cert.Reference.String != "" {
+										<span class="admin-text-primary">{ cert.Reference.String }</span>
+									} else {
+										<span class="admin-text-disabled">-</span>
+									}
+								</td>
+								<td>
+									if cert.IssuedAt.Valid {
+										<span class="admin-text-sm">{ cert.IssuedAt.Time.Format("Jan 2, 2006") }</span>
+									}
+								</td>
+								<td>
+									@GiftCertificateStatusBadge(cert)
+								</td>
+								<td>
+									if cert.VoidedAt.Valid {
+										if cert.VoidReason.Valid {
+											<span class="admin-text-sm admin-text-muted-foreground" title={ cert.VoidReason.String }>
+												{ truncateText(cert.VoidReason.String, 20) }
+											</span>
+										}
+									} else if cert.RedeemedAt.Valid {
+										if cert.RedeemerName.Valid {
+											<span class="admin-text-primary admin-text-sm">{ cert.RedeemerName.String }</span>
+										}
+									} else {
+										<span class="admin-text-disabled">-</span>
+									}
+								</td>
+								<td>
+									if cert.VoidedAt.Valid && cert.VoidedByName.Valid {
+										<span class="admin-text-sm admin-text-muted-foreground">{ cert.VoidedByName.String }</span>
+									} else if cert.RedeemedAt.Valid && cert.RedeemedByAdminName.Valid {
+										<span class="admin-text-sm admin-text-muted-foreground">{ cert.RedeemedByAdminName.String }</span>
+									} else if cert.CreatedByName.Valid {
+										<span class="admin-text-sm admin-text-muted-foreground">{ cert.CreatedByName.String }</span>
+									} else {
+										<span class="admin-text-disabled">-</span>
+									}
+								</td>
+							</tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+	}
+}
+
+templ GiftCertificateStatusBadge(cert GiftCertificateRow) {
+	if cert.VoidedAt.Valid {
+		<div class="admin-status admin-status-danger">
+			<div class="admin-status-dot"></div>
+			Voided
+		</div>
+	} else if cert.RedeemedAt.Valid {
+		<div class="admin-status admin-status-inactive">
+			<div class="admin-status-dot"></div>
+			Redeemed
+		</div>
+	} else {
+		<div class="admin-status admin-status-success">
+			<div class="admin-status-dot"></div>
+			Active
+		</div>
+	}
+}
+
+func truncateText(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
+}

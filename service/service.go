@@ -381,6 +381,10 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/email-preview/admin", adminHandler.HandleEmailPreviewAdmin)
 	admin.POST("/email-preview/send-test", adminHandler.HandleSendTestEmail)
 
+	// Gift Certificate routes
+	s.RegisterGiftCertificateRoutes(admin)
+	s.RegisterPublicGiftCertificateRoutes(e)
+
 	// Developer routes - protected with RequireAdmin middleware
 	dev := withAuth.Group("/dev", auth.RequireAdmin())
 	// Page routes

@@ -1,0 +1,95 @@
+package admin
+
+import (
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+templ GiftCertificateNew(c echo.Context) {
+	@layout.AdminBase(c, "New Gift Certificate") {
+		<!-- Header -->
+		<div class="flex justify-between items-center mb-8">
+			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Create Gift Certificate</h1>
+			<a href="/admin/gift-certificates" class="admin-btn admin-btn-secondary">← Back to Certificates</a>
+		</div>
+
+		<!-- Form -->
+		<div class="admin-card max-w-2xl">
+			<form method="POST" action="/admin/gift-certificates" class="p-6 space-y-6">
+				<!-- Amount Selection -->
+				<div>
+					<label class="admin-text-sm admin-font-medium">Certificate Amount <span class="text-red-600 dark:text-red-400">*</span></label>
+					<p class="admin-text-xs admin-text-muted-foreground mb-3">Select a preset amount or enter a custom value</p>
+
+					<!-- Preset Amount Buttons -->
+					<div class="flex flex-wrap gap-2 mb-4">
+						<button type="button" onclick="setAmount(10)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$10</button>
+						<button type="button" onclick="setAmount(25)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$25</button>
+						<button type="button" onclick="setAmount(50)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$50</button>
+						<button type="button" onclick="setAmount(75)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$75</button>
+						<button type="button" onclick="setAmount(100)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$100</button>
+					</div>
+
+					<!-- Custom Amount Input -->
+					<div class="relative">
+						<span class="absolute left-3 top-1/2 -translate-y-1/2 admin-text-muted-foreground">$</span>
+						<input
+							type="number"
+							id="amount"
+							name="amount"
+							step="0.01"
+							min="0.01"
+							required
+							class="w-full pl-8 pr-4 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+							placeholder="Enter custom amount"
+						/>
+					</div>
+				</div>
+
+				<!-- Reference -->
+				<div>
+					<label for="reference" class="admin-text-sm admin-font-medium">Reference (Optional)</label>
+					<p class="admin-text-xs admin-text-muted-foreground mb-2">Add a note to identify this certificate (e.g., recipient name, occasion)</p>
+					<input
+						type="text"
+						id="reference"
+						name="reference"
+						maxlength="100"
+						class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
+						placeholder="e.g., Birthday gift for John"
+					/>
+				</div>
+
+				<!-- Info Box -->
+				<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+					<h4 class="admin-font-medium text-blue-900 dark:text-blue-100 mb-2">What happens next?</h4>
+					<ul class="admin-text-sm text-blue-800 dark:text-blue-200 space-y-1 list-disc list-inside">
+						<li>A unique certificate ID will be generated</li>
+						<li>A printable PNG and PDF will be created with a QR code</li>
+						<li>The QR code links to a public verification page</li>
+						<li>You can download and print the certificate for the customer</li>
+					</ul>
+				</div>
+
+				<!-- Submit -->
+				<div class="flex justify-end space-x-4 pt-4 border-t border-border">
+					<a href="/admin/gift-certificates" class="admin-btn admin-btn-secondary">Cancel</a>
+					<button type="submit" class="admin-btn admin-btn-primary">Create Certificate</button>
+				</div>
+			</form>
+		</div>
+
+		<script>
+			function setAmount(value) {
+				document.getElementById('amount').value = value;
+				// Update button styles
+				document.querySelectorAll('.amount-btn').forEach(btn => {
+					btn.classList.remove('admin-btn-primary');
+					btn.classList.add('admin-btn-secondary');
+				});
+				event.target.classList.remove('admin-btn-secondary');
+				event.target.classList.add('admin-btn-primary');
+			}
+		</script>
+	}
+}
