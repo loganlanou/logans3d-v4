@@ -174,7 +174,7 @@ func drawText(img *image.RGBA, text string, x, y int, f *truetype.Font, size flo
 	ctx.SetHinting(font.HintingFull)
 
 	pt := freetype.Pt(x, y)
-	ctx.DrawString(text, pt)
+	_, _ = ctx.DrawString(text, pt)
 }
 
 // drawCenteredText draws text centered at the specified X position
@@ -195,7 +195,7 @@ func drawCenteredText(img *image.RGBA, text string, centerX, y int, f *truetype.
 	}
 
 	// Calculate starting X position
-	x := centerX - int(width.Round()/2)
+	x := centerX - width.Round()/2
 
 	drawText(img, text, x, y, f, size, c)
 }
