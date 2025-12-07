@@ -94,10 +94,8 @@ yarn-error.log*
 # OG images
 /public/og-images/
 
-# Generated gift certificate images (but keep template.png)
-/public/images/gift-certificates/*.png
-/public/images/gift-certificates/*.pdf
-!/public/images/gift-certificates/template.png
+# Generated gift certificate images (stored in data/, not public)
+/data/gift-certificates/
 
 # Temporary files
 *.tmp

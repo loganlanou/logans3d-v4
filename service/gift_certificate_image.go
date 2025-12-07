@@ -22,7 +22,7 @@ import (
 
 const (
 	templatePath   = "public/images/gift-certificates/template.png"
-	outputDir      = "public/images/gift-certificates"
+	outputDir      = "data/gift-certificates" // Private directory, not publicly accessible
 	montserratPath = "public/fonts/Montserrat-Bold.ttf"
 
 	// Default base URL for production
