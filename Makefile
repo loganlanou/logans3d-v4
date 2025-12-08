@@ -194,16 +194,15 @@ env-view:
 
 .PHONY: env-set
 env-set:
-	@if [ -z "$(filter-out $@,$(MAKECMDGOALS))" ]; then \
-		echo "❌ Usage: make env-set KEY=VALUE"; \
-		echo "Example: make env-set EMAIL_FROM=prints@logans3dcreations.com"; \
+	@if [ -z "$(KEY)" ] || [ -z "$(VALUE)" ]; then \
+		echo "❌ Usage: make env-set KEY=<name> VALUE=<value>"; \
+		echo "Example: make env-set KEY=BASE_URL VALUE=https://www.logans3dcreations.com"; \
 		exit 1; \
 	fi
-	@KEY_VALUE='$(filter-out $@,$(MAKECMDGOALS))'; \
-	echo "🔧 Setting environment variable on production server..."; \
-	ssh -A apprunner@jarvis.digitaldrywood.com "echo $$KEY_VALUE | sudo tee -a /etc/logans3d/environment > /dev/null && sudo systemctl restart logans3d"; \
-	echo "✅ Variable set: $$KEY_VALUE"; \
-	echo "✅ Service restarted"
+	@echo "🔧 Setting $(KEY)=$(VALUE) on production server..."
+	@ssh -A apprunner@jarvis.digitaldrywood.com "echo '$(KEY)=$(VALUE)' | sudo tee -a /etc/logans3d/environment > /dev/null && sudo systemctl restart logans3d"
+	@echo "✅ Variable set: $(KEY)=$(VALUE)"
+	@echo "✅ Service restarted"
 
 %:
 	@:
