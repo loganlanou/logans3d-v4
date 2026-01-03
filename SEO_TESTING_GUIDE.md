@@ -48,12 +48,12 @@ Created at `public/images/social/`:
 
 1. **View Source** - Open any product page and view source:
    ```bash
-   curl -s http://localhost:8000/shop/product/triceratops | grep "og:"
+   curl -s http://localhost:8007/shop/product/triceratops | grep "og:"
    ```
 
 2. **Check JSON-LD**:
    ```bash
-   curl -s http://localhost:8000/shop/product/triceratops | grep -A 20 'application/ld+json'
+   curl -s http://localhost:8007/shop/product/triceratops | grep -A 20 'application/ld+json'
    ```
 
 3. **Verify Share Button** - Visit product page and click "Share" button

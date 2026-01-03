@@ -175,7 +175,7 @@ Your Logan's 3D Creations website now has enterprise-grade SEO and social sharin
 
 **Meta Tags**: All OG, Twitter, and HTML meta tags present
 ```bash
-$ curl -s http://localhost:8000/shop/product/triceratops | grep "og:"
+$ curl -s http://localhost:8007/shop/product/triceratops | grep "og:"
 <meta property="og:type" content="product">
 <meta property="og:url" content="https://www.logans3dcreations.com/shop/product/triceratops">
 <meta property="og:title" content="Triceratops">
@@ -186,13 +186,13 @@ $ curl -s http://localhost:8000/shop/product/triceratops | grep "og:"
 
 **JSON-LD**: Product and Organization schemas rendering correctly
 ```bash
-$ curl -s http://localhost:8000/shop/product/triceratops | grep -c 'application/ld+json'
+$ curl -s http://localhost:8007/shop/product/triceratops | grep -c 'application/ld+json'
 2
 ```
 
 **Share Button**: Functional on product pages with 7 platforms + copy link
 
-**Server**: Compiling and running successfully on http://localhost:8000
+**Server**: Compiling and running successfully on http://localhost:8007
 
 ---
 

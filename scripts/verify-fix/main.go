@@ -60,7 +60,7 @@ func main() {
 				fmt.Printf("  ✅ FILE EXISTS: %s\n", fullImagePath)
 
 				// Check if file is accessible via HTTP
-				resp, err := http.Get(fmt.Sprintf("http://localhost:8000/public/images/products/%s", imageUrl.String))
+				resp, err := http.Get(fmt.Sprintf("http://localhost:8007/public/images/products/%s", imageUrl.String))
 				if err != nil {
 					fmt.Printf("  ❌ HTTP ERROR: %v\n", err)
 				} else if resp.StatusCode == 200 {
@@ -95,7 +95,7 @@ func main() {
 			fmt.Printf("✅ FILE EXISTS: %s\n", fullPath)
 
 			// Check HTTP accessibility
-			resp, err := http.Get(fmt.Sprintf("http://localhost:8000/public/images/%s", img))
+			resp, err := http.Get(fmt.Sprintf("http://localhost:8007/public/images/%s", img))
 			if err != nil {
 				fmt.Printf("❌ HTTP ERROR: %v\n", err)
 			} else if resp.StatusCode == 200 {

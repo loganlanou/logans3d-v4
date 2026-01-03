@@ -176,5 +176,5 @@ Make sure the development server (`make dev`) is not running, or close other dat
   Collections:        10
 
 🎉 You can now view the admin dashboard with realistic data!
-   Navigate to: http://localhost:8000/admin
+   Navigate to: http://localhost:8007/admin
 ```

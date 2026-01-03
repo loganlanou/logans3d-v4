@@ -226,7 +226,7 @@ Product: T-Rex Dinosaur
 
 3. **File system location:**
    - Store at: `./public/images/products/variants/`
-   - Served at: `http://localhost:8000/public/images/products/variants/trex-red-1.jpg`
+   - Served at: `http://localhost:8007/public/images/products/variants/trex-red-1.jpg`
 
 4. **Multiple images per color:**
    - Primary image (is_primary=TRUE): shown in color selector
