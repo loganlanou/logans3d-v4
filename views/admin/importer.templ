@@ -26,6 +26,14 @@ type ImporterDashboardData struct {
 	RecentJobs []db.ImportJob
 }
 
+// ImporterDesignerData holds data for the designer detail page
+type ImporterDesignerData struct {
+	Designer   importer.Designer
+	Products   []db.ScrapedProduct
+	Stats      DesignerStats
+	Categories []db.Category
+}
+
 templ ImporterDashboard(c echo.Context, data ImporterDashboardData) {
 	@layout.AdminBase(c, "Product Importer") {
 		<div class="space-y-6">
@@ -198,11 +206,11 @@ templ jobStatusBadge(status string) {
 }
 
 // Designer detail page showing scraped products
-templ ImporterDesignerDetail(c echo.Context, designer importer.Designer, products []db.ScrapedProduct, stats DesignerStats) {
-	@layout.AdminBase(c, fmt.Sprintf("Importer - %s", designer.Name)) {
-		<div class="space-y-6">
+templ ImporterDesignerDetail(c echo.Context, data ImporterDesignerData) {
+	@layout.AdminBase(c, fmt.Sprintf("Importer - %s", data.Designer.Name)) {
+		<div class="space-y-6" x-data={ fmt.Sprintf("{ categoryId: '%s' }", getDefaultCategoryID(data.Categories, data.Designer.DefaultCategory)) }>
 			<!-- Header -->
-			<div class="flex items-center justify-between">
+			<div class="flex items-center justify-between flex-wrap gap-4">
 				<div>
 					<div class="flex items-center gap-2 mb-2">
 						<a href="/admin/importer" class="text-muted-foreground hover:text-foreground">
@@ -210,22 +218,22 @@ templ ImporterDesignerDetail(c echo.Context, designer importer.Designer, product
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
 							</svg>
 						</a>
-						<h1 class="text-2xl font-bold text-foreground">{ designer.Name }</h1>
+						<h1 class="text-2xl font-bold text-foreground">{ data.Designer.Name }</h1>
 					</div>
 					<p class="text-muted-foreground">
-						{ fmt.Sprintf("%d products scraped", stats.ScrapedCount) }
-						if stats.UnimportedCount > 0 {
+						{ fmt.Sprintf("%d products scraped", data.Stats.ScrapedCount) }
+						if data.Stats.UnimportedCount > 0 {
 							<span class="ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-medium">
-								{ fmt.Sprintf("%d unimported", stats.UnimportedCount) }
+								{ fmt.Sprintf("%d unimported", data.Stats.UnimportedCount) }
 							</span>
 						}
 					</p>
 				</div>
-				<div class="flex items-center gap-2">
+				<div class="flex items-center gap-3">
 					@button.Button(button.Props{
 						Variant: button.VariantOutline,
 						Attributes: templ.Attributes{
-							"hx-post":    fmt.Sprintf("/admin/importer/scrape/%s", designer.Slug),
+							"hx-post":    fmt.Sprintf("/admin/importer/scrape/%s", data.Designer.Slug),
 							"hx-swap":    "none",
 							"hx-indicator": "#scrape-spinner",
 						},
@@ -238,23 +246,38 @@ templ ImporterDesignerDetail(c echo.Context, designer importer.Designer, product
 						</span>
 						Re-scrape
 					}
-					if stats.UnimportedCount > 0 {
-						@button.Button(button.Props{
-							Attributes: templ.Attributes{
-								"hx-post":    fmt.Sprintf("/admin/importer/import/%s", designer.Slug),
-								"hx-swap":    "none",
-								"hx-confirm": fmt.Sprintf("Import all %d unimported products from %s?", stats.UnimportedCount, designer.Name),
-								"hx-indicator": "#import-spinner",
-							},
-						}) {
-							<span id="import-spinner" class="htmx-indicator mr-2">
-								<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-								</svg>
-							</span>
-							Import All ({ fmt.Sprintf("%d", stats.UnimportedCount) })
-						}
+					if data.Stats.UnimportedCount > 0 {
+						<!-- Category Selector -->
+						<select
+							x-model="categoryId"
+							class="px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+						>
+							for _, cat := range data.Categories {
+								<option value={ cat.ID }>{ cat.Name }</option>
+							}
+						</select>
+						<form
+							hx-post={ fmt.Sprintf("/admin/importer/import/%s", data.Designer.Slug) }
+							hx-swap="none"
+							hx-indicator="#import-spinner"
+							x-on:htmx:before-request="$el.querySelector('[name=category_id]').value = categoryId"
+						>
+							<input type="hidden" name="category_id" value=""/>
+							@button.Button(button.Props{
+								Type: "submit",
+								Attributes: templ.Attributes{
+									"onclick": fmt.Sprintf("return confirm('Import all %d unimported products to the selected category?')", data.Stats.UnimportedCount),
+								},
+							}) {
+								<span id="import-spinner" class="htmx-indicator mr-2">
+									<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+										<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+										<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+									</svg>
+								</span>
+								Import All ({ fmt.Sprintf("%d", data.Stats.UnimportedCount) })
+							}
+						</form>
 					}
 				</div>
 			</div>
@@ -267,11 +290,11 @@ templ ImporterDesignerDetail(c echo.Context, designer importer.Designer, product
 					}
 				}
 				@card.Content() {
-					if len(products) == 0 {
+					if len(data.Products) == 0 {
 						<p class="text-muted-foreground text-sm">No products scraped yet. Click "Re-scrape" to fetch products.</p>
 					} else {
 						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-							for _, product := range products {
+							for _, product := range data.Products {
 								@scrapedProductCard(product)
 							}
 						</div>
@@ -341,6 +364,19 @@ templ scrapedProductCard(product db.ScrapedProduct) {
 			</div>
 		</div>
 	</div>
+}
+
+// Helper to get default category ID based on designer's default category
+func getDefaultCategoryID(categories []db.Category, defaultCategoryName string) string {
+	for _, cat := range categories {
+		if cat.Name == defaultCategoryName {
+			return cat.ID
+		}
+	}
+	if len(categories) > 0 {
+		return categories[0].ID
+	}
+	return ""
 }
 
 // Helper to get first image URL from JSON array
