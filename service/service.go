@@ -399,6 +399,13 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/api-keys/create", adminHandler.HandleAdminAPIKeyCreate)
 	admin.DELETE("/api-keys/:id", adminHandler.HandleAdminAPIKeyDelete)
 
+	// Product Importer routes
+	importerHandler := handlers.NewAdminImporterHandler(s.storage)
+	admin.GET("/importer", importerHandler.HandleImporterDashboard)
+	admin.GET("/importer/designers/:slug", importerHandler.HandleImporterDesignerDetail)
+	admin.POST("/importer/scrape/:slug", importerHandler.HandleStartScrape)
+	admin.POST("/importer/import/:slug", importerHandler.HandleImportProducts)
+
 	// Gift Certificate routes
 	s.RegisterGiftCertificateRoutes(admin)
 	s.RegisterPublicGiftCertificateRoutes(e)

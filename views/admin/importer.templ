@@ -1,0 +1,366 @@
+package admin
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/internal/importer"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+// DesignerStats holds stats for a designer
+type DesignerStats struct {
+	Designer       importer.Designer
+	ScrapedCount   int64
+	UnimportedCount int64
+	LastScraped    *time.Time
+}
+
+// ImporterDashboardData holds data for the importer dashboard
+type ImporterDashboardData struct {
+	Designers  []DesignerStats
+	RecentJobs []db.ImportJob
+}
+
+templ ImporterDashboard(c echo.Context, data ImporterDashboardData) {
+	@layout.AdminBase(c, "Product Importer") {
+		<div class="space-y-6">
+			<!-- Header -->
+			<div class="flex items-center justify-between">
+				<div>
+					<h1 class="text-2xl font-bold text-foreground">Product Importer</h1>
+					<p class="text-muted-foreground">Scrape and import 3D models from external platforms</p>
+				</div>
+			</div>
+
+			<!-- Designers Card -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Designers
+					}
+					@card.Description() {
+						Configured designer sources for product scraping
+					}
+				}
+				@card.Content() {
+					<div class="divide-y divide-border">
+						for _, ds := range data.Designers {
+							<div class="py-4 first:pt-0 last:pb-0">
+								<div class="flex items-center justify-between">
+									<div class="flex-1">
+										<h3 class="font-medium text-foreground">{ ds.Designer.Name }</h3>
+										<div class="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
+											for _, src := range ds.Designer.Sources {
+												<span class="inline-flex items-center gap-1">
+													<span class="font-medium capitalize">{ src.Platform }:</span>
+													if ds.ScrapedCount > 0 {
+														<span>{ fmt.Sprintf("%d", ds.ScrapedCount) } products</span>
+													} else {
+														<span>Not scraped</span>
+													}
+												</span>
+											}
+										</div>
+										<div class="mt-1 text-xs text-muted-foreground">
+											if ds.LastScraped != nil {
+												Last scraped: { ds.LastScraped.Format("Jan 2, 2006 3:04 PM") }
+											} else {
+												Never scraped
+											}
+											if ds.UnimportedCount > 0 {
+												<span class="ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-medium">
+													{ fmt.Sprintf("%d", ds.UnimportedCount) } unimported
+												</span>
+											}
+										</div>
+									</div>
+									<div class="flex items-center gap-2">
+										@button.Button(button.Props{
+											Size:    button.SizeSm,
+											Variant: button.VariantOutline,
+											Attributes: templ.Attributes{
+												"hx-post":    fmt.Sprintf("/admin/importer/scrape/%s", ds.Designer.Slug),
+												"hx-swap":    "none",
+												"hx-indicator": fmt.Sprintf("#scrape-spinner-%s", ds.Designer.Slug),
+											},
+										}) {
+											<span id={ fmt.Sprintf("scrape-spinner-%s", ds.Designer.Slug) } class="htmx-indicator mr-2">
+												<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+													<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+													<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+												</svg>
+											</span>
+											Scrape
+										}
+										<a href={ templ.SafeURL(fmt.Sprintf("/admin/importer/designers/%s", ds.Designer.Slug)) }>
+											@button.Button(button.Props{
+												Size:    button.SizeSm,
+												Variant: button.VariantDefault,
+											}) {
+												View Products
+											}
+										</a>
+									</div>
+								</div>
+							</div>
+						}
+					</div>
+				}
+			}
+
+			<!-- Recent Jobs Card -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Recent Jobs
+					}
+					@card.Description() {
+						History of scrape and import operations
+					}
+				}
+				@card.Content() {
+					if len(data.RecentJobs) == 0 {
+						<p class="text-muted-foreground text-sm">No jobs yet. Start by scraping a designer.</p>
+					} else {
+						<div class="divide-y divide-border">
+							for _, job := range data.RecentJobs {
+								<div class="py-3 first:pt-0 last:pb-0 flex items-center justify-between">
+									<div class="flex items-center gap-3">
+										@jobStatusBadge(job.Status)
+										<div>
+											<span class="font-medium text-foreground">{ job.DesignerSlug }</span>
+											<span class="text-muted-foreground mx-1">-</span>
+											<span class="text-muted-foreground capitalize">{ job.JobType }</span>
+										</div>
+									</div>
+									<div class="flex items-center gap-4 text-sm text-muted-foreground">
+										if (job.ProcessedItems.Valid && job.ProcessedItems.Int64 > 0) || (job.TotalItems.Valid && job.TotalItems.Int64 > 0) {
+											<span>{ fmt.Sprintf("%d / %d", job.ProcessedItems.Int64, job.TotalItems.Int64) } items</span>
+										}
+										if job.StartedAt.Valid {
+											<span>{ job.StartedAt.Time.Format("Jan 2, 3:04 PM") }</span>
+										}
+									</div>
+								</div>
+							}
+						</div>
+					}
+				}
+			}
+		</div>
+
+		<script>
+			// Listen for job completion to refresh the page
+			document.body.addEventListener('htmx:afterRequest', function(evt) {
+				if (evt.detail.pathInfo.requestPath.includes('/scrape/')) {
+					// Refresh the page after a short delay to show updated stats
+					setTimeout(() => window.location.reload(), 1000);
+				}
+			});
+		</script>
+	}
+}
+
+templ jobStatusBadge(status string) {
+	switch status {
+		case "running":
+			<span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded text-xs font-medium">
+				<svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+				</svg>
+				Running
+			</span>
+		case "completed":
+			<span class="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
+				<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+				</svg>
+				Completed
+			</span>
+		case "failed":
+			<span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded text-xs font-medium">
+				<svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+				</svg>
+				Failed
+			</span>
+		default:
+			<span class="inline-flex items-center px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 rounded text-xs font-medium">
+				{ status }
+			</span>
+	}
+}
+
+// Designer detail page showing scraped products
+templ ImporterDesignerDetail(c echo.Context, designer importer.Designer, products []db.ScrapedProduct, stats DesignerStats) {
+	@layout.AdminBase(c, fmt.Sprintf("Importer - %s", designer.Name)) {
+		<div class="space-y-6">
+			<!-- Header -->
+			<div class="flex items-center justify-between">
+				<div>
+					<div class="flex items-center gap-2 mb-2">
+						<a href="/admin/importer" class="text-muted-foreground hover:text-foreground">
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+							</svg>
+						</a>
+						<h1 class="text-2xl font-bold text-foreground">{ designer.Name }</h1>
+					</div>
+					<p class="text-muted-foreground">
+						{ fmt.Sprintf("%d products scraped", stats.ScrapedCount) }
+						if stats.UnimportedCount > 0 {
+							<span class="ml-2 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-medium">
+								{ fmt.Sprintf("%d unimported", stats.UnimportedCount) }
+							</span>
+						}
+					</p>
+				</div>
+				<div class="flex items-center gap-2">
+					@button.Button(button.Props{
+						Variant: button.VariantOutline,
+						Attributes: templ.Attributes{
+							"hx-post":    fmt.Sprintf("/admin/importer/scrape/%s", designer.Slug),
+							"hx-swap":    "none",
+							"hx-indicator": "#scrape-spinner",
+						},
+					}) {
+						<span id="scrape-spinner" class="htmx-indicator mr-2">
+							<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+								<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+								<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+							</svg>
+						</span>
+						Re-scrape
+					}
+					if stats.UnimportedCount > 0 {
+						@button.Button(button.Props{
+							Attributes: templ.Attributes{
+								"hx-post":    fmt.Sprintf("/admin/importer/import/%s", designer.Slug),
+								"hx-swap":    "none",
+								"hx-confirm": fmt.Sprintf("Import all %d unimported products from %s?", stats.UnimportedCount, designer.Name),
+								"hx-indicator": "#import-spinner",
+							},
+						}) {
+							<span id="import-spinner" class="htmx-indicator mr-2">
+								<svg class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+							</span>
+							Import All ({ fmt.Sprintf("%d", stats.UnimportedCount) })
+						}
+					}
+				</div>
+			</div>
+
+			<!-- Products Grid -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Scraped Products
+					}
+				}
+				@card.Content() {
+					if len(products) == 0 {
+						<p class="text-muted-foreground text-sm">No products scraped yet. Click "Re-scrape" to fetch products.</p>
+					} else {
+						<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+							for _, product := range products {
+								@scrapedProductCard(product)
+							}
+						</div>
+					}
+				}
+			}
+		</div>
+
+		<script>
+			document.body.addEventListener('htmx:afterRequest', function(evt) {
+				if (evt.detail.pathInfo.requestPath.includes('/scrape/') || evt.detail.pathInfo.requestPath.includes('/import/')) {
+					setTimeout(() => window.location.reload(), 1000);
+				}
+			});
+		</script>
+	}
+}
+
+templ scrapedProductCard(product db.ScrapedProduct) {
+	<div class="border border-border rounded-lg overflow-hidden bg-card">
+		<!-- Product Image -->
+		if product.ImageUrls.Valid && product.ImageUrls.String != "" && product.ImageUrls.String != "[]" {
+			<div class="aspect-video bg-muted overflow-hidden">
+				<img
+					src={ getFirstImageURL(product.ImageUrls.String) }
+					alt={ product.Name }
+					class="w-full h-full object-cover"
+					loading="lazy"
+				/>
+			</div>
+		} else {
+			<div class="aspect-video bg-muted flex items-center justify-center">
+				<svg class="h-12 w-12 text-muted-foreground/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+				</svg>
+			</div>
+		}
+
+		<!-- Product Info -->
+		<div class="p-4">
+			<h3 class="font-medium text-foreground line-clamp-2 mb-2">{ product.Name }</h3>
+			<div class="flex items-center justify-between text-sm">
+				if product.OriginalPriceCents.Valid && product.OriginalPriceCents.Int64 > 0 {
+					<span class="text-muted-foreground">${ fmt.Sprintf("%.2f", float64(product.OriginalPriceCents.Int64)/100) }</span>
+				} else {
+					<span class="text-muted-foreground">Free</span>
+				}
+				if product.ImportedProductID.Valid {
+					<span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded text-xs font-medium">
+						Imported
+					</span>
+				} else {
+					<span class="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded text-xs font-medium">
+						Not imported
+					</span>
+				}
+			</div>
+			<div class="mt-2">
+				<a
+					href={ templ.SafeURL(product.SourceUrl) }
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-xs text-primary hover:underline"
+				>
+					View on { product.Platform }
+				</a>
+			</div>
+		</div>
+	</div>
+}
+
+// Helper to get first image URL from JSON array
+func getFirstImageURL(imageURLsJSON string) string {
+	// Simple parsing - just find first URL in the JSON array
+	// Format is like: ["url1", "url2", ...]
+	if len(imageURLsJSON) < 3 {
+		return ""
+	}
+	// Find first quote after opening bracket
+	start := 2 // Skip ["
+	end := start
+	for i := start; i < len(imageURLsJSON); i++ {
+		if imageURLsJSON[i] == '"' {
+			end = i
+			break
+		}
+	}
+	if end > start {
+		return imageURLsJSON[start:end]
+	}
+	return ""
+}
