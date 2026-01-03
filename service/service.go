@@ -232,6 +232,18 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 		api.POST("/shipping/validate-address", s.shippingHandler.ValidateAddress)
 	}
 
+	// Product Import API - protected with API key authentication
+	apiProductsHandler := handlers.NewAPIProductsHandler(s.storage)
+	productAPI := e.Group("/api/v1", auth.APIKeyAuth(s.storage))
+	productAPI.GET("/products", apiProductsHandler.ListProducts)
+	productAPI.GET("/products/:id", apiProductsHandler.GetProduct)
+	productAPI.GET("/products/lookup", apiProductsHandler.GetProductBySourceURL)
+	productAPI.POST("/products", apiProductsHandler.CreateProduct)
+	productAPI.DELETE("/products/:id", apiProductsHandler.DeleteProduct)
+	productAPI.POST("/products/:id/images", apiProductsHandler.AddProductImage)
+	productAPI.GET("/categories", apiProductsHandler.ListCategories)
+	productAPI.GET("/tags", apiProductsHandler.ListTags)
+
 	// Admin routes - protected with RequireAdmin middleware
 	// Initialize admin handler with all required services
 	adminHandler := handlers.NewAdminHandler(s.storage, s.shippingService, s.emailService)
@@ -380,6 +392,12 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/email-preview/customer", adminHandler.HandleEmailPreviewCustomer)
 	admin.GET("/email-preview/admin", adminHandler.HandleEmailPreviewAdmin)
 	admin.POST("/email-preview/send-test", adminHandler.HandleSendTestEmail)
+
+	// API Keys management routes
+	admin.GET("/api-keys", adminHandler.HandleAdminAPIKeys)
+	admin.GET("/api-keys/list", adminHandler.HandleAdminAPIKeysList)
+	admin.POST("/api-keys/create", adminHandler.HandleAdminAPIKeyCreate)
+	admin.DELETE("/api-keys/:id", adminHandler.HandleAdminAPIKeyDelete)
 
 	// Gift Certificate routes
 	s.RegisterGiftCertificateRoutes(admin)
