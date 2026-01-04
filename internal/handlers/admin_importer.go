@@ -188,10 +188,12 @@ func (h *AdminImporterHandler) runScrapeJob(jobID string, designer importer.Desi
 	productURLs, err := h.scraper.FetchDesignerProducts(ctx, src.URL)
 	if err != nil {
 		slog.Error("failed to fetch designer products", "error", err, "job_id", jobID)
-		h.storage.Queries.FailImportJob(ctx, db.FailImportJobParams{
+		if failErr := h.storage.Queries.FailImportJob(ctx, db.FailImportJobParams{
 			ErrorMessage: sql.NullString{String: err.Error(), Valid: true},
 			ID:           jobID,
-		})
+		}); failErr != nil {
+			slog.Error("failed to mark job as failed", "error", failErr, "job_id", jobID)
+		}
 		return
 	}
 
@@ -327,10 +329,12 @@ func (h *AdminImporterHandler) runImportJob(jobID string, designer importer.Desi
 	})
 	if err != nil {
 		slog.Error("failed to list unimported products", "error", err, "job_id", jobID)
-		h.storage.Queries.FailImportJob(ctx, db.FailImportJobParams{
+		if failErr := h.storage.Queries.FailImportJob(ctx, db.FailImportJobParams{
 			ErrorMessage: sql.NullString{String: err.Error(), Valid: true},
 			ID:           jobID,
-		})
+		}); failErr != nil {
+			slog.Error("failed to mark job as failed", "error", failErr, "job_id", jobID)
+		}
 		return
 	}
 

@@ -368,7 +368,7 @@ func (h *APIProductsHandler) AddProductImage(c echo.Context) error {
 		// Get metadata from form values
 		altText = c.FormValue("alt_text")
 		if do := c.FormValue("display_order"); do != "" {
-			fmt.Sscanf(do, "%d", &displayOrder)
+			_, _ = fmt.Sscanf(do, "%d", &displayOrder)
 		}
 		isPrimary = c.FormValue("is_primary") == "true"
 	} else {

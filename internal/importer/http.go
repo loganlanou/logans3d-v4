@@ -115,5 +115,6 @@ func (c *HTTPClient) Get(ctx context.Context, url string) ([]byte, error) {
 }
 
 func (c *HTTPClient) randomUserAgent() string {
+	//nolint:gosec // math/rand is fine for user-agent rotation, not security-sensitive
 	return c.userAgents[rand.Intn(len(c.userAgents))]
 }
