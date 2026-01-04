@@ -3,8 +3,11 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -320,33 +323,87 @@ func (h *APIProductsHandler) AddProductImage(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get product")
 	}
 
-	var req struct {
-		ImageURL     string `json:"image_url"`
-		AltText      string `json:"alt_text"`
-		DisplayOrder int64  `json:"display_order"`
-		IsPrimary    bool   `json:"is_primary"`
-	}
-	if err := c.Bind(&req); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
-	}
+	var imageFilename string
+	var altText string
+	var displayOrder int64
+	var isPrimary bool
 
-	if req.ImageURL == "" {
-		return echo.NewHTTPError(http.StatusBadRequest, "image_url is required")
+	// Try multipart file upload first
+	file, err := c.FormFile("image")
+	if err == nil && file != nil {
+		// Handle file upload
+		src, err := file.Open()
+		if err != nil {
+			slog.Error("failed to open uploaded file", "error", err)
+			return echo.NewHTTPError(http.StatusBadRequest, "Failed to open uploaded file")
+		}
+		defer src.Close()
+
+		uploadDir := "public/images/products"
+		if err := os.MkdirAll(uploadDir, 0755); err != nil {
+			slog.Error("failed to create upload directory", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save image")
+		}
+
+		ext := filepath.Ext(file.Filename)
+		if ext == "" {
+			ext = ".jpg"
+		}
+		imageFilename = fmt.Sprintf("%s_%d%s", productID, time.Now().UnixNano(), ext)
+		filePath := filepath.Join(uploadDir, imageFilename)
+
+		dst, err := os.Create(filePath)
+		if err != nil {
+			slog.Error("failed to create image file", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save image")
+		}
+		defer dst.Close()
+
+		if _, err = io.Copy(dst, src); err != nil {
+			os.Remove(filePath)
+			slog.Error("failed to write image file", "error", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save image")
+		}
+
+		// Get metadata from form values
+		altText = c.FormValue("alt_text")
+		if do := c.FormValue("display_order"); do != "" {
+			fmt.Sscanf(do, "%d", &displayOrder)
+		}
+		isPrimary = c.FormValue("is_primary") == "true"
+	} else {
+		// Fall back to JSON body with image_url
+		var req struct {
+			ImageURL     string `json:"image_url"`
+			AltText      string `json:"alt_text"`
+			DisplayOrder int64  `json:"display_order"`
+			IsPrimary    bool   `json:"is_primary"`
+		}
+		if err := c.Bind(&req); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+		}
+		if req.ImageURL == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "Either file upload (image field) or image_url is required")
+		}
+		imageFilename = req.ImageURL
+		altText = req.AltText
+		displayOrder = req.DisplayOrder
+		isPrimary = req.IsPrimary
 	}
 
 	imageID := uuid.New().String()
 
-	if req.IsPrimary {
+	if isPrimary {
 		_ = h.store.Queries.UnsetAllPrimaryProductImages(c.Request().Context(), productID)
 	}
 
 	image, err := h.store.Queries.CreateProductImage(c.Request().Context(), db.CreateProductImageParams{
 		ID:           imageID,
 		ProductID:    productID,
-		ImageUrl:     req.ImageURL,
-		AltText:      sql.NullString{String: req.AltText, Valid: req.AltText != ""},
-		DisplayOrder: sql.NullInt64{Int64: req.DisplayOrder, Valid: true},
-		IsPrimary:    sql.NullBool{Bool: req.IsPrimary, Valid: true},
+		ImageUrl:     imageFilename,
+		AltText:      sql.NullString{String: altText, Valid: altText != ""},
+		DisplayOrder: sql.NullInt64{Int64: displayOrder, Valid: true},
+		IsPrimary:    sql.NullBool{Bool: isPrimary, Valid: true},
 	})
 	if err != nil {
 		slog.Error("failed to create product image", "error", err, "product_id", productID)
