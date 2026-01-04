@@ -37,9 +37,25 @@ func getSubitemClass(c echo.Context, targetPath string) string {
 	return "admin-sidebar-subitem"
 }
 
+func isSalesSection(c echo.Context) bool {
+	path := c.Request().URL.Path
+	return strings.HasPrefix(path, "/admin/orders") ||
+		strings.HasPrefix(path, "/admin/carts") ||
+		strings.HasPrefix(path, "/admin/abandoned-carts") ||
+		strings.HasPrefix(path, "/admin/emails") ||
+		strings.HasPrefix(path, "/admin/quotes")
+}
+
 func isShippingSection(c echo.Context) bool {
 	path := c.Request().URL.Path
 	return strings.HasPrefix(path, "/admin/shipping")
+}
+
+func isDeveloperSection(c echo.Context) bool {
+	path := c.Request().URL.Path
+	return strings.HasPrefix(path, "/dev") ||
+		strings.HasPrefix(path, "/admin/api-keys") ||
+		strings.HasPrefix(path, "/admin/importer")
 }
 
 templ AdminBase(c echo.Context, title string) {
@@ -203,7 +219,7 @@ templ AdminSidebar(c echo.Context) {
 				</a>
 
 				<!-- Sales Section (Collapsible) -->
-				<div x-data="{ salesOpen: false }">
+				<div x-data={ fmt.Sprintf("{ salesOpen: %t }", isSalesSection(c)) }>
 					<button
 						@click="salesOpen = !salesOpen"
 						class="admin-sidebar-item w-full"
@@ -332,7 +348,7 @@ templ AdminSidebar(c echo.Context) {
 				</div>
 
 				<!-- Developer Section (Collapsible) -->
-				<div x-data="{ devOpen: false }">
+				<div x-data={ fmt.Sprintf("{ devOpen: %t }", isDeveloperSection(c)) }>
 					<button
 						@click="devOpen = !devOpen"
 						class="admin-sidebar-item w-full"
