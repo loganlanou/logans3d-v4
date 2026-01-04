@@ -1,0 +1,374 @@
+package admin
+
+import (
+	"fmt"
+
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/internal/importer"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+)
+
+// ScrapedProductDetailData holds data for the scraped product detail page
+type ScrapedProductDetailData struct {
+	Product       db.ScrapedProduct
+	Designer      importer.Designer
+	Images        []db.ScrapedProductImage
+	AIImages      []db.ScrapedProductAiImage
+	Categories    []db.Category
+	ImageURLs     []string // Parsed from product.ImageUrls JSON
+}
+
+templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
+	@layout.AdminBase(c, fmt.Sprintf("Import - %s", data.Product.Name)) {
+		<div class="space-y-6" x-data={ fmt.Sprintf("{ categoryId: '%s' }", getDefaultCategoryID(data.Categories, data.Designer.DefaultCategory)) }>
+			<!-- Header -->
+			<div class="flex items-center justify-between flex-wrap gap-4">
+				<div>
+					<div class="flex items-center gap-2 mb-2">
+						<a href={ templ.SafeURL(fmt.Sprintf("/admin/importer/designers/%s", data.Designer.Slug)) } class="text-muted-foreground hover:text-foreground">
+							<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+							</svg>
+						</a>
+						<h1 class="text-2xl font-bold text-foreground line-clamp-1">{ data.Product.Name }</h1>
+					</div>
+					<p class="text-muted-foreground text-sm">
+						Source:
+						<a
+							href={ templ.SafeURL(data.Product.SourceUrl) }
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-primary hover:underline"
+						>
+							{ data.Product.Platform }
+						</a>
+						if data.Product.ScrapedAt.Valid {
+							<span class="mx-2">•</span>
+							Scraped { data.Product.ScrapedAt.Time.Format("Jan 2, 2006") }
+						}
+					</p>
+				</div>
+				<div class="flex items-center gap-3">
+					@button.Button(button.Props{
+						Variant: button.VariantSecondary,
+						Attributes: templ.Attributes{
+							"hx-post":    fmt.Sprintf("/admin/importer/products/%s/rescrape", data.Product.ID),
+							"hx-swap":    "none",
+						},
+					}) {
+						Re-scrape
+					}
+					if data.Product.IsSkipped.Valid && data.Product.IsSkipped.Bool {
+						@button.Button(button.Props{
+							Variant: button.VariantSecondary,
+							Attributes: templ.Attributes{
+								"hx-post":    fmt.Sprintf("/admin/importer/products/%s/unskip", data.Product.ID),
+								"hx-swap":    "none",
+							},
+						}) {
+							Unskip
+						}
+					} else {
+						@button.Button(button.Props{
+							Variant: button.VariantSecondary,
+							Attributes: templ.Attributes{
+								"hx-post":    fmt.Sprintf("/admin/importer/products/%s/skip", data.Product.ID),
+								"hx-swap":    "none",
+							},
+						}) {
+							Skip
+						}
+					}
+				</div>
+			</div>
+
+			<!-- Status Banner -->
+			if data.Product.IsSkipped.Valid && data.Product.IsSkipped.Bool {
+				<div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+					<div class="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<circle cx="12" cy="12" r="10" stroke-width="2"></circle>
+							<path stroke-linecap="round" stroke-width="2" d="M4 4l16 16"></path>
+						</svg>
+						<span class="font-medium">This product is skipped</span>
+						if data.Product.SkipReason.Valid && data.Product.SkipReason.String != "" {
+							<span class="text-sm">({ data.Product.SkipReason.String })</span>
+						}
+					</div>
+				</div>
+			} else if data.Product.ImportedProductID.Valid {
+				<div class="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+					<div class="flex items-center gap-2 text-green-700 dark:text-green-300">
+						<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+						</svg>
+						<span class="font-medium">Already imported</span>
+						<a
+							href={ templ.SafeURL(fmt.Sprintf("/admin/products/%s", data.Product.ImportedProductID.String)) }
+							class="text-sm underline"
+						>
+							View product
+						</a>
+					</div>
+				</div>
+			}
+
+			<!-- Images Section -->
+			@card.Card() {
+				@card.Header() {
+					<div class="flex items-center justify-between">
+						@card.Title() {
+							Images
+						}
+						@button.Button(button.Props{
+							Size: button.SizeSm,
+							Variant: button.VariantSecondary,
+							Attributes: templ.Attributes{
+								"hx-post":    fmt.Sprintf("/admin/importer/products/%s/generate-ai", data.Product.ID),
+								"hx-swap":    "none",
+							},
+						}) {
+							Generate AI Image
+						}
+					</div>
+				}
+				@card.Content() {
+					if len(data.ImageURLs) == 0 && len(data.Images) == 0 && len(data.AIImages) == 0 {
+						<p class="text-muted-foreground text-sm">No images available.</p>
+					} else {
+						<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+							<!-- Show parsed image URLs (if no scraped_product_images yet) -->
+							for i, url := range data.ImageURLs {
+								@imageCard(url, fmt.Sprintf("Image %d", i+1), "source", "", true)
+							}
+							<!-- Show scraped product images with status -->
+							for _, img := range data.Images {
+								@scrapedImageCard(img)
+							}
+							<!-- Show AI generated images -->
+							for _, img := range data.AIImages {
+								@aiImageCard(img)
+							}
+						</div>
+					}
+				}
+			}
+
+			<!-- Details Section -->
+			@card.Card() {
+				@card.Header() {
+					@card.Title() {
+						Details
+					}
+				}
+				@card.Content() {
+					<div class="space-y-4">
+						<div>
+							<label class="block text-sm font-medium text-muted-foreground mb-1">Name</label>
+							<p class="text-foreground">{ data.Product.Name }</p>
+						</div>
+						if data.Product.Description.Valid && data.Product.Description.String != "" {
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-1">Description</label>
+								<p class="text-foreground text-sm">{ data.Product.Description.String }</p>
+							</div>
+						}
+						<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-1">Original Price</label>
+								<p class="text-foreground">
+									if data.Product.OriginalPriceCents.Valid && data.Product.OriginalPriceCents.Int64 > 0 {
+										${ fmt.Sprintf("%.2f", float64(data.Product.OriginalPriceCents.Int64)/100) }
+									} else {
+										Free
+									}
+								</p>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-1">Platform</label>
+								<p class="text-foreground capitalize">{ data.Product.Platform }</p>
+							</div>
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-1">Designer</label>
+								<p class="text-foreground">{ data.Designer.Name }</p>
+							</div>
+							if data.Product.ReleaseDate.Valid {
+								<div>
+									<label class="block text-sm font-medium text-muted-foreground mb-1">Release Date</label>
+									<p class="text-foreground">{ data.Product.ReleaseDate.Time.Format("Jan 2, 2006") }</p>
+								</div>
+							}
+						</div>
+					</div>
+				}
+			}
+
+			<!-- Import Section (only show if not already imported and not skipped) -->
+			if !data.Product.ImportedProductID.Valid && (!data.Product.IsSkipped.Valid || !data.Product.IsSkipped.Bool) {
+				@card.Card() {
+					@card.Header() {
+						@card.Title() {
+							Import Settings
+						}
+					}
+					@card.Content() {
+						<div class="space-y-4">
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-1">Category</label>
+								<select
+									x-model="categoryId"
+									class="w-full md:w-64 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+								>
+									for _, cat := range data.Categories {
+										<option value={ cat.ID }>{ cat.Name }</option>
+									}
+								</select>
+							</div>
+						</div>
+					}
+					@card.Footer(card.FooterProps{
+						Class: "flex justify-end",
+					}) {
+						<form
+							hx-post={ fmt.Sprintf("/admin/importer/products/%s/import", data.Product.ID) }
+							hx-swap="none"
+							x-on:htmx:before-request="$el.querySelector('[name=category_id]').value = categoryId"
+						>
+							<input type="hidden" name="category_id" value=""/>
+							@button.Button(button.Props{
+								Type: "submit",
+								Attributes: templ.Attributes{
+									"onclick": "return confirm('Import this product?')",
+								},
+							}) {
+								Import This Product
+							}
+						</form>
+					}
+				}
+			}
+		</div>
+
+		<script>
+			document.body.addEventListener('htmx:afterRequest', function(evt) {
+				const path = evt.detail.pathInfo.requestPath;
+				if (path.includes('/rescrape') || path.includes('/skip') || path.includes('/unskip') || path.includes('/import') || path.includes('/generate-ai')) {
+					setTimeout(() => window.location.reload(), 500);
+				}
+			});
+		</script>
+	}
+}
+
+templ imageCard(url, alt, imageType, status string, selected bool) {
+	<div class="relative border border-border rounded-lg overflow-hidden bg-card group">
+		<img
+			src={ url }
+			alt={ alt }
+			class="w-full aspect-square object-cover"
+			loading="lazy"
+		/>
+		<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+			<span class="text-white text-xs">
+				if imageType == "source" {
+					Original
+				} else if imageType == "ai" {
+					AI Generated
+				}
+			</span>
+		</div>
+		if status != "" {
+			<div class="absolute top-2 right-2">
+				if status == "failed" {
+					<span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Failed</span>
+				} else if status == "pending" {
+					<span class="px-2 py-1 bg-yellow-500 text-white text-xs rounded">Pending</span>
+				} else if status == "downloaded" {
+					<span class="px-2 py-1 bg-green-500 text-white text-xs rounded">Ready</span>
+				}
+			</div>
+		}
+	</div>
+}
+
+templ scrapedImageCard(img db.ScrapedProductImage) {
+	<div class="relative border border-border rounded-lg overflow-hidden bg-card group">
+		if img.LocalFilename.Valid && img.LocalFilename.String != "" {
+			<img
+				src={ fmt.Sprintf("/public/images/scraped/%s", img.LocalFilename.String) }
+				alt="Scraped image"
+				class="w-full aspect-square object-cover"
+				loading="lazy"
+			/>
+		} else {
+			<img
+				src={ img.SourceUrl }
+				alt="Source image"
+				class="w-full aspect-square object-cover"
+				loading="lazy"
+			/>
+		}
+		<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+			<span class="text-white text-xs">Original</span>
+		</div>
+		<div class="absolute top-2 right-2">
+			if img.DownloadStatus.Valid {
+				if img.DownloadStatus.String == "failed" {
+					<span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Failed</span>
+				} else if img.DownloadStatus.String == "pending" {
+					<span class="px-2 py-1 bg-yellow-500 text-white text-xs rounded">Pending</span>
+				} else if img.DownloadStatus.String == "downloaded" {
+					<span class="px-2 py-1 bg-green-500 text-white text-xs rounded">Ready</span>
+				}
+			}
+		</div>
+		<!-- Selection checkbox -->
+		<div class="absolute top-2 left-2">
+			<input
+				type="checkbox"
+				checked?={ img.IsSelectedForImport.Valid && img.IsSelectedForImport.Bool }
+				class="h-5 w-5 rounded border-gray-300"
+				hx-post={ fmt.Sprintf("/admin/importer/images/%s/select", img.ID) }
+				hx-swap="none"
+			/>
+		</div>
+	</div>
+}
+
+templ aiImageCard(img db.ScrapedProductAiImage) {
+	<div class="relative border-2 border-primary/50 rounded-lg overflow-hidden bg-card group">
+		<img
+			src={ fmt.Sprintf("/public/images/scraped/ai/%s", img.LocalFilename) }
+			alt="AI generated image"
+			class="w-full aspect-square object-cover"
+			loading="lazy"
+		/>
+		<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary/60 to-transparent p-2">
+			<span class="text-white text-xs font-medium">AI Generated</span>
+		</div>
+		<div class="absolute top-2 right-2">
+			if img.Status.Valid {
+				if img.Status.String == "approved" {
+					<span class="px-2 py-1 bg-green-500 text-white text-xs rounded">Approved</span>
+				} else if img.Status.String == "rejected" {
+					<span class="px-2 py-1 bg-red-500 text-white text-xs rounded">Rejected</span>
+				} else {
+					<span class="px-2 py-1 bg-yellow-500 text-white text-xs rounded">Pending</span>
+				}
+			}
+		</div>
+		<!-- Selection checkbox -->
+		<div class="absolute top-2 left-2">
+			<input
+				type="checkbox"
+				checked?={ img.IsSelectedForImport.Valid && img.IsSelectedForImport.Bool }
+				class="h-5 w-5 rounded border-gray-300"
+				hx-post={ fmt.Sprintf("/admin/importer/ai-images/%s/select", img.ID) }
+				hx-swap="none"
+			/>
+		</div>
+	</div>
+}

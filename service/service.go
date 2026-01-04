@@ -405,6 +405,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/importer/designers/:slug", importerHandler.HandleImporterDesignerDetail)
 	admin.POST("/importer/scrape/:slug", importerHandler.HandleStartScrape)
 	admin.POST("/importer/import/:slug", importerHandler.HandleImportProducts)
+	admin.GET("/importer/products/:id", importerHandler.HandleScrapedProductDetail)
+	admin.POST("/importer/products/:id/rescrape", importerHandler.HandleRescrapeProduct)
+	admin.POST("/importer/products/:id/skip", importerHandler.HandleSkipProduct)
+	admin.POST("/importer/products/:id/unskip", importerHandler.HandleUnskipProduct)
+	admin.POST("/importer/products/:id/import", importerHandler.HandleImportSingleProduct)
 
 	// Gift Certificate routes
 	s.RegisterGiftCertificateRoutes(admin)

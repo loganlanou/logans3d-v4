@@ -100,29 +100,60 @@ func (h *AdminImporterHandler) HandleImporterDesignerDetail(c echo.Context) erro
 		return echo.NewHTTPError(http.StatusNotFound, "Designer not found")
 	}
 
+	// Get filter from query params (default to unimported)
+	filter := c.QueryParam("filter")
+	if filter == "" {
+		filter = "unimported"
+	}
+
 	// Get stats
 	stats := admin.DesignerStats{
 		Designer: *designer,
 	}
 
-	count, err := h.storage.Queries.CountScrapedProductsByDesigner(ctx, slug)
+	totalCount, err := h.storage.Queries.CountScrapedProductsByDesigner(ctx, slug)
 	if err == nil {
-		stats.ScrapedCount = count
+		stats.ScrapedCount = totalCount
 	}
 
-	unimported, err := h.storage.Queries.CountUnimportedProductsByDesigner(ctx, slug)
+	unimported, err := h.storage.Queries.CountUnimportedNonSkippedByDesigner(ctx, slug)
 	if err == nil {
 		stats.UnimportedCount = unimported
 	}
 
-	// Get scraped products
-	products, err := h.storage.Queries.ListScrapedProductsByDesigner(ctx, db.ListScrapedProductsByDesignerParams{
+	// Get last scraped time from most recent job
+	for _, src := range designer.Sources {
+		job, err := h.storage.Queries.GetLatestJobByDesigner(ctx, db.GetLatestJobByDesignerParams{
+			DesignerSlug: designer.Slug,
+			Platform:     src.Platform,
+		})
+		if err == nil && job.CompletedAt.Valid {
+			if stats.LastScraped == nil || job.CompletedAt.Time.After(*stats.LastScraped) {
+				t := job.CompletedAt.Time
+				stats.LastScraped = &t
+			}
+		}
+	}
+
+	// Get filtered count
+	filterCount, err := h.storage.Queries.CountScrapedProductsByDesignerFiltered(ctx, db.CountScrapedProductsByDesignerFilteredParams{
 		DesignerSlug: slug,
+		Column2:      filter,
+	})
+	if err != nil {
+		slog.Error("failed to count filtered products", "error", err, "designer", slug, "filter", filter)
+		filterCount = 0
+	}
+
+	// Get scraped products with filter
+	products, err := h.storage.Queries.ListScrapedProductsByDesignerFiltered(ctx, db.ListScrapedProductsByDesignerFilteredParams{
+		DesignerSlug: slug,
+		Column2:      filter,
 		Limit:        100,
 		Offset:       0,
 	})
 	if err != nil {
-		slog.Error("failed to list scraped products", "error", err, "designer", slug)
+		slog.Error("failed to list scraped products", "error", err, "designer", slug, "filter", filter)
 		products = []db.ScrapedProduct{}
 	}
 
@@ -134,10 +165,13 @@ func (h *AdminImporterHandler) HandleImporterDesignerDetail(c echo.Context) erro
 	}
 
 	data := admin.ImporterDesignerData{
-		Designer:   *designer,
-		Products:   products,
-		Stats:      stats,
-		Categories: categories,
+		Designer:    *designer,
+		Products:    products,
+		Stats:       stats,
+		Categories:  categories,
+		Filter:      filter,
+		TotalCount:  totalCount,
+		FilterCount: filterCount,
 	}
 
 	return admin.ImporterDesignerDetail(c, data).Render(ctx, c.Response().Writer)
@@ -485,6 +519,190 @@ func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.Scr
 
 	slog.Info("imported product", "product_id", productID, "name", scraped.Name)
 	return nil
+}
+
+// HandleScrapedProductDetail shows detail page for a scraped product
+func (h *AdminImporterHandler) HandleScrapedProductDetail(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	// Get the scraped product
+	product, err := h.storage.Queries.GetScrapedProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get scraped product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+
+	// Get the designer
+	designer := importer.GetDesigner(product.DesignerSlug)
+	if designer == nil {
+		designer = &importer.Designer{
+			Name: product.DesignerSlug,
+			Slug: product.DesignerSlug,
+		}
+	}
+
+	// Get scraped product images
+	images, err := h.storage.Queries.ListScrapedProductImages(ctx, productID)
+	if err != nil {
+		slog.Error("failed to list scraped product images", "error", err, "product_id", productID)
+		images = []db.ScrapedProductImage{}
+	}
+
+	// Get AI generated images
+	aiImages, err := h.storage.Queries.ListScrapedProductAIImages(ctx, productID)
+	if err != nil {
+		slog.Error("failed to list scraped product AI images", "error", err, "product_id", productID)
+		aiImages = []db.ScrapedProductAiImage{}
+	}
+
+	// Parse image URLs from JSON
+	var imageURLs []string
+	if product.ImageUrls.Valid && product.ImageUrls.String != "" && len(images) == 0 {
+		if err := json.Unmarshal([]byte(product.ImageUrls.String), &imageURLs); err != nil {
+			slog.Debug("failed to parse image URLs", "error", err, "product_id", productID)
+		}
+	}
+
+	// Get categories for import selector
+	categories, err := h.storage.Queries.ListCategories(ctx)
+	if err != nil {
+		slog.Error("failed to list categories", "error", err)
+		categories = []db.Category{}
+	}
+
+	data := admin.ScrapedProductDetailData{
+		Product:    product,
+		Designer:   *designer,
+		Images:     images,
+		AIImages:   aiImages,
+		Categories: categories,
+		ImageURLs:  imageURLs,
+	}
+
+	return admin.ScrapedProductDetail(c, data).Render(ctx, c.Response().Writer)
+}
+
+// HandleSkipProduct marks a product as skipped
+func (h *AdminImporterHandler) HandleSkipProduct(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+	reason := c.FormValue("reason")
+
+	err := h.storage.Queries.SkipScrapedProduct(ctx, db.SkipScrapedProductParams{
+		SkipReason: sql.NullString{String: reason, Valid: reason != ""},
+		ID:         productID,
+	})
+	if err != nil {
+		slog.Error("failed to skip product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to skip product")
+	}
+
+	c.Response().Header().Set("HX-Trigger", "productUpdated")
+	return c.NoContent(http.StatusOK)
+}
+
+// HandleUnskipProduct removes skip status from a product
+func (h *AdminImporterHandler) HandleUnskipProduct(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	err := h.storage.Queries.UnskipScrapedProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to unskip product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to unskip product")
+	}
+
+	c.Response().Header().Set("HX-Trigger", "productUpdated")
+	return c.NoContent(http.StatusOK)
+}
+
+// HandleRescrapeProduct re-scrapes a single product
+func (h *AdminImporterHandler) HandleRescrapeProduct(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	// Get existing product
+	product, err := h.storage.Queries.GetScrapedProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get scraped product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+
+	// Re-fetch the product from source
+	freshProduct, err := h.scraper.FetchProduct(ctx, product.SourceUrl)
+	if err != nil {
+		slog.Error("failed to re-fetch product", "error", err, "url", product.SourceUrl)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to re-scrape product")
+	}
+
+	// Update the scraped product
+	imageURLsJSON, _ := json.Marshal(freshProduct.ImageURLs)
+	tagsJSON, _ := json.Marshal(freshProduct.Tags)
+
+	var releaseDate sql.NullTime
+	if freshProduct.ReleaseDate != nil {
+		releaseDate = sql.NullTime{Time: *freshProduct.ReleaseDate, Valid: true}
+	}
+
+	_, err = h.storage.Queries.UpsertScrapedProduct(ctx, db.UpsertScrapedProductParams{
+		ID:                 productID,
+		DesignerSlug:       product.DesignerSlug,
+		Platform:           product.Platform,
+		SourceUrl:          product.SourceUrl,
+		Name:               freshProduct.Name,
+		Description:        sql.NullString{String: freshProduct.Description, Valid: freshProduct.Description != ""},
+		OriginalPriceCents: sql.NullInt64{Int64: int64(freshProduct.OriginalPriceCents), Valid: freshProduct.OriginalPriceCents > 0},
+		ReleaseDate:        releaseDate,
+		ImageUrls:          sql.NullString{String: string(imageURLsJSON), Valid: len(freshProduct.ImageURLs) > 0},
+		Tags:               sql.NullString{String: string(tagsJSON), Valid: len(freshProduct.Tags) > 0},
+		RawHtml:            sql.NullString{String: freshProduct.RawHTML, Valid: freshProduct.RawHTML != ""},
+	})
+	if err != nil {
+		slog.Error("failed to update scraped product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update product")
+	}
+
+	slog.Info("re-scraped product", "product_id", productID, "name", freshProduct.Name)
+
+	c.Response().Header().Set("HX-Trigger", "productUpdated")
+	return c.NoContent(http.StatusOK)
+}
+
+// HandleImportSingleProduct imports a single scraped product
+func (h *AdminImporterHandler) HandleImportSingleProduct(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+	categoryID := c.FormValue("category_id")
+
+	// Get the scraped product
+	scraped, err := h.storage.Queries.GetScrapedProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get scraped product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+
+	if scraped.ImportedProductID.Valid {
+		return echo.NewHTTPError(http.StatusBadRequest, "Product already imported")
+	}
+
+	// Get designer name
+	designer := importer.GetDesigner(scraped.DesignerSlug)
+	designerName := scraped.DesignerSlug
+	if designer != nil {
+		designerName = designer.Name
+	}
+
+	// Import the product
+	downloader := importer.NewImageDownloader("public/images/products")
+	err = h.importProduct(ctx, scraped, categoryID, designerName, downloader)
+	if err != nil {
+		slog.Error("failed to import product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to import product")
+	}
+
+	c.Response().Header().Set("HX-Trigger", "productImported")
+	return c.NoContent(http.StatusOK)
 }
 
 // generateProductSlug creates a URL-friendly slug from a name

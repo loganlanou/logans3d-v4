@@ -746,6 +746,12 @@
   .ml-auto {
     margin-left: auto;
   }
+  .line-clamp-1 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
   .line-clamp-2 {
     overflow: hidden;
     display: -webkit-box;
@@ -1778,6 +1784,12 @@
   .border-primary {
     border-color: var(--color-primary);
   }
+  .border-primary\/50 {
+    border-color: color-mix(in srgb, oklch(0.645 0.246 16.439) 50%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-primary) 50%, transparent);
+    }
+  }
   .border-purple-200 {
     border-color: var(--color-purple-200);
   }
@@ -2635,6 +2647,13 @@
   }
   .from-pink-500 {
     --tw-gradient-from: var(--color-pink-500);
+    --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
+  }
+  .from-primary\/60 {
+    --tw-gradient-from: color-mix(in srgb, oklch(0.645 0.246 16.439) 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      --tw-gradient-from: color-mix(in oklab, var(--color-primary) 60%, transparent);
+    }
     --tw-gradient-stops: var(--tw-gradient-via-stops, var(--tw-gradient-position), var(--tw-gradient-from) var(--tw-gradient-from-position), var(--tw-gradient-to) var(--tw-gradient-to-position));
   }
   .from-purple-500 {
@@ -7666,6 +7685,11 @@
       display: none;
     }
   }
+  .md\:w-64 {
+    @media (width >= 48rem) {
+      width: calc(var(--spacing) * 64);
+    }
+  }
   .md\:max-w-xs {
     @media (width >= 48rem) {
       max-width: var(--container-xs);
@@ -7994,6 +8018,11 @@
       border-color: var(--color-gray-600);
     }
   }
+  .dark\:border-gray-700 {
+    &:where(.dark, .dark *) {
+      border-color: var(--color-gray-700);
+    }
+  }
   .dark\:border-green-400 {
     &:where(.dark, .dark *) {
       border-color: var(--color-green-400);
@@ -8002,6 +8031,11 @@
   .dark\:border-green-700 {
     &:where(.dark, .dark *) {
       border-color: var(--color-green-700);
+    }
+  }
+  .dark\:border-green-800 {
+    &:where(.dark, .dark *) {
+      border-color: var(--color-green-800);
     }
   }
   .dark\:border-input {

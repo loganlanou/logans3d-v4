@@ -94,3 +94,107 @@ DELETE FROM scraped_products WHERE id = ?;
 
 -- name: DeleteScrapedProductsByDesigner :exec
 DELETE FROM scraped_products WHERE designer_slug = ?;
+
+-- name: SkipScrapedProduct :exec
+UPDATE scraped_products
+SET is_skipped = true, skip_reason = ?
+WHERE id = ?;
+
+-- name: UnskipScrapedProduct :exec
+UPDATE scraped_products
+SET is_skipped = false, skip_reason = NULL
+WHERE id = ?;
+
+-- name: ListScrapedProductsByDesignerFiltered :many
+SELECT * FROM scraped_products
+WHERE designer_slug = ?
+  AND (
+    CASE ?
+      WHEN 'unimported' THEN imported_product_id IS NULL AND is_skipped = false
+      WHEN 'imported' THEN imported_product_id IS NOT NULL
+      WHEN 'skipped' THEN is_skipped = true
+      ELSE true
+    END
+  )
+ORDER BY scraped_at DESC
+LIMIT ? OFFSET ?;
+
+-- name: CountScrapedProductsByDesignerFiltered :one
+SELECT COUNT(*) as count FROM scraped_products
+WHERE designer_slug = ?
+  AND (
+    CASE ?
+      WHEN 'unimported' THEN imported_product_id IS NULL AND is_skipped = false
+      WHEN 'imported' THEN imported_product_id IS NOT NULL
+      WHEN 'skipped' THEN is_skipped = true
+      ELSE true
+    END
+  );
+
+-- name: CountUnimportedNonSkippedByDesigner :one
+SELECT COUNT(*) as count FROM scraped_products
+WHERE designer_slug = ? AND imported_product_id IS NULL AND is_skipped = false;
+
+-- Scraped Product Images
+
+-- name: CreateScrapedProductImage :one
+INSERT INTO scraped_product_images (
+    id, scraped_product_id, source_url, local_filename,
+    download_status, display_order, created_at
+) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+RETURNING *;
+
+-- name: GetScrapedProductImage :one
+SELECT * FROM scraped_product_images WHERE id = ?;
+
+-- name: ListScrapedProductImages :many
+SELECT * FROM scraped_product_images
+WHERE scraped_product_id = ?
+ORDER BY display_order, created_at;
+
+-- name: UpdateScrapedProductImageStatus :exec
+UPDATE scraped_product_images
+SET download_status = ?, download_error = ?, local_filename = ?
+WHERE id = ?;
+
+-- name: UpdateScrapedProductImageSelection :exec
+UPDATE scraped_product_images
+SET is_selected_for_import = ?
+WHERE id = ?;
+
+-- name: DeleteScrapedProductImages :exec
+DELETE FROM scraped_product_images WHERE scraped_product_id = ?;
+
+-- name: CountScrapedProductImagesByStatus :one
+SELECT COUNT(*) as count FROM scraped_product_images
+WHERE scraped_product_id = ? AND download_status = ?;
+
+-- Scraped Product AI Images
+
+-- name: CreateScrapedProductAIImage :one
+INSERT INTO scraped_product_ai_images (
+    id, scraped_product_id, source_image_id, local_filename,
+    prompt_used, model_used, status, display_order, created_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+RETURNING *;
+
+-- name: GetScrapedProductAIImage :one
+SELECT * FROM scraped_product_ai_images WHERE id = ?;
+
+-- name: ListScrapedProductAIImages :many
+SELECT * FROM scraped_product_ai_images
+WHERE scraped_product_id = ?
+ORDER BY display_order, created_at;
+
+-- name: UpdateScrapedProductAIImageStatus :exec
+UPDATE scraped_product_ai_images
+SET status = ?
+WHERE id = ?;
+
+-- name: UpdateScrapedProductAIImageSelection :exec
+UPDATE scraped_product_ai_images
+SET is_selected_for_import = ?
+WHERE id = ?;
+
+-- name: DeleteScrapedProductAIImages :exec
+DELETE FROM scraped_product_ai_images WHERE scraped_product_id = ?;
