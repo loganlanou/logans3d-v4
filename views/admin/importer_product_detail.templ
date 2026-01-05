@@ -123,16 +123,30 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 						@card.Title() {
 							Images
 						}
-						@button.Button(button.Props{
-							Size: button.SizeSm,
-							Variant: button.VariantSecondary,
-							Attributes: templ.Attributes{
-								"hx-post":    fmt.Sprintf("/admin/importer/products/%s/generate-ai", data.Product.ID),
-								"hx-swap":    "none",
-							},
-						}) {
-							Generate AI Image
-						}
+						<div class="flex items-center gap-2">
+							if len(data.ImageURLs) > 0 && len(data.Images) == 0 {
+								@button.Button(button.Props{
+									Size: button.SizeSm,
+									Variant: button.VariantSecondary,
+									Attributes: templ.Attributes{
+										"hx-post":    fmt.Sprintf("/admin/importer/products/%s/download", data.Product.ID),
+										"hx-swap":    "none",
+									},
+								}) {
+									Download Images
+								}
+							}
+							@button.Button(button.Props{
+								Size: button.SizeSm,
+								Variant: button.VariantSecondary,
+								Attributes: templ.Attributes{
+									"hx-post":    fmt.Sprintf("/admin/importer/products/%s/generate-ai", data.Product.ID),
+									"hx-swap":    "none",
+								},
+							}) {
+								Generate AI Image
+							}
+						</div>
 					</div>
 				}
 				@card.Content() {
@@ -255,8 +269,8 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 		<script>
 			document.body.addEventListener('htmx:afterRequest', function(evt) {
 				const path = evt.detail.pathInfo.requestPath;
-				if (path.includes('/rescrape') || path.includes('/skip') || path.includes('/unskip') || path.includes('/import') || path.includes('/generate-ai')) {
-					setTimeout(() => window.location.reload(), 500);
+				if (path.includes('/rescrape') || path.includes('/skip') || path.includes('/unskip') || path.includes('/import') || path.includes('/generate-ai') || path.includes('/download') || path.includes('/retry')) {
+					setTimeout(() => window.location.reload(), 1000);
 				}
 			});
 		</script>
@@ -303,6 +317,20 @@ templ scrapedImageCard(img db.ScrapedProductImage) {
 				class="w-full aspect-square object-cover"
 				loading="lazy"
 			/>
+		} else if img.DownloadStatus.Valid && img.DownloadStatus.String == "failed" {
+			<div class="w-full aspect-square bg-red-50 dark:bg-red-900/20 flex flex-col items-center justify-center p-4">
+				<svg class="h-8 w-8 text-red-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+				</svg>
+				<span class="text-xs text-red-600 dark:text-red-400 text-center">Download failed</span>
+				<button
+					class="mt-2 px-2 py-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded"
+					hx-post={ fmt.Sprintf("/admin/importer/images/%s/retry", img.ID) }
+					hx-swap="none"
+				>
+					Retry
+				</button>
+			</div>
 		} else {
 			<img
 				src={ img.SourceUrl }
@@ -325,16 +353,18 @@ templ scrapedImageCard(img db.ScrapedProductImage) {
 				}
 			}
 		</div>
-		<!-- Selection checkbox -->
-		<div class="absolute top-2 left-2">
-			<input
-				type="checkbox"
-				checked?={ img.IsSelectedForImport.Valid && img.IsSelectedForImport.Bool }
-				class="h-5 w-5 rounded border-gray-300"
-				hx-post={ fmt.Sprintf("/admin/importer/images/%s/select", img.ID) }
-				hx-swap="none"
-			/>
-		</div>
+		<!-- Selection checkbox (only show if downloaded) -->
+		if img.DownloadStatus.Valid && img.DownloadStatus.String == "downloaded" {
+			<div class="absolute top-2 left-2">
+				<input
+					type="checkbox"
+					checked?={ img.IsSelectedForImport.Valid && img.IsSelectedForImport.Bool }
+					class="h-5 w-5 rounded border-gray-300"
+					hx-post={ fmt.Sprintf("/admin/importer/images/%s/select", img.ID) }
+					hx-swap="none"
+				/>
+			</div>
+		}
 	</div>
 }
 

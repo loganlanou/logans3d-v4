@@ -410,6 +410,11 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/importer/products/:id/skip", importerHandler.HandleSkipProduct)
 	admin.POST("/importer/products/:id/unskip", importerHandler.HandleUnskipProduct)
 	admin.POST("/importer/products/:id/import", importerHandler.HandleImportSingleProduct)
+	admin.POST("/importer/products/:id/download", importerHandler.HandleDownloadImages)
+	admin.POST("/importer/images/:id/retry", importerHandler.HandleRetryImageDownload)
+	admin.POST("/importer/images/:id/select", importerHandler.HandleToggleImageSelection)
+	admin.POST("/importer/ai-images/:id/select", importerHandler.HandleToggleAIImageSelection)
+	admin.POST("/importer/products/:id/generate-ai", importerHandler.HandleGenerateAIImage)
 
 	// Gift Certificate routes
 	s.RegisterGiftCertificateRoutes(admin)

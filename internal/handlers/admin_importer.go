@@ -4,14 +4,17 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/importer"
+	"github.com/loganlanou/logans3d-v4/internal/ogimage"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/admin"
@@ -703,6 +706,343 @@ func (h *AdminImporterHandler) HandleImportSingleProduct(c echo.Context) error {
 
 	c.Response().Header().Set("HX-Trigger", "productImported")
 	return c.NoContent(http.StatusOK)
+}
+
+// HandleDownloadImages downloads images for a scraped product
+func (h *AdminImporterHandler) HandleDownloadImages(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	// Get the scraped product
+	product, err := h.storage.Queries.GetScrapedProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get scraped product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+
+	// Parse image URLs from JSON
+	var imageURLs []string
+	if product.ImageUrls.Valid && product.ImageUrls.String != "" {
+		if err := json.Unmarshal([]byte(product.ImageUrls.String), &imageURLs); err != nil {
+			slog.Error("failed to parse image URLs", "error", err, "product_id", productID)
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid image URLs")
+		}
+	}
+
+	if len(imageURLs) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "No images to download")
+	}
+
+	// Create output directory for scraped images
+	outputDir := "public/images/scraped"
+	if err := createDirIfNotExists(outputDir); err != nil {
+		slog.Error("failed to create scraped images directory", "error", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create directory")
+	}
+
+	// Download in background
+	go h.downloadProductImages(productID, imageURLs, outputDir)
+
+	c.Response().Header().Set("HX-Trigger", "downloadStarted")
+	return c.NoContent(http.StatusAccepted)
+}
+
+// downloadProductImages downloads images and updates the database
+func (h *AdminImporterHandler) downloadProductImages(productID string, imageURLs []string, outputDir string) {
+	ctx := context.Background()
+
+	// First, create records for each image with pending status
+	for i, url := range imageURLs {
+		imageID := uuid.New().String()
+		_, err := h.storage.Queries.CreateScrapedProductImage(ctx, db.CreateScrapedProductImageParams{
+			ID:               imageID,
+			ScrapedProductID: productID,
+			SourceUrl:        url,
+			DownloadStatus:   sql.NullString{String: "pending", Valid: true},
+			DisplayOrder:     sql.NullInt64{Int64: int64(i), Valid: true},
+		})
+		if err != nil {
+			slog.Error("failed to create scraped product image record", "error", err, "product_id", productID, "url", url)
+			continue
+		}
+	}
+
+	// Now download each image
+	downloader := importer.NewImageDownloader(outputDir)
+	images, _ := h.storage.Queries.ListScrapedProductImages(ctx, productID)
+
+	for _, img := range images {
+		if img.DownloadStatus.Valid && img.DownloadStatus.String == "downloaded" {
+			continue // Already downloaded
+		}
+
+		downloaded, err := downloader.DownloadImages(ctx, []string{img.SourceUrl}, productID)
+		if err != nil || len(downloaded) == 0 {
+			errMsg := "unknown error"
+			if err != nil {
+				errMsg = err.Error()
+			}
+			h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+				DownloadStatus: sql.NullString{String: "failed", Valid: true},
+				DownloadError:  sql.NullString{String: errMsg, Valid: true},
+				LocalFilename:  sql.NullString{Valid: false},
+				ID:             img.ID,
+			})
+			continue
+		}
+
+		// Update with success
+		h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+			DownloadStatus: sql.NullString{String: "downloaded", Valid: true},
+			DownloadError:  sql.NullString{Valid: false},
+			LocalFilename:  sql.NullString{String: downloaded[0].Filename, Valid: true},
+			ID:             img.ID,
+		})
+	}
+
+	slog.Info("finished downloading images", "product_id", productID, "total", len(images))
+}
+
+// HandleRetryImageDownload retries downloading a failed image
+func (h *AdminImporterHandler) HandleRetryImageDownload(c echo.Context) error {
+	ctx := c.Request().Context()
+	imageID := c.Param("id")
+
+	// Get the image record
+	img, err := h.storage.Queries.GetScrapedProductImage(ctx, imageID)
+	if err != nil {
+		slog.Error("failed to get scraped product image", "error", err, "image_id", imageID)
+		return echo.NewHTTPError(http.StatusNotFound, "Image not found")
+	}
+
+	// Mark as pending
+	err = h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+		DownloadStatus: sql.NullString{String: "pending", Valid: true},
+		DownloadError:  sql.NullString{Valid: false},
+		LocalFilename:  sql.NullString{Valid: false},
+		ID:             imageID,
+	})
+	if err != nil {
+		slog.Error("failed to update image status", "error", err, "image_id", imageID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update status")
+	}
+
+	// Download in background
+	go func() {
+		ctx := context.Background()
+		outputDir := "public/images/scraped"
+		downloader := importer.NewImageDownloader(outputDir)
+
+		downloaded, err := downloader.DownloadImages(ctx, []string{img.SourceUrl}, img.ScrapedProductID)
+		if err != nil || len(downloaded) == 0 {
+			errMsg := "unknown error"
+			if err != nil {
+				errMsg = err.Error()
+			}
+			h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+				DownloadStatus: sql.NullString{String: "failed", Valid: true},
+				DownloadError:  sql.NullString{String: errMsg, Valid: true},
+				LocalFilename:  sql.NullString{Valid: false},
+				ID:             imageID,
+			})
+			return
+		}
+
+		h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+			DownloadStatus: sql.NullString{String: "downloaded", Valid: true},
+			DownloadError:  sql.NullString{Valid: false},
+			LocalFilename:  sql.NullString{String: downloaded[0].Filename, Valid: true},
+			ID:             imageID,
+		})
+	}()
+
+	c.Response().Header().Set("HX-Trigger", "imageRetrying")
+	return c.NoContent(http.StatusAccepted)
+}
+
+// HandleToggleImageSelection toggles image selection for import
+func (h *AdminImporterHandler) HandleToggleImageSelection(c echo.Context) error {
+	ctx := c.Request().Context()
+	imageID := c.Param("id")
+
+	// Get current state
+	img, err := h.storage.Queries.GetScrapedProductImage(ctx, imageID)
+	if err != nil {
+		slog.Error("failed to get scraped product image", "error", err, "image_id", imageID)
+		return echo.NewHTTPError(http.StatusNotFound, "Image not found")
+	}
+
+	// Toggle selection
+	newSelection := true
+	if img.IsSelectedForImport.Valid {
+		newSelection = !img.IsSelectedForImport.Bool
+	}
+
+	err = h.storage.Queries.UpdateScrapedProductImageSelection(ctx, db.UpdateScrapedProductImageSelectionParams{
+		IsSelectedForImport: sql.NullBool{Bool: newSelection, Valid: true},
+		ID:                  imageID,
+	})
+	if err != nil {
+		slog.Error("failed to update image selection", "error", err, "image_id", imageID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update selection")
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// HandleToggleAIImageSelection toggles AI image selection for import
+func (h *AdminImporterHandler) HandleToggleAIImageSelection(c echo.Context) error {
+	ctx := c.Request().Context()
+	imageID := c.Param("id")
+
+	// Get current state
+	img, err := h.storage.Queries.GetScrapedProductAIImage(ctx, imageID)
+	if err != nil {
+		slog.Error("failed to get scraped product AI image", "error", err, "image_id", imageID)
+		return echo.NewHTTPError(http.StatusNotFound, "Image not found")
+	}
+
+	// Toggle selection
+	newSelection := true
+	if img.IsSelectedForImport.Valid {
+		newSelection = !img.IsSelectedForImport.Bool
+	}
+
+	err = h.storage.Queries.UpdateScrapedProductAIImageSelection(ctx, db.UpdateScrapedProductAIImageSelectionParams{
+		IsSelectedForImport: sql.NullBool{Bool: newSelection, Valid: true},
+		ID:                  imageID,
+	})
+	if err != nil {
+		slog.Error("failed to update AI image selection", "error", err, "image_id", imageID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update selection")
+	}
+
+	return c.NoContent(http.StatusOK)
+}
+
+// HandleGenerateAIImage generates an AI image for a scraped product
+func (h *AdminImporterHandler) HandleGenerateAIImage(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	// Get the scraped product
+	product, err := h.storage.Queries.GetScrapedProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get scraped product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+
+	// Check for Gemini API key
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		slog.Error("GEMINI_API_KEY not set")
+		return echo.NewHTTPError(http.StatusBadRequest, "AI generation not configured")
+	}
+
+	// Need at least one source image to generate from
+	var sourceImagePath string
+	var sourceImageID string
+
+	// First check if we have downloaded images
+	images, err := h.storage.Queries.ListScrapedProductImages(ctx, productID)
+	if err == nil && len(images) > 0 {
+		for _, img := range images {
+			if img.DownloadStatus.Valid && img.DownloadStatus.String == "downloaded" && img.LocalFilename.Valid {
+				sourceImagePath = "public/images/scraped/" + img.LocalFilename.String
+				sourceImageID = img.ID
+				break
+			}
+		}
+	}
+
+	// If no downloaded images, try to use the first URL directly
+	if sourceImagePath == "" {
+		var imageURLs []string
+		if product.ImageUrls.Valid && product.ImageUrls.String != "" {
+			if err := json.Unmarshal([]byte(product.ImageUrls.String), &imageURLs); err == nil && len(imageURLs) > 0 {
+				// Download first image temporarily
+				outputDir := "public/images/scraped/temp"
+				if err := createDirIfNotExists(outputDir); err != nil {
+					slog.Error("failed to create temp directory", "error", err)
+					return echo.NewHTTPError(http.StatusInternalServerError, "Failed to create temp directory")
+				}
+				downloader := importer.NewImageDownloader(outputDir)
+				downloaded, err := downloader.DownloadImages(ctx, []string{imageURLs[0]}, productID)
+				if err != nil || len(downloaded) == 0 {
+					slog.Error("failed to download source image for AI generation", "error", err)
+					return echo.NewHTTPError(http.StatusBadRequest, "No source image available for AI generation")
+				}
+				sourceImagePath = downloaded[0].FilePath
+			}
+		}
+	}
+
+	if sourceImagePath == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "No source image available for AI generation")
+	}
+
+	// Generate AI image in background
+	go h.generateAIImage(productID, product.Name, sourceImagePath, sourceImageID, apiKey)
+
+	c.Response().Header().Set("HX-Trigger", "aiGenerationStarted")
+	return c.NoContent(http.StatusAccepted)
+}
+
+// generateAIImage generates an AI image and stores it
+func (h *AdminImporterHandler) generateAIImage(productID, productName, sourceImagePath, sourceImageID, apiKey string) {
+	ctx := context.Background()
+
+	// Create output directory
+	outputDir := "public/images/scraped/ai"
+	if err := createDirIfNotExists(outputDir); err != nil {
+		slog.Error("failed to create AI output directory", "error", err)
+		return
+	}
+
+	// Generate unique filename
+	outputFilename := fmt.Sprintf("%s_%s_ai.jpg", productID, uuid.New().String()[:8])
+	outputPath := outputDir + "/" + outputFilename
+
+	// Create AI generator
+	generator := ogimage.NewAIGenerator(apiKey)
+	info := ogimage.SingleProductBackgroundInfo{
+		Name:      productName,
+		ImagePath: sourceImagePath,
+	}
+
+	// Generate the image
+	modelUsed, err := generator.GenerateSingleProductBackground(info, outputPath)
+	if err != nil {
+		slog.Error("failed to generate AI image", "error", err, "product_id", productID)
+		return
+	}
+
+	// Store in database
+	aiImageID := uuid.New().String()
+	_, err = h.storage.Queries.CreateScrapedProductAIImage(ctx, db.CreateScrapedProductAIImageParams{
+		ID:               aiImageID,
+		ScrapedProductID: productID,
+		SourceImageID:    sql.NullString{String: sourceImageID, Valid: sourceImageID != ""},
+		LocalFilename:    outputFilename,
+		PromptUsed:       sql.NullString{String: "Single product background generation", Valid: true},
+		ModelUsed:        sql.NullString{String: modelUsed, Valid: true},
+		Status:           sql.NullString{String: "pending", Valid: true},
+		DisplayOrder:     sql.NullInt64{Int64: 0, Valid: true},
+	})
+	if err != nil {
+		slog.Error("failed to store AI image record", "error", err, "product_id", productID)
+		return
+	}
+
+	slog.Info("generated AI image for scraped product", "product_id", productID, "filename", outputFilename, "model", modelUsed)
+}
+
+// createDirIfNotExists creates a directory if it doesn't exist
+func createDirIfNotExists(dir string) error {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return os.MkdirAll(dir, 0755)
+	}
+	return nil
 }
 
 // generateProductSlug creates a URL-friendly slug from a name
