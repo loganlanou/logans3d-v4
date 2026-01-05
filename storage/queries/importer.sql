@@ -41,8 +41,9 @@ LIMIT 1;
 -- name: UpsertScrapedProduct :one
 INSERT INTO scraped_products (
     id, designer_slug, platform, source_url, name, description,
-    original_price_cents, release_date, image_urls, tags, raw_html, scraped_at
-) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    original_price_cents, release_date, image_urls, tags, raw_html, scraped_at,
+    original_description, generated_description, description_model, description_generated_at
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, ?, ?, ?, ?)
 ON CONFLICT(source_url) DO UPDATE SET
     name = excluded.name,
     description = excluded.description,
@@ -51,7 +52,11 @@ ON CONFLICT(source_url) DO UPDATE SET
     image_urls = excluded.image_urls,
     tags = excluded.tags,
     raw_html = excluded.raw_html,
-    scraped_at = CURRENT_TIMESTAMP
+    scraped_at = CURRENT_TIMESTAMP,
+    original_description = COALESCE(excluded.original_description, scraped_products.original_description),
+    generated_description = COALESCE(excluded.generated_description, scraped_products.generated_description),
+    description_model = COALESCE(excluded.description_model, scraped_products.description_model),
+    description_generated_at = COALESCE(excluded.description_generated_at, scraped_products.description_generated_at)
 RETURNING *;
 
 -- name: GetScrapedProduct :one
@@ -227,3 +232,33 @@ WHERE id = ?;
 
 -- name: DeleteScrapedProductAIImages :exec
 DELETE FROM scraped_product_ai_images WHERE scraped_product_id = ?;
+
+-- Description Generation Queries
+
+-- name: UpdateScrapedProductGeneratedContent :exec
+UPDATE scraped_products
+SET generated_name = ?,
+    generated_description = ?,
+    description_model = ?,
+    description_generated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+
+-- name: UpdateScrapedProductGeneratedName :exec
+-- For manual editing of the generated name
+UPDATE scraped_products
+SET generated_name = ?
+WHERE id = ?;
+
+-- name: UpdateScrapedProductGeneratedDescription :exec
+-- For manual editing of the generated description
+UPDATE scraped_products
+SET generated_description = ?
+WHERE id = ?;
+
+-- name: ClearScrapedProductGeneratedContent :exec
+UPDATE scraped_products
+SET generated_name = NULL,
+    generated_description = NULL,
+    description_model = NULL,
+    description_generated_at = NULL
+WHERE id = ?;

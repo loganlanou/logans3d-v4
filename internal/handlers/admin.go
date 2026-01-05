@@ -21,6 +21,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/email"
 	"github.com/loganlanou/logans3d-v4/internal/shipping"
+	"github.com/loganlanou/logans3d-v4/internal/sync"
 	"github.com/loganlanou/logans3d-v4/internal/types"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
@@ -3505,4 +3506,111 @@ func (h *AdminHandler) HandleDeleteContactNotes(c echo.Context) error {
 	}
 
 	return c.Redirect(http.StatusSeeOther, "/admin/contacts/"+id)
+}
+
+func (h *AdminHandler) HandleSyncProduct(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	client := sync.NewClient()
+	if !client.IsConfigured() {
+		slog.Error("sync client not configured", "product_id", productID)
+		return c.JSON(http.StatusBadRequest, map[string]interface{}{
+			"success": false,
+			"error":   "Sync not configured. Set PRODUCTION_API_KEY environment variable.",
+		})
+	}
+
+	product, err := h.storage.Queries.GetProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get product for sync", "error", err, "product_id", productID)
+		return c.JSON(http.StatusNotFound, map[string]interface{}{
+			"success": false,
+			"error":   "Product not found",
+		})
+	}
+
+	images, err := h.storage.Queries.GetProductImages(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get product images for sync", "error", err, "product_id", productID)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"error":   "Failed to get product images",
+		})
+	}
+
+	req := sync.ProductRequest{
+		Name:          product.Name,
+		Slug:          product.Slug,
+		PriceCents:    product.PriceCents,
+		StockQuantity: 999,
+		IsActive:      true,
+	}
+
+	if product.Description.Valid {
+		req.Description = product.Description.String
+	}
+	if product.ShortDescription.Valid {
+		req.ShortDescription = product.ShortDescription.String
+	}
+	if product.CategoryID.Valid {
+		req.CategoryID = product.CategoryID.String
+	}
+	if product.Sku.Valid {
+		req.SKU = product.Sku.String
+	}
+	if product.WeightGrams.Valid {
+		req.WeightGrams = product.WeightGrams.Int64
+	}
+	if product.LeadTimeDays.Valid {
+		req.LeadTimeDays = product.LeadTimeDays.Int64
+	}
+	if product.IsActive.Valid {
+		req.IsActive = product.IsActive.Bool
+	}
+	if product.IsFeatured.Valid {
+		req.IsFeatured = product.IsFeatured.Bool
+	}
+	if product.IsPremium.Valid {
+		req.IsPremium = product.IsPremium.Bool
+	}
+	if product.SourceUrl.Valid {
+		req.SourceURL = product.SourceUrl.String
+	}
+	if product.SourcePlatform.Valid {
+		req.SourcePlatform = product.SourcePlatform.String
+	}
+	if product.DesignerName.Valid {
+		req.DesignerName = product.DesignerName.String
+	}
+
+	imagePaths := make([]string, 0, len(images))
+	for _, img := range images {
+		path := filepath.Join("public/images/products", img.ImageUrl)
+		if _, err := os.Stat(path); err == nil {
+			imagePaths = append(imagePaths, path)
+		}
+	}
+
+	result, err := client.SyncProduct(ctx, req, imagePaths)
+	if err != nil {
+		slog.Error("failed to sync product", "error", err, "product_id", productID)
+		return c.JSON(http.StatusInternalServerError, map[string]interface{}{
+			"success": false,
+			"error":   fmt.Sprintf("Sync failed: %v", err),
+		})
+	}
+
+	slog.Info("product synced to production",
+		"product_id", productID,
+		"action", result.Action,
+		"remote_product_id", result.ProductID,
+		"images_uploaded", len(result.Images))
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"success":           true,
+		"action":            result.Action,
+		"remote_product_id": result.ProductID,
+		"images_uploaded":   len(result.Images),
+	})
 }

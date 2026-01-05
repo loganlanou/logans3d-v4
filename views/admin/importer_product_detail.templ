@@ -211,6 +211,130 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 				}
 			}
 
+			<!-- Description Section -->
+			@card.Card() {
+				@card.Header() {
+					<div class="flex items-center justify-between">
+						@card.Title() {
+							Description
+						}
+						<div class="flex items-center gap-2">
+							if data.Product.GeneratedDescription.Valid {
+								<span class="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full">
+									AI Generated
+								</span>
+							}
+							@button.Button(button.Props{
+								Size: button.SizeSm,
+								Variant: button.VariantSecondary,
+								Class: "generate-btn",
+								Attributes: templ.Attributes{
+									"hx-post":    fmt.Sprintf("/admin/importer/products/%s/regenerate-description", data.Product.ID),
+									"hx-swap":    "none",
+									"hx-disabled-elt": "this",
+								},
+							}) {
+								<svg class="animate-spin h-4 w-4 mr-2 htmx-indicator" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+									<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+									<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+								</svg>
+								<span class="btn-text">
+									if data.Product.GeneratedDescription.Valid {
+										Regenerate
+									} else {
+										Generate Description
+									}
+								</span>
+							}
+						</div>
+					</div>
+				}
+				@card.Content() {
+					<div class="space-y-4">
+						<!-- Generated Name (editable) -->
+						<div>
+							<label class="block text-sm font-medium text-muted-foreground mb-1">
+								Product Name
+								if data.Product.GeneratedName.Valid {
+									<span class="text-xs text-green-600 dark:text-green-400 ml-2">(cleaned)</span>
+								}
+							</label>
+							<input
+								type="text"
+								id="generated_name"
+								name="generated_name"
+								class="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+								value={ func() string {
+									if data.Product.GeneratedName.Valid && data.Product.GeneratedName.String != "" {
+										return data.Product.GeneratedName.String
+									}
+									return data.Product.Name
+								}() }
+								hx-post={ fmt.Sprintf("/admin/importer/products/%s/update-name", data.Product.ID) }
+								hx-trigger="blur changed"
+								hx-swap="none"
+							/>
+							<p class="text-xs text-muted-foreground mt-1">
+								Edit and blur to save. Original: { data.Product.Name }
+							</p>
+						</div>
+
+						<!-- Generated Description (editable) -->
+						if data.Product.GeneratedDescription.Valid && data.Product.GeneratedDescription.String != "" {
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-1">
+									Product Description
+									if data.Product.DescriptionModel.Valid {
+										<span class="text-xs text-muted-foreground ml-2">
+											(via { data.Product.DescriptionModel.String })
+										</span>
+									}
+								</label>
+								<textarea
+									id="generated_description"
+									name="generated_description"
+									rows="6"
+									class="w-full px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-y"
+									hx-post={ fmt.Sprintf("/admin/importer/products/%s/update-description", data.Product.ID) }
+									hx-trigger="blur changed"
+									hx-swap="none"
+								>{ data.Product.GeneratedDescription.String }</textarea>
+								<p class="text-xs text-muted-foreground mt-1">
+									Edit and blur to save. This will be used as the product description during import.
+								</p>
+							</div>
+						} else {
+							<div class="p-4 bg-muted/50 rounded-lg text-center">
+								<p class="text-muted-foreground text-sm">
+									No generated description yet. Click "Generate Description" to create one using AI.
+								</p>
+							</div>
+						}
+
+						<!-- Original Description (collapsible) -->
+						if data.Product.OriginalDescription.Valid && data.Product.OriginalDescription.String != "" {
+							<details class="mt-4 border border-border rounded-lg">
+								<summary class="px-4 py-3 text-sm font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-t-lg">
+									View Original Description (from source)
+								</summary>
+								<div class="p-4 text-sm text-foreground border-t border-border bg-muted/30 rounded-b-lg whitespace-pre-wrap">
+									{ data.Product.OriginalDescription.String }
+								</div>
+							</details>
+						} else if data.Product.Description.Valid && data.Product.Description.String != "" {
+							<details class="mt-4 border border-border rounded-lg">
+								<summary class="px-4 py-3 text-sm font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 rounded-t-lg">
+									View Original Description (from source)
+								</summary>
+								<div class="p-4 text-sm text-foreground border-t border-border bg-muted/30 rounded-b-lg whitespace-pre-wrap">
+									{ data.Product.Description.String }
+								</div>
+							</details>
+						}
+					</div>
+				}
+			}
+
 			<!-- Details Section -->
 			@card.Card() {
 				@card.Header() {
@@ -224,12 +348,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 							<label class="block text-sm font-medium text-muted-foreground mb-1">Name</label>
 							<p class="text-foreground">{ data.Product.Name }</p>
 						</div>
-						if data.Product.Description.Valid && data.Product.Description.String != "" {
-							<div>
-								<label class="block text-sm font-medium text-muted-foreground mb-1">Description</label>
-								<p class="text-foreground text-sm">{ data.Product.Description.String }</p>
-							</div>
-						}
 						<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 							<div>
 								<label class="block text-sm font-medium text-muted-foreground mb-1">Original Price</label>
@@ -400,10 +518,38 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 			}
 		</div>
 
+		<style>
+			/* Show spinner during HTMX request */
+			.generate-btn .htmx-indicator {
+				display: none;
+			}
+			.generate-btn.htmx-request .htmx-indicator {
+				display: inline-block;
+			}
+			.generate-btn.htmx-request {
+				opacity: 0.7;
+				cursor: wait;
+			}
+		</style>
 		<script>
 			document.body.addEventListener('htmx:afterRequest', function(evt) {
 				const path = evt.detail.pathInfo.requestPath;
-				if (path.includes('/rescrape') || path.includes('/skip') || path.includes('/unskip') || path.includes('/import') || path.includes('/generate-ai') || path.includes('/download') || path.includes('/retry')) {
+				const xhr = evt.detail.xhr;
+
+				// Handle errors
+				if (xhr.status >= 400) {
+					let errorMsg = 'An error occurred';
+					try {
+						const response = JSON.parse(xhr.responseText);
+						errorMsg = response.message || response.error || xhr.responseText;
+					} catch (e) {
+						errorMsg = xhr.responseText || 'Request failed';
+					}
+					alert('Error: ' + errorMsg);
+					return;
+				}
+
+				if (path.includes('/rescrape') || path.includes('/skip') || path.includes('/unskip') || path.includes('/import') || path.includes('/generate-ai') || path.includes('/download') || path.includes('/retry') || path.includes('/regenerate-description')) {
 					setTimeout(() => window.location.reload(), 1000);
 				}
 			});

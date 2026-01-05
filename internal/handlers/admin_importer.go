@@ -10,11 +10,13 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/internal/importer"
 	"github.com/loganlanou/logans3d-v4/internal/ogimage"
+	"github.com/loganlanou/logans3d-v4/internal/ollama"
 	"github.com/loganlanou/logans3d-v4/storage"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/admin"
@@ -221,6 +223,15 @@ func (h *AdminImporterHandler) runScrapeJob(jobID string, designer importer.Desi
 
 	slog.Info("starting scrape job", "job_id", jobID, "designer", designer.Slug, "platform", src.Platform)
 
+	// Initialize Ollama client for description generation
+	ollamaClient := ollama.NewClient()
+	ollamaAvailable := ollamaClient.IsAvailable(ctx)
+	if ollamaAvailable {
+		slog.Info("ollama available for description generation", "model", ollamaClient.GetModel())
+	} else {
+		slog.Warn("ollama not available, skipping description generation")
+	}
+
 	// Fetch all product URLs
 	productURLs, err := h.scraper.FetchDesignerProducts(ctx, src.URL)
 	if err != nil {
@@ -266,18 +277,47 @@ func (h *AdminImporterHandler) runScrapeJob(jobID string, designer importer.Desi
 			releaseDate = sql.NullTime{Time: *product.ReleaseDate, Valid: true}
 		}
 
+		// Generate description with Ollama if available
+		var generatedDesc sql.NullString
+		var descModel sql.NullString
+		var descGeneratedAt sql.NullTime
+
+		if ollamaAvailable && product.Description != "" {
+			generated, err := ollamaClient.GenerateDescription(ctx, product.Name, product.Description)
+			if err != nil {
+				slog.Warn("failed to generate description",
+					"error", err,
+					"product", product.Name,
+				)
+			} else {
+				generatedDesc = sql.NullString{String: generated, Valid: true}
+				descModel = sql.NullString{String: ollamaClient.GetModel(), Valid: true}
+				descGeneratedAt = sql.NullTime{Time: time.Now(), Valid: true}
+				slog.Debug("generated product description",
+					"product", product.Name,
+					"model", ollamaClient.GetModel(),
+					"original_length", len(product.Description),
+					"generated_length", len(generated),
+				)
+			}
+		}
+
 		_, err = h.storage.Queries.UpsertScrapedProduct(ctx, db.UpsertScrapedProductParams{
-			ID:                 uuid.New().String(),
-			DesignerSlug:       product.DesignerSlug,
-			Platform:           product.Platform,
-			SourceUrl:          product.SourceURL,
-			Name:               product.Name,
-			Description:        sql.NullString{String: product.Description, Valid: product.Description != ""},
-			OriginalPriceCents: sql.NullInt64{Int64: int64(product.OriginalPriceCents), Valid: product.OriginalPriceCents > 0},
-			ReleaseDate:        releaseDate,
-			ImageUrls:          sql.NullString{String: string(imageURLsJSON), Valid: len(product.ImageURLs) > 0},
-			Tags:               sql.NullString{String: string(tagsJSON), Valid: len(product.Tags) > 0},
-			RawHtml:            sql.NullString{String: product.RawHTML, Valid: product.RawHTML != ""},
+			ID:                     uuid.New().String(),
+			DesignerSlug:           product.DesignerSlug,
+			Platform:               product.Platform,
+			SourceUrl:              product.SourceURL,
+			Name:                   product.Name,
+			Description:            sql.NullString{String: product.Description, Valid: product.Description != ""},
+			OriginalPriceCents:     sql.NullInt64{Int64: int64(product.OriginalPriceCents), Valid: product.OriginalPriceCents > 0},
+			ReleaseDate:            releaseDate,
+			ImageUrls:              sql.NullString{String: string(imageURLsJSON), Valid: len(product.ImageURLs) > 0},
+			Tags:                   sql.NullString{String: string(tagsJSON), Valid: len(product.Tags) > 0},
+			RawHtml:                sql.NullString{String: product.RawHTML, Valid: product.RawHTML != ""},
+			OriginalDescription:    sql.NullString{String: product.Description, Valid: product.Description != ""},
+			GeneratedDescription:   generatedDesc,
+			DescriptionModel:       descModel,
+			DescriptionGeneratedAt: descGeneratedAt,
 		})
 		if err != nil {
 			slog.Error("failed to upsert scraped product", "error", err, "url", productURL, "job_id", jobID)
@@ -1336,4 +1376,117 @@ func extractImageKey(url string) string {
 	}
 
 	return filename
+}
+
+// HandleRegenerateDescription regenerates the AI description for a scraped product
+func (h *AdminImporterHandler) HandleRegenerateDescription(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	// Get the scraped product
+	product, err := h.storage.Queries.GetScrapedProduct(ctx, productID)
+	if err != nil {
+		slog.Error("failed to get scraped product", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+	}
+
+	// Get description to convert - prefer original_description, fall back to description
+	var originalDesc string
+	if product.OriginalDescription.Valid && product.OriginalDescription.String != "" {
+		originalDesc = product.OriginalDescription.String
+	} else if product.Description.Valid && product.Description.String != "" {
+		originalDesc = product.Description.String
+	}
+
+	if originalDesc == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "No original description to convert")
+	}
+
+	// Initialize Ollama client
+	ollamaClient := ollama.NewClient()
+	if !ollamaClient.IsAvailable(ctx) {
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "Ollama is not available. Please ensure Ollama is running.")
+	}
+
+	// Generate clean name and description
+	cleanedName := ollama.FilterPrintingJunkFromName(product.Name)
+	generatedDesc, err := ollamaClient.GenerateDescription(ctx, product.Name, originalDesc)
+	if err != nil {
+		slog.Error("failed to generate description", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Failed to generate description: %v", err))
+	}
+
+	// Update the product with generated name and description
+	err = h.storage.Queries.UpdateScrapedProductGeneratedContent(ctx, db.UpdateScrapedProductGeneratedContentParams{
+		GeneratedName:        sql.NullString{String: cleanedName, Valid: true},
+		GeneratedDescription: sql.NullString{String: generatedDesc, Valid: true},
+		DescriptionModel:     sql.NullString{String: ollamaClient.GetModel(), Valid: true},
+		ID:                   productID,
+	})
+	if err != nil {
+		slog.Error("failed to save generated content", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to save generated content")
+	}
+
+	slog.Info("regenerated product content",
+		"product_id", productID,
+		"original_name", product.Name,
+		"cleaned_name", cleanedName,
+		"model", ollamaClient.GetModel(),
+	)
+
+	c.Response().Header().Set("HX-Trigger", "descriptionUpdated")
+	return c.NoContent(http.StatusOK)
+}
+
+// HandleUpdateDescription updates the generated description for a scraped product (manual edit)
+func (h *AdminImporterHandler) HandleUpdateDescription(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	// Get the new description from form
+	newDescription := c.FormValue("generated_description")
+	if newDescription == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Description cannot be empty")
+	}
+
+	// Update only the generated_description field (preserve model info)
+	err := h.storage.Queries.UpdateScrapedProductGeneratedDescription(ctx, db.UpdateScrapedProductGeneratedDescriptionParams{
+		GeneratedDescription: sql.NullString{String: newDescription, Valid: true},
+		ID:                   productID,
+	})
+	if err != nil {
+		slog.Error("failed to update description", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update description")
+	}
+
+	slog.Debug("updated product description", "product_id", productID)
+
+	return c.NoContent(http.StatusOK)
+}
+
+// HandleUpdateName updates the generated name for a scraped product (manual edit)
+func (h *AdminImporterHandler) HandleUpdateName(c echo.Context) error {
+	ctx := c.Request().Context()
+	productID := c.Param("id")
+
+	// Get the new name from form
+	newName := c.FormValue("generated_name")
+	if newName == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Name cannot be empty")
+	}
+
+	// Update only the generated_name field
+	err := h.storage.Queries.UpdateScrapedProductGeneratedName(ctx, db.UpdateScrapedProductGeneratedNameParams{
+		GeneratedName: sql.NullString{String: newName, Valid: true},
+		ID:            productID,
+	})
+	if err != nil {
+		slog.Error("failed to update name", "error", err, "product_id", productID)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update name")
+	}
+
+	slog.Debug("updated product name", "product_id", productID)
+
+	return c.NoContent(http.StatusOK)
 }

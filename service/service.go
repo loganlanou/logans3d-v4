@@ -239,6 +239,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	productAPI.GET("/products/:id", apiProductsHandler.GetProduct)
 	productAPI.GET("/products/lookup", apiProductsHandler.GetProductBySourceURL)
 	productAPI.POST("/products", apiProductsHandler.CreateProduct)
+	productAPI.PUT("/products/:id", apiProductsHandler.UpdateProduct)
 	productAPI.DELETE("/products/:id", apiProductsHandler.DeleteProduct)
 	productAPI.POST("/products/:id/images", apiProductsHandler.AddProductImage)
 	productAPI.GET("/categories", apiProductsHandler.ListCategories)
@@ -264,6 +265,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/product/:id/toggle-premium", adminHandler.HandleToggleProductPremium)
 	admin.POST("/product/:id/toggle-active", adminHandler.HandleToggleProductActive)
 	admin.POST("/product/:id/toggle-new", adminHandler.HandleToggleProductNew)
+	admin.POST("/product/:id/sync", adminHandler.HandleSyncProduct)
 	admin.DELETE("/product/image/:imageId/delete", adminHandler.HandleDeleteProductImage)
 	admin.PUT("/product/image/:imageId/set-primary", adminHandler.HandleSetPrimaryProductImage)
 	admin.POST("/style-image/:imageId/primary", adminHandler.HandleSetPrimaryStyleImage)
@@ -415,6 +417,9 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/importer/images/:id/select", importerHandler.HandleToggleImageSelection)
 	admin.POST("/importer/ai-images/:id/select", importerHandler.HandleToggleAIImageSelection)
 	admin.POST("/importer/products/:id/generate-ai", importerHandler.HandleGenerateAIImage)
+	admin.POST("/importer/products/:id/regenerate-description", importerHandler.HandleRegenerateDescription)
+	admin.POST("/importer/products/:id/update-description", importerHandler.HandleUpdateDescription)
+	admin.POST("/importer/products/:id/update-name", importerHandler.HandleUpdateName)
 
 	// Gift Certificate routes
 	s.RegisterGiftCertificateRoutes(admin)

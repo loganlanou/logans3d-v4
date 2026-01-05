@@ -273,6 +273,117 @@ func (h *APIProductsHandler) DeleteProduct(c echo.Context) error {
 	return c.NoContent(http.StatusNoContent)
 }
 
+// UpdateProduct updates an existing product via the API
+func (h *APIProductsHandler) UpdateProduct(c echo.Context) error {
+	apiKey := auth.GetAPIKeyInfo(c.Request().Context())
+	if apiKey == nil {
+		return echo.NewHTTPError(http.StatusUnauthorized, "API key required")
+	}
+
+	if !apiKey.HasPermission("products:write") {
+		return echo.NewHTTPError(http.StatusForbidden, "Permission denied: products:write required")
+	}
+
+	id := c.Param("id")
+
+	// Check product exists
+	existing, err := h.store.Queries.GetProduct(c.Request().Context(), id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return echo.NewHTTPError(http.StatusNotFound, "Product not found")
+		}
+		slog.Error("failed to get product for update", "error", err, "id", id)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to get product")
+	}
+
+	var req CreateProductRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid request body")
+	}
+
+	// Use existing values as defaults if not provided
+	if req.Name == "" {
+		req.Name = existing.Name
+	}
+	if req.Slug == "" {
+		req.Slug = existing.Slug
+	}
+	if req.CategoryID == "" && existing.CategoryID.Valid {
+		req.CategoryID = existing.CategoryID.String
+	}
+
+	params := db.UpdateProductParams{
+		Name:             req.Name,
+		Slug:             req.Slug,
+		Description:      sql.NullString{String: req.Description, Valid: req.Description != ""},
+		ShortDescription: sql.NullString{String: req.ShortDescription, Valid: req.ShortDescription != ""},
+		PriceCents:       req.PriceCents,
+		CategoryID:       sql.NullString{String: req.CategoryID, Valid: req.CategoryID != ""},
+		Sku:              sql.NullString{String: req.SKU, Valid: req.SKU != ""},
+		StockQuantity:    sql.NullInt64{Int64: req.StockQuantity, Valid: true},
+		HasVariants:      existing.HasVariants,
+		WeightGrams:      sql.NullInt64{Int64: req.WeightGrams, Valid: req.WeightGrams > 0},
+		LeadTimeDays:     sql.NullInt64{Int64: req.LeadTimeDays, Valid: req.LeadTimeDays > 0},
+		IsActive:         sql.NullBool{Bool: req.IsActive, Valid: true},
+		IsFeatured:       sql.NullBool{Bool: req.IsFeatured, Valid: true},
+		IsPremium:        sql.NullBool{Bool: req.IsPremium, Valid: true},
+		Disclaimer:       sql.NullString{String: req.Disclaimer, Valid: req.Disclaimer != ""},
+		SeoTitle:         sql.NullString{String: req.SEOTitle, Valid: req.SEOTitle != ""},
+		SeoDescription:   sql.NullString{String: req.SEODescription, Valid: req.SEODescription != ""},
+		SeoKeywords:      sql.NullString{String: req.SEOKeywords, Valid: req.SEOKeywords != ""},
+		OgImageUrl:       sql.NullString{String: req.OGImageURL, Valid: req.OGImageURL != ""},
+		ID:               id,
+	}
+
+	product, err := h.store.Queries.UpdateProduct(c.Request().Context(), params)
+	if err != nil {
+		slog.Error("failed to update product", "error", err, "id", id)
+		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to update product")
+	}
+
+	// Update source info if provided
+	if req.SourceURL != "" || req.SourcePlatform != "" || req.DesignerName != "" {
+		var releaseDate sql.NullTime
+		if req.ReleaseDate != nil && *req.ReleaseDate != "" {
+			t, err := time.Parse(time.RFC3339, *req.ReleaseDate)
+			if err != nil {
+				t, _ = time.Parse("2006-01-02", *req.ReleaseDate)
+			}
+			releaseDate = sql.NullTime{Time: t, Valid: true}
+		}
+
+		err = h.store.Queries.UpdateProductSource(c.Request().Context(), db.UpdateProductSourceParams{
+			SourceUrl:      sql.NullString{String: req.SourceURL, Valid: req.SourceURL != ""},
+			SourcePlatform: sql.NullString{String: req.SourcePlatform, Valid: req.SourcePlatform != ""},
+			DesignerName:   sql.NullString{String: req.DesignerName, Valid: req.DesignerName != ""},
+			ReleaseDate:    releaseDate,
+			ID:             id,
+		})
+		if err != nil {
+			slog.Warn("failed to update product source info", "error", err, "id", id)
+		}
+	}
+
+	// Update tags if provided
+	if len(req.Tags) > 0 {
+		// Remove existing tags first
+		_ = h.store.Queries.ClearProductTags(c.Request().Context(), id)
+		for _, tagID := range req.Tags {
+			err := h.store.Queries.AddProductTag(c.Request().Context(), db.AddProductTagParams{
+				ProductID: id,
+				TagID:     tagID,
+			})
+			if err != nil {
+				slog.Warn("failed to add tag to product", "error", err, "product_id", id, "tag_id", tagID)
+			}
+		}
+	}
+
+	slog.Info("product updated via API", "id", id, "name", product.Name)
+
+	return c.JSON(http.StatusOK, productToResponse(product))
+}
+
 func (h *APIProductsHandler) ListCategories(c echo.Context) error {
 	apiKey := auth.GetAPIKeyInfo(c.Request().Context())
 	if apiKey == nil {
