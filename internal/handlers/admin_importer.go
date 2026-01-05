@@ -1047,22 +1047,26 @@ func (h *AdminImporterHandler) downloadProductImages(productID string, imageURLs
 			if err != nil {
 				errMsg = err.Error()
 			}
-			h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+			if err := h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
 				DownloadStatus: sql.NullString{String: "failed", Valid: true},
 				DownloadError:  sql.NullString{String: errMsg, Valid: true},
 				LocalFilename:  sql.NullString{Valid: false},
 				ID:             img.ID,
-			})
+			}); err != nil {
+				slog.Error("failed to update image status", "error", err, "image_id", img.ID)
+			}
 			continue
 		}
 
 		// Update with success
-		h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+		if err := h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
 			DownloadStatus: sql.NullString{String: "downloaded", Valid: true},
 			DownloadError:  sql.NullString{Valid: false},
 			LocalFilename:  sql.NullString{String: downloaded[0].Filename, Valid: true},
 			ID:             img.ID,
-		})
+		}); err != nil {
+			slog.Error("failed to update image status", "error", err, "image_id", img.ID)
+		}
 	}
 
 	slog.Info("finished downloading images", "product_id", productID, "total", len(images))
@@ -1104,21 +1108,25 @@ func (h *AdminImporterHandler) HandleRetryImageDownload(c echo.Context) error {
 			if err != nil {
 				errMsg = err.Error()
 			}
-			h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+			if err := h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
 				DownloadStatus: sql.NullString{String: "failed", Valid: true},
 				DownloadError:  sql.NullString{String: errMsg, Valid: true},
 				LocalFilename:  sql.NullString{Valid: false},
 				ID:             imageID,
-			})
+			}); err != nil {
+				slog.Error("failed to update image status", "error", err, "image_id", imageID)
+			}
 			return
 		}
 
-		h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
+		if err := h.storage.Queries.UpdateScrapedProductImageStatus(ctx, db.UpdateScrapedProductImageStatusParams{
 			DownloadStatus: sql.NullString{String: "downloaded", Valid: true},
 			DownloadError:  sql.NullString{Valid: false},
 			LocalFilename:  sql.NullString{String: downloaded[0].Filename, Valid: true},
 			ID:             imageID,
-		})
+		}); err != nil {
+			slog.Error("failed to update image status", "error", err, "image_id", imageID)
+		}
 	}()
 
 	c.Response().Header().Set("HX-Trigger", "imageRetrying")
