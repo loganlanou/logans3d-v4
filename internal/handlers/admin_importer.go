@@ -393,7 +393,28 @@ func (h *AdminImporterHandler) runImportJob(jobID string, designer importer.Desi
 	// Import each product
 	imported := 0
 	for i, scraped := range products {
-		err := h.importProduct(ctx, scraped, categoryID, designer.Name, downloader)
+		// Create default import settings for batch import
+		// (no variants - batch import creates simple products)
+		settings := &ImportSettings{
+			CategoryID:      categoryID,
+			BasePriceCents:  1500, // Default $15
+			Sizes:           []string{},
+			SizeAdjustments: make(map[string]int64),
+			IsNew:           true,
+			IsPremium:       false,
+			IsFeatured:      false,
+		}
+		// Use AI price if available, otherwise markup original price
+		if scraped.AiPriceCents.Valid && scraped.AiPriceCents.Int64 > 0 {
+			settings.BasePriceCents = scraped.AiPriceCents.Int64
+		} else if scraped.OriginalPriceCents.Valid && scraped.OriginalPriceCents.Int64 > 0 {
+			settings.BasePriceCents = scraped.OriginalPriceCents.Int64 * 2
+			if settings.BasePriceCents < 1000 {
+				settings.BasePriceCents = 1000
+			}
+		}
+
+		err := h.importProduct(ctx, scraped, settings, designer.Name, downloader)
 		if err != nil {
 			slog.Error("failed to import product", "error", err, "product_id", scraped.ID, "name", scraped.Name)
 			continue
@@ -424,20 +445,12 @@ func (h *AdminImporterHandler) runImportJob(jobID string, designer importer.Desi
 }
 
 // importProduct imports a single scraped product
-func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.ScrapedProduct, categoryID, designerName string, downloader *importer.ImageDownloader) error {
+func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.ScrapedProduct, settings *ImportSettings, designerName string, downloader *importer.ImageDownloader) error {
 	productID := uuid.New().String()
 	slug := generateProductSlug(scraped.Name)
 
-	// Determine price (use original or default to $15)
-	priceCents := int64(1500)
-	if scraped.OriginalPriceCents.Valid && scraped.OriginalPriceCents.Int64 > 0 {
-		// Apply markup (2x the original price as a starting point)
-		priceCents = scraped.OriginalPriceCents.Int64 * 2
-		// Minimum $10
-		if priceCents < 1000 {
-			priceCents = 1000
-		}
-	}
+	// Determine if product has variants (sizes selected)
+	hasVariants := len(settings.Sizes) > 0
 
 	// Create product
 	params := db.CreateProductParams{
@@ -446,16 +459,16 @@ func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.Scr
 		Slug:             slug,
 		Description:      scraped.Description,
 		ShortDescription: sql.NullString{Valid: false},
-		PriceCents:       priceCents,
-		CategoryID:       sql.NullString{String: categoryID, Valid: categoryID != ""},
+		PriceCents:       settings.BasePriceCents,
+		CategoryID:       sql.NullString{String: settings.CategoryID, Valid: settings.CategoryID != ""},
 		Sku:              sql.NullString{Valid: false},
 		StockQuantity:    sql.NullInt64{Int64: 100, Valid: true},
-		HasVariants:      sql.NullBool{Bool: false, Valid: true},
+		HasVariants:      sql.NullBool{Bool: hasVariants, Valid: true},
 		WeightGrams:      sql.NullInt64{Valid: false},
 		LeadTimeDays:     sql.NullInt64{Int64: 3, Valid: true},
 		IsActive:         sql.NullBool{Bool: true, Valid: true},
-		IsFeatured:       sql.NullBool{Bool: false, Valid: true},
-		IsPremium:        sql.NullBool{Bool: false, Valid: true},
+		IsFeatured:       sql.NullBool{Bool: settings.IsFeatured, Valid: true},
+		IsPremium:        sql.NullBool{Bool: settings.IsPremium, Valid: true},
 		Disclaimer:       sql.NullString{Valid: false},
 		SeoTitle:         sql.NullString{String: scraped.Name, Valid: true},
 		SeoDescription:   scraped.Description,
@@ -465,10 +478,11 @@ func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.Scr
 
 	_, err := h.storage.Queries.CreateProduct(ctx, params)
 	if err != nil {
-		return err
+		slog.Error("failed to create product", "error", err, "name", scraped.Name)
+		return fmt.Errorf("create product: %w", err)
 	}
 
-	// Update product with source info
+	// Update product with source info and is_new flag
 	err = h.storage.Queries.UpdateProductSource(ctx, db.UpdateProductSourceParams{
 		SourceUrl:      sql.NullString{String: scraped.SourceUrl, Valid: true},
 		SourcePlatform: sql.NullString{String: scraped.Platform, Valid: true},
@@ -479,11 +493,46 @@ func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.Scr
 		slog.Error("failed to update product source", "error", err, "product_id", productID)
 	}
 
-	// Download and save images
-	if scraped.ImageUrls.Valid && scraped.ImageUrls.String != "" {
+	// Set is_new flag if enabled
+	if settings.IsNew {
+		err = h.storage.Queries.UpdateProductIsNew(ctx, db.UpdateProductIsNewParams{
+			IsNew: sql.NullBool{Bool: true, Valid: true},
+			ID:    productID,
+		})
+		if err != nil {
+			slog.Error("failed to update product is_new", "error", err, "product_id", productID)
+		}
+	}
+
+	// Get images to import - prefer selected scraped images, fall back to original URLs
+	var imagesToImport []string
+	scrapedImages, err := h.storage.Queries.ListScrapedProductImages(ctx, scraped.ID)
+	if err == nil && len(scrapedImages) > 0 {
+		// Use downloaded scraped images that are selected for import
+		for _, img := range scrapedImages {
+			// For now, use all downloaded images (selection feature can be added later)
+			if img.LocalFilename.Valid && img.LocalFilename.String != "" && img.DownloadStatus.Valid && img.DownloadStatus.String == "downloaded" {
+				imagesToImport = append(imagesToImport, fmt.Sprintf("scraped/%s", img.LocalFilename.String))
+			}
+		}
+	}
+
+	// If no scraped images, try AI images
+	if len(imagesToImport) == 0 {
+		aiImages, err := h.storage.Queries.ListScrapedProductAIImages(ctx, scraped.ID)
+		if err == nil {
+			for _, img := range aiImages {
+				if img.LocalFilename != "" {
+					imagesToImport = append(imagesToImport, fmt.Sprintf("scraped/ai/%s", img.LocalFilename))
+				}
+			}
+		}
+	}
+
+	// If still no images, download from original URLs
+	if len(imagesToImport) == 0 && scraped.ImageUrls.Valid && scraped.ImageUrls.String != "" {
 		var imageURLs []string
 		if err := json.Unmarshal([]byte(scraped.ImageUrls.String), &imageURLs); err == nil && len(imageURLs) > 0 {
-			// Limit to first 5 images
 			if len(imageURLs) > 5 {
 				imageURLs = imageURLs[:5]
 			}
@@ -492,20 +541,93 @@ func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.Scr
 			if err != nil {
 				slog.Error("failed to download images", "error", err, "product_id", productID)
 			}
+			for _, img := range downloaded {
+				imagesToImport = append(imagesToImport, img.Filename)
+			}
+		}
+	}
 
-			// Create image records
-			for i, img := range downloaded {
+	// Create image records
+	for i, imgPath := range imagesToImport {
+		isPrimary := i == 0
+		_, err := h.storage.Queries.CreateProductImage(ctx, db.CreateProductImageParams{
+			ID:           uuid.New().String(),
+			ProductID:    productID,
+			ImageUrl:     imgPath,
+			AltText:      sql.NullString{String: scraped.Name, Valid: true},
+			DisplayOrder: sql.NullInt64{Int64: int64(i), Valid: true},
+			IsPrimary:    sql.NullBool{Bool: isPrimary, Valid: true},
+		})
+		if err != nil {
+			slog.Error("failed to create product image", "error", err, "product_id", productID, "path", imgPath)
+		}
+	}
+
+	// If product has variants (sizes), create style, size configs, and SKUs
+	if hasVariants {
+		// Create default style
+		styleID := uuid.New().String()
+		_, err = h.storage.Queries.CreateProductStyle(ctx, db.CreateProductStyleParams{
+			ID:           styleID,
+			ProductID:    productID,
+			Name:         "Default",
+			IsPrimary:    sql.NullBool{Bool: true, Valid: true},
+			DisplayOrder: sql.NullInt64{Int64: 0, Valid: true},
+		})
+		if err != nil {
+			slog.Error("failed to create product style", "error", err, "product_id", productID)
+		} else {
+			// Create style images from product images
+			for i, imgPath := range imagesToImport {
 				isPrimary := i == 0
-				_, err := h.storage.Queries.CreateProductImage(ctx, db.CreateProductImageParams{
-					ID:           uuid.New().String(),
-					ProductID:    productID,
-					ImageUrl:     img.Filename,
-					AltText:      sql.NullString{String: scraped.Name, Valid: true},
-					DisplayOrder: sql.NullInt64{Int64: int64(i), Valid: true},
-					IsPrimary:    sql.NullBool{Bool: isPrimary, Valid: true},
+				_, err = h.storage.Queries.CreateProductStyleImage(ctx, db.CreateProductStyleImageParams{
+					ID:             uuid.New().String(),
+					ProductStyleID: styleID,
+					ImageUrl:       imgPath,
+					IsPrimary:      sql.NullBool{Bool: isPrimary, Valid: true},
+					DisplayOrder:   sql.NullInt64{Int64: int64(i), Valid: true},
 				})
 				if err != nil {
-					slog.Error("failed to create product image", "error", err, "product_id", productID, "filename", img.Filename)
+					slog.Error("failed to create product style image", "error", err, "style_id", styleID, "path", imgPath)
+				}
+			}
+
+			// Create size configs and SKUs for each selected size
+			for i, sizeID := range settings.Sizes {
+				// Get price adjustment for this size (from form or default to 0)
+				priceAdjustment := int64(0)
+				if adj, ok := settings.SizeAdjustments[sizeID]; ok {
+					priceAdjustment = adj
+				}
+
+				// Create size config
+				_, err = h.storage.Queries.UpsertProductSizeConfig(ctx, db.UpsertProductSizeConfigParams{
+					ID:                   uuid.New().String(),
+					ProductID:            productID,
+					SizeID:               sizeID,
+					PriceAdjustmentCents: sql.NullInt64{Int64: priceAdjustment, Valid: true},
+					IsEnabled:            sql.NullBool{Bool: true, Valid: true},
+					DisplayOrder:         sql.NullInt64{Int64: int64(i), Valid: true},
+				})
+				if err != nil {
+					slog.Error("failed to create product size config", "error", err, "product_id", productID, "size_id", sizeID)
+					continue
+				}
+
+				// Create SKU for this style + size combination
+				skuCode := fmt.Sprintf("%s-%s", slug, sizeID)
+				_, err = h.storage.Queries.CreateProductSku(ctx, db.CreateProductSkuParams{
+					ID:                   uuid.New().String(),
+					ProductID:            productID,
+					ProductStyleID:       styleID,
+					SizeID:               sizeID,
+					Sku:                  skuCode,
+					PriceAdjustmentCents: sql.NullInt64{Int64: priceAdjustment, Valid: true},
+					StockQuantity:        sql.NullInt64{Int64: 100, Valid: true},
+					IsActive:             sql.NullBool{Bool: true, Valid: true},
+				})
+				if err != nil {
+					slog.Error("failed to create product SKU", "error", err, "product_id", productID, "style_id", styleID, "size_id", sizeID)
 				}
 			}
 		}
@@ -520,7 +642,13 @@ func (h *AdminImporterHandler) importProduct(ctx context.Context, scraped db.Scr
 		slog.Error("failed to mark product imported", "error", err, "scraped_id", scraped.ID)
 	}
 
-	slog.Info("imported product", "product_id", productID, "name", scraped.Name)
+	slog.Info("imported product",
+		"product_id", productID,
+		"name", scraped.Name,
+		"has_variants", hasVariants,
+		"sizes", len(settings.Sizes),
+		"images", len(imagesToImport),
+	)
 	return nil
 }
 
@@ -559,11 +687,15 @@ func (h *AdminImporterHandler) HandleScrapedProductDetail(c echo.Context) error 
 		aiImages = []db.ScrapedProductAiImage{}
 	}
 
-	// Parse image URLs from JSON
+	// Parse image URLs from JSON and deduplicate
 	var imageURLs []string
 	if product.ImageUrls.Valid && product.ImageUrls.String != "" && len(images) == 0 {
-		if err := json.Unmarshal([]byte(product.ImageUrls.String), &imageURLs); err != nil {
+		var allURLs []string
+		if err := json.Unmarshal([]byte(product.ImageUrls.String), &allURLs); err != nil {
 			slog.Debug("failed to parse image URLs", "error", err, "product_id", productID)
+		} else {
+			// Deduplicate - same underlying image may appear in different formats (webp vs jpg)
+			imageURLs = deduplicateImageURLs(allURLs)
 		}
 	}
 
@@ -574,13 +706,41 @@ func (h *AdminImporterHandler) HandleScrapedProductDetail(c echo.Context) error 
 		categories = []db.Category{}
 	}
 
+	// Get size charts for size/price selection
+	sizeCharts, err := h.storage.Queries.GetSizeCharts(ctx)
+	if err != nil {
+		slog.Error("failed to get size charts", "error", err)
+		sizeCharts = []db.GetSizeChartsRow{}
+	}
+
+	// Get previous and next product IDs for navigation
+	var prevProductID, nextProductID string
+	prevID, err := h.storage.Queries.GetPreviousScrapedProduct(ctx, db.GetPreviousScrapedProductParams{
+		DesignerSlug: product.DesignerSlug,
+		ID:           productID,
+	})
+	if err == nil {
+		prevProductID = prevID
+	}
+
+	nextID, err := h.storage.Queries.GetNextScrapedProduct(ctx, db.GetNextScrapedProductParams{
+		DesignerSlug: product.DesignerSlug,
+		ID:           productID,
+	})
+	if err == nil {
+		nextProductID = nextID
+	}
+
 	data := admin.ScrapedProductDetailData{
-		Product:    product,
-		Designer:   *designer,
-		Images:     images,
-		AIImages:   aiImages,
-		Categories: categories,
-		ImageURLs:  imageURLs,
+		Product:       product,
+		Designer:      *designer,
+		Images:        images,
+		AIImages:      aiImages,
+		Categories:    categories,
+		ImageURLs:     imageURLs,
+		SizeCharts:    sizeCharts,
+		PrevProductID: prevProductID,
+		NextProductID: nextProductID,
 	}
 
 	return admin.ScrapedProductDetail(c, data).Render(ctx, c.Response().Writer)
@@ -672,11 +832,28 @@ func (h *AdminImporterHandler) HandleRescrapeProduct(c echo.Context) error {
 	return c.NoContent(http.StatusOK)
 }
 
+// ImportSettings holds configuration for importing a scraped product
+type ImportSettings struct {
+	CategoryID      string
+	BasePriceCents  int64
+	Sizes           []string         // Size IDs to enable
+	SizeAdjustments map[string]int64 // SizeID -> adjustment in cents
+	IsNew           bool
+	IsPremium       bool
+	IsFeatured      bool
+}
+
 // HandleImportSingleProduct imports a single scraped product
 func (h *AdminImporterHandler) HandleImportSingleProduct(c echo.Context) error {
 	ctx := c.Request().Context()
 	productID := c.Param("id")
-	categoryID := c.FormValue("category_id")
+
+	// Parse import settings from form
+	settings, err := parseImportSettings(c)
+	if err != nil {
+		slog.Error("failed to parse import settings", "error", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid import settings")
+	}
 
 	// Get the scraped product
 	scraped, err := h.storage.Queries.GetScrapedProduct(ctx, productID)
@@ -698,7 +875,7 @@ func (h *AdminImporterHandler) HandleImportSingleProduct(c echo.Context) error {
 
 	// Import the product
 	downloader := importer.NewImageDownloader("public/images/products")
-	err = h.importProduct(ctx, scraped, categoryID, designerName, downloader)
+	err = h.importProduct(ctx, scraped, settings, designerName, downloader)
 	if err != nil {
 		slog.Error("failed to import product", "error", err, "product_id", productID)
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to import product")
@@ -706,6 +883,53 @@ func (h *AdminImporterHandler) HandleImportSingleProduct(c echo.Context) error {
 
 	c.Response().Header().Set("HX-Trigger", "productImported")
 	return c.NoContent(http.StatusOK)
+}
+
+// parseImportSettings parses import settings from form values
+func parseImportSettings(c echo.Context) (*ImportSettings, error) {
+	settings := &ImportSettings{
+		CategoryID:      c.FormValue("category_id"),
+		BasePriceCents:  999, // Default $9.99
+		Sizes:           []string{},
+		SizeAdjustments: make(map[string]int64),
+		IsNew:           c.FormValue("is_new") == "true",
+		IsPremium:       c.FormValue("is_premium") == "true",
+		IsFeatured:      c.FormValue("is_featured") == "true",
+	}
+
+	// Parse base price
+	if basePriceStr := c.FormValue("base_price_cents"); basePriceStr != "" {
+		var basePriceCents int64
+		if _, err := fmt.Sscanf(basePriceStr, "%d", &basePriceCents); err == nil && basePriceCents > 0 {
+			settings.BasePriceCents = basePriceCents
+		}
+	}
+
+	// Parse sizes JSON array
+	if sizesJSON := c.FormValue("sizes"); sizesJSON != "" {
+		if err := json.Unmarshal([]byte(sizesJSON), &settings.Sizes); err != nil {
+			slog.Debug("failed to parse sizes JSON", "error", err, "json", sizesJSON)
+		}
+	}
+
+	// Parse size adjustments JSON object
+	if adjustmentsJSON := c.FormValue("size_adjustments"); adjustmentsJSON != "" {
+		if err := json.Unmarshal([]byte(adjustmentsJSON), &settings.SizeAdjustments); err != nil {
+			slog.Debug("failed to parse size adjustments JSON", "error", err, "json", adjustmentsJSON)
+		}
+	}
+
+	slog.Debug("parsed import settings",
+		"category_id", settings.CategoryID,
+		"base_price_cents", settings.BasePriceCents,
+		"sizes", settings.Sizes,
+		"size_adjustments", settings.SizeAdjustments,
+		"is_new", settings.IsNew,
+		"is_premium", settings.IsPremium,
+		"is_featured", settings.IsFeatured,
+	)
+
+	return settings, nil
 }
 
 // HandleDownloadImages downloads images for a scraped product
@@ -751,10 +975,11 @@ func (h *AdminImporterHandler) HandleDownloadImages(c echo.Context) error {
 func (h *AdminImporterHandler) downloadProductImages(productID string, imageURLs []string, outputDir string) {
 	ctx := context.Background()
 
-	// First, create records for each image with pending status
+	// First, create or get records for each image URL (upsert to avoid duplicates)
 	for i, url := range imageURLs {
 		imageID := uuid.New().String()
-		_, err := h.storage.Queries.CreateScrapedProductImage(ctx, db.CreateScrapedProductImageParams{
+		// Use upsert query - if URL already exists for this product, returns existing record
+		_, err := h.storage.Queries.CreateOrGetScrapedProductImage(ctx, db.CreateOrGetScrapedProductImageParams{
 			ID:               imageID,
 			ScrapedProductID: productID,
 			SourceUrl:        url,
@@ -762,7 +987,7 @@ func (h *AdminImporterHandler) downloadProductImages(productID string, imageURLs
 			DisplayOrder:     sql.NullInt64{Int64: int64(i), Valid: true},
 		})
 		if err != nil {
-			slog.Error("failed to create scraped product image record", "error", err, "product_id", productID, "url", url)
+			slog.Error("failed to create/get scraped product image record", "error", err, "product_id", productID, "url", url)
 			continue
 		}
 	}
@@ -1068,4 +1293,47 @@ func generateProductSlug(name string) string {
 	slug = slug + "-" + uuid.New().String()[:8]
 
 	return slug
+}
+
+// deduplicateImageURLs removes duplicate images that appear in different formats
+// (e.g., same image in webp and jpg format from CDN)
+func deduplicateImageURLs(urls []string) []string {
+	seen := make(map[string]bool)
+	var result []string
+
+	for _, url := range urls {
+		// Extract the underlying filename from the URL
+		// URLs look like: https://images.cults3d.com/.../filename.jpg
+		// or with format filter: https://images.cults3d.com/...format(webp)/.../filename.jpg
+		key := extractImageKey(url)
+		if key == "" {
+			key = url // fallback to full URL if extraction fails
+		}
+
+		if !seen[key] {
+			seen[key] = true
+			result = append(result, url)
+		}
+	}
+
+	return result
+}
+
+// extractImageKey extracts a unique identifier from an image URL
+// by finding the underlying filename
+func extractImageKey(url string) string {
+	// The URLs contain the original filename at the end
+	// Find the last path segment after the last /
+	lastSlash := strings.LastIndex(url, "/")
+	if lastSlash == -1 {
+		return ""
+	}
+
+	filename := url[lastSlash+1:]
+	// Remove query parameters if any
+	if idx := strings.Index(filename, "?"); idx != -1 {
+		filename = filename[:idx]
+	}
+
+	return filename
 }

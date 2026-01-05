@@ -2,6 +2,8 @@ package importer
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log/slog"
@@ -10,8 +12,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // ImageDownloader downloads images from URLs and saves them locally
@@ -98,8 +98,11 @@ func (d *ImageDownloader) downloadImage(ctx context.Context, imageURL string, pr
 	// Determine file extension from Content-Type or URL
 	ext := d.getExtension(imageURL, resp.Header.Get("Content-Type"))
 
-	// Generate unique filename
-	filename := fmt.Sprintf("%s_%s_%d%s", productID, uuid.New().String()[:8], index, ext)
+	// Generate deterministic filename based on URL hash
+	// This ensures the same URL always produces the same filename, preventing duplicate files
+	urlHash := sha256.Sum256([]byte(imageURL))
+	hashStr := hex.EncodeToString(urlHash[:8]) // Use first 8 bytes = 16 hex chars
+	filename := fmt.Sprintf("%s_%s%s", productID, hashStr, ext)
 	filePath := filepath.Join(d.outputDir, filename)
 
 	// Create destination file

@@ -135,6 +135,22 @@ WHERE designer_slug = ?
 SELECT COUNT(*) as count FROM scraped_products
 WHERE designer_slug = ? AND imported_product_id IS NULL AND is_skipped = false;
 
+-- name: GetPreviousScrapedProduct :one
+-- Get the previous product (newer by scraped_at) in the same designer's list
+SELECT sp.id FROM scraped_products sp
+WHERE sp.designer_slug = ?
+  AND sp.scraped_at > (SELECT sp2.scraped_at FROM scraped_products sp2 WHERE sp2.id = ?)
+ORDER BY sp.scraped_at ASC
+LIMIT 1;
+
+-- name: GetNextScrapedProduct :one
+-- Get the next product (older by scraped_at) in the same designer's list
+SELECT sp.id FROM scraped_products sp
+WHERE sp.designer_slug = ?
+  AND sp.scraped_at < (SELECT sp2.scraped_at FROM scraped_products sp2 WHERE sp2.id = ?)
+ORDER BY sp.scraped_at DESC
+LIMIT 1;
+
 -- Scraped Product Images
 
 -- name: CreateScrapedProductImage :one
@@ -143,6 +159,19 @@ INSERT INTO scraped_product_images (
     download_status, display_order, created_at
 ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 RETURNING *;
+
+-- name: CreateOrGetScrapedProductImage :one
+-- Upsert query - creates a new image record or returns existing one if source_url already exists
+INSERT INTO scraped_product_images (
+    id, scraped_product_id, source_url, download_status, display_order, created_at
+) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+ON CONFLICT(scraped_product_id, source_url) DO UPDATE SET
+    scraped_product_id = scraped_product_id
+RETURNING *;
+
+-- name: GetScrapedProductImageBySourceURL :one
+SELECT * FROM scraped_product_images
+WHERE scraped_product_id = ? AND source_url = ?;
 
 -- name: GetScrapedProductImage :one
 SELECT * FROM scraped_product_images WHERE id = ?;

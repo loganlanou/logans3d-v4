@@ -519,3 +519,23 @@ func getFirstImageURL(imageURLsJSON string) string {
 	}
 	return ""
 }
+
+// Helper to get default base price in cents from scraped product
+func getDefaultBasePriceCents(product db.ScrapedProduct) string {
+	if product.AiPriceCents.Valid && product.AiPriceCents.Int64 > 0 {
+		return fmt.Sprintf("%d", product.AiPriceCents.Int64)
+	}
+	if product.OriginalPriceCents.Valid && product.OriginalPriceCents.Int64 > 0 {
+		return fmt.Sprintf("%d", product.OriginalPriceCents.Int64)
+	}
+	return "999" // Default $9.99
+}
+
+// Helper to get size adjustment in dollars as string
+func getSizeAdjustmentDollars(size db.GetSizeChartsRow) string {
+	if size.DefaultPriceAdjustmentCents.Valid {
+		dollars := float64(size.DefaultPriceAdjustmentCents.Int64) / 100.0
+		return fmt.Sprintf("%.2f", dollars)
+	}
+	return "0.00"
+}

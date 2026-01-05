@@ -165,6 +165,11 @@ SET is_new = NOT COALESCE(is_new, FALSE), updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
+-- name: UpdateProductIsNew :exec
+UPDATE products
+SET is_new = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+
 -- name: SetProductVariantsFlag :exec
 UPDATE products
 SET has_variants = ?, updated_at = CURRENT_TIMESTAMP

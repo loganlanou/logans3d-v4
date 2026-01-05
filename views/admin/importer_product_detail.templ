@@ -19,6 +19,9 @@ type ScrapedProductDetailData struct {
 	AIImages      []db.ScrapedProductAiImage
 	Categories    []db.Category
 	ImageURLs     []string // Parsed from product.ImageUrls JSON
+	SizeCharts    []db.GetSizeChartsRow
+	PrevProductID string   // ID of previous product (for navigation)
+	NextProductID string   // ID of next product (for navigation)
 }
 
 templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
@@ -52,6 +55,43 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					</p>
 				</div>
 				<div class="flex items-center gap-3">
+					<!-- Prev/Next Navigation -->
+					<div class="flex items-center gap-1 mr-2">
+						if data.PrevProductID != "" {
+							<a
+								href={ templ.SafeURL(fmt.Sprintf("/admin/importer/products/%s", data.PrevProductID)) }
+								class="p-2 rounded-md border border-border hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+								title="Previous product"
+							>
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+								</svg>
+							</a>
+						} else {
+							<span class="p-2 rounded-md border border-border text-muted-foreground/30 cursor-not-allowed">
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+								</svg>
+							</span>
+						}
+						if data.NextProductID != "" {
+							<a
+								href={ templ.SafeURL(fmt.Sprintf("/admin/importer/products/%s", data.NextProductID)) }
+								class="p-2 rounded-md border border-border hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+								title="Next product"
+							>
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+								</svg>
+							</a>
+						} else {
+							<span class="p-2 rounded-md border border-border text-muted-foreground/30 cursor-not-allowed">
+								<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+								</svg>
+							</span>
+						}
+					</div>
 					@button.Button(button.Props{
 						Variant: button.VariantSecondary,
 						Attributes: templ.Attributes{
@@ -229,7 +269,26 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 						}
 					}
 					@card.Content() {
-						<div class="space-y-4">
+						<div class="space-y-6">
+							<!-- Base Price -->
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-1">Base Price (cents)</label>
+								<div class="flex items-center gap-2">
+									<span class="text-muted-foreground">$</span>
+									<input
+										type="number"
+										id="base_price_cents"
+										name="base_price_cents"
+										value={ getDefaultBasePriceCents(data.Product) }
+										min="0"
+										step="1"
+										class="w-32 px-3 py-2 border border-input rounded-md bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+									/>
+									<span class="text-sm text-muted-foreground">(enter price in cents, e.g. 999 = $9.99)</span>
+								</div>
+							</div>
+
+							<!-- Category -->
 							<div>
 								<label class="block text-sm font-medium text-muted-foreground mb-1">Category</label>
 								<select
@@ -241,17 +300,92 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 									}
 								</select>
 							</div>
+
+							<!-- Size Selection -->
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-2">Sizes &amp; Price Adjustments</label>
+								<p class="text-xs text-muted-foreground mb-3">Select which sizes to enable and set price adjustments for each size.</p>
+								<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+									for _, size := range data.SizeCharts {
+										<div class="border border-border rounded-lg p-4">
+											<div class="flex items-center gap-3 mb-3">
+												<input
+													type="checkbox"
+													id={ fmt.Sprintf("size_%s", size.SizeID) }
+													name="sizes[]"
+													value={ size.SizeID }
+													checked
+													class="h-5 w-5 rounded border-gray-300 text-primary focus:ring-primary"
+												/>
+												<label for={ fmt.Sprintf("size_%s", size.SizeID) } class="font-medium text-foreground capitalize">
+													{ size.DisplayName }
+												</label>
+											</div>
+											<div class="flex items-center gap-2">
+												<span class="text-sm text-muted-foreground">+$</span>
+												<input
+													type="number"
+													name={ fmt.Sprintf("size_adjustment[%s]", size.SizeID) }
+													value={ getSizeAdjustmentDollars(size) }
+													min="0"
+													step="0.01"
+													class="w-20 px-2 py-1 border border-input rounded text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+												/>
+											</div>
+										</div>
+									}
+								</div>
+							</div>
+
+							<!-- Product Flags -->
+							<div>
+								<label class="block text-sm font-medium text-muted-foreground mb-2">Product Flags</label>
+								<div class="flex flex-wrap gap-6">
+									<label class="flex items-center gap-2 cursor-pointer">
+										<input
+											type="checkbox"
+											name="is_new"
+											checked
+											class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+										/>
+										<span class="text-sm text-foreground">Mark as New</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer">
+										<input
+											type="checkbox"
+											name="is_premium"
+											class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+										/>
+										<span class="text-sm text-foreground">Mark as Premium</span>
+									</label>
+									<label class="flex items-center gap-2 cursor-pointer">
+										<input
+											type="checkbox"
+											name="is_featured"
+											class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+										/>
+										<span class="text-sm text-foreground">Mark as Featured</span>
+									</label>
+								</div>
+							</div>
 						</div>
 					}
 					@card.Footer(card.FooterProps{
 						Class: "flex justify-end",
 					}) {
 						<form
+							id="import-form"
 							hx-post={ fmt.Sprintf("/admin/importer/products/%s/import", data.Product.ID) }
 							hx-swap="none"
-							x-on:htmx:before-request="$el.querySelector('[name=category_id]').value = categoryId"
+							x-on:htmx:before-request="prepareImportForm($el)"
 						>
 							<input type="hidden" name="category_id" value=""/>
+							<input type="hidden" name="base_price_cents" value=""/>
+							<input type="hidden" name="sizes" value=""/>
+							<input type="hidden" name="size_adjustments" value=""/>
+							<input type="hidden" name="is_new" value=""/>
+							<input type="hidden" name="is_premium" value=""/>
+							<input type="hidden" name="is_featured" value=""/>
 							@button.Button(button.Props{
 								Type: "submit",
 								Attributes: templ.Attributes{
@@ -273,6 +407,36 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					setTimeout(() => window.location.reload(), 1000);
 				}
 			});
+
+			function prepareImportForm(formEl) {
+				// Get category from Alpine.js
+				formEl.querySelector('[name=category_id]').value = Alpine.$data(document.querySelector('[x-data]')).categoryId;
+
+				// Get base price
+				const basePriceInput = document.getElementById('base_price_cents');
+				formEl.querySelector('[name=base_price_cents]').value = basePriceInput ? basePriceInput.value : '999';
+
+				// Get selected sizes
+				const sizeCheckboxes = document.querySelectorAll('input[name="sizes[]"]:checked');
+				const sizes = Array.from(sizeCheckboxes).map(cb => cb.value);
+				formEl.querySelector('[name=sizes]').value = JSON.stringify(sizes);
+
+				// Get size adjustments
+				const adjustments = {};
+				sizes.forEach(sizeId => {
+					const input = document.querySelector(`input[name="size_adjustment[${sizeId}]"]`);
+					if (input) {
+						// Convert dollars to cents
+						adjustments[sizeId] = Math.round(parseFloat(input.value || 0) * 100);
+					}
+				});
+				formEl.querySelector('[name=size_adjustments]').value = JSON.stringify(adjustments);
+
+				// Get product flags
+				formEl.querySelector('[name=is_new]').value = document.querySelector('input[name=is_new]:checked') ? 'true' : 'false';
+				formEl.querySelector('[name=is_premium]').value = document.querySelector('input[name=is_premium]:checked') ? 'true' : 'false';
+				formEl.querySelector('[name=is_featured]').value = document.querySelector('input[name=is_featured]:checked') ? 'true' : 'false';
+			}
 		</script>
 	}
 }
