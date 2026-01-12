@@ -176,6 +176,12 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 											// Reset form on success
 											if (response.ok && html.includes('received your request')) {
 												form.reset();
+												// Track generate_lead event with GA4
+												if (typeof Analytics !== 'undefined') {
+													Analytics.generateLead('contact_form', 50, {
+														subject: document.getElementById('subject').value || 'general'
+													});
+												}
 												// Track Contact event with Meta Pixel
 												if (typeof fbq !== 'undefined') {
 													fbq('track', 'Contact', {

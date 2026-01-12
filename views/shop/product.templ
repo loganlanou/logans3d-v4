@@ -502,9 +502,19 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 		></div>
 		<script>
 			(function() {
-				if (typeof fbq !== 'undefined') {
-					var el = document.getElementById('meta-pixel-data');
-					if (el) {
+				var el = document.getElementById('meta-pixel-data');
+				if (el) {
+					// GA4 view_item event
+					if (typeof Analytics !== 'undefined') {
+						Analytics.viewItem({
+							id: el.dataset.productId,
+							name: el.dataset.productName,
+							category: el.dataset.categoryName,
+							price: parseFloat(el.dataset.price)
+						});
+					}
+					// Meta Pixel ViewContent event
+					if (typeof fbq !== 'undefined') {
 						fbq('track', 'ViewContent', {
 							content_name: el.dataset.productName,
 							content_category: el.dataset.categoryName,

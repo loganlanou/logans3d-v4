@@ -1800,8 +1800,8 @@ func (s *Service) handleCheckoutSuccess(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to retrieve order")
 	}
 
-	// Redirect directly to order detail page
-	orderURL := "/account/orders/" + order.ID
+	// Redirect directly to order detail page with purchase tracking flag
+	orderURL := "/account/orders/" + order.ID + "?purchase=true"
 	return c.Redirect(http.StatusSeeOther, orderURL)
 }
 
