@@ -36,7 +36,7 @@ if (document.readyState === 'loading') {
 }
 
 // Cart functionality
-async function addToCart(productId, quantity = 1, productName = '', productSkuId = '') {
+async function addToCart(productId, quantity = 1, productName = '', productSkuId = '', productPrice = '0', productCategory = '') {
     try {
         const response = await fetch('/api/cart/add', {
             method: 'POST',
@@ -61,16 +61,13 @@ async function addToCart(productId, quantity = 1, productName = '', productSkuId
 
         // Track AddToCart event with GA4
         if (typeof Analytics !== 'undefined') {
-            // Get price and category from button data attributes if available
-            const addBtn = document.querySelector(`[data-product-id="${productId}"]`);
-            const priceAttr = addBtn ? addBtn.dataset.productPrice : null;
-            const price = priceAttr ? parseFloat(priceAttr) / 100 : 0;
-            const category = addBtn ? addBtn.dataset.productCategory : '';
+            // Use price and category from parameters (already captured at click time)
+            const price = productPrice ? parseFloat(productPrice) / 100 : 0;
 
             Analytics.addToCart({
                 id: productId,
                 name: displayName,
-                category: category,
+                category: productCategory,
                 price: price
             }, quantity);
         }
@@ -340,6 +337,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const productId = e.target.dataset.productId;
             const productName = e.target.dataset.productName || '';
             const productSkuId = e.target.dataset.productSkuId || '';
+            const productPrice = e.target.dataset.productPrice || '0';
+            const productCategory = e.target.dataset.productCategory || '';
 
             // Check for quantity from dropdown first, then fallback to data attribute
             let quantity = e.target.dataset.quantity || '1';
@@ -349,7 +348,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             if (productId) {
-                addToCart(productId, parseInt(quantity), productName, productSkuId);
+                addToCart(productId, parseInt(quantity), productName, productSkuId, productPrice, productCategory);
             }
         }
         

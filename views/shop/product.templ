@@ -88,7 +88,7 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 							class="grid md:grid-cols-2 gap-6"
 							data-product-id={ product.ID }
 							data-product-name={ product.Name }
-							x-data={ fmt.Sprintf("productVariants('variant-data-json', { basePriceCents: %d, productId: $el.dataset.productId, productName: $el.dataset.productName })", variantData.BasePriceCents) }
+							x-data={ fmt.Sprintf("productVariants('variant-data-json', { basePriceCents: %d, productId: $el.dataset.productId, productName: $el.dataset.productName, category: '%s' })", variantData.BasePriceCents, category.Name) }
 						>
 							<!-- Variant Images -->
 							<div class="space-y-3">
@@ -256,7 +256,7 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 										:data-product-name="variantTitle()"
 										:data-product-sku-id="selectedSkuId"
 										:data-product-price="priceCents"
-										data-product-category={ category.Name }
+										:data-product-category="category"
 										:data-quantity="quantity"
 									>
 										Add to Cart
@@ -548,6 +548,7 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 					basePriceCents: data.basePriceCents || meta.basePriceCents || 0,
 					productId: meta.productId || '',
 					productName: meta.productName || '',
+					category: meta.category || '',
 					shippingConfig: shippingConfig,
 					selectedColorId: firstColor ? firstColor.id : null,
 					selectedSizeId: firstSize ? firstSize.valueId : null,
