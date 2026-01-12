@@ -46,8 +46,8 @@ type Config struct {
 func LoadConfig() (*Config, error) {
 	config := &Config{
 		Environment: getEnv("ENVIRONMENT", "development"),
-		Port:        getEnv("PORT", "8000"),
-		BaseURL:     getEnv("BASE_URL", "http://localhost:8000"),
+		Port:        getEnv("PORT", "8007"),
+		BaseURL:     getEnv("BASE_URL", "http://localhost:8007"),
 		DBPath:      getEnv("DB_PATH", "./db/logans3d.db"),
 	}
 

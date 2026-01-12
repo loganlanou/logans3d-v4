@@ -47,8 +47,8 @@ cat > .envrc << 'EOF'
 export LOG_LEVEL="DEBUG"
 # Application settings
 export ENVIRONMENT="development"
-export PORT="8000"
-export BASE_URL="http://localhost:8000"
+export PORT="8007"
+export BASE_URL="http://localhost:8007"
 # Database
 export DB_PATH="./data/database.db"
 # Clerk Authentication (use test keys from Clerk dashboard)
@@ -271,8 +271,8 @@ Copy `.envrc.example` to `.envrc` and configure:
 ```bash
 # Application settings
 export ENVIRONMENT="development"
-export PORT="8000"
-export BASE_URL="http://localhost:8000"
+export PORT="8007"
+export BASE_URL="http://localhost:8007"
 export DB_PATH="./db/logans3d.db"
 
 # Security (generate secure values for production)

@@ -95,7 +95,7 @@
 - **Configuration**: `.envrc`
 - **Usage**: Automatically loads environment variables when entering the project directory
 - **Key Variables**:
-  - `PORT=8000` - Development server port
+  - `PORT=8007` - Development server port
   - `DB_PATH=./data/database.db` - Database location
   - `ENVIRONMENT=development` - Runtime environment
   - API keys for Clerk, Stripe, ShipStation
@@ -106,7 +106,7 @@
 - **Features**:
   - Auto-rebuild on file changes (.go, .templ, .css)
   - Pre-build commands:
-    - Kill existing processes on port 8000
+    - Kill existing processes on port 8007
     - Run `go generate ./...` (generates Templ templates)
     - Run `npm run build:css` (compile Tailwind)
   - Excludes: test files, generated files, node_modules

@@ -165,6 +165,11 @@ SET is_new = NOT COALESCE(is_new, FALSE), updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
+-- name: UpdateProductIsNew :exec
+UPDATE products
+SET is_new = ?, updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+
 -- name: SetProductVariantsFlag :exec
 UPDATE products
 SET has_variants = ?, updated_at = CURRENT_TIMESTAMP
@@ -182,3 +187,56 @@ SET name = ?, slug = ?, price_cents = ?, stock_quantity = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
+
+-- Source tracking queries for importer
+
+-- name: GetProductBySourceURL :one
+SELECT * FROM products WHERE source_url = ?;
+
+-- name: ListProductsBySourcePlatform :many
+SELECT * FROM products
+WHERE source_platform = ?
+ORDER BY created_at DESC;
+
+-- name: ListProductsByDesigner :many
+SELECT * FROM products
+WHERE designer_name = ?
+ORDER BY created_at DESC;
+
+-- name: UpdateProductSource :exec
+UPDATE products
+SET source_url = ?, source_platform = ?, designer_name = ?, release_date = ?,
+    updated_at = CURRENT_TIMESTAMP
+WHERE id = ?;
+
+-- name: CreateProductWithSource :one
+INSERT INTO products (
+    id, name, slug, description, short_description, price_cents,
+    category_id, sku, stock_quantity, has_variants, weight_grams, lead_time_days,
+    is_active, is_featured, is_premium, is_new, disclaimer,
+    seo_title, seo_description, seo_keywords, og_image_url,
+    source_url, source_platform, designer_name, release_date
+) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+RETURNING *;
+
+-- name: ListNewProducts :many
+SELECT * FROM products
+WHERE is_new = TRUE AND is_active = TRUE
+ORDER BY release_date DESC, created_at DESC;
+
+-- name: ClearExpiredNewFlags :exec
+UPDATE products
+SET is_new = FALSE, updated_at = CURRENT_TIMESTAMP
+WHERE is_new = TRUE
+  AND release_date IS NOT NULL
+  AND release_date < datetime('now', '-6 months');
+
+-- name: CountProductsByDesigner :one
+SELECT COUNT(*) as count FROM products WHERE designer_name = ?;
+
+-- name: ListDesigners :many
+SELECT DISTINCT designer_name, COUNT(*) as product_count
+FROM products
+WHERE designer_name IS NOT NULL
+GROUP BY designer_name
+ORDER BY designer_name;

@@ -207,6 +207,37 @@ env-set:
 %:
 	@:
 
+# =============================================================================
+# MMF Importer
+# =============================================================================
+MMF_DIR := ../mmf-importer
+
+.PHONY: importer-build
+importer-build:
+	cd $(MMF_DIR) && go build -o bin/mmf-importer ./cmd/mmf-importer
+
+.PHONY: chrome-scraper
+chrome-scraper:
+	@mkdir -p $(MMF_DIR)/.tmp/scraper-chrome-profile
+	"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+		--user-data-dir=$(MMF_DIR)/.tmp/scraper-chrome-profile \
+		--remote-debugging-port=9222 \
+		--no-first-run \
+		--disable-infobars \
+		about:blank
+
+.PHONY: importer-scrape
+importer-scrape: importer-build
+	cd $(MMF_DIR) && ./bin/mmf-importer scrape -d $(DESIGNER) -s $(SOURCE)
+
+.PHONY: importer-run
+importer-run: importer-build
+	cd $(MMF_DIR) && ./bin/mmf-importer run -d $(DESIGNER)
+
+.PHONY: importer-designers
+importer-designers: importer-build
+	cd $(MMF_DIR) && ./bin/mmf-importer designers list
+
 .PHONY: help
 help:
 	@echo "Available targets:"
@@ -242,3 +273,10 @@ help:
 	@echo "Environment Management:"
 	@echo "  env-view         - View production environment variables"
 	@echo "  env-set KEY=VALUE - Set production environment variable (restarts service)"
+	@echo ""
+	@echo "MMF Importer:"
+	@echo "  chrome-scraper   - Start Chrome with debugging port for manual CAPTCHA"
+	@echo "  importer-build   - Build the mmf-importer CLI"
+	@echo "  importer-designers - List configured designers"
+	@echo "  importer-scrape DESIGNER=<name> SOURCE=<platform> - Scrape a designer"
+	@echo "  importer-run DESIGNER=<name> - Run full import pipeline"

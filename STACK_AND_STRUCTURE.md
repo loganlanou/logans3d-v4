@@ -384,8 +384,8 @@ logans3d-v4/
 ```bash
 # Application
 export ENVIRONMENT="development"
-export PORT="8000"
-export BASE_URL="http://localhost:8000"
+export PORT="8007"
+export BASE_URL="http://localhost:8007"
 
 # Database
 export DB_PATH="./db/logans3d.db"
@@ -393,7 +393,7 @@ export DB_PATH="./db/logans3d.db"
 # OAuth Configuration (for customer accounts)
 export GOOGLE_CLIENT_ID="your-google-client-id"
 export GOOGLE_CLIENT_SECRET="your-google-client-secret"  
-export GOOGLE_REDIRECT_URL="http://localhost:8000/auth/google/callback"
+export GOOGLE_REDIRECT_URL="http://localhost:8007/auth/google/callback"
 
 # JWT Security
 export JWT_SECRET="your-super-secret-jwt-key"

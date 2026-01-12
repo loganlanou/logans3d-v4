@@ -827,7 +827,7 @@ func printSummary() {
 	fmt.Printf("  Collections:        %d\n", counts["user_collections"])
 	fmt.Println()
 	fmt.Println("🎉 You can now view the admin dashboard with realistic data!")
-	fmt.Println("   Navigate to: http://localhost:8000/admin")
+	fmt.Println("   Navigate to: http://localhost:8007/admin")
 }
 
 func min(a, b int) int {

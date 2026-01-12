@@ -232,6 +232,19 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 		api.POST("/shipping/validate-address", s.shippingHandler.ValidateAddress)
 	}
 
+	// Product Import API - protected with API key authentication
+	apiProductsHandler := handlers.NewAPIProductsHandler(s.storage)
+	productAPI := e.Group("/api/v1", auth.APIKeyAuth(s.storage))
+	productAPI.GET("/products", apiProductsHandler.ListProducts)
+	productAPI.GET("/products/:id", apiProductsHandler.GetProduct)
+	productAPI.GET("/products/lookup", apiProductsHandler.GetProductBySourceURL)
+	productAPI.POST("/products", apiProductsHandler.CreateProduct)
+	productAPI.PUT("/products/:id", apiProductsHandler.UpdateProduct)
+	productAPI.DELETE("/products/:id", apiProductsHandler.DeleteProduct)
+	productAPI.POST("/products/:id/images", apiProductsHandler.AddProductImage)
+	productAPI.GET("/categories", apiProductsHandler.ListCategories)
+	productAPI.GET("/tags", apiProductsHandler.ListTags)
+
 	// Admin routes - protected with RequireAdmin middleware
 	// Initialize admin handler with all required services
 	adminHandler := handlers.NewAdminHandler(s.storage, s.shippingService, s.emailService)
@@ -252,6 +265,7 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.POST("/product/:id/toggle-premium", adminHandler.HandleToggleProductPremium)
 	admin.POST("/product/:id/toggle-active", adminHandler.HandleToggleProductActive)
 	admin.POST("/product/:id/toggle-new", adminHandler.HandleToggleProductNew)
+	admin.POST("/product/:id/sync", adminHandler.HandleSyncProduct)
 	admin.DELETE("/product/image/:imageId/delete", adminHandler.HandleDeleteProductImage)
 	admin.PUT("/product/image/:imageId/set-primary", adminHandler.HandleSetPrimaryProductImage)
 	admin.POST("/style-image/:imageId/primary", adminHandler.HandleSetPrimaryStyleImage)
@@ -380,6 +394,32 @@ func (s *Service) RegisterRoutes(e *echo.Echo) {
 	admin.GET("/email-preview/customer", adminHandler.HandleEmailPreviewCustomer)
 	admin.GET("/email-preview/admin", adminHandler.HandleEmailPreviewAdmin)
 	admin.POST("/email-preview/send-test", adminHandler.HandleSendTestEmail)
+
+	// API Keys management routes
+	admin.GET("/api-keys", adminHandler.HandleAdminAPIKeys)
+	admin.GET("/api-keys/list", adminHandler.HandleAdminAPIKeysList)
+	admin.POST("/api-keys/create", adminHandler.HandleAdminAPIKeyCreate)
+	admin.DELETE("/api-keys/:id", adminHandler.HandleAdminAPIKeyDelete)
+
+	// Product Importer routes
+	importerHandler := handlers.NewAdminImporterHandler(s.storage)
+	admin.GET("/importer", importerHandler.HandleImporterDashboard)
+	admin.GET("/importer/designers/:slug", importerHandler.HandleImporterDesignerDetail)
+	admin.POST("/importer/scrape/:slug", importerHandler.HandleStartScrape)
+	admin.POST("/importer/import/:slug", importerHandler.HandleImportProducts)
+	admin.GET("/importer/products/:id", importerHandler.HandleScrapedProductDetail)
+	admin.POST("/importer/products/:id/rescrape", importerHandler.HandleRescrapeProduct)
+	admin.POST("/importer/products/:id/skip", importerHandler.HandleSkipProduct)
+	admin.POST("/importer/products/:id/unskip", importerHandler.HandleUnskipProduct)
+	admin.POST("/importer/products/:id/import", importerHandler.HandleImportSingleProduct)
+	admin.POST("/importer/products/:id/download", importerHandler.HandleDownloadImages)
+	admin.POST("/importer/images/:id/retry", importerHandler.HandleRetryImageDownload)
+	admin.POST("/importer/images/:id/select", importerHandler.HandleToggleImageSelection)
+	admin.POST("/importer/ai-images/:id/select", importerHandler.HandleToggleAIImageSelection)
+	admin.POST("/importer/products/:id/generate-ai", importerHandler.HandleGenerateAIImage)
+	admin.POST("/importer/products/:id/regenerate-description", importerHandler.HandleRegenerateDescription)
+	admin.POST("/importer/products/:id/update-description", importerHandler.HandleUpdateDescription)
+	admin.POST("/importer/products/:id/update-name", importerHandler.HandleUpdateName)
 
 	// Gift Certificate routes
 	s.RegisterGiftCertificateRoutes(admin)
