@@ -59,6 +59,21 @@ async function addToCart(productId, quantity = 1, productName = '', productSkuId
         const displayName = productName || 'item';
         showToast(`Added ${displayName} to cart!`, 'success');
 
+        // Track AddToCart event with GA4
+        if (typeof Analytics !== 'undefined') {
+            // Get price from button data attribute if available
+            const addBtn = document.querySelector(`[data-product-id="${productId}"]`);
+            const priceAttr = addBtn ? addBtn.dataset.productPrice : null;
+            const price = priceAttr ? parseFloat(priceAttr) / 100 : 0;
+
+            Analytics.addToCart({
+                id: productId,
+                name: displayName,
+                category: '', // Category not always available at cart level
+                price: price
+            }, quantity);
+        }
+
         // Track AddToCart event with Meta Pixel
         if (typeof fbq !== 'undefined') {
             fbq('track', 'AddToCart', {
@@ -214,6 +229,32 @@ async function proceedToCheckout() {
         }
 
         const data = await response.json();
+
+        // Track begin_checkout event with GA4
+        if (typeof Analytics !== 'undefined') {
+            // Fetch cart data to get items for tracking
+            try {
+                const cartResponse = await fetch('/api/cart');
+                if (cartResponse.ok) {
+                    const cart = await cartResponse.json();
+                    const cartItems = cart.items || [];
+                    const cartTotal = cartItems.reduce((sum, item) => sum + (item.price_cents * item.quantity), 0) / 100;
+
+                    Analytics.beginCheckout({
+                        total: cartTotal,
+                        items: cartItems.map(item => ({
+                            id: item.product_id,
+                            name: item.name,
+                            category: '',
+                            price: item.price_cents / 100,
+                            quantity: item.quantity
+                        }))
+                    });
+                }
+            } catch (cartErr) {
+                console.error('Error fetching cart for GA4 tracking:', cartErr);
+            }
+        }
 
         // Track InitiateCheckout event with Meta Pixel
         if (typeof fbq !== 'undefined') {

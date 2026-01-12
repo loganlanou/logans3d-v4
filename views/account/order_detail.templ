@@ -190,6 +190,85 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithProd
 						<p class="text-slate-300">{ order.Notes.String }</p>
 					</div>
 				}
+
+				<!-- GA4 Purchase Tracking Data -->
+				<div
+					id="ga4-purchase-data"
+					data-order-id={ order.ID }
+					data-order-total={ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }
+					data-order-tax={ fmt.Sprintf("%.2f", float64(order.TaxCents)/100) }
+					data-order-shipping={ fmt.Sprintf("%.2f", float64(order.ShippingCents)/100) }
+					style="display:none;"
+				></div>
+				<div id="ga4-purchase-items" style="display:none;">
+					for _, itemWithProduct := range orderItems {
+						<span
+							class="ga4-item"
+							data-id={ itemWithProduct.Item.ProductID }
+							data-name={ itemWithProduct.Item.ProductName }
+							data-price={ fmt.Sprintf("%.2f", float64(itemWithProduct.Item.UnitPriceCents)/100) }
+							data-quantity={ fmt.Sprintf("%d", itemWithProduct.Item.Quantity) }
+						></span>
+					}
+				</div>
+				<script>
+					(function() {
+						// Check for purchase=true query parameter (set by checkout success redirect)
+						const urlParams = new URLSearchParams(window.location.search);
+						if (urlParams.get('purchase') !== 'true') return;
+
+						// Remove the parameter from URL to prevent re-tracking on refresh
+						urlParams.delete('purchase');
+						const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+						window.history.replaceState({}, '', newUrl);
+
+						// Track purchase with GA4
+						if (typeof Analytics !== 'undefined') {
+							const orderEl = document.getElementById('ga4-purchase-data');
+							const itemEls = document.querySelectorAll('#ga4-purchase-items .ga4-item');
+
+							if (orderEl) {
+								const items = Array.from(itemEls).map(el => ({
+									id: el.dataset.id,
+									name: el.dataset.name,
+									category: '',
+									price: parseFloat(el.dataset.price),
+									quantity: parseInt(el.dataset.quantity)
+								}));
+
+								Analytics.purchase({
+									id: orderEl.dataset.orderId,
+									total: parseFloat(orderEl.dataset.orderTotal),
+									tax: parseFloat(orderEl.dataset.orderTax),
+									shipping: parseFloat(orderEl.dataset.orderShipping),
+									items: items
+								});
+							}
+						}
+
+						// Track Purchase with Meta Pixel
+						if (typeof fbq !== 'undefined') {
+							const orderEl = document.getElementById('ga4-purchase-data');
+							const itemEls = document.querySelectorAll('#ga4-purchase-items .ga4-item');
+
+							if (orderEl) {
+								const contentIds = Array.from(itemEls).map(el => el.dataset.id);
+								const contents = Array.from(itemEls).map(el => ({
+									id: el.dataset.id,
+									quantity: parseInt(el.dataset.quantity)
+								}));
+
+								fbq('track', 'Purchase', {
+									value: parseFloat(orderEl.dataset.orderTotal),
+									currency: 'USD',
+									content_ids: contentIds,
+									content_type: 'product',
+									contents: contents
+								});
+							}
+						}
+					})();
+				</script>
 			</div>
 		</div>
 	}

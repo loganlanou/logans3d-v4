@@ -367,6 +367,13 @@ function changeStep(n) {
     // Save draft when moving forward
     if (n > 0) {
         saveDraft(currentStep);
+
+        // Track step progression with GA4
+        if (typeof Analytics !== 'undefined') {
+            Analytics.customOrderStep(currentStep + n, {
+                project_type: formData.projectType || ''
+            });
+        }
     }
 
     // Hide current step
@@ -898,6 +905,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         } catch (err) {
                             console.error('Error clearing draft:', err);
                         }
+                    }
+                    // Track generate_lead event with GA4
+                    if (typeof Analytics !== 'undefined') {
+                        Analytics.generateLead('custom_order', 150, {
+                            project_type: formData.projectType || 'unknown',
+                            has_model_file: !!formData.modelFile,
+                            timeline: formData.timeline || 'standard'
+                        });
                     }
                     // Track Lead event with Meta Pixel
                     if (typeof fbq !== 'undefined') {

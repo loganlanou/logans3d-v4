@@ -9,6 +9,21 @@ document.addEventListener('DOMContentLoaded', function() {
             const cart = await response.json();
             renderCart(cart);
 
+            // Track view_cart event with GA4
+            if (typeof Analytics !== 'undefined' && cart.items && cart.items.length > 0) {
+                const cartTotal = cart.totalCents ? cart.totalCents / 100 : 0;
+                Analytics.viewCart({
+                    total: cartTotal,
+                    items: cart.items.map(item => ({
+                        id: item.product_id,
+                        name: item.name,
+                        category: '',
+                        price: item.price_cents / 100,
+                        quantity: item.quantity
+                    }))
+                });
+            }
+
             // Load saved shipping selection after cart renders
             if (cart.items && cart.items.length > 0 && window.shippingManager) {
                 await window.shippingManager.loadSavedShipping();
