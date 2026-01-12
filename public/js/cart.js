@@ -248,6 +248,18 @@ async function proceedToCheckout() {
                             quantity: item.quantity
                         }))
                     });
+
+                    // Track add_payment_info event (Stripe checkout = Credit Card)
+                    Analytics.addPaymentInfo({
+                        total: cartTotal,
+                        items: cartItems.map(item => ({
+                            id: item.product_id,
+                            name: item.name,
+                            category: item.category_name || '',
+                            price: item.price_cents / 100,
+                            quantity: item.quantity
+                        }))
+                    }, 'Credit Card');
                 }
             } catch (cartErr) {
                 console.error('Error fetching cart for GA4 tracking:', cartErr);

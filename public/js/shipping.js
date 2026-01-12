@@ -97,6 +97,33 @@ class ShippingManager {
             const result = await response.json();
             console.log('Shipping selection saved successfully:', result);
 
+            // Track GA4 add_shipping_info event
+            if (typeof Analytics !== 'undefined') {
+                try {
+                    const cartResponse = await fetch('/api/cart');
+                    if (cartResponse.ok) {
+                        const cart = await cartResponse.json();
+                        const cartItems = cart.items || [];
+                        const subtotal = cart.totalCents || 0;
+                        const shippingCost = Math.round(option.total_cost * 100);
+                        const total = subtotal + shippingCost;
+
+                        Analytics.addShippingInfo({
+                            total: total / 100,
+                            items: cartItems.map(item => ({
+                                id: item.product_id,
+                                name: item.name,
+                                category: item.category_name || '',
+                                price: item.price_cents / 100,
+                                quantity: item.quantity
+                            }))
+                        }, option.service_name);
+                    }
+                } catch (err) {
+                    console.error('Error tracking add_shipping_info:', err);
+                }
+            }
+
             // Enable checkout button after successful save
             this.enableCheckoutButton();
 
