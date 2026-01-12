@@ -184,19 +184,30 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 
 											// Reset form on success
 											if (response.ok && html.includes('received your request')) {
-												form.reset();
+												// Capture subject before resetting form
+												const subjectValue = document.getElementById('subject').value || 'general';
+
+												// Track form_submit event with GA4
+												if (typeof Analytics !== 'undefined') {
+													Analytics.formSubmit('contact_form', true);
+												}
+
 												// Track generate_lead event with GA4
 												if (typeof Analytics !== 'undefined') {
 													Analytics.generateLead('contact_form', 50, {
-														subject: document.getElementById('subject').value || 'general'
+														subject: subjectValue
 													});
 												}
+
 												// Track Contact event with Meta Pixel
 												if (typeof fbq !== 'undefined') {
 													fbq('track', 'Contact', {
-														content_name: document.getElementById('subject').value || 'Contact Form'
+														content_name: subjectValue
 													});
 												}
+
+												// Reset form after tracking
+												form.reset();
 											}
 										} catch (error) {
 											console.error('Error submitting form:', error);

@@ -73,7 +73,13 @@ RETURNING *;
 DELETE FROM orders WHERE id = ?;
 
 -- name: GetOrderItems :many
-SELECT * FROM order_items WHERE order_id = ?;
+SELECT
+    oi.*,
+    COALESCE(c.name, '') as category_name
+FROM order_items oi
+LEFT JOIN products p ON oi.product_id = p.id
+LEFT JOIN categories c ON p.category_id = c.id
+WHERE oi.order_id = ?;
 
 -- name: CreateOrderItem :one
 INSERT INTO order_items (

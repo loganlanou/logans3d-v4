@@ -1931,7 +1931,7 @@ func (s *Service) handleAccountOrderDetail(c echo.Context) error {
 	orderItems, err := s.storage.Queries.GetOrderItems(ctx, orderID)
 	if err != nil {
 		slog.Error("failed to fetch order items", "error", err, "order_id", orderID)
-		orderItems = []db.OrderItem{}
+		orderItems = []db.GetOrderItemsRow{}
 	}
 
 	// Enrich order items with product availability and images

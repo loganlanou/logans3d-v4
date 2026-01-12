@@ -9,7 +9,7 @@ import (
 
 // OrderItemWithProduct contains order item data plus product availability info
 type OrderItemWithProduct struct {
-	Item        db.OrderItem
+	Item        db.GetOrderItemsRow
 	ProductSlug string // Product URL slug for linking
 	ImageURL    string // Primary product image
 	IsAvailable bool   // Whether product is still active and available
@@ -206,6 +206,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithProd
 							class="ga4-item"
 							data-id={ itemWithProduct.Item.ProductID }
 							data-name={ itemWithProduct.Item.ProductName }
+							data-category={ itemWithProduct.Item.CategoryName }
 							data-price={ fmt.Sprintf("%.2f", float64(itemWithProduct.Item.UnitPriceCents)/100) }
 							data-quantity={ fmt.Sprintf("%d", itemWithProduct.Item.Quantity) }
 						></span>
@@ -231,7 +232,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithProd
 								const items = Array.from(itemEls).map(el => ({
 									id: el.dataset.id,
 									name: el.dataset.name,
-									category: '',
+									category: el.dataset.category || '',
 									price: parseFloat(el.dataset.price),
 									quantity: parseInt(el.dataset.quantity)
 								}));

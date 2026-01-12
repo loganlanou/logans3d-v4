@@ -243,7 +243,7 @@ async function proceedToCheckout() {
                         items: cartItems.map(item => ({
                             id: item.product_id,
                             name: item.name,
-                            category: '',
+                            category: item.category_name || '',
                             price: item.price_cents / 100,
                             quantity: item.quantity
                         }))

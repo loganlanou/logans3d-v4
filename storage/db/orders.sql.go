@@ -350,18 +350,39 @@ func (q *Queries) GetOrderByStripeSessionID(ctx context.Context, stripeCheckoutS
 }
 
 const getOrderItems = `-- name: GetOrderItems :many
-SELECT id, order_id, product_id, product_variant_id, quantity, unit_price_cents, total_price_cents, product_name, product_sku, created_at, product_sku_id FROM order_items WHERE order_id = ?
+SELECT
+    oi.id, oi.order_id, oi.product_id, oi.product_variant_id, oi.quantity, oi.unit_price_cents, oi.total_price_cents, oi.product_name, oi.product_sku, oi.created_at, oi.product_sku_id,
+    COALESCE(c.name, '') as category_name
+FROM order_items oi
+LEFT JOIN products p ON oi.product_id = p.id
+LEFT JOIN categories c ON p.category_id = c.id
+WHERE oi.order_id = ?
 `
 
-func (q *Queries) GetOrderItems(ctx context.Context, orderID string) ([]OrderItem, error) {
+type GetOrderItemsRow struct {
+	ID               string         `db:"id" json:"id"`
+	OrderID          string         `db:"order_id" json:"order_id"`
+	ProductID        string         `db:"product_id" json:"product_id"`
+	ProductVariantID sql.NullString `db:"product_variant_id" json:"product_variant_id"`
+	Quantity         int64          `db:"quantity" json:"quantity"`
+	UnitPriceCents   int64          `db:"unit_price_cents" json:"unit_price_cents"`
+	TotalPriceCents  int64          `db:"total_price_cents" json:"total_price_cents"`
+	ProductName      string         `db:"product_name" json:"product_name"`
+	ProductSku       sql.NullString `db:"product_sku" json:"product_sku"`
+	CreatedAt        sql.NullTime   `db:"created_at" json:"created_at"`
+	ProductSkuID     sql.NullString `db:"product_sku_id" json:"product_sku_id"`
+	CategoryName     string         `db:"category_name" json:"category_name"`
+}
+
+func (q *Queries) GetOrderItems(ctx context.Context, orderID string) ([]GetOrderItemsRow, error) {
 	rows, err := q.db.QueryContext(ctx, getOrderItems, orderID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []OrderItem{}
+	items := []GetOrderItemsRow{}
 	for rows.Next() {
-		var i OrderItem
+		var i GetOrderItemsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.OrderID,
@@ -374,6 +395,7 @@ func (q *Queries) GetOrderItems(ctx context.Context, orderID string) ([]OrderIte
 			&i.ProductSku,
 			&i.CreatedAt,
 			&i.ProductSkuID,
+			&i.CategoryName,
 		); err != nil {
 			return nil, err
 		}

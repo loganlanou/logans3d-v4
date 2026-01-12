@@ -2064,7 +2064,7 @@ func (h *AdminHandler) HandleOrderDetail(c echo.Context) error {
 }
 
 // getOrderItemImages fetches all images for an order item (handles both regular products and variants)
-func (h *AdminHandler) getOrderItemImages(ctx context.Context, item db.OrderItem) []admin.OrderItemImage {
+func (h *AdminHandler) getOrderItemImages(ctx context.Context, item db.GetOrderItemsRow) []admin.OrderItemImage {
 	var images []admin.OrderItemImage
 
 	// If item has a SKU, try to get style images first

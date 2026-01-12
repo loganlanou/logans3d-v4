@@ -13,7 +13,7 @@ import (
 
 // OrderItemWithImages wraps an order item with its associated images
 type OrderItemWithImages struct {
-	Item   db.OrderItem
+	Item   db.GetOrderItemsRow
 	Images []OrderItemImage
 }
 

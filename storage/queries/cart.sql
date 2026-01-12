@@ -31,9 +31,11 @@ SELECT
     ) as image_url,
     COALESCE(ps.sku, '') as variant_sku,
     COALESCE(pst.name || ' - ' || sz.display_name, '') as variant_name,
-    COALESCE(ps.stock_quantity, p.stock_quantity, 0) as stock_quantity
+    COALESCE(ps.stock_quantity, p.stock_quantity, 0) as stock_quantity,
+    COALESCE(c.name, '') as category_name
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN categories c ON p.category_id = c.id
 LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
 LEFT JOIN product_styles pst ON ps.product_style_id = pst.id
 LEFT JOIN sizes sz ON ps.size_id = sz.id
@@ -57,9 +59,11 @@ SELECT
     ) as image_url,
     COALESCE(ps.sku, '') as variant_sku,
     COALESCE(pst.name || ' - ' || sz.display_name, '') as variant_name,
-    COALESCE(ps.stock_quantity, p.stock_quantity, 0) as stock_quantity
+    COALESCE(ps.stock_quantity, p.stock_quantity, 0) as stock_quantity,
+    COALESCE(c.name, '') as category_name
 FROM cart_items ci
 JOIN products p ON ci.product_id = p.id
+LEFT JOIN categories c ON p.category_id = c.id
 LEFT JOIN product_skus ps ON ci.product_sku_id = ps.id
 LEFT JOIN product_styles pst ON ps.product_style_id = pst.id
 LEFT JOIN sizes sz ON ps.size_id = sz.id
