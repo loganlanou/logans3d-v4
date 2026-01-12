@@ -195,6 +195,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithProd
 				<div
 					id="ga4-purchase-data"
 					data-order-id={ order.ID }
+					data-customer-email={ order.CustomerEmail }
 					data-order-total={ fmt.Sprintf("%.2f", float64(order.TotalCents)/100) }
 					data-order-tax={ fmt.Sprintf("%.2f", float64(order.TaxCents)/100) }
 					data-order-shipping={ fmt.Sprintf("%.2f", float64(order.ShippingCents)/100) }
@@ -244,6 +245,19 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithProd
 									shipping: parseFloat(orderEl.dataset.orderShipping),
 									items: items
 								});
+
+								// Track lead conversion if customer was a lead
+								// This fires for all purchases - GA4 will track conversions
+								// and you can analyze which came from contact form submissions
+								const customerEmail = orderEl.dataset.customerEmail;
+								if (customerEmail) {
+									Analytics.closeConvertLead(
+										customerEmail, // Use email as lead identifier
+										orderEl.dataset.orderId,
+										parseFloat(orderEl.dataset.orderTotal),
+										'contact_form'
+									);
+								}
 							}
 						}
 

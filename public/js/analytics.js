@@ -254,6 +254,44 @@ const Analytics = {
         });
     },
 
+    /**
+     * Track when a lead is qualified by admin
+     * @param {string} leadId - Lead/contact ID
+     * @param {string} source - Lead source (e.g., 'contact_form', 'custom_order')
+     * @param {number} value - Estimated value of the qualified lead in dollars
+     * @param {Object} extraData - Additional data (status, priority, etc.)
+     */
+    qualifyLead: function(leadId, source, value = 100, extraData = {}) {
+        if (typeof gtag === 'undefined') return;
+
+        gtag('event', 'qualify_lead', {
+            currency: 'USD',
+            value: value,
+            lead_id: leadId,
+            lead_source: source,
+            ...extraData
+        });
+    },
+
+    /**
+     * Track when a lead converts to a customer
+     * @param {string} leadId - Lead/contact ID
+     * @param {string} orderId - Order ID that represents the conversion
+     * @param {number} value - Order value in dollars
+     * @param {string} source - Original lead source
+     */
+    closeConvertLead: function(leadId, orderId, value, source = 'contact_form') {
+        if (typeof gtag === 'undefined') return;
+
+        gtag('event', 'close_convert_lead', {
+            currency: 'USD',
+            value: value,
+            lead_id: leadId,
+            transaction_id: orderId,
+            lead_source: source
+        });
+    },
+
     // ========================================
     // Custom Order Funnel Events
     // ========================================

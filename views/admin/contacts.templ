@@ -564,10 +564,13 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 					</h1>
 					<div class="flex gap-4">
 						<!-- Status Dropdown -->
-						<form method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/status") } class="inline-block">
+						<form method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/status") } class="inline-block" id="status-form">
 							<select
 								name="status"
-								onchange="this.form.submit()"
+								id="status-select"
+								data-original-value={ contact.Status.String }
+								data-contact-id={ contact.ID }
+								onchange="handleStatusChange(this)"
 								class="px-3 py-2 bg-border border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 							>
 								<option value="new" selected?={ contact.Status.String == "new" }>New</option>
@@ -578,10 +581,13 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 							</select>
 						</form>
 						<!-- Priority Dropdown -->
-						<form method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/priority") } class="inline-block">
+						<form method="POST" action={ templ.URL("/admin/contacts/" + contact.ID + "/priority") } class="inline-block" id="priority-form">
 							<select
 								name="priority"
-								onchange="this.form.submit()"
+								id="priority-select"
+								data-original-value={ contact.Priority.String }
+								data-contact-id={ contact.ID }
+								onchange="handlePriorityChange(this)"
 								class="px-3 py-2 bg-border border border-border text-foreground rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
 							>
 								<option value="low" selected?={ contact.Priority.String == "low" }>Low</option>
@@ -746,6 +752,46 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 					</div>
 
 					<script>
+						function handleStatusChange(select) {
+							const originalValue = select.dataset.originalValue;
+							const newValue = select.value;
+							const contactId = select.dataset.contactId;
+
+							// Track qualify_lead if status changes from 'new' to active status
+							if (originalValue === 'new' && ['in_progress', 'responded'].includes(newValue)) {
+								if (typeof Analytics !== 'undefined') {
+									Analytics.qualifyLead(contactId, 'contact_form', 100, {
+										status_from: originalValue,
+										status_to: newValue,
+										qualification_type: 'status_change'
+									});
+								}
+							}
+
+							// Submit the form
+							document.getElementById('status-form').submit();
+						}
+
+						function handlePriorityChange(select) {
+							const originalValue = select.dataset.originalValue;
+							const newValue = select.value;
+							const contactId = select.dataset.contactId;
+
+							// Track qualify_lead if priority upgraded to high or urgent
+							if (['low', 'normal'].includes(originalValue) && ['high', 'urgent'].includes(newValue)) {
+								if (typeof Analytics !== 'undefined') {
+									Analytics.qualifyLead(contactId, 'contact_form', 150, {
+										priority_from: originalValue,
+										priority_to: newValue,
+										qualification_type: 'priority_upgrade'
+									});
+								}
+							}
+
+							// Submit the form
+							document.getElementById('priority-form').submit();
+						}
+
 						function showEditNotes() {
 							document.getElementById('notes-display').classList.add('hidden');
 							document.getElementById('notes-edit-form').classList.remove('hidden');
