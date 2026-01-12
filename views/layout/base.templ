@@ -103,12 +103,12 @@ templ Base(c echo.Context, meta PageMeta) {
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 			<!-- HTMX for dynamic content -->
 			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+			<!-- GA4 Analytics Utilities (must load before cart.js) -->
+			<script src="/public/js/analytics.js?v=1"></script>
 			<!-- Load Cart JavaScript -->
 			<script src="/public/js/cart.js?v=3"></script>
 			<!-- Load Shipping JavaScript -->
 			<script src="/public/js/shipping.js?v=1"></script>
-			<!-- GA4 Analytics Utilities -->
-			<script src="/public/js/analytics.js?v=1"></script>
 			<!-- Scroll speed control -->
 			<script src="/public/js/scroll-control.js"></script>
 			<!-- TemplUI Dialog Component -->

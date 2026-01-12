@@ -256,6 +256,7 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 										:data-product-name="variantTitle()"
 										:data-product-sku-id="selectedSkuId"
 										:data-product-price="priceCents"
+										:data-product-category={ category.Name }
 										:data-quantity="quantity"
 									>
 										Add to Cart

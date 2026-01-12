@@ -137,6 +137,15 @@ templ Index(c echo.Context, meta layout.PageMeta) {
 									const submitText = document.getElementById('submit-text');
 									const messagesDiv = document.getElementById('contact-form-messages');
 
+									// Track form start when user first interacts with form
+									let formStarted = false;
+									form.addEventListener('focusin', function() {
+										if (!formStarted && typeof Analytics !== 'undefined') {
+											Analytics.formStart('contact');
+											formStarted = true;
+										}
+									}, { once: true });
+
 									form.addEventListener('submit', async function(e) {
 										e.preventDefault();
 

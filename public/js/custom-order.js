@@ -538,6 +538,13 @@ function updateProgressBar(step) {
 function selectProjectType(type, element) {
     formData.projectType = type;
 
+    // Track step 1 (project type selection) with GA4
+    if (typeof Analytics !== 'undefined') {
+        Analytics.customOrderStep(1, {
+            project_type: type
+        });
+    }
+
     // Clear any project type error
     clearError('project-type');
 

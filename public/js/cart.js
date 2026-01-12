@@ -61,15 +61,16 @@ async function addToCart(productId, quantity = 1, productName = '', productSkuId
 
         // Track AddToCart event with GA4
         if (typeof Analytics !== 'undefined') {
-            // Get price from button data attribute if available
+            // Get price and category from button data attributes if available
             const addBtn = document.querySelector(`[data-product-id="${productId}"]`);
             const priceAttr = addBtn ? addBtn.dataset.productPrice : null;
             const price = priceAttr ? parseFloat(priceAttr) / 100 : 0;
+            const category = addBtn ? addBtn.dataset.productCategory : '';
 
             Analytics.addToCart({
                 id: productId,
                 name: displayName,
-                category: '', // Category not always available at cart level
+                category: category,
                 price: price
             }, quantity);
         }
