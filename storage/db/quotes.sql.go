@@ -239,10 +239,10 @@ func (q *Queries) GetQuoteRequest(ctx context.Context, id string) (QuoteRequest,
 }
 
 const getQuoteRequestWithFiles = `-- name: GetQuoteRequestWithFiles :one
-SELECT 
+SELECT
     q.id, q.customer_name, q.customer_email, q.customer_phone, q.project_description, q.quantity, q.material_preference, q.finish_preference, q.deadline_date, q.budget_range, q.status, q.admin_notes, q.quoted_price_cents, q.created_at, q.updated_at,
     GROUP_CONCAT(
-        qf.id || ',' || qf.filename || ',' || qf.original_filename || ',' || 
+        qf.id || ',' || qf.filename || ',' || qf.original_filename || ',' ||
         qf.file_path || ',' || qf.file_size || ',' || qf.mime_type
     ) as quote_files
 FROM quote_requests q
@@ -295,7 +295,7 @@ func (q *Queries) GetQuoteRequestWithFiles(ctx context.Context, id string) (GetQ
 }
 
 const getQuoteStats = `-- name: GetQuoteStats :one
-SELECT 
+SELECT
     COUNT(*) as total_quotes,
     COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_quotes,
     COUNT(CASE WHEN status = 'reviewing' THEN 1 END) as reviewing_quotes,
@@ -335,7 +335,7 @@ func (q *Queries) GetQuoteStats(ctx context.Context) (GetQuoteStatsRow, error) {
 }
 
 const listQuoteRequests = `-- name: ListQuoteRequests :many
-SELECT id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at FROM quote_requests 
+SELECT id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at FROM quote_requests
 ORDER BY created_at DESC
 `
 
@@ -379,8 +379,8 @@ func (q *Queries) ListQuoteRequests(ctx context.Context) ([]QuoteRequest, error)
 }
 
 const listQuoteRequestsByStatus = `-- name: ListQuoteRequestsByStatus :many
-SELECT id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at FROM quote_requests 
-WHERE status = ? 
+SELECT id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at FROM quote_requests
+WHERE status = ?
 ORDER BY created_at DESC
 `
 
@@ -424,9 +424,9 @@ func (q *Queries) ListQuoteRequestsByStatus(ctx context.Context, status sql.Null
 }
 
 const updateQuoteRequest = `-- name: UpdateQuoteRequest :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET customer_name = ?, customer_email = ?, customer_phone = ?, project_description = ?,
-    quantity = ?, material_preference = ?, finish_preference = ?, deadline_date = ?, 
+    quantity = ?, material_preference = ?, finish_preference = ?, deadline_date = ?,
     budget_range = ?, status = ?, admin_notes = ?, quoted_price_cents = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
@@ -487,7 +487,7 @@ func (q *Queries) UpdateQuoteRequest(ctx context.Context, arg UpdateQuoteRequest
 }
 
 const updateQuoteRequestNotes = `-- name: UpdateQuoteRequestNotes :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET admin_notes = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at
@@ -522,7 +522,7 @@ func (q *Queries) UpdateQuoteRequestNotes(ctx context.Context, arg UpdateQuoteRe
 }
 
 const updateQuoteRequestPrice = `-- name: UpdateQuoteRequestPrice :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET quoted_price_cents = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at
@@ -557,7 +557,7 @@ func (q *Queries) UpdateQuoteRequestPrice(ctx context.Context, arg UpdateQuoteRe
 }
 
 const updateQuoteRequestStatus = `-- name: UpdateQuoteRequestStatus :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING id, customer_name, customer_email, customer_phone, project_description, quantity, material_preference, finish_preference, deadline_date, budget_range, status, admin_notes, quoted_price_cents, created_at, updated_at

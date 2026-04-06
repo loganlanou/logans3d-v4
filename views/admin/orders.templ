@@ -3,12 +3,12 @@ package admin
 import (
 	"database/sql"
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/dialog"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/dialog"
-	"github.com/loganlanou/logans3d-v4/components/button"
+	"time"
 )
 
 // OrderItemWithImages wraps an order item with its associated images
@@ -29,11 +29,12 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 		<div class="flex justify-between items-center mb-6">
 			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Orders</h1>
 		</div>
-
 		<!-- Search and Filter Bar -->
 		<div class="mb-6 space-y-4">
 			<!-- Type-ahead Search -->
-			<div class="relative" x-data="{
+			<div
+				class="relative"
+				x-data="{
 				search: '',
 				results: [],
 				showResults: false,
@@ -60,7 +61,8 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 					this.results = [];
 					this.showResults = false;
 				}
-			}">
+			}"
+			>
 				<input
 					type="text"
 					x-model="search"
@@ -110,7 +112,6 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 					</template>
 				</div>
 			</div>
-
 			<!-- Filters -->
 			<div class="flex gap-4 flex-wrap items-center">
 				<!-- Date Filter -->
@@ -120,7 +121,6 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 					class="px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 					onchange="window.location.href = updateQueryParam('date', this.value)"
 				/>
-
 				<!-- Status Filters -->
 				<a href="/admin/orders" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-muted/80 hover:text-foreground transition-colors">All Orders</a>
 				<a href="/admin/orders?status=received" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-yellow-100 hover:border-yellow-400 hover:text-yellow-900 transition-colors">Received</a>
@@ -130,7 +130,6 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 				<a href="/admin/orders?status=cancelled" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-red-100 hover:border-red-400 hover:text-red-900 transition-colors">Cancelled</a>
 			</div>
 		</div>
-
 		<script>
 			function updateQueryParam(key, value) {
 				const url = new URL(window.location);
@@ -142,7 +141,6 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 				return url.toString();
 			}
 		</script>
-
 		<!-- Orders Table -->
 		<div class="admin-card">
 			<div class="admin-card-header">
@@ -211,7 +209,8 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 									if getNextStatus(getOrderStatusString(order.Status)) != "" {
 										<button
 											onclick={ templ.ComponentScript{Call: fmt.Sprintf("event.stopPropagation(); advanceStatus(event, '%s', '%s', '%s')", order.ID, getNextStatus(getOrderStatusString(order.Status)), getNextStatusButtonText(getOrderStatusString(order.Status)))} }
-											class="admin-btn admin-btn-sm admin-btn-primary">
+											class="admin-btn admin-btn-sm admin-btn-primary"
+										>
 											{ getNextStatusButtonText(getOrderStatusString(order.Status)) }
 										</button>
 									}
@@ -222,10 +221,9 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 				</table>
 			</div>
 		</div>
-
 		<!-- Shipping Info Modal for List Page -->
 		@dialog.Content(dialog.ContentProps{
-			ID: "shippingModalList",
+			ID:    "shippingModalList",
 			Class: "max-w-md",
 		}) {
 			@dialog.Header() {
@@ -236,21 +234,35 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 			<form id="shippingFormList" class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
-					<input type="text" id="carrierList" name="carrier" required
+					<input
+						type="text"
+						id="carrierList"
+						name="carrier"
+						required
 						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						placeholder="e.g., USPS, UPS, FedEx"/>
+						placeholder="e.g., USPS, UPS, FedEx"
+					/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
-					<input type="text" id="trackingNumberList" name="trackingNumber" required
+					<input
+						type="text"
+						id="trackingNumberList"
+						name="trackingNumber"
+						required
 						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						placeholder="Enter tracking number"/>
+						placeholder="Enter tracking number"
+					/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
-					<input type="url" id="trackingUrlList" name="trackingUrl"
+					<input
+						type="url"
+						id="trackingUrlList"
+						name="trackingUrl"
 						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						placeholder="https://..."/>
+						placeholder="https://..."
+					/>
 				</div>
 			</form>
 			@dialog.Footer() {
@@ -264,15 +276,14 @@ templ OrdersList(c echo.Context, orders []db.Order) {
 				}
 				@button.Button(button.Props{
 					Attributes: templ.Attributes{
-						"type":    "submit",
-						"form":    "shippingFormList",
+						"type": "submit",
+						"form": "shippingFormList",
 					},
 				}) {
 					Ship Order
 				}
 			}
 		}
-
 		<script>
 			let currentOrderIDList = '';
 
@@ -359,7 +370,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				← Back to Orders
 			</a>
 		</div>
-
 		<!-- Header with Stripe Link -->
 		<div class="flex justify-between items-start mb-6">
 			<div class="flex items-center gap-4">
@@ -389,16 +399,15 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 					>
 						<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
 							<path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.992 3.757 7.218c0 4.039 2.467 5.76 6.476 7.219 2.585.92 3.445 1.574 3.445 2.583 0 .98-.84 1.545-2.354 1.545-1.875 0-4.965-.921-6.99-2.109l-.9 5.555C5.175 22.99 8.385 24 11.714 24c2.641 0 4.843-.624 6.328-1.813 1.664-1.305 2.525-3.236 2.525-5.732 0-4.128-2.524-5.851-6.594-7.305h.003z"></path>
-					</svg>
-					View in Stripe
-				</a>
+						</svg>
+						View in Stripe
+					</a>
 				}
 				<div class="text-sm admin-text-muted-foreground">
 					ID: { order.ID }
 				</div>
 			</div>
 		</div>
-
 		<!-- Order Summary Card -->
 		<div class="admin-card mb-6">
 			<div class="admin-card-header">
@@ -443,7 +452,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				}
 			</div>
 		</div>
-
 		<!-- EasyPost Shipping Card -->
 		if order.EasypostShipmentID.Valid && order.EasypostShipmentID.String != "" {
 			<div class="admin-card mb-6">
@@ -524,7 +532,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				</div>
 			</div>
 		}
-
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 			<!-- Customer Information -->
 			<div class="admin-card">
@@ -566,7 +573,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 					}
 				</div>
 			</div>
-
 			<!-- Shipping Address -->
 			<div class="admin-card">
 				<div class="admin-card-header">
@@ -582,7 +588,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				</div>
 			</div>
 		</div>
-
 		<!-- Order Items -->
 		<div class="admin-card mb-6" x-data="{ expandedItem: null, lightboxImage: null }">
 			<div class="admin-card-header">
@@ -691,7 +696,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 					</tbody>
 				</table>
 			</div>
-
 			<!-- Lightbox Modal -->
 			<div
 				x-show="lightboxImage"
@@ -721,7 +725,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 					</button>
 				</div>
 			</div>
-
 			<!-- Order Totals -->
 			<div class="p-6 border-t border-border dark:border-gray-200">
 				<div class="space-y-2 max-w-sm ml-auto">
@@ -781,7 +784,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				</div>
 			</div>
 		</div>
-
 		<!-- Notes -->
 		if order.Notes.Valid && order.Notes.String != "" {
 			<div class="admin-card">
@@ -793,10 +795,9 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				</div>
 			</div>
 		}
-
 		<!-- Shipping Info Modal -->
 		@dialog.Content(dialog.ContentProps{
-			ID: "shippingModal",
+			ID:    "shippingModal",
 			Class: "max-w-md",
 		}) {
 			@dialog.Header() {
@@ -807,21 +808,35 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 			<form id="shippingForm" class="space-y-4">
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Carrier</label>
-					<input type="text" id="carrier" name="carrier" required
+					<input
+						type="text"
+						id="carrier"
+						name="carrier"
+						required
 						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						placeholder="e.g., USPS, UPS, FedEx"/>
+						placeholder="e.g., USPS, UPS, FedEx"
+					/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking Number</label>
-					<input type="text" id="trackingNumber" name="trackingNumber" required
+					<input
+						type="text"
+						id="trackingNumber"
+						name="trackingNumber"
+						required
 						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						placeholder="Enter tracking number"/>
+						placeholder="Enter tracking number"
+					/>
 				</div>
 				<div>
 					<label class="block text-sm font-medium text-muted-foreground mb-1">Tracking URL (Optional)</label>
-					<input type="url" id="trackingUrl" name="trackingUrl"
+					<input
+						type="url"
+						id="trackingUrl"
+						name="trackingUrl"
 						class="w-full px-4 py-2 bg-white border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-						placeholder="https://..."/>
+						placeholder="https://..."
+					/>
 				</div>
 			</form>
 			@dialog.Footer() {
@@ -835,18 +850,17 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				}
 				@button.Button(button.Props{
 					Attributes: templ.Attributes{
-						"type":    "submit",
-						"form":    "shippingForm",
+						"type": "submit",
+						"form": "shippingForm",
 					},
 				}) {
 					Ship Order
 				}
 			}
 		}
-
 		<!-- Label Purchase Modal -->
 		@dialog.Content(dialog.ContentProps{
-			ID: "labelPurchaseModal",
+			ID:    "labelPurchaseModal",
 			Class: "max-w-2xl max-h-[90vh] overflow-y-auto",
 		}) {
 			@dialog.Header() {
@@ -867,8 +881,7 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				<div class="mb-4">
 					<p class="text-sm text-muted-foreground">Select a shipping rate to purchase a label:</p>
 				</div>
-				<div id="ratesList" class="space-y-3 mb-6">
-				</div>
+				<div id="ratesList" class="space-y-3 mb-6"></div>
 			</div>
 			@dialog.Footer() {
 				@button.Button(button.Props{
@@ -881,7 +894,6 @@ templ OrderDetail(c echo.Context, order db.Order, orderItems []OrderItemWithImag
 				}
 			}
 		}
-
 		<script>
 			let currentOrderID = '';
 

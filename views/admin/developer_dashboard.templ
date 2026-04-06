@@ -19,7 +19,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 					Developer Dashboard
 				</h1>
 			</header>
-
 			<!-- Navigation -->
 			<nav class="dev-nav">
 				<ul class="dev-nav-list">
@@ -43,7 +42,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 					</li>
 				</ul>
 			</nav>
-
 			<!-- Main Content -->
 			<main class="dev-main">
 				<!-- Overview Section -->
@@ -59,7 +57,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 							</button>
 						</div>
 					</div>
-
 					<!-- Status Cards -->
 					<div class="dev-dashboard">
 						<!-- Application Status -->
@@ -86,7 +83,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 								</div>
 							</div>
 						</div>
-
 						<!-- System Information -->
 						<div class="dev-card">
 							<div class="dev-card-header">
@@ -110,7 +106,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 								</div>
 							</div>
 						</div>
-
 						<!-- Memory Usage -->
 						<div class="dev-card">
 							<div class="dev-card-header">
@@ -138,7 +133,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 								</div>
 							</div>
 						</div>
-
 						<!-- Database Stats -->
 						<div class="dev-card">
 							<div class="dev-card-header">
@@ -164,13 +158,11 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 						</div>
 					</div>
 				</section>
-
 				<!-- System Information Section -->
 				<section id="system" class="dev-section">
 					<div class="dev-section-header">
 						<h2 class="dev-section-title">Detailed System Information</h2>
 					</div>
-					
 					<div class="dev-card">
 						<div class="dev-card-header">
 							<span class="dev-card-icon">⚙️</span>
@@ -216,7 +208,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 						</div>
 					</div>
 				</section>
-
 				<!-- Memory Section -->
 				<section id="memory" class="dev-section">
 					<div class="dev-section-header">
@@ -227,7 +218,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 							</button>
 						</div>
 					</div>
-					
 					<div class="dev-card">
 						<div class="dev-card-header">
 							<span class="dev-card-icon">📈</span>
@@ -265,7 +255,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 						</div>
 					</div>
 				</section>
-
 				<!-- Database Section -->
 				<section id="database" class="dev-section">
 					<div class="dev-section-header">
@@ -276,7 +265,6 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 							</button>
 						</div>
 					</div>
-					
 					<div class="dev-card">
 						<div class="dev-card-header">
 							<span class="dev-card-icon">🗃️</span>
@@ -314,13 +302,11 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 						</div>
 					</div>
 				</section>
-
 				<!-- Configuration Section -->
 				<section id="config" class="dev-section">
 					<div class="dev-section-header">
 						<h2 class="dev-section-title">Configuration</h2>
 					</div>
-					
 					<div class="dev-card">
 						<div class="dev-card-header">
 							<span class="dev-card-icon">🔧</span>
@@ -329,15 +315,14 @@ templ DeveloperDashboard(c echo.Context, sysInfo types.SystemInfo, dbStats types
 						<div class="dev-card-body">
 							<div class="dev-code">
 								<pre id="config-display">
-DB_PATH={ sysInfo.DBPath }
-PORT={ sysInfo.Port }
-ENVIRONMENT={ sysInfo.Environment }
+									DB_PATH={ sysInfo.DBPath }
+									PORT={ sysInfo.Port }
+									ENVIRONMENT={ sysInfo.Environment }
 								</pre>
 							</div>
 						</div>
 					</div>
 				</section>
-
 				<!-- Logs Section -->
 				<section id="logs" class="dev-section">
 					<div class="dev-section-header">
@@ -351,7 +336,6 @@ ENVIRONMENT={ sysInfo.Environment }
 							</button>
 						</div>
 					</div>
-					
 					<div class="dev-card">
 						<div class="dev-card-header">
 							<span class="dev-card-icon">📋</span>
@@ -380,7 +364,6 @@ ENVIRONMENT={ sysInfo.Environment }
 				</section>
 			</main>
 		</div>
-
 		<!-- JavaScript for Developer Dashboard -->
 		<script>
 			// Navigation handling

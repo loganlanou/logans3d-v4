@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
             renderCart({ items: [] });
         }
     }
-    
+
     function renderCart(cart) {
         const items = cart.items || [];
         const emptyCart = document.getElementById('empty-cart');
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Initialize checkout button in disabled state
         initializeCheckoutButton();
-        
+
         // Render cart items using string concatenation
         cartItems.innerHTML = items.map(item => {
             // Fix image URL - check if it already has the full path
@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 '</div>' +
             '</div>';
         }).join('');
-        
+
         // Update subtotal and total - API returns totalCents (camelCase), not total_cents (snake_case)
         const subtotal = cart.totalCents || 0;
         cartSubtotal.textContent = '$' + (subtotal / 100).toFixed(2);
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.shippingManager.updateShippingUI('address-required');
         }
     }
-    
+
     // Initialize checkout button in disabled state
     function initializeCheckoutButton() {
         const checkoutBtn = document.getElementById('proceed-checkout-btn');

@@ -20,7 +20,6 @@ templ ShippingSettings(c echo.Context, config *shipping.ShippingConfig) {
 				Save Changes
 			</button>
 		</div>
-
 		<form id="settings-form" method="POST" action="/admin/shipping/settings" class="space-y-6">
 			<!-- Ship From Addresses Section -->
 			<div class="admin-card">
@@ -98,7 +97,6 @@ templ ShippingSettings(c echo.Context, config *shipping.ShippingConfig) {
 							</div>
 						</div>
 					</div>
-
 					<!-- Other Carriers Address -->
 					<div class="border border-border rounded-lg p-4 bg-border/50">
 						<h3 class="text-lg font-semibold text-foreground mb-4">Other Carriers Origin Address</h3>
@@ -170,7 +168,6 @@ templ ShippingSettings(c echo.Context, config *shipping.ShippingConfig) {
 					</div>
 				</div>
 			</div>
-
 			<!-- Rate Preferences Section -->
 			<div class="admin-card">
 				<div class="admin-card-header">
@@ -211,7 +208,6 @@ templ ShippingSettings(c echo.Context, config *shipping.ShippingConfig) {
 					</div>
 				</div>
 			</div>
-
 			<!-- Label Settings Section -->
 			<div class="admin-card">
 				<div class="admin-card-header">

@@ -1,10 +1,10 @@
 package home
 
 import (
-	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/storage/db"
 	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
 type ProductWithImage struct {
@@ -33,7 +33,7 @@ templ HeroCarousel(featuredProducts []ProductWithImage) {
 	<section class="pt-20 pb-20 px-8 sm:px-12 lg:px-16">
 		<div class="max-w-7xl mx-auto">
 			<!-- Hero Carousel Container -->
-			<div class="relative" x-data={ fmt.Sprintf("{ currentSlide: 0, totalSlides: %d }", 1 + (len(featuredProducts)+3)/4) } x-init="setInterval(() => { currentSlide = (currentSlide + 1) % totalSlides }, 6000)">
+			<div class="relative" x-data={ fmt.Sprintf("{ currentSlide: 0, totalSlides: %d }", 1+(len(featuredProducts)+3)/4) } x-init="setInterval(() => { currentSlide = (currentSlide + 1) % totalSlides }, 6000)">
 				<!-- Slides Container with absolute positioning -->
 				<div class="relative w-full" style="min-height: 600px;">
 					<!-- Hero Slide -->

@@ -2,12 +2,12 @@ package admin
 
 import (
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/badge"
 	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/components/table"
-	"github.com/loganlanou/logans3d-v4/components/badge"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
 )
 
 type UserListItem struct {
@@ -41,7 +41,6 @@ templ Users(
 				<p class="text-sm text-muted-foreground mt-1">Manage customer accounts and view statistics</p>
 			</div>
 		</div>
-
 		<!-- Summary Stats -->
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 			<!-- Total Users -->
@@ -59,7 +58,6 @@ templ Users(
 					</div>
 				}
 			}
-
 			<!-- Total Lifetime Value -->
 			@card.Card() {
 				@card.Content() {
@@ -75,7 +73,6 @@ templ Users(
 					</div>
 				}
 			}
-
 			<!-- Average Order Value -->
 			@card.Card() {
 				@card.Content() {
@@ -92,7 +89,6 @@ templ Users(
 				}
 			}
 		</div>
-
 		<!-- Search and Filters -->
 		<div class="mb-6 space-y-4">
 			<!-- Search Bar -->
@@ -105,7 +101,6 @@ templ Users(
 					onkeyup="debounceSearch(this.value)"
 				/>
 			</div>
-
 			<!-- Date Range and Sort -->
 			<div class="flex gap-4 flex-wrap items-center">
 				<!-- Date From -->
@@ -140,7 +135,6 @@ templ Users(
 				}
 			</div>
 		</div>
-
 		<script>
 			function updateQueryParam(key, value) {
 				const url = new URL(window.location);
@@ -160,7 +154,6 @@ templ Users(
 				}, 500);
 			}
 		</script>
-
 		<!-- Users Table -->
 		@card.Card() {
 			@card.Header() {
@@ -180,21 +173,33 @@ templ Users(
 					@table.Table() {
 						@table.Header() {
 							@table.Row() {
-								@table.Head() { User }
-								@table.Head() { Email }
-								@table.Head() { Orders }
-								@table.Head() { Lifetime Spend }
-								@table.Head() { Registered }
-								@table.Head() { Last Activity }
+								@table.Head() {
+									User 
+								}
+								@table.Head() {
+									Email 
+								}
+								@table.Head() {
+									Orders 
+								}
+								@table.Head() {
+									Lifetime Spend 
+								}
+								@table.Head() {
+									Registered 
+								}
+								@table.Head() {
+									Last Activity 
+								}
 							}
 						}
 						@table.Body() {
 							for _, user := range users {
 								@table.Row(table.RowProps{
-									Class:   "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
+									Class: "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
 									Attributes: templ.Attributes{
 										"data-user-id": user.ID,
-									},									}) {
+									}}) {
 									@table.Cell() {
 										<div class="flex items-center gap-3">
 											if user.ProfileImageUrl != "" {
@@ -260,7 +265,6 @@ templ Users(
 				}
 			}
 		}
-
 		<!-- Script to make table rows clickable -->
 		<script>
 			(function() {

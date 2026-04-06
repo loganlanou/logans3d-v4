@@ -2,9 +2,9 @@ package admin
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
 templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contactHTML string, abandonedCart1HrHTML string, abandonedCart24HrHTML string, abandonedCart72HrHTML string, welcomeCouponHTML string, withPromo bool) {
@@ -13,7 +13,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 		<div class="flex justify-between items-center mb-8">
 			<h1 class="text-2xl font-bold text-foreground">Email Preview</h1>
 		</div>
-
 		@card.Card() {
 			@card.Header() {
 				@card.Title() {
@@ -51,7 +50,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							</optgroup>
 						</select>
 					</div>
-
 					<!-- Promo Toggle (only for 24hr and 72hr emails) -->
 					<div id="promoToggleContainer" class="hidden">
 						<label class="flex items-center space-x-3 cursor-pointer bg-card px-4 py-2 rounded-md border border-border dark:border-border">
@@ -65,15 +63,14 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							<span class="text-sm font-medium text-foreground">Show with promo code</span>
 						</label>
 					</div>
-
 					<!-- Send Test Email Button -->
 					<div>
 						@button.Button(button.Props{
 							Variant: button.VariantDefault,
 							Class:   "bg-green-600 hover:bg-green-700 text-foreground",
 							Attributes: templ.Attributes{
-							"onclick": "showTestEmailDialog()",
-						},
+								"onclick": "showTestEmailDialog()",
+							},
 						}) {
 							<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
@@ -82,7 +79,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 						}
 					</div>
 				</div>
-
 				<!-- Email Preview Frames -->
 				<div class="border border-border dark:border-border rounded-lg overflow-hidden bg-background">
 					<!-- Customer Order Email -->
@@ -101,7 +97,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							title="Customer Email Preview"
 						></iframe>
 					</div>
-
 					<!-- Admin Order Email -->
 					<div id="email-admin" class="email-preview hidden">
 						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
@@ -118,7 +113,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							title="Admin Email Preview"
 						></iframe>
 					</div>
-
 					<!-- Contact Request Email -->
 					<div id="email-contact" class="email-preview hidden">
 						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
@@ -136,7 +130,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							title="Contact Request Email Preview"
 						></iframe>
 					</div>
-
 					<!-- Abandoned Cart (1hr) Email -->
 					<div id="email-abandoned-1hr" class="email-preview hidden">
 						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
@@ -153,7 +146,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							title="Abandoned Cart 1hr Email Preview"
 						></iframe>
 					</div>
-
 					<!-- Abandoned Cart (24hr) Email -->
 					<div id="email-abandoned-24hr" class="email-preview hidden">
 						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
@@ -170,7 +162,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							title="Abandoned Cart 24hr Email Preview"
 						></iframe>
 					</div>
-
 					<!-- Abandoned Cart (72hr) Email -->
 					<div id="email-abandoned-72hr" class="email-preview hidden">
 						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
@@ -187,7 +178,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							title="Abandoned Cart 72hr Email Preview"
 						></iframe>
 					</div>
-
 					<!-- Welcome Coupon Email -->
 					<div id="email-welcome-coupon" class="email-preview hidden">
 						<div class="bg-card px-4 py-3 border-b border-border dark:border-border">
@@ -207,7 +197,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 				</div>
 			}
 		}
-
 		<!-- Test Email Modal -->
 		<div id="testEmailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
 			<div class="bg-card rounded-lg shadow-xl max-w-md w-full mx-4 border border-border dark:border-border">
@@ -216,7 +205,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 				</div>
 				<div class="p-6">
 					<p class="text-sm text-muted-foreground mb-4">Enter an email address to send a test email to:</p>
-
 					<div class="space-y-4">
 						<div>
 							<label class="block text-sm font-medium text-muted-foreground mb-2">Email Address</label>
@@ -228,7 +216,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 								value="prints@logans3dcreations.com"
 							/>
 						</div>
-
 						<div>
 							<label class="block text-sm font-medium text-muted-foreground mb-2">Email Type</label>
 							<select
@@ -245,11 +232,9 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 							</select>
 						</div>
 					</div>
-
 					<div id="testEmailStatus" class="mt-4 hidden">
 						<div class="p-3 rounded-md"></div>
 					</div>
-
 					<div class="flex justify-end space-x-3 mt-6">
 						<button
 							onclick="closeTestEmailDialog()"
@@ -269,7 +254,6 @@ templ EmailPreview(c echo.Context, customerHTML string, adminHTML string, contac
 			</div>
 		</div>
 	}
-
 	<script>
 		let currentEmailType = 'customer';
 

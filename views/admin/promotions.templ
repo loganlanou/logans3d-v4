@@ -2,37 +2,37 @@ package admin
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/views/helpers"
-	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/components/badge"
 	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/components/table"
-	"github.com/loganlanou/logans3d-v4/components/badge"
-	"fmt"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/helpers"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
 // CombinedPromotionStats combines all promotion analytics stats for a single campaign
 type CombinedPromotionStats struct {
 	// Basic stats from GetPromotionCodeStats
-	TotalCodes   int64
-	UsedCodes    sql.NullFloat64
-	TotalUses    sql.NullFloat64
+	TotalCodes int64
+	UsedCodes  sql.NullFloat64
+	TotalUses  sql.NullFloat64
 
 	// New analytics stats
-	EmailsToNonUsers         int64
-	ActiveCodesIssued        int64
-	ActiveCodesRedeemed      sql.NullFloat64
-	RedemptionRatePercent    float64
+	EmailsToNonUsers      int64
+	ActiveCodesIssued     int64
+	ActiveCodesRedeemed   sql.NullFloat64
+	RedemptionRatePercent float64
 }
 
 // CompositePromotionStats holds aggregate stats across all active campaigns
 type CompositePromotionStats struct {
-	TotalCodesIssued        int64
-	TotalCodesRedeemed      sql.NullFloat64
-	OverallRedemptionRate   float64
-	TotalEmailsToNonUsers   int64
-	TotalActiveCodes        int64
+	TotalCodesIssued      int64
+	TotalCodesRedeemed    sql.NullFloat64
+	OverallRedemptionRate float64
+	TotalEmailsToNonUsers int64
+	TotalActiveCodes      int64
 }
 
 templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, compositeStats CompositePromotionStats) {
@@ -44,7 +44,6 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 				<p class="text-muted-foreground mt-1">Manage discount campaigns and promotion codes</p>
 			</div>
 		</div>
-
 		<!-- Composite Analytics Stats (System-Wide - Active Campaigns Only) -->
 		<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
 			<!-- Overall Redemption Rate -->
@@ -66,7 +65,6 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 					</div>
 				}
 			}
-
 			<!-- Total Emails to Non-Users -->
 			@card.Card() {
 				@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -86,7 +84,6 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 					</div>
 				}
 			}
-
 			<!-- Total Active Codes -->
 			@card.Card() {
 				@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -106,7 +103,6 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 					</div>
 				}
 			}
-
 			<!-- Total Codes Issued vs Redeemed -->
 			@card.Card() {
 				@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -127,7 +123,6 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 				}
 			}
 		</div>
-
 		<!-- Campaigns List -->
 		@card.Card() {
 			@card.Header() {
@@ -144,12 +139,24 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 					@table.Table() {
 						@table.Header() {
 							@table.Row() {
-								@table.Head() { Campaign Name }
-								@table.Head() { Type }
-								@table.Head() { Discount }
-								@table.Head() { Codes Issued }
-								@table.Head() { Status }
-								@table.Head() { Created }
+								@table.Head() {
+									Campaign Name 
+								}
+								@table.Head() {
+									Type 
+								}
+								@table.Head() {
+									Discount 
+								}
+								@table.Head() {
+									Codes Issued 
+								}
+								@table.Head() {
+									Status 
+								}
+								@table.Head() {
+									Created 
+								}
 							}
 						}
 						@table.Body() {
@@ -176,7 +183,7 @@ templ Promotions(c echo.Context, campaigns []db.PromotionCampaign, page int, com
 									@table.Cell() {
 										<span class="text-foreground">{ helpers.FormatNullInt64(campaign.CurrentUses, "0") }</span>
 										if campaign.MaxUses.Valid {
-											<span class="text-muted-foreground"> / { helpers.FormatInt(campaign.MaxUses.Int64) }</span>
+											<span class="text-muted-foreground">/ { helpers.FormatInt(campaign.MaxUses.Int64) }</span>
 										}
 									}
 									@table.Cell() {
@@ -213,7 +220,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				← Back to Campaigns
 			</a>
 		</div>
-
 		<!-- Header -->
 		<div class="flex justify-between items-start mb-6">
 			<div>
@@ -234,7 +240,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				}
 			</div>
 		</div>
-
 		<!-- Analytics Stats (Priority Metrics) -->
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 			<!-- Redemption Rate -->
@@ -256,7 +261,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 					</div>
 				}
 			}
-
 			<!-- Emails to Non-Users -->
 			@card.Card() {
 				@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -276,7 +280,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 					</div>
 				}
 			}
-
 			<!-- Active Codes Status -->
 			@card.Card() {
 				@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -297,7 +300,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				}
 			}
 		</div>
-
 		<!-- Campaign Stats -->
 		<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
 			@card.Card() {
@@ -308,7 +310,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 					</div>
 				}
 			}
-
 			@card.Card() {
 				@card.Content() {
 					<div class="text-center">
@@ -317,7 +318,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 					</div>
 				}
 			}
-
 			@card.Card() {
 				@card.Content() {
 					<div class="text-center">
@@ -326,7 +326,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 					</div>
 				}
 			}
-
 			@card.Card() {
 				@card.Content() {
 					<div class="text-center">
@@ -340,7 +339,6 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 				}
 			}
 		</div>
-
 		<!-- Codes List -->
 		@card.Card() {
 			@card.Header() {
@@ -357,11 +355,21 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 					@table.Table() {
 						@table.Header() {
 							@table.Row() {
-								@table.Head() { Code }
-								@table.Head() { Email }
-								@table.Head() { Uses }
-								@table.Head() { Expires }
-								@table.Head() { Created }
+								@table.Head() {
+									Code 
+								}
+								@table.Head() {
+									Email 
+								}
+								@table.Head() {
+									Uses 
+								}
+								@table.Head() {
+									Expires 
+								}
+								@table.Head() {
+									Created 
+								}
 							}
 						}
 						@table.Body() {
@@ -380,7 +388,7 @@ templ PromotionDetail(c echo.Context, campaign db.PromotionCampaign, codes []db.
 									@table.Cell() {
 										<span class="text-foreground">{ helpers.FormatNullInt64(code.CurrentUses, "0") }</span>
 										if code.MaxUses.Valid {
-											<span class="text-muted-foreground"> / { helpers.FormatInt(code.MaxUses.Int64) }</span>
+											<span class="text-muted-foreground">/ { helpers.FormatInt(code.MaxUses.Int64) }</span>
 										}
 									}
 									@table.Cell() {

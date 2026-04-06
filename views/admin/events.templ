@@ -2,10 +2,10 @@ package admin
 
 import (
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
 )
 
 templ EventsList(c echo.Context, events []db.Event) {
@@ -15,7 +15,6 @@ templ EventsList(c echo.Context, events []db.Event) {
 			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Events Management</h1>
 			<a href="/admin/events/new" class="admin-btn admin-btn-primary">+ Add Event</a>
 		</div>
-
 		<!-- Stats Cards -->
 		<div class="admin-stats-grid">
 			<div class="admin-stat-card">
@@ -35,7 +34,6 @@ templ EventsList(c echo.Context, events []db.Event) {
 				<div class="admin-stat-label">Past Events</div>
 			</div>
 		</div>
-
 		<!-- Filters -->
 		<div class="admin-card mb-6">
 			<div class="admin-card-header">
@@ -51,7 +49,6 @@ templ EventsList(c echo.Context, events []db.Event) {
 				</div>
 			</div>
 		</div>
-
 		<!-- Events Table -->
 		<div class="admin-card">
 			<div class="admin-card-header">
@@ -114,19 +111,27 @@ templ EventsList(c echo.Context, events []db.Event) {
 								</td>
 								<td>
 									<div class="flex space-x-2">
-										<a href={ templ.SafeURL(fmt.Sprintf("/admin/events/edit?id=%s", event.ID)) } 
-										   class="admin-btn admin-btn-sm admin-btn-primary">
+										<a
+											href={ templ.SafeURL(fmt.Sprintf("/admin/events/edit?id=%s", event.ID)) }
+											class="admin-btn admin-btn-sm admin-btn-primary"
+										>
 											Edit
 										</a>
 										if event.Url.Valid {
-											<a href={ templ.SafeURL(event.Url.String) } 
-											   target="_blank" 
-											   class="admin-btn admin-btn-sm admin-btn-secondary">
+											<a
+												href={ templ.SafeURL(event.Url.String) }
+												target="_blank"
+												class="admin-btn admin-btn-sm admin-btn-secondary"
+											>
 												Visit
 											</a>
 										}
-										<form method="POST" action={ templ.SafeURL(fmt.Sprintf("/admin/events/%s/delete", event.ID)) } 
-											  onsubmit="return confirm('Are you sure you want to delete this event?');" class="inline">
+										<form
+											method="POST"
+											action={ templ.SafeURL(fmt.Sprintf("/admin/events/%s/delete", event.ID)) }
+											onsubmit="return confirm('Are you sure you want to delete this event?');"
+											class="inline"
+										>
 											<button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">
 												Delete
 											</button>
@@ -155,15 +160,14 @@ templ EventForm(c echo.Context, event *db.Event) {
 			</h1>
 			<a href="/admin/events" class="admin-btn admin-btn-secondary">← Back to Events</a>
 		</div>
-
 		<!-- Form -->
 		<div class="admin-card">
-			<form 
+			<form
 				if event != nil {
-					method="POST" 
+					method="POST"
 					action={ templ.SafeURL(fmt.Sprintf("/admin/events/%s", event.ID)) }
 				} else {
-					method="POST" 
+					method="POST"
 					action="/admin/events"
 				}
 				class="p-6 space-y-6"
@@ -171,7 +175,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 				<!-- Basic Information -->
 				<div class="space-y-4">
 					<h3 class="admin-text-lg admin-font-semibold">Event Information</h3>
-						
 					<!-- Title -->
 					<div>
 						<label for="title" class="admin-text-sm admin-font-medium">Title <span class="text-red-600 dark:text-red-400">*</span></label>
@@ -187,7 +190,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 							placeholder="Enter event title"
 						/>
 					</div>
-
 					<!-- Description -->
 					<div>
 						<label for="description" class="admin-text-sm admin-font-medium">Description</label>
@@ -199,7 +201,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 							placeholder="Event description"
 						>{ getEventDescription(event) }</textarea>
 					</div>
-
 					<!-- Location Details -->
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
@@ -215,7 +216,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 								placeholder="Event location name"
 							/>
 						</div>
-
 						<div>
 							<label for="url" class="admin-text-sm admin-font-medium">Event URL</label>
 							<input
@@ -230,7 +230,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 							/>
 						</div>
 					</div>
-
 					<!-- Address -->
 					<div>
 						<label for="address" class="admin-text-sm admin-font-medium">Address</label>
@@ -245,7 +244,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 							placeholder="Full address"
 						/>
 					</div>
-
 					<!-- Date & Time -->
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
@@ -261,7 +259,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 								class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200"
 							/>
 						</div>
-
 						<div>
 							<label for="end_date" class="admin-text-sm admin-font-medium">End Date & Time</label>
 							<input
@@ -275,7 +272,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 							/>
 						</div>
 					</div>
-
 					<!-- Status -->
 					<div>
 						<label class="flex items-center cursor-pointer">
@@ -292,7 +288,6 @@ templ EventForm(c echo.Context, event *db.Event) {
 						<p class="mt-1 admin-text-xs admin-text-muted-foreground">Only active events will be displayed on the website</p>
 					</div>
 				</div>
-
 				<!-- Form Actions -->
 				<div class="flex justify-end space-x-4 pt-6 border-t border-border">
 					<a href="/admin/events" class="admin-btn admin-btn-secondary">Cancel</a>

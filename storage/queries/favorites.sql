@@ -1,5 +1,5 @@
 -- name: GetUserFavorites :many
-SELECT 
+SELECT
     f.id,
     f.user_id,
     f.product_id,

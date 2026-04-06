@@ -2,11 +2,11 @@ package layout
 
 import (
 	"fmt"
+	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/components/dialog"
+	"github.com/loganlanou/logans3d-v4/internal/auth"
 	"os"
 	"time"
-	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/internal/auth"
-	"github.com/loganlanou/logans3d-v4/components/dialog"
 )
 
 templ Base(c echo.Context, meta PageMeta) {
@@ -15,19 +15,16 @@ templ Base(c echo.Context, meta PageMeta) {
 		<head>
 			<meta charset="UTF-8"/>
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
 			<!-- Primary Meta Tags -->
 			<title>{ meta.Title }</title>
 			<meta name="description" content={ meta.Description }/>
 			if len(meta.Keywords) > 0 {
 				<meta name="keywords" content={ meta.KeywordsString() }/>
 			}
-
 			<!-- Canonical URL -->
 			if meta.CanonicalURL != "" {
 				<link rel="canonical" href={ meta.CanonicalURL }/>
 			}
-
 			<!-- Open Graph / Facebook -->
 			<meta property="og:type" content={ meta.OGType }/>
 			<meta property="og:url" content={ meta.OGURL }/>
@@ -45,7 +42,6 @@ templ Base(c echo.Context, meta PageMeta) {
 			if meta.FacebookPageID != "" {
 				<meta property="fb:pages" content={ meta.FacebookPageID }/>
 			}
-
 			<!-- Twitter Cards -->
 			<meta name="twitter:card" content={ meta.TwitterCard }/>
 			<meta name="twitter:title" content={ meta.TwitterTitle }/>
@@ -56,13 +52,11 @@ templ Base(c echo.Context, meta PageMeta) {
 			if meta.TwitterSite != "" {
 				<meta name="twitter:site" content={ meta.TwitterSite }/>
 			}
-
 			<!-- Schema.org JSON-LD -->
 			if meta.Product != nil {
 				@ProductSchema(meta)
 			}
 			@OrganizationSchema(meta)
-
 			<!-- Google Analytics -->
 			<script async src="https://www.googletagmanager.com/gtag/js?id=G-0DMM8W9JY7"></script>
 			<script>
@@ -84,20 +78,21 @@ templ Base(c echo.Context, meta PageMeta) {
 				fbq('init', '1913191856215416');
 				fbq('track', 'PageView');
 			</script>
-			<noscript><img height="1" width="1" style="display:none"
-				src="https://www.facebook.com/tr?id=1913191856215416&ev=PageView&noscript=1"
-			/></noscript>
+			<noscript>
+				<img
+					height="1"
+					width="1"
+					style="display:none"
+					src="https://www.facebook.com/tr?id=1913191856215416&ev=PageView&noscript=1"
+				/>
+			</noscript>
 			<!-- End Meta Pixel Code -->
 			<!-- Favicon -->
 			<link rel="icon" type="image/png" href="/public/images/favicon.png"/>
 			<!-- CSS -->
 			<link rel="stylesheet" href="/public/css/public-styles.css"/>
 			<!-- Clerk JS SDK for automatic token refresh -->
-			<script
-				data-clerk-publishable-key={ os.Getenv("CLERK_PUBLISHABLE_KEY") }
-				src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-				crossorigin="anonymous"
-			></script>
+			<script data-clerk-publishable-key={ os.Getenv("CLERK_PUBLISHABLE_KEY") } src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js" crossorigin="anonymous"></script>
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -120,10 +115,8 @@ templ Base(c echo.Context, meta PageMeta) {
 				{ children... }
 			</main>
 			@Footer()
-
 			<!-- Cart Preview Modal -->
 			@CartModal()
-
 			<!-- Initialize Clerk for session maintenance -->
 			<script>
 				window.addEventListener('load', async function() {
@@ -148,11 +141,10 @@ templ Base(c echo.Context, meta PageMeta) {
 					}
 				});
 			</script>
-
-		<!-- Email Capture Popup -->
-		if !auth.IsAuthenticated(c) {
-			@EmailCapturePopup()
-		}
+			<!-- Email Capture Popup -->
+			if !auth.IsAuthenticated(c) {
+				@EmailCapturePopup()
+			}
 		</body>
 	</html>
 }
@@ -199,14 +191,18 @@ templ Header(c echo.Context) {
 									</svg>
 								</button>
 								<!-- Dropdown Menu -->
-								<div x-show="open" @click.away="open = false" x-cloak
+								<div
+									x-show="open"
+									@click.away="open = false"
+									x-cloak
 									x-transition:enter="transition ease-out duration-100"
 									x-transition:enter-start="transform opacity-0 scale-95"
 									x-transition:enter-end="transform opacity-100 scale-100"
 									x-transition:leave="transition ease-in duration-75"
 									x-transition:leave-start="transform opacity-100 scale-100"
 									x-transition:leave-end="transform opacity-0 scale-95"
-									class="absolute right-0 mt-2 w-48 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl py-1 z-50 border border-gray-700">
+									class="absolute right-0 mt-2 w-48 bg-gradient-to-b from-gray-800 to-gray-900 rounded-lg shadow-xl py-1 z-50 border border-gray-700"
+								>
 									<a href="/account" class="block px-4 py-2 text-sm text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150">My Account</a>
 									<a href="/email-preferences" class="block px-4 py-2 text-sm text-gray-100 hover:bg-gray-700 hover:text-white transition-colors duration-150">Email Preferences</a>
 									if auth.IsAdmin(c) {
@@ -317,7 +313,6 @@ templ CartModal() {
 	>
 		<!-- Backdrop -->
 		<div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" @click="open = false"></div>
-		
 		<!-- Modal Content -->
 		<div class="flex min-h-full items-center justify-center p-4">
 			<div
@@ -342,13 +337,11 @@ templ CartModal() {
 						</svg>
 					</button>
 				</div>
-				
 				<!-- Cart Items -->
 				<div class="p-6">
 					<div id="modal-cart-items">
 						<!-- Items will be populated by JavaScript -->
 					</div>
-
 					<!-- Empty State -->
 					<div id="modal-empty-cart" class="hidden text-center py-8">
 						<svg class="w-16 h-16 text-slate-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,7 +350,6 @@ templ CartModal() {
 						<p class="text-slate-400 text-lg">Your cart is empty</p>
 						<button @click="open = false" class="mt-4 text-blue-400 hover:text-blue-300 font-medium">Continue Shopping</button>
 					</div>
-
 					<!-- Shipping Options -->
 					<div id="modal-shipping-section" class="hidden mt-6 pt-6 border-t border-slate-700">
 						<div id="shipping-options-container">
@@ -365,7 +357,6 @@ templ CartModal() {
 						</div>
 					</div>
 				</div>
-				
 				<!-- Footer -->
 				<div id="modal-cart-footer" class="hidden border-t border-slate-700 p-6">
 					<div class="space-y-3 mb-6">
@@ -385,7 +376,6 @@ templ CartModal() {
 							<span class="text-sm text-slate-400 italic">Tax calculated at checkout</span>
 						</div>
 					</div>
-					
 					<div class="flex gap-4">
 						<button
 							@click="open = false"
@@ -469,7 +459,6 @@ templ EmailCapturePopup() {
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
 				</svg>
 			</button>
-
 			<!-- Content -->
 			<div class="p-8">
 				<!-- Icon/Image -->
@@ -482,13 +471,10 @@ templ EmailCapturePopup() {
 					<h2 class="text-3xl font-bold text-gray-900 mb-2">Get 15% Off!</h2>
 					<p class="text-gray-600">Join our community and receive an exclusive discount code for your first order.</p>
 				</div>
-
 				<!-- Error Message -->
 				<div id="email-popup-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm"></div>
-
 				<!-- Success Message -->
 				<div id="email-popup-success" class="hidden mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg text-center font-semibold"></div>
-
 				<!-- Form -->
 				<form id="email-capture-form" class="space-y-4">
 					<div>
@@ -501,7 +487,6 @@ templ EmailCapturePopup() {
 							placeholder="Your first name"
 						/>
 					</div>
-
 					<div>
 						<label for="popup-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
 						<input
@@ -513,14 +498,12 @@ templ EmailCapturePopup() {
 							placeholder="you@example.com"
 						/>
 					</div>
-
 					<button
 						type="submit"
 						class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-200 transform hover:scale-105"
 					>
 						Get My Discount Code
 					</button>
-
 					<p class="text-xs text-gray-500 text-center mt-3">
 						By signing up, you agree to receive promotional emails. You can unsubscribe anytime.
 					</p>
@@ -528,7 +511,6 @@ templ EmailCapturePopup() {
 			</div>
 		</div>
 	</div>
-
 	<!-- Include Email Capture JavaScript -->
 	<script src="/public/js/email-capture.js"></script>
 }

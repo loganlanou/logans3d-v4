@@ -12,7 +12,6 @@ templ GiftCertificateNew(c echo.Context) {
 			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Create Gift Certificate</h1>
 			<a href="/admin/gift-certificates" class="admin-btn admin-btn-secondary">← Back to Certificates</a>
 		</div>
-
 		<!-- Form -->
 		<div class="admin-card max-w-2xl">
 			<form method="POST" action="/admin/gift-certificates" class="p-6 space-y-6">
@@ -20,7 +19,6 @@ templ GiftCertificateNew(c echo.Context) {
 				<div>
 					<label class="admin-text-sm admin-font-medium">Certificate Amount <span class="text-red-600 dark:text-red-400">*</span></label>
 					<p class="admin-text-xs admin-text-muted-foreground mb-3">Select a preset amount or enter a custom value</p>
-
 					<!-- Preset Amount Buttons -->
 					<div class="flex flex-wrap gap-2 mb-4">
 						<button type="button" onclick="setAmount(10)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$10</button>
@@ -29,7 +27,6 @@ templ GiftCertificateNew(c echo.Context) {
 						<button type="button" onclick="setAmount(75)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$75</button>
 						<button type="button" onclick="setAmount(100)" class="admin-btn admin-btn-sm admin-btn-secondary amount-btn">$100</button>
 					</div>
-
 					<!-- Custom Amount Input -->
 					<div class="relative">
 						<span class="absolute left-3 top-1/2 -translate-y-1/2 admin-text-muted-foreground">$</span>
@@ -45,7 +42,6 @@ templ GiftCertificateNew(c echo.Context) {
 						/>
 					</div>
 				</div>
-
 				<!-- Reference -->
 				<div>
 					<label for="reference" class="admin-text-sm admin-font-medium">Reference (Optional)</label>
@@ -59,7 +55,6 @@ templ GiftCertificateNew(c echo.Context) {
 						placeholder="e.g., Birthday gift for John"
 					/>
 				</div>
-
 				<!-- Info Box -->
 				<div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
 					<h4 class="admin-font-medium text-blue-900 dark:text-blue-100 mb-2">What happens next?</h4>
@@ -70,7 +65,6 @@ templ GiftCertificateNew(c echo.Context) {
 						<li>You can download and print the certificate for the customer</li>
 					</ul>
 				</div>
-
 				<!-- Submit -->
 				<div class="flex justify-end space-x-4 pt-4 border-t border-border">
 					<a href="/admin/gift-certificates" class="admin-btn admin-btn-secondary">Cancel</a>
@@ -78,7 +72,6 @@ templ GiftCertificateNew(c echo.Context) {
 				</div>
 			</form>
 		</div>
-
 		<script>
 			function setAmount(value) {
 				document.getElementById('amount').value = value;

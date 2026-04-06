@@ -2,40 +2,40 @@ package admin
 
 import (
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/card"
-	"github.com/loganlanou/logans3d-v4/components/button"
-	"github.com/loganlanou/logans3d-v4/components/table"
 	"github.com/loganlanou/logans3d-v4/components/badge"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
 )
 
 type CartDetail struct {
-	SessionID       string
-	UserID          string
-	CustomerEmail   string
-	CustomerName    string
-	CustomerAvatar  string
-	ItemCount       int64
-	CartValueCents  int64
-	CreatedAt       time.Time
-	LastActivity    time.Time
-	Status          string
+	SessionID      string
+	UserID         string
+	CustomerEmail  string
+	CustomerName   string
+	CustomerAvatar string
+	ItemCount      int64
+	CartValueCents int64
+	CreatedAt      time.Time
+	LastActivity   time.Time
+	Status         string
 }
 
 type CartItem struct {
-	ID               string
-	ProductID        string
-	ProductName      string
-	ProductImage     string
-	VariantSKU       string
-	VariantName      string
-	Quantity         int64
-	PriceCents       int64
-	LineTotalCents   int64
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID             string
+	ProductID      string
+	ProductName    string
+	ProductImage   string
+	VariantSKU     string
+	VariantName    string
+	Quantity       int64
+	PriceCents     int64
+	LineTotalCents int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 templ CartDetailPage(
@@ -54,7 +54,6 @@ templ CartDetailPage(
 					Back to All Carts
 				</a>
 			</div>
-
 			<!-- Header -->
 			<div class="flex justify-between items-start mb-6">
 				<div>
@@ -71,7 +70,6 @@ templ CartDetailPage(
 					@renderStatusBadgeDetail(cart.Status)
 				</div>
 			</div>
-
 			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 				<!-- Left Column - Customer Info & Cart Summary -->
 				<div class="lg:col-span-1 space-y-6">
@@ -112,7 +110,6 @@ templ CartDetailPage(
 										}
 									</div>
 								</div>
-
 								<!-- Customer Type -->
 								<div class="pt-3 border-t border-border dark:border-border">
 									<div class="flex justify-between items-center">
@@ -126,7 +123,6 @@ templ CartDetailPage(
 										</span>
 									</div>
 								</div>
-
 								<!-- View User Profile Button -->
 								if cart.UserID != "" {
 									<div class="pt-4 border-t border-border dark:border-border">
@@ -140,7 +136,6 @@ templ CartDetailPage(
 										</a>
 									</div>
 								}
-
 								<!-- Session/User ID -->
 								<div class="pt-1">
 									<div class="flex justify-between items-center">
@@ -160,7 +155,6 @@ templ CartDetailPage(
 										</span>
 									</div>
 								</div>
-
 								<!-- Actions -->
 								if cart.CustomerEmail != "" {
 									<div class="pt-4 border-t">
@@ -177,7 +171,6 @@ templ CartDetailPage(
 							</div>
 						}
 					}
-
 					<!-- Cart Summary -->
 					@card.Card() {
 						@card.Header() {
@@ -207,7 +200,6 @@ templ CartDetailPage(
 						}
 					}
 				</div>
-
 				<!-- Right Column - Cart Items -->
 				<div class="lg:col-span-2">
 					@card.Card() {
@@ -224,11 +216,21 @@ templ CartDetailPage(
 								@table.Table() {
 									@table.Header() {
 										@table.Row() {
-											@table.Head() { Product }
-											@table.Head() { Quantity }
-											@table.Head() { Price }
-											@table.Head() { Total }
-											@table.Head() { Added }
+											@table.Head() {
+												Product 
+											}
+											@table.Head() {
+												Quantity 
+											}
+											@table.Head() {
+												Price 
+											}
+											@table.Head() {
+												Total 
+											}
+											@table.Head() {
+												Added 
+											}
 										}
 									}
 									@table.Body() {

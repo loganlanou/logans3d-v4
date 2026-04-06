@@ -60,7 +60,13 @@ templ StylePanel(data StylePanelData) {
 							hx-post={ fmt.Sprintf("/admin/style-image/%s/set-primary?product_id=%s&style_id=%s", img.ID, data.ProductID, data.Style.ID) }
 							hx-target="#style-detail-panel"
 							hx-swap="innerHTML"
-							title={ templ.EscapeString(func() string { if img.IsPrimary.Valid && img.IsPrimary.Bool { return "Primary image" } else { return "Click to set as primary" } }()) }
+							title={ templ.EscapeString(func() string {
+	if img.IsPrimary.Valid && img.IsPrimary.Bool {
+		return "Primary image"
+	} else {
+		return "Click to set as primary"
+	}
+}()) }
 						>
 							<img
 								src={ fmt.Sprintf("/public/images/products/styles/%s", img.ImageUrl) }

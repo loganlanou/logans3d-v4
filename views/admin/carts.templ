@@ -2,13 +2,13 @@ package admin
 
 import (
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/card"
-	"github.com/loganlanou/logans3d-v4/components/button"
-	"github.com/loganlanou/logans3d-v4/components/table"
 	"github.com/loganlanou/logans3d-v4/components/badge"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/table"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
 )
 
 type CartMetrics struct {
@@ -22,16 +22,16 @@ type CartMetrics struct {
 }
 
 type CartListItem struct {
-	SessionID       string
-	UserID          string
-	CustomerEmail   string
-	CustomerName    string
-	CustomerAvatar  string
-	ItemCount       int64
-	CartValueCents  int64
-	CreatedAt       time.Time
-	LastActivity    time.Time
-	Status          string
+	SessionID      string
+	UserID         string
+	CustomerEmail  string
+	CustomerName   string
+	CustomerAvatar string
+	ItemCount      int64
+	CartValueCents int64
+	CreatedAt      time.Time
+	LastActivity   time.Time
+	Status         string
 }
 
 templ CartsList(
@@ -60,7 +60,6 @@ templ CartsList(
 				</a>
 			</div>
 		</div>
-
 		<!-- Metrics Cards -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 			<!-- Total Carts -->
@@ -80,7 +79,6 @@ templ CartsList(
 					</div>
 				}
 			}
-
 			<!-- Guest vs Registered -->
 			@card.Card() {
 				@card.Content() {
@@ -102,7 +100,6 @@ templ CartsList(
 					</div>
 				}
 			}
-
 			<!-- Total Value -->
 			@card.Card() {
 				@card.Content() {
@@ -120,7 +117,6 @@ templ CartsList(
 					</div>
 				}
 			}
-
 			<!-- Conversion Opportunity -->
 			@card.Card() {
 				@card.Content() {
@@ -139,7 +135,6 @@ templ CartsList(
 				}
 			}
 		</div>
-
 		<!-- Filters -->
 		<div class="mb-6 space-y-4">
 			<!-- Search -->
@@ -152,7 +147,6 @@ templ CartsList(
 					onkeyup="debounceSearch(this.value)"
 				/>
 			</div>
-
 			<!-- Status and Type Filters -->
 			<div class="flex gap-4 flex-wrap items-center">
 				<a href="/admin/carts" class="px-4 py-2 text-sm text-muted-foreground font-medium border border-border dark:border-border rounded-lg hover:bg-muted/80 dark:hover:bg-secondary hover:text-foreground transition-colors">All Carts</a>
@@ -165,7 +159,6 @@ templ CartsList(
 				<a href="/admin/carts?customer_type=registered" class={ getFilterClass(customerTypeFilter, "registered") }>Registered Only</a>
 			</div>
 		</div>
-
 		<script>
 			function updateQueryParam(key, value) {
 				const url = new URL(window.location);
@@ -185,7 +178,6 @@ templ CartsList(
 				}, 500);
 			}
 		</script>
-
 		<!-- Carts Table -->
 		@card.Card() {
 			@card.Header() {
@@ -201,12 +193,24 @@ templ CartsList(
 					@table.Table() {
 						@table.Header() {
 							@table.Row() {
-								@table.Head() { Customer }
-								@table.Head() { Items }
-								@table.Head() { Value }
-								@table.Head() { Created }
-								@table.Head() { Last Activity }
-								@table.Head() { Status }
+								@table.Head() {
+									Customer 
+								}
+								@table.Head() {
+									Items 
+								}
+								@table.Head() {
+									Value 
+								}
+								@table.Head() {
+									Created 
+								}
+								@table.Head() {
+									Last Activity 
+								}
+								@table.Head() {
+									Status 
+								}
 							}
 						}
 						@table.Body() {

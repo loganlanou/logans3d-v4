@@ -1,13 +1,13 @@
 package admin
 
 import (
+	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/components/badge"
 	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/components/table"
-	"github.com/loganlanou/logans3d-v4/components/badge"
-	"fmt"
+	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
 templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCount int, emailFilter string) {
@@ -23,7 +23,6 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 				</a>
 			</div>
 		}
-
 		<!-- Header -->
 		<div class="flex justify-between items-center mb-6">
 			<div>
@@ -38,7 +37,6 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 				Total: { fmt.Sprintf("%d", totalCount) } emails
 			</div>
 		</div>
-
 		<!-- Email List -->
 		@card.Card() {
 			@card.Header() {
@@ -55,11 +53,21 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 					@table.Table() {
 						@table.Header() {
 							@table.Row() {
-								@table.Head() { Sent At }
-								@table.Head() { Recipient }
-								@table.Head() { Type }
-								@table.Head() { Subject }
-								@table.Head() { Status }
+								@table.Head() {
+									Sent At 
+								}
+								@table.Head() {
+									Recipient 
+								}
+								@table.Head() {
+									Type 
+								}
+								@table.Head() {
+									Subject 
+								}
+								@table.Head() {
+									Status 
+								}
 							}
 						}
 						@table.Body() {
@@ -88,7 +96,6 @@ templ EmailHistory(c echo.Context, emails []db.EmailHistory, page int, totalCoun
 							}
 						}
 					}
-
 					<!-- Pagination -->
 					if totalCount > 50 {
 						<div class="mt-4 flex justify-center gap-2">

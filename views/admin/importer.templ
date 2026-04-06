@@ -15,10 +15,10 @@ import (
 
 // DesignerStats holds stats for a designer
 type DesignerStats struct {
-	Designer       importer.Designer
-	ScrapedCount   int64
+	Designer        importer.Designer
+	ScrapedCount    int64
 	UnimportedCount int64
-	LastScraped    *time.Time
+	LastScraped     *time.Time
 }
 
 // ImporterDashboardData holds data for the importer dashboard
@@ -48,7 +48,6 @@ templ ImporterDashboard(c echo.Context, data ImporterDashboardData) {
 					<p class="text-muted-foreground">Scrape and import 3D models from external platforms</p>
 				</div>
 			</div>
-
 			<!-- Designers Card -->
 			@card.Card() {
 				@card.Header() {
@@ -96,8 +95,8 @@ templ ImporterDashboard(c echo.Context, data ImporterDashboardData) {
 											Size:    button.SizeSm,
 											Variant: button.VariantSecondary,
 											Attributes: templ.Attributes{
-												"hx-post":    fmt.Sprintf("/admin/importer/scrape/%s", ds.Designer.Slug),
-												"hx-swap":    "none",
+												"hx-post": fmt.Sprintf("/admin/importer/scrape/%s", ds.Designer.Slug),
+												"hx-swap": "none",
 											},
 										}) {
 											Scrape
@@ -117,7 +116,6 @@ templ ImporterDashboard(c echo.Context, data ImporterDashboardData) {
 					</div>
 				}
 			}
-
 			<!-- Recent Jobs Card -->
 			@card.Card() {
 				@card.Header() {
@@ -158,7 +156,6 @@ templ ImporterDashboard(c echo.Context, data ImporterDashboardData) {
 				}
 			}
 		</div>
-
 		<script>
 			// Listen for job completion to refresh the page
 			document.body.addEventListener('htmx:afterRequest', function(evt) {
@@ -235,8 +232,8 @@ templ ImporterDesignerDetail(c echo.Context, data ImporterDesignerData) {
 					@button.Button(button.Props{
 						Variant: button.VariantSecondary,
 						Attributes: templ.Attributes{
-							"hx-post":    fmt.Sprintf("/admin/importer/scrape/%s", data.Designer.Slug),
-							"hx-swap":    "none",
+							"hx-post": fmt.Sprintf("/admin/importer/scrape/%s", data.Designer.Slug),
+							"hx-swap": "none",
 						},
 					}) {
 						Re-scrape All
@@ -269,7 +266,6 @@ templ ImporterDesignerDetail(c echo.Context, data ImporterDesignerData) {
 					}
 				</div>
 			</div>
-
 			<!-- Filter Bar -->
 			<div class="flex items-center gap-4">
 				<span class="text-sm text-muted-foreground">Filter:</span>
@@ -286,7 +282,6 @@ templ ImporterDesignerDetail(c echo.Context, data ImporterDesignerData) {
 					Showing { fmt.Sprintf("%d", len(data.Products)) } of { fmt.Sprintf("%d", data.FilterCount) } products
 				</span>
 			</div>
-
 			<!-- Products Table -->
 			@card.Card() {
 				@card.Header() {
@@ -337,7 +332,6 @@ templ ImporterDesignerDetail(c echo.Context, data ImporterDesignerData) {
 				}
 			}
 		</div>
-
 		<script>
 			function updateFilter(value) {
 				const url = new URL(window.location);
@@ -451,7 +445,6 @@ templ scrapedProductCard(product db.ScrapedProduct) {
 				</svg>
 			</div>
 		}
-
 		<!-- Product Info -->
 		<div class="p-4">
 			<h3 class="font-medium text-foreground line-clamp-2 mb-2">{ product.Name }</h3>

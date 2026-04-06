@@ -19,7 +19,7 @@ VALUES (?, ?, ?, ?, ?, ?)
 RETURNING *;
 
 -- name: UpdateCategory :one
-UPDATE categories 
+UPDATE categories
 SET name = ?, slug = ?, description = ?, parent_id = ?, display_order = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?

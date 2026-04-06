@@ -22,11 +22,7 @@ templ SignUp(publishableKey string) {
 				fbq('track', 'PageView');
 			</script>
 			<!-- Clerk JS SDK Script with publishable key -->
-			<script
-				data-clerk-publishable-key={ publishableKey }
-				src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-				crossorigin="anonymous"
-			></script>
+			<script data-clerk-publishable-key={ publishableKey } src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js" crossorigin="anonymous"></script>
 		</head>
 		<body class="bg-gray-900">
 			<div class="min-h-screen flex items-center justify-center">

@@ -2,8 +2,8 @@ package account
 
 import (
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
 	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
 templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.PageMeta) {
@@ -14,10 +14,8 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 				<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
 				<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
 			</div>
-
 			<!-- Toast Notification -->
 			<div id="toast-container" class="fixed top-4 right-4 z-50"></div>
-
 			<div class="relative max-w-4xl mx-auto">
 				<!-- Back Button -->
 				<div class="mb-6">
@@ -28,7 +26,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 						Back to Account
 					</a>
 				</div>
-
 				<!-- Header -->
 				<div class="mb-8">
 					<h1 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">
@@ -36,7 +33,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 					</h1>
 					<p class="mt-2 text-slate-400">Choose which emails you'd like to receive from us</p>
 				</div>
-
 				<!-- Preferences Card -->
 				<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl">
 					<div id="email-preferences-form" class="space-y-6" data-email={ prefs.Email }>
@@ -45,7 +41,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 							<label class="text-sm text-slate-400 uppercase tracking-wider">Your Email</label>
 							<p class="text-white font-medium mt-2">{ prefs.Email }</p>
 						</div>
-
 						<!-- Transactional (Read-only) -->
 						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30">
 							<div class="flex-1">
@@ -57,7 +52,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 								<input type="checkbox" checked disabled class="h-5 w-5 text-blue-500 rounded border-slate-600 bg-slate-800 opacity-50 cursor-not-allowed"/>
 							</div>
 						</div>
-
 						<!-- Abandoned Cart -->
 						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
@@ -75,7 +69,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 								/>
 							</div>
 						</div>
-
 						<!-- Promotional -->
 						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
@@ -93,7 +86,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 								/>
 							</div>
 						</div>
-
 						<!-- Newsletter -->
 						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
@@ -111,7 +103,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 								/>
 							</div>
 						</div>
-
 						<!-- Product Updates -->
 						<div class="flex items-start bg-slate-900/30 rounded-lg p-4 border border-slate-700/30 hover:border-slate-600/50 transition-colors duration-200">
 							<div class="flex-1">
@@ -129,7 +120,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 								/>
 							</div>
 						</div>
-
 						<!-- Unsubscribe All Button -->
 						<div class="pt-6 mt-6 border-t border-slate-700/50">
 							<button
@@ -148,7 +138,6 @@ templ EmailPreferences(c echo.Context, prefs *db.EmailPreference, meta layout.Pa
 			</div>
 		</div>
 	}
-
 	<script>
 		function showToast(message, isError = false) {
 			const container = document.getElementById('toast-container');

@@ -3,37 +3,37 @@ package admin
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/components/table"
 	"github.com/loganlanou/logans3d-v4/storage/db"
+	"github.com/loganlanou/logans3d-v4/views/layout"
 )
 
 type DashboardStats struct {
-	RevenueToday         int64
-	RevenueWeek          int64
-	RevenueMonth         int64
-	RevenueMonthGrowth   float64
-	OrdersToday          int64
-	OrdersWeek           int64
-	OrdersMonth          int64
-	AverageOrderValue    int64
-	TotalProducts        int64
-	LowStockCount        int64
-	OutOfStockCount      int64
-	ActiveCartsCount     int64
-	AbandonedCarts24h    int64
-	AbandonedCarts7d     int64
-	AbandonedCarts30d    int64
-	CartRecoveryRate     float64
-	NewCustomersWeek     int64
-	NewCustomersMonth    int64
-	PendingQuotes        int64
-	NewContactsCount     int64
-	OrdersByStatus       db.GetDashboardOrdersByStatusRow
-	LowStockProducts     []db.GetDashboardLowStockProductsRow
-	RecentOrders         []db.GetDashboardRecentOrdersRow
+	RevenueToday       int64
+	RevenueWeek        int64
+	RevenueMonth       int64
+	RevenueMonthGrowth float64
+	OrdersToday        int64
+	OrdersWeek         int64
+	OrdersMonth        int64
+	AverageOrderValue  int64
+	TotalProducts      int64
+	LowStockCount      int64
+	OutOfStockCount    int64
+	ActiveCartsCount   int64
+	AbandonedCarts24h  int64
+	AbandonedCarts7d   int64
+	AbandonedCarts30d  int64
+	CartRecoveryRate   float64
+	NewCustomersWeek   int64
+	NewCustomersMonth  int64
+	PendingQuotes      int64
+	NewContactsCount   int64
+	OrdersByStatus     db.GetDashboardOrdersByStatusRow
+	LowStockProducts   []db.GetDashboardLowStockProductsRow
+	RecentOrders       []db.GetDashboardRecentOrdersRow
 }
 
 templ Dashboard(c echo.Context, stats DashboardStats) {
@@ -46,7 +46,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 					Last updated: <span id="last-updated">Just now</span>
 				</div>
 			</div>
-
 			<!-- Revenue Overview Cards -->
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 				<!-- Today's Revenue -->
@@ -70,7 +69,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						</div>
 					}
 				}
-
 				<!-- Week Revenue -->
 				@card.Card() {
 					@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -92,7 +90,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						</div>
 					}
 				}
-
 				<!-- Month Revenue -->
 				@card.Card() {
 					@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -125,7 +122,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						</div>
 					}
 				}
-
 				<!-- Average Order Value -->
 				@card.Card() {
 					@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -146,7 +142,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 					}
 				}
 			</div>
-
 			<!-- Orders & Inventory Section -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 				<!-- Orders by Status -->
@@ -206,14 +201,13 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						<a href="/admin/orders">
 							@button.Button(button.Props{
 								Variant: button.VariantSecondary,
-								Size: button.SizeSm,
+								Size:    button.SizeSm,
 							}) {
 								View All Orders →
 							}
 						</a>
 					}
 				}
-
 				<!-- Inventory Alerts -->
 				@card.Card() {
 					@card.Header() {
@@ -238,7 +232,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 									<p class="text-xs text-red-400 mt-1">Out of Stock</p>
 								</div>
 							</div>
-
 							<!-- Low Stock Products -->
 							if len(stats.LowStockProducts) > 0 {
 								<div class="mt-4">
@@ -273,7 +266,7 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						<a href="/admin/products">
 							@button.Button(button.Props{
 								Variant: button.VariantSecondary,
-								Size: button.SizeSm,
+								Size:    button.SizeSm,
 							}) {
 								Manage Products →
 							}
@@ -281,7 +274,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 					}
 				}
 			</div>
-
 			<!-- Carts & Customers Section -->
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 				<!-- Active Carts -->
@@ -305,7 +297,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						</div>
 					}
 				}
-
 				<!-- Abandoned Carts -->
 				@card.Card() {
 					@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -327,7 +318,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						</div>
 					}
 				}
-
 				<!-- New Customers -->
 				@card.Card() {
 					@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -347,7 +337,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						</div>
 					}
 				}
-
 				<!-- Pending Quotes -->
 				@card.Card() {
 					@card.Content(card.ContentProps{Class: "p-6"}) {
@@ -370,7 +359,6 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 					}
 				}
 			</div>
-
 			<!-- Recent Orders -->
 			@card.Card() {
 				@card.Header() {
@@ -383,12 +371,24 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 						@table.Table() {
 							@table.Header() {
 								@table.Row() {
-									@table.Head() { Order ID }
-									@table.Head() { Customer }
-									@table.Head() { Items }
-									@table.Head() { Total }
-									@table.Head() { Status }
-									@table.Head() { Date }
+									@table.Head() {
+										Order ID 
+									}
+									@table.Head() {
+										Customer 
+									}
+									@table.Head() {
+										Items 
+									}
+									@table.Head() {
+										Total 
+									}
+									@table.Head() {
+										Status 
+									}
+									@table.Head() {
+										Date 
+									}
 								}
 							}
 							@table.Body() {
@@ -439,7 +439,7 @@ templ Dashboard(c echo.Context, stats DashboardStats) {
 					<a href="/admin/orders">
 						@button.Button(button.Props{
 							Variant: button.VariantSecondary,
-							Size: button.SizeSm,
+							Size:    button.SizeSm,
 						}) {
 							View All Orders →
 						}

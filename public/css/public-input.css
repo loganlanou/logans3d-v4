@@ -7,10 +7,10 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --font-display: 'Montserrat', system-ui, sans-serif;
-  
+
   /* Spacing scale */
   --spacing: 0.25rem;
-  
+
   /* Logan's 3D themed color variables - Public Site */
   --radius: 0.65rem;
   --background: oklch(1 0 0);
@@ -33,14 +33,14 @@
   --ring: oklch(0.708 0 0);
   --selection: oklch(0.145 0 0);
   --selection-foreground: oklch(1 0 0);
-  
+
   /* Logan's 3D brand colors - tech/maker theme */
   --color-primary: #00A0E4; /* Tech blue for 3D/precision */
   --color-secondary: #FF6B35; /* Vibrant orange for creativity */
   --color-accent: #00D084; /* Success green */
   --color-dark: #1a1a1a;
   --color-light: #f7f7f7;
-  
+
   --color-gray-50: #f9fafb;
   --color-gray-100: #f3f4f6;
   --color-gray-200: #e5e7eb;
@@ -52,7 +52,7 @@
   --color-gray-800: #1f2937;
   --color-gray-900: #111827;
   --color-gray-950: #030712;
-  
+
   --color-3d-blue: #00A0E4;
   --color-3d-orange: #FF6B35;
   --color-3d-green: #00D084;
@@ -64,7 +64,7 @@
   --business-card-silver: #C0C0C0; /* Steel silver */
   --business-card-red-alpha: rgba(220, 20, 60, 0.1); /* Transparent red for backgrounds */
   --business-card-silver-alpha: rgba(192, 192, 192, 0.2); /* Transparent silver for backgrounds */
-  
+
   --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
   --radius-default: 0.75rem;
 }
@@ -77,7 +77,7 @@
     overflow-y: auto;
     overflow-x: hidden;
   }
-  
+
   body {
     font-feature-settings:
       "rlig" 1,
@@ -114,7 +114,7 @@
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
-  
+
   .container-with-nav-padding {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
@@ -126,7 +126,7 @@
     padding-left: 2rem;
     padding-right: 2rem;
   }
-  
+
   .container-with-nav-padding {
     padding-left: 2rem;
     padding-right: 2rem;
@@ -687,7 +687,7 @@
 /* Neon Text Effects */
 .neon-text {
   color: var(--account-primary);
-  text-shadow: 
+  text-shadow:
     0 0 10px var(--account-primary),
     0 0 20px var(--account-primary),
     0 0 30px var(--account-primary);
@@ -695,7 +695,7 @@
 
 .neon-text-pink {
   color: var(--account-secondary);
-  text-shadow: 
+  text-shadow:
     0 0 10px var(--account-secondary),
     0 0 20px var(--account-secondary),
     0 0 30px var(--account-secondary);
@@ -703,7 +703,7 @@
 
 .neon-text-cyan {
   color: var(--account-accent);
-  text-shadow: 
+  text-shadow:
     0 0 10px var(--account-accent),
     0 0 20px var(--account-accent),
     0 0 30px var(--account-accent);

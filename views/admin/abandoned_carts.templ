@@ -2,36 +2,36 @@ package admin
 
 import (
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
+	"github.com/loganlanou/logans3d-v4/components/badge"
+	"github.com/loganlanou/logans3d-v4/components/button"
+	"github.com/loganlanou/logans3d-v4/components/card"
+	"github.com/loganlanou/logans3d-v4/components/chart"
+	"github.com/loganlanou/logans3d-v4/components/table"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
-	"github.com/loganlanou/logans3d-v4/components/card"
-	"github.com/loganlanou/logans3d-v4/components/button"
-	"github.com/loganlanou/logans3d-v4/components/table"
-	"github.com/loganlanou/logans3d-v4/components/badge"
-	"github.com/loganlanou/logans3d-v4/components/chart"
+	"time"
 )
 
 type AbandonedCartMetrics struct {
-	TotalAbandoned24h    int64
-	AbandonmentRate      float64
-	LostRevenueCents     int64
-	RecoveryRate         float64
-	TotalRecovered       int64
-	RecoveredValueCents  int64
+	TotalAbandoned24h   int64
+	AbandonmentRate     float64
+	LostRevenueCents    int64
+	RecoveryRate        float64
+	TotalRecovered      int64
+	RecoveredValueCents int64
 }
 
 type AbandonedCartWithDetails struct {
-	Cart          db.AbandonedCart
-	ItemCount     int64
-	AttemptCount  int64
-	TimeAgo       string
+	Cart         db.AbandonedCart
+	ItemCount    int64
+	AttemptCount int64
+	TimeAgo      string
 }
 
 type ChartData struct {
-	Labels   []string
-	Values   []float64
+	Labels []string
+	Values []float64
 }
 
 type RecoveryEmailStats struct {
@@ -44,10 +44,10 @@ type RecoveryEmailStats struct {
 }
 
 type ProductAbandonmentData struct {
-	ProductID    string
-	ProductName  string
-	Count        int64
-	TotalValue   int64
+	ProductID   string
+	ProductName string
+	Count       int64
+	TotalValue  int64
 }
 
 type ActiveCart struct {
@@ -105,7 +105,6 @@ templ AbandonedCartsDashboard(
 					</a>
 				</div>
 			</div>
-
 			<!-- Key Metrics Cards -->
 			<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 				<!-- Total Abandoned (24h) -->
@@ -125,7 +124,6 @@ templ AbandonedCartsDashboard(
 						</div>
 					}
 				}
-
 				<!-- Abandonment Rate -->
 				@card.Card() {
 					@card.Content() {
@@ -143,7 +141,6 @@ templ AbandonedCartsDashboard(
 						</div>
 					}
 				}
-
 				<!-- Lost Revenue -->
 				@card.Card() {
 					@card.Content() {
@@ -161,7 +158,6 @@ templ AbandonedCartsDashboard(
 						</div>
 					}
 				}
-
 				<!-- Recovery Rate -->
 				@card.Card() {
 					@card.Content() {
@@ -180,7 +176,6 @@ templ AbandonedCartsDashboard(
 					}
 				}
 			</div>
-
 			<!-- Charts Section -->
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 				<!-- Abandonment Trend -->
@@ -211,7 +206,6 @@ templ AbandonedCartsDashboard(
 						})
 					}
 				}
-
 				<!-- Top Abandoned Products -->
 				@card.Card() {
 					@card.Header() {
@@ -241,7 +235,6 @@ templ AbandonedCartsDashboard(
 					}
 				}
 			</div>
-
 			<!-- Email Recovery Performance -->
 			if len(emailStats) > 0 {
 				@card.Card() {
@@ -258,12 +251,24 @@ templ AbandonedCartsDashboard(
 							@table.Table() {
 								@table.Header() {
 									@table.Row() {
-										@table.Head() { Email Type }
-										@table.Head() { Sent }
-										@table.Head() { Opened }
-										@table.Head() { Clicked }
-										@table.Head() { Open Rate }
-										@table.Head() { Click Rate }
+										@table.Head() {
+											Email Type 
+										}
+										@table.Head() {
+											Sent 
+										}
+										@table.Head() {
+											Opened 
+										}
+										@table.Head() {
+											Clicked 
+										}
+										@table.Head() {
+											Open Rate 
+										}
+										@table.Head() {
+											Click Rate 
+										}
 									}
 								}
 								@table.Body() {
@@ -295,7 +300,6 @@ templ AbandonedCartsDashboard(
 					}
 				}
 			}
-
 			<!-- Active Carts Section -->
 			<div class="mt-6">
 				@card.Card() {
@@ -323,17 +327,24 @@ templ AbandonedCartsDashboard(
 								<p class="text-2xl font-bold text-blue-700">{ formatCents(activeCartsMetrics.AvgValueCents) }</p>
 							</div>
 						</div>
-
 						<!-- Active Carts Table -->
 						if len(activeCarts) > 0 {
 							<div class="overflow-x-auto">
 								@table.Table() {
 									@table.Header() {
 										@table.Row() {
-											@table.Head() { Customer }
-											@table.Head() { Items }
-											@table.Head() { Cart Value }
-											@table.Head() { Last Activity }
+											@table.Head() {
+												Customer 
+											}
+											@table.Head() {
+												Items 
+											}
+											@table.Head() {
+												Cart Value 
+											}
+											@table.Head() {
+												Last Activity 
+											}
 										}
 									}
 									@table.Body() {
@@ -380,7 +391,6 @@ templ AbandonedCartsDashboard(
 					}
 				}
 			</div>
-
 			<!-- Filters -->
 			<div class="mb-6 space-y-4 mt-6">
 				<!-- Search -->
@@ -392,7 +402,6 @@ templ AbandonedCartsDashboard(
 						onkeyup="debounceSearch(this.value)"
 					/>
 				</div>
-
 				<!-- Status Filters -->
 				<div class="flex gap-4 flex-wrap items-center">
 					<a href="/admin/abandoned-carts" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-muted/80 hover:text-foreground transition-colors">All Carts</a>
@@ -402,7 +411,6 @@ templ AbandonedCartsDashboard(
 					<a href="/admin/abandoned-carts?high_value=true" class="px-4 py-2 text-sm text-foreground font-medium border border-border rounded-lg hover:bg-purple-100 hover:border-purple-400 hover:text-purple-900 transition-colors">High Value ($100+)</a>
 				</div>
 			</div>
-
 			<script>
 				function updateQueryParam(key, value) {
 					const url = new URL(window.location);
@@ -422,7 +430,6 @@ templ AbandonedCartsDashboard(
 					}, 500);
 				}
 			</script>
-
 			<!-- Abandoned Carts Table -->
 			@card.Card() {
 				@card.Header() {
@@ -438,12 +445,24 @@ templ AbandonedCartsDashboard(
 						@table.Table() {
 							@table.Header() {
 								@table.Row() {
-									@table.Head() { Customer }
-									@table.Head() { Cart Value }
-									@table.Head() { Items }
-									@table.Head() { Abandoned }
-									@table.Head() { Status }
-									@table.Head() { Actions }
+									@table.Head() {
+										Customer 
+									}
+									@table.Head() {
+										Cart Value 
+									}
+									@table.Head() {
+										Items 
+									}
+									@table.Head() {
+										Abandoned 
+									}
+									@table.Head() {
+										Status 
+									}
+									@table.Head() {
+										Actions 
+									}
 								}
 							}
 							@table.Body() {
@@ -518,7 +537,6 @@ templ AbandonedCartsDashboard(
 					</div>
 				}
 			}
-
 			<!-- Actionable Insights -->
 			<div class="mt-6">
 				@card.Card() {
@@ -572,7 +590,6 @@ templ AbandonedCartsDashboard(
 					}
 				}
 			</div>
-
 			<script>
 				function sendRecoveryEmail(cartId) {
 					if (confirm('Send recovery email to this customer?')) {
@@ -597,7 +614,6 @@ templ AbandonedCartsDashboard(
 					}
 				}
 			</script>
-
 			<!-- Include chart script -->
 			@chart.Script()
 		}

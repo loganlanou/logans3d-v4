@@ -406,7 +406,6 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 											}
 										</select>
 									</div>
-
 									<!-- Add to Cart Button -->
 									<button
 										type="button"
@@ -475,8 +474,8 @@ templ Product(c echo.Context, meta layout.PageMeta, product db.Product, category
 		</div>
 		<!-- Share Dialog - Rendered at root level for fullscreen backdrop -->
 		@components.ShareDialog(components.ShareButtonProps{
-			URL:         fmt.Sprintf("https://www.logans3dcreations.com/shop/product/%s", product.Slug),
-			Title:       product.Name,
+			URL:   fmt.Sprintf("https://www.logans3dcreations.com/shop/product/%s", product.Slug),
+			Title: product.Name,
 			Description: func() string {
 				if product.ShortDescription.Valid {
 					return product.ShortDescription.String
