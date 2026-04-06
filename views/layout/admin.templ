@@ -17,8 +17,8 @@ const AdminBadgeCountsKey = "adminBadgeCounts"
 
 // AdminBadgeCounts holds counts for admin sidebar badges
 type AdminBadgeCounts struct {
-	NewContacts    int64
-	PendingQuotes  int64
+	NewContacts   int64
+	PendingQuotes int64
 }
 
 // GetAdminBadgeCounts retrieves badge counts from the echo context
@@ -87,7 +87,6 @@ templ AdminBase(c echo.Context, title string) {
 			<title>{ title } - Admin - Logan's 3D Creations</title>
 			<meta name="robots" content="noindex, nofollow"/>
 			<meta name="theme-color" content="#0f172a"/>
-
 			<!-- Theme initialization - Prevent flash of unstyled content (FOUC) -->
 			<script>
 				(function() {
@@ -103,26 +102,17 @@ templ AdminBase(c echo.Context, title string) {
 					}
 				})();
 			</script>
-
 			<!-- Favicon -->
 			<link rel="icon" type="image/png" sizes="32x32" href="/public/images/favicon.png"/>
-
 			<!-- Admin CSS -->
 			<link rel="stylesheet" href="/public/css/admin-styles.css"/>
 			<link rel="stylesheet" href="/public/css/developer-styles.css"/>
-
 			<!-- Clerk JS SDK for automatic token refresh -->
-			<script
-				data-clerk-publishable-key={ os.Getenv("CLERK_PUBLISHABLE_KEY") }
-				src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"
-				crossorigin="anonymous"
-			></script>
-
+			<script data-clerk-publishable-key={ os.Getenv("CLERK_PUBLISHABLE_KEY") } src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js" crossorigin="anonymous"></script>
 			<!-- HTMX for dynamic updates -->
 			<script src="https://unpkg.com/htmx.org@1.9.10"></script>
-
-		<!-- HTMX Debugging -->
-		<script>
+			<!-- HTMX Debugging -->
+			<script>
 			document.addEventListener('DOMContentLoaded', function() {
 				if (typeof htmx !== 'undefined') {
 					htmx.logAll();
@@ -132,16 +122,13 @@ templ AdminBase(c echo.Context, title string) {
 				}
 			});
 		</script>
-
 			<!-- Alpine.js for interactivity -->
 			<script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 			<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
 			<!-- TemplUI Components -->
 			@dialog.Script()
 			@sidebar.Script()
 			<script defer nonce={ templ.GetNonce(ctx) } src="/public/js/chart.min.js"></script>
-
 			<!-- Admin JavaScript (toast notifications, etc.) -->
 			<script defer src="/public/js/admin.js"></script>
 		</head>
@@ -152,7 +139,6 @@ templ AdminBase(c echo.Context, title string) {
 					{ children... }
 				}
 			}
-
 			<!-- Initialize Clerk for automatic session maintenance -->
 			<script>
 				window.addEventListener('load', async function() {
@@ -207,7 +193,6 @@ templ AdminSidebar(c echo.Context) {
 				</a>
 			</div>
 		}
-
 		@sidebar.Content() {
 			<nav class="admin-sidebar-nav">
 				<a href="/admin" class="admin-sidebar-item" title="Dashboard">
@@ -216,7 +201,6 @@ templ AdminSidebar(c echo.Context) {
 					</svg>
 					<span class="admin-sidebar-text">Dashboard</span>
 				</a>
-
 				<!-- Content Section (Collapsible) -->
 				<div x-data={ fmt.Sprintf("{ contentOpen: %t }", isContentSection(c)) }>
 					<button
@@ -238,7 +222,6 @@ templ AdminSidebar(c echo.Context) {
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 						</svg>
 					</button>
-
 					<!-- Content Sub-items -->
 					<div x-show="contentOpen" x-collapse class="ml-6 mt-1 space-y-1">
 						<a href="/admin/products" class={ getSubitemClass(c, "/admin/products") } title="Products">
@@ -249,14 +232,12 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 					</div>
 				</div>
-
 				<a href="/admin/users" class="admin-sidebar-item" title="Users">
 					<svg class="admin-sidebar-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
 					</svg>
 					<span class="admin-sidebar-text">Users</span>
 				</a>
-
 				<!-- Sales Section (Collapsible) -->
 				<div x-data={ fmt.Sprintf("{ salesOpen: %t }", isSalesSection(c)) }>
 					<button
@@ -278,7 +259,6 @@ templ AdminSidebar(c echo.Context) {
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 						</svg>
 					</button>
-
 					<!-- Sales Sub-items -->
 					<div x-show="salesOpen" x-collapse class="ml-6 mt-1 space-y-1">
 						<a href="/admin/orders" class={ getSubitemClass(c, "/admin/orders") } title="Orders">
@@ -300,7 +280,6 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 					</div>
 				</div>
-
 				<!-- Marketing Section (Collapsible) -->
 				<div x-data={ fmt.Sprintf("{ marketingOpen: %t }", isMarketingSection(c)) }>
 					<button
@@ -322,7 +301,6 @@ templ AdminSidebar(c echo.Context) {
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 						</svg>
 					</button>
-
 					<!-- Marketing Sub-items -->
 					<div x-show="marketingOpen" x-collapse class="ml-6 mt-1 space-y-1">
 						<a href="/admin/promotions" class={ getSubitemClass(c, "/admin/promotions") } title="Promotions">
@@ -339,7 +317,6 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 					</div>
 				</div>
-
 				<!-- Communication Section (Collapsible) -->
 				<div x-data={ fmt.Sprintf("{ commOpen: %t }", isCommunicationSection(c)) }>
 					<button
@@ -361,7 +338,6 @@ templ AdminSidebar(c echo.Context) {
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 						</svg>
 					</button>
-
 					<!-- Communication Sub-items -->
 					<div x-show="commOpen" x-collapse class="ml-6 mt-1 space-y-1">
 						<a href="/admin/contacts" class={ getSubitemClass(c, "/admin/contacts") } title="Contacts">
@@ -380,7 +356,6 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 					</div>
 				</div>
-
 				<!-- Shipping Section (Collapsible) -->
 				<div x-data={ fmt.Sprintf("{ shippingOpen: %t }", isShippingSection(c)) }>
 					<button
@@ -402,7 +377,6 @@ templ AdminSidebar(c echo.Context) {
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 						</svg>
 					</button>
-
 					<!-- Shipping Sub-items -->
 					<div x-show="shippingOpen" x-collapse class="ml-6 mt-1 space-y-1">
 						<a href="/admin/shipping/boxes" class={ getSubitemClass(c, "/admin/shipping/boxes") } title="Boxes">
@@ -416,7 +390,6 @@ templ AdminSidebar(c echo.Context) {
 						</a>
 					</div>
 				</div>
-
 				<!-- Developer Section (Collapsible) -->
 				<div x-data={ fmt.Sprintf("{ devOpen: %t }", isDeveloperSection(c)) }>
 					<button
@@ -438,7 +411,6 @@ templ AdminSidebar(c echo.Context) {
 							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
 						</svg>
 					</button>
-
 					<!-- Developer Sub-items -->
 					<div x-show="devOpen" x-collapse class="ml-6 mt-1 space-y-1">
 						<a href="/dev" class={ getSubitemClass(c, "/dev") } title="Overview">
@@ -469,7 +441,6 @@ templ AdminSidebar(c echo.Context) {
 				</div>
 			</nav>
 		}
-
 		@sidebar.Footer() {
 			<!-- Theme Toggle -->
 			<div class="px-4 py-3 border-b border-border">
@@ -477,7 +448,6 @@ templ AdminSidebar(c echo.Context) {
 					Class: "justify-center",
 				})
 			</div>
-
 			if user, ok := auth.GetDBUser(c); ok {
 				<div class="flex items-center space-x-3 p-3 bg-sidebar dark:bg-sidebar rounded-lg">
 					if user.ProfileImageUrl.Valid {
@@ -505,7 +475,6 @@ templ AdminInset(c echo.Context, title string) {
 				@sidebar.Trigger()
 				<span class="text-sm font-semibold text-foreground">{ title }</span>
 			</div>
-
 			<!-- Main content area with padding -->
 			<div class="flex-1 overflow-auto p-6">
 				{ children... }

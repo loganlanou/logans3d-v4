@@ -19,12 +19,10 @@ templ DevDatabase(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				Refresh Stats
 			</button>
 		</div>
-
 		<!-- Database Location Alert -->
 		<div class="admin-alert admin-alert-info mb-6">
 			<strong>Database Location:</strong> <code class="ml-2">{ sysInfo.DBPath }</code>
 		</div>
-
 		<!-- Database Overview Card -->
 		<div class="admin-card" id="database-stats">
 			<div class="admin-card-header">
@@ -77,7 +75,6 @@ templ DevDatabase(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				</table>
 			</div>
 		</div>
-
 		<!-- Database Size Stats -->
 		<div class="admin-stats-grid mt-8">
 			<div class="admin-stat-card">
@@ -93,7 +90,6 @@ templ DevDatabase(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				<div class="admin-stat-label">Total Categories</div>
 			</div>
 		</div>
-
 		<!-- JavaScript for Database Stats -->
 		<script>
 			async function updateDatabaseStats() {

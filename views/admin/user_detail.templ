@@ -2,12 +2,12 @@ package admin
 
 import (
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
-	"github.com/loganlanou/logans3d-v4/views/layout"
+	"github.com/loganlanou/logans3d-v4/components/badge"
 	"github.com/loganlanou/logans3d-v4/components/card"
 	"github.com/loganlanou/logans3d-v4/components/table"
-	"github.com/loganlanou/logans3d-v4/components/badge"
+	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
 )
 
 type UserDetailData struct {
@@ -58,11 +58,11 @@ type UserFavoriteItem struct {
 }
 
 type UserCollectionItem struct {
-	ID                string
-	Name              string
-	Description       string
-	IsQuoteRequested  bool
-	CreatedAt         time.Time
+	ID               string
+	Name             string
+	Description      string
+	IsQuoteRequested bool
+	CreatedAt        time.Time
 }
 
 type UserEmailHistoryItem struct {
@@ -95,7 +95,6 @@ templ UserDetail(
 				Back to Users
 			</a>
 		</div>
-
 		<!-- Header -->
 		<div class="flex justify-between items-start mb-6">
 			<div class="flex items-center gap-4">
@@ -131,7 +130,6 @@ templ UserDetail(
 				</div>
 			</div>
 		</div>
-
 		<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
 			<!-- Left Column - User Info & Stats -->
 			<div class="lg:col-span-1 space-y-6">
@@ -154,7 +152,6 @@ templ UserDetail(
 									{ user.Email }
 								</a>
 							</div>
-
 							<!-- Clerk ID -->
 							if user.ClerkID != "" {
 								<div class="pt-3 border-t border-border dark:border-border">
@@ -162,14 +159,12 @@ templ UserDetail(
 									<div class="text-xs font-mono text-foreground">{ user.ClerkID }</div>
 								</div>
 							}
-
 							<!-- Registration Date -->
 							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="text-sm text-muted-foreground mb-1">Registered</div>
 								<div class="text-foreground">{ user.CreatedAt.Format("Jan 2, 2006") }</div>
 								<div class="text-xs text-muted-foreground">{ formatTimeAgoUser(user.CreatedAt) }</div>
 							</div>
-
 							<!-- Last Activity -->
 							if !user.LastSyncedAt.IsZero() {
 								<div class="pt-3 border-t border-border dark:border-border">
@@ -181,7 +176,6 @@ templ UserDetail(
 						</div>
 					}
 				}
-
 				<!-- Statistics -->
 				@card.Card() {
 					@card.Header() {
@@ -196,7 +190,6 @@ templ UserDetail(
 								<div class="text-sm text-muted-foreground mb-1">Lifetime Spend</div>
 								<div class="text-3xl font-bold text-foreground">{ formatUserCents(user.LifetimeSpendCents) }</div>
 							</div>
-
 							<!-- Orders -->
 							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
@@ -204,7 +197,6 @@ templ UserDetail(
 									<span class="text-xl font-bold text-foreground">{ fmt.Sprintf("%d", user.OrderCount) }</span>
 								</div>
 							</div>
-
 							<!-- Average Order Value -->
 							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
@@ -218,7 +210,6 @@ templ UserDetail(
 									</span>
 								</div>
 							</div>
-
 							<!-- Favorites -->
 							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
@@ -226,7 +217,6 @@ templ UserDetail(
 									<span class="text-lg font-semibold text-foreground">{ fmt.Sprintf("%d", user.FavoritesCount) }</span>
 								</div>
 							</div>
-
 							<!-- Collections -->
 							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
@@ -234,7 +224,6 @@ templ UserDetail(
 									<span class="text-lg font-semibold text-foreground">{ fmt.Sprintf("%d", user.CollectionsCount) }</span>
 								</div>
 							</div>
-
 							<!-- Active Carts -->
 							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
@@ -242,7 +231,6 @@ templ UserDetail(
 									<span class="text-lg font-semibold text-foreground">{ fmt.Sprintf("%d", user.ActiveCartsCount) }</span>
 								</div>
 							</div>
-
 							<!-- Abandoned Carts -->
 							<div class="pt-3 border-t border-border dark:border-border">
 								<div class="flex justify-between items-center">
@@ -254,7 +242,6 @@ templ UserDetail(
 					}
 				}
 			</div>
-
 			<!-- Right Column - Activity Data -->
 			<div class="lg:col-span-2 space-y-6">
 				<!-- Orders Table -->
@@ -276,16 +263,24 @@ templ UserDetail(
 							@table.Table() {
 								@table.Header() {
 									@table.Row() {
-										@table.Head() { Order ID }
-										@table.Head() { Status }
-										@table.Head() { Total }
-										@table.Head() { Date }
+										@table.Head() {
+											Order ID 
+										}
+										@table.Head() {
+											Status 
+										}
+										@table.Head() {
+											Total 
+										}
+										@table.Head() {
+											Date 
+										}
 									}
 								}
 								@table.Body() {
 									for _, order := range orders {
 										@table.Row(table.RowProps{
-											Class:   "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
+											Class: "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
 											Attributes: templ.Attributes{
 												"data-order-id": order.ID,
 											},
@@ -309,7 +304,6 @@ templ UserDetail(
 						}
 					}
 				}
-
 				<!-- Cart Activity -->
 				if len(activeCarts) > 0 || len(abandonedCarts) > 0 {
 					@card.Card() {
@@ -329,16 +323,24 @@ templ UserDetail(
 										@table.Table() {
 											@table.Header() {
 												@table.Row() {
-													@table.Head() { Session }
-													@table.Head() { Items }
-													@table.Head() { Value }
-													@table.Head() { Last Activity }
+													@table.Head() {
+														Session 
+													}
+													@table.Head() {
+														Items 
+													}
+													@table.Head() {
+														Value 
+													}
+													@table.Head() {
+														Last Activity 
+													}
 												}
 											}
 											@table.Body() {
 												for _, cart := range activeCarts {
 													@table.Row(table.RowProps{
-														Class:   "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
+														Class: "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
 														Attributes: templ.Attributes{
 															"data-cart-session": cart.SessionID,
 														},
@@ -367,16 +369,24 @@ templ UserDetail(
 										@table.Table() {
 											@table.Header() {
 												@table.Row() {
-													@table.Head() { Session }
-													@table.Head() { Items }
-													@table.Head() { Value }
-													@table.Head() { Abandoned }
+													@table.Head() {
+														Session 
+													}
+													@table.Head() {
+														Items 
+													}
+													@table.Head() {
+														Value 
+													}
+													@table.Head() {
+														Abandoned 
+													}
 												}
 											}
 											@table.Body() {
 												for _, cart := range abandonedCarts {
 													@table.Row(table.RowProps{
-														Class:   "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
+														Class: "cursor-pointer hover:bg-muted/80 dark:bg-gray-750",
 														Attributes: templ.Attributes{
 															"data-cart-session": cart.SessionID,
 														},
@@ -403,7 +413,6 @@ templ UserDetail(
 						}
 					}
 				}
-
 				<!-- Favorites & Collections -->
 				if len(favorites) > 0 || len(collections) > 0 {
 					@card.Card() {
@@ -467,7 +476,6 @@ templ UserDetail(
 						}
 					}
 				}
-
 				<!-- Email History -->
 				@card.Card() {
 					@card.Header() {
@@ -487,10 +495,18 @@ templ UserDetail(
 							@table.Table() {
 								@table.Header() {
 									@table.Row() {
-										@table.Head() { Date }
-										@table.Head() { Type }
-										@table.Head() { Subject }
-										@table.Head() { Status }
+										@table.Head() {
+											Date 
+										}
+										@table.Head() {
+											Type 
+										}
+										@table.Head() {
+											Subject 
+										}
+										@table.Head() {
+											Status 
+										}
 									}
 								}
 								@table.Body() {
@@ -544,7 +560,6 @@ templ UserDetail(
 				}
 			</div>
 		</div>
-
 		<!-- Script to make table rows clickable -->
 		<script>
 			(function() {
@@ -646,30 +661,30 @@ func formatTimeAgoUser(t time.Time) string {
 
 templ renderOrderStatusBadge(status string) {
 	switch status {
-	case "received":
-		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
-			{ status }
-		}
-	case "in_production":
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-			{ status }
-		}
-	case "shipped":
-		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
-			{ status }
-		}
-	case "delivered":
-		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
-			{ status }
-		}
-	case "cancelled":
-		@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
-			{ status }
-		}
-	default:
-		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
-			{ status }
-		}
+		case "received":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				{ status }
+			}
+		case "in_production":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				{ status }
+			}
+		case "shipped":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				{ status }
+			}
+		case "delivered":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				{ status }
+			}
+		case "cancelled":
+			@badge.Badge(badge.Props{Variant: badge.VariantDestructive}) {
+				{ status }
+			}
+		default:
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				{ status }
+			}
 	}
 }
 
@@ -717,42 +732,42 @@ templ renderUserDetailBadges(user UserDetailData) {
 
 templ renderEmailTypeBadge(emailType string) {
 	switch emailType {
-	case "order_confirmation":
-		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
-			Order
-		}
-	case "order_notification_admin":
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-			Admin Order
-		}
-	case "abandoned_cart":
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-			Cart Recovery
-		}
-	case "quote_request_admin":
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-			Quote Request
-		}
-	case "quote_request_confirmation":
-		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
-			Quote Confirm
-		}
-	case "quote_draft_recovery":
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-			Draft Recovery
-		}
-	case "contact_request":
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-			Contact
-		}
-	case "promotional":
-		@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
-			Promo
-		}
-	default:
-		@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
-			{ emailType }
-		}
+		case "order_confirmation":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				Order
+			}
+		case "order_notification_admin":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				Admin Order
+			}
+		case "abandoned_cart":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				Cart Recovery
+			}
+		case "quote_request_admin":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				Quote Request
+			}
+		case "quote_request_confirmation":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				Quote Confirm
+			}
+		case "quote_draft_recovery":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				Draft Recovery
+			}
+		case "contact_request":
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				Contact
+			}
+		case "promotional":
+			@badge.Badge(badge.Props{Variant: badge.VariantDefault}) {
+				Promo
+			}
+		default:
+			@badge.Badge(badge.Props{Variant: badge.VariantSecondary}) {
+				{ emailType }
+			}
 	}
 }
 

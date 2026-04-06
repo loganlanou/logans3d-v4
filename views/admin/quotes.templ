@@ -3,10 +3,10 @@ package admin
 import (
 	"database/sql"
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
 )
 
 templ QuotesList(c echo.Context, quotes []db.QuoteRequest) {
@@ -16,7 +16,6 @@ templ QuotesList(c echo.Context, quotes []db.QuoteRequest) {
 			<div class="flex justify-between items-center mb-8">
 				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Quote Requests</h1>
 			</div>
-
 			<!-- Stats Cards -->
 			<div class="admin-stats-grid">
 				<div class="admin-stat-card">
@@ -36,7 +35,6 @@ templ QuotesList(c echo.Context, quotes []db.QuoteRequest) {
 					<div class="admin-stat-label">Approved</div>
 				</div>
 			</div>
-
 			<!-- Filters -->
 			<div class="admin-card mb-6">
 				<div class="admin-card-header">
@@ -53,7 +51,6 @@ templ QuotesList(c echo.Context, quotes []db.QuoteRequest) {
 					</div>
 				</div>
 			</div>
-
 			<!-- Quotes Table -->
 			<div class="admin-card">
 				<div class="admin-card-header">
@@ -136,13 +133,16 @@ templ QuotesList(c echo.Context, quotes []db.QuoteRequest) {
 									</td>
 									<td>
 										<div class="flex space-x-2">
-											<a href={ templ.SafeURL(fmt.Sprintf("/admin/quotes/%s", quote.ID)) } 
-											   class="admin-btn admin-btn-sm admin-btn-primary">
+											<a
+												href={ templ.SafeURL(fmt.Sprintf("/admin/quotes/%s", quote.ID)) }
+												class="admin-btn admin-btn-sm admin-btn-primary"
+											>
 												View
 											</a>
-											<button 
+											<button
 												onclick={ updateQuoteStatus(quote.ID) }
-												class="admin-btn admin-btn-sm admin-btn-secondary">
+												class="admin-btn admin-btn-sm admin-btn-secondary"
+											>
 												Update
 											</button>
 										</div>
@@ -165,7 +165,6 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 				<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Quote Request Details</h1>
 				<a href="/admin/quotes" class="admin-btn admin-btn-secondary">← Back to Quotes</a>
 			</div>
-
 			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 				<!-- Quote Information -->
 				<div class="admin-card">
@@ -178,12 +177,10 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 							<label class="admin-text-muted-foreground admin-text-sm">Quote ID</label>
 							<div class="admin-text-primary admin-font-mono">{ quote.ID }</div>
 						</div>
-						
 						<div>
 							<label class="admin-text-muted-foreground admin-text-sm">Project Description</label>
 							<div class="admin-text-primary">{ quote.ProjectDescription }</div>
 						</div>
-
 						<div class="grid grid-cols-2 gap-4">
 							<div>
 								<label class="admin-text-muted-foreground admin-text-sm">Quantity</label>
@@ -195,7 +192,6 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 									}
 								</div>
 							</div>
-							
 							if quote.MaterialPreference.Valid {
 								<div>
 									<label class="admin-text-muted-foreground admin-text-sm">Material Preference</label>
@@ -203,21 +199,18 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 								</div>
 							}
 						</div>
-
 						if quote.FinishPreference.Valid {
 							<div>
 								<label class="admin-text-muted-foreground admin-text-sm">Finish Preference</label>
 								<div class="admin-text-primary">{ quote.FinishPreference.String }</div>
 							</div>
 						}
-
 						if quote.BudgetRange.Valid {
 							<div>
 								<label class="admin-text-muted-foreground admin-text-sm">Budget Range</label>
 								<div class="admin-text-primary">{ quote.BudgetRange.String }</div>
 							</div>
 						}
-
 						if quote.DeadlineDate.Valid {
 							<div>
 								<label class="admin-text-muted-foreground admin-text-sm">Deadline</label>
@@ -226,7 +219,6 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 						}
 					</div>
 				</div>
-
 				<!-- Customer Information -->
 				<div class="admin-card">
 					<div class="admin-card-header">
@@ -237,7 +229,6 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 							<label class="admin-text-muted-foreground admin-text-sm">Customer Name</label>
 							<div class="admin-text-primary admin-font-medium">{ quote.CustomerName }</div>
 						</div>
-						
 						<div>
 							<label class="admin-text-muted-foreground admin-text-sm">Email</label>
 							<div class="admin-text-primary">
@@ -246,7 +237,6 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 								</a>
 							</div>
 						</div>
-
 						if quote.CustomerPhone.Valid {
 							<div>
 								<label class="admin-text-muted-foreground admin-text-sm">Phone</label>
@@ -259,7 +249,6 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 						}
 					</div>
 				</div>
-
 				<!-- Admin Actions -->
 				<div class="admin-card lg:col-span-2">
 					<div class="admin-card-header">
@@ -271,21 +260,30 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 								<div>
 									<label for="status" class="admin-text-sm admin-font-medium">Status</label>
 									<select name="status" id="status" class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground">
-										<option value="pending" if quote.Status.Valid && quote.Status.String == "pending" { selected }>Pending</option>
-										<option value="reviewing" if quote.Status.Valid && quote.Status.String == "reviewing" { selected }>Reviewing</option>
-										<option value="quoted" if quote.Status.Valid && quote.Status.String == "quoted" { selected }>Quoted</option>
-										<option value="approved" if quote.Status.Valid && quote.Status.String == "approved" { selected }>Approved</option>
-										<option value="rejected" if quote.Status.Valid && quote.Status.String == "rejected" { selected }>Rejected</option>
+										<option value="pending" if quote.Status.Valid && quote.Status.String == "pending" {
+	selected
+}>Pending</option>
+										<option value="reviewing" if quote.Status.Valid && quote.Status.String == "reviewing" {
+	selected
+}>Reviewing</option>
+										<option value="quoted" if quote.Status.Valid && quote.Status.String == "quoted" {
+	selected
+}>Quoted</option>
+										<option value="approved" if quote.Status.Valid && quote.Status.String == "approved" {
+	selected
+}>Approved</option>
+										<option value="rejected" if quote.Status.Valid && quote.Status.String == "rejected" {
+	selected
+}>Rejected</option>
 									</select>
 								</div>
-
 								<div>
 									<label for="quoted_price" class="admin-text-sm admin-font-medium">Quoted Price ($)</label>
-									<input 
-										type="number" 
-										name="quoted_price" 
-										id="quoted_price" 
-										step="0.01" 
+									<input
+										type="number"
+										name="quoted_price"
+										id="quoted_price"
+										step="0.01"
 										min="0"
 										if quote.QuotedPriceCents.Valid {
 											value={ fmt.Sprintf("%.2f", float64(quote.QuotedPriceCents.Int64)/100) }
@@ -295,18 +293,16 @@ templ QuoteDetail(c echo.Context, quote db.QuoteRequest) {
 									/>
 								</div>
 							</div>
-
 							<div>
 								<label for="admin_notes" class="admin-text-sm admin-font-medium">Admin Notes</label>
-								<textarea 
-									name="admin_notes" 
-									id="admin_notes" 
+								<textarea
+									name="admin_notes"
+									id="admin_notes"
 									rows="4"
 									class="w-full px-3 py-2 bg-background/50 border border-border rounded-lg text-foreground"
 									placeholder="Internal notes about this quote request..."
 								>{ getQuoteNotes(quote) }</textarea>
 							</div>
-
 							<div class="flex justify-end space-x-4">
 								<button type="submit" class="admin-btn admin-btn-primary">
 									Update Quote

@@ -2,11 +2,11 @@
 SELECT * FROM orders WHERE id = ?;
 
 -- name: GetOrderWithItems :one
-SELECT 
+SELECT
     o.*,
     GROUP_CONCAT(
-        oi.id || ',' || oi.product_id || ',' || oi.quantity || ',' || 
-        oi.unit_price_cents || ',' || oi.total_price_cents || ',' || 
+        oi.id || ',' || oi.product_id || ',' || oi.quantity || ',' ||
+        oi.unit_price_cents || ',' || oi.total_price_cents || ',' ||
         oi.product_name || ',' || COALESCE(oi.product_sku, '')
     ) as order_items
 FROM orders o
@@ -15,12 +15,12 @@ WHERE o.id = ?
 GROUP BY o.id;
 
 -- name: ListOrders :many
-SELECT * FROM orders 
+SELECT * FROM orders
 ORDER BY created_at DESC;
 
 -- name: ListOrdersByStatus :many
-SELECT * FROM orders 
-WHERE status = ? 
+SELECT * FROM orders
+WHERE status = ?
 ORDER BY created_at DESC;
 
 -- name: ListOrdersByUser :many
@@ -46,7 +46,7 @@ INSERT INTO orders (
 RETURNING *;
 
 -- name: UpdateOrderStatus :one
-UPDATE orders 
+UPDATE orders
 SET status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
@@ -64,7 +64,7 @@ WHERE id = ?
 RETURNING *;
 
 -- name: UpdateOrderNotes :one
-UPDATE orders 
+UPDATE orders
 SET notes = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
@@ -83,7 +83,7 @@ WHERE oi.order_id = ?;
 
 -- name: CreateOrderItem :one
 INSERT INTO order_items (
-    id, order_id, product_id, product_sku_id, quantity, unit_price_cents, 
+    id, order_id, product_id, product_sku_id, quantity, unit_price_cents,
     total_price_cents, product_name, product_sku
 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 RETURNING *;

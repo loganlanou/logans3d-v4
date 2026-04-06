@@ -14,7 +14,6 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 				<div class="absolute top-3/4 right-1/4 w-72 h-72 bg-gradient-to-r from-cyan-400 to-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-2000"></div>
 				<div class="absolute bottom-1/4 left-1/2 w-72 h-72 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full mix-blend-multiply filter blur-xl animate-pulse animation-delay-4000"></div>
 			</div>
-			
 			<div class="relative z-10">
 				<!-- Breadcrumb -->
 				<nav class="pt-32 pb-8 px-8 sm:px-12 lg:px-16" aria-label="Breadcrumb">
@@ -42,12 +41,10 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 						</ol>
 					</div>
 				</nav>
-
 				<div class="max-w-4xl mx-auto px-8 sm:px-12 lg:px-16 py-12">
 					<h1 class="text-4xl font-bold text-white mb-12 bg-gradient-to-r from-blue-300 to-emerald-300 bg-clip-text text-transparent text-center">
 						Your Shopping Cart
 					</h1>
-
 					<!-- Progress Steps (hidden when empty) -->
 					<div id="checkout-steps" class="hidden mb-8">
 						<div class="flex items-center justify-center space-x-4">
@@ -60,10 +57,8 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 								</div>
 								<span class="ml-2 text-sm font-medium text-green-400">Review Items</span>
 							</div>
-
 							<!-- Connector Line -->
 							<div class="w-16 h-0.5 bg-slate-600"></div>
-
 							<!-- Step 2: Select Shipping -->
 							<div class="flex items-center">
 								<div id="step-2-indicator" class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700/50 border-2 border-slate-600 text-slate-400 font-bold">
@@ -71,10 +66,8 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 								</div>
 								<span id="step-2-label" class="ml-2 text-sm font-medium text-slate-400">Select Shipping</span>
 							</div>
-
 							<!-- Connector Line -->
 							<div class="w-16 h-0.5 bg-slate-600"></div>
-
 							<!-- Step 3: Checkout -->
 							<div class="flex items-center">
 								<div id="step-3-indicator" class="flex items-center justify-center w-10 h-10 rounded-full bg-slate-700/50 border-2 border-slate-600 text-slate-400 font-bold">
@@ -84,7 +77,6 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 							</div>
 						</div>
 					</div>
-
 					<!-- Cart Items Container (populated by JavaScript) -->
 					<div id="cart-items-container">
 						<!-- Empty cart state -->
@@ -103,7 +95,6 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 								</a>
 							</div>
 						</div>
-
 						<!-- Cart items section with header -->
 						<div id="cart-items-section" class="hidden">
 							<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-8">
@@ -119,7 +110,6 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 							</div>
 						</div>
 					</div>
-
 					<!-- Shipping Section with clear header -->
 					<div id="cart-shipping" class="hidden mt-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-8">
 						<h2 class="text-2xl font-bold text-white mb-6 flex items-center">
@@ -132,7 +122,6 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 							<!-- Shipping options will be populated by JavaScript -->
 						</div>
 					</div>
-
 					<!-- Cart Summary with prominent checkout button -->
 					<div id="cart-summary" class="hidden mt-8 bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-3xl border border-slate-700/50 backdrop-blur-sm shadow-2xl p-8">
 						<h2 class="text-2xl font-bold text-white mb-6 flex items-center">
@@ -158,7 +147,6 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 								<span class="text-sm text-slate-400 italic">Tax calculated at checkout</span>
 							</div>
 						</div>
-
 						<div class="flex flex-col sm:flex-row gap-4">
 							<a href="/shop" class="flex-1 bg-gradient-to-r from-slate-700/50 to-slate-800/50 text-slate-300 py-4 px-6 rounded-xl font-semibold text-center hover:from-slate-600/50 hover:to-slate-700/50 hover:text-white transition-all duration-300 border border-slate-600/50 hover:border-slate-500/50 backdrop-blur-sm">
 								Continue Shopping
@@ -171,7 +159,6 @@ templ Cart(c echo.Context, meta layout.PageMeta) {
 				</div>
 			</div>
 		</div>
-
 		<!-- Load cart rendering script -->
 		<script src="/public/js/cart-render.js?v=2"></script>
 	}

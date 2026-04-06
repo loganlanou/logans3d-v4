@@ -41,7 +41,6 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 					</button>
 				</div>
 			</div>
-
 			<!-- Controls -->
 			<div class="admin-card mb-6">
 				<div class="p-4 flex items-center justify-between">
@@ -51,7 +50,6 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 							<input type="checkbox" id="auto-scroll" class="admin-checkbox" checked/>
 							<span class="admin-text-primary text-sm">Auto-scroll</span>
 						</label>
-
 						<!-- Log Level Filter -->
 						<div class="flex items-center space-x-2">
 							<span class="admin-text-primary text-sm">Filter:</span>
@@ -63,20 +61,17 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 								<option value="ERR">ERROR</option>
 							</select>
 						</div>
-
 						<!-- Status Indicator -->
 						<div id="stream-status" class="flex items-center space-x-2">
 							<div id="status-dot" class="w-2 h-2 bg-gray-500 rounded-full"></div>
 							<span id="status-text" class="text-sm text-muted-foreground">Disconnected</span>
 						</div>
 					</div>
-
 					<div class="flex items-center space-x-4">
 						<span id="log-count" class="text-sm text-muted-foreground">0 lines</span>
 					</div>
 				</div>
 			</div>
-
 			<!-- Log Viewer -->
 			<div class="admin-card">
 				<div class="admin-card-header">
@@ -92,7 +87,6 @@ templ DevLogs(c echo.Context, sysInfo types.SystemInfo) {
 				</div>
 			</div>
 		}
-
 		<!-- JavaScript for Live Log Streaming -->
 		<script>
 			let eventSource = null;

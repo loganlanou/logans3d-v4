@@ -22,19 +22,19 @@ SELECT * FROM products
 ORDER BY created_at DESC;
 
 -- name: ListProductsByCategory :many
-SELECT * FROM products 
-WHERE category_id = ? AND is_active = TRUE 
+SELECT * FROM products
+WHERE category_id = ? AND is_active = TRUE
 ORDER BY created_at DESC;
 
 -- name: ListFeaturedProducts :many
-SELECT * FROM products 
-WHERE is_featured = TRUE AND is_active = TRUE 
+SELECT * FROM products
+WHERE is_featured = TRUE AND is_active = TRUE
 ORDER BY created_at DESC;
 
 -- name: SearchProducts :many
-SELECT * FROM products 
-WHERE (name LIKE '%' || ? || '%' OR description LIKE '%' || ? || '%') 
-AND is_active = TRUE 
+SELECT * FROM products
+WHERE (name LIKE '%' || ? || '%' OR description LIKE '%' || ? || '%')
+AND is_active = TRUE
 ORDER BY created_at DESC;
 
 -- name: CreateProduct :one
@@ -80,8 +80,8 @@ SET stock_quantity = stock_quantity - sqlc.arg(delta), updated_at = CURRENT_TIME
 WHERE id = sqlc.arg(id) AND stock_quantity >= sqlc.arg(delta);
 
 -- name: GetProductImages :many
-SELECT * FROM product_images 
-WHERE product_id = ? 
+SELECT * FROM product_images
+WHERE product_id = ?
 ORDER BY display_order ASC, is_primary DESC;
 
 -- name: GetProductByName :one
@@ -107,7 +107,7 @@ ON CONFLICT(name) DO UPDATE SET
 RETURNING *;
 
 -- name: GetPrimaryProductImage :one
-SELECT * FROM product_images 
+SELECT * FROM product_images
 WHERE product_id = ? AND is_primary = TRUE;
 
 -- name: CreateProductImage :one

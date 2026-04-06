@@ -84,7 +84,7 @@ async function addToCart(productId, quantity = 1, productName = '', productSkuId
 
         // Update cart count if element exists
         await updateCartCount();
-        
+
     } catch (error) {
         console.error('Error adding to cart:', error);
         showToast(error.message, 'error');
@@ -102,12 +102,12 @@ async function removeFromCart(cartItemId) {
         }
 
         showToast('Item removed from cart', 'success');
-        
+
         // Refresh cart if on cart page
         if (window.location.pathname === '/cart' && window.refreshCart) {
             window.refreshCart();
         }
-        
+
         // Refresh modal if it's open (check if modal is visible)
         const cartModal = document.getElementById('cart-modal');
         if (cartModal && getComputedStyle(cartModal).display !== 'none') {
@@ -119,9 +119,9 @@ async function removeFromCart(cartItemId) {
                 }
             }, 100);
         }
-        
+
         await updateCartCount();
-        
+
     } catch (error) {
         console.error('Error removing from cart:', error);
         showToast('Failed to remove item', 'error');
@@ -169,7 +169,7 @@ async function updateCartQuantity(cartItemId, quantity) {
         }
 
         await updateCartCount();
-        
+
     } catch (error) {
         console.error('Error updating cart:', error);
         showToast('Failed to update cart', 'error');
@@ -182,7 +182,7 @@ async function updateCartCount() {
         if (response.ok) {
             const cart = await response.json();
             const totalItems = cart.items ? cart.items.reduce((sum, item) => sum + item.quantity, 0) : 0;
-            
+
             // Update cart count badge if it exists
             const cartCountElement = document.querySelector('#cart-count');
             if (cartCountElement) {
@@ -363,15 +363,15 @@ document.addEventListener('DOMContentLoaded', async function() {
                 addToCart(productId, parseInt(quantity), productName, productSkuId, productPrice, productCategory);
             }
         }
-        
+
         // Cart item remove buttons - improved SVG handling
         let removeButton = null;
-        
+
         // First try standard approach
         if (e.target.closest) {
             removeButton = e.target.closest('.cart-remove-btn');
         }
-        
+
         // Fallback for SVG elements that might not work with closest()
         if (!removeButton) {
             let current = e.target;
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 current = current.parentElement || current.parentNode;
             }
         }
-        
+
         if (removeButton) {
             e.preventDefault();
             const cartItemId = removeButton.dataset.cartItemId;
@@ -392,19 +392,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                 removeFromCart(cartItemId);
             }
         }
-        
+
         // Cart quantity update buttons
         const updateButton = e.target.closest('.cart-update-btn');
         if (updateButton) {
             e.preventDefault();
             const cartItemId = updateButton.dataset.cartItemId;
             const quantity = updateButton.dataset.quantity;
-            
+
             if (cartItemId && quantity) {
                 updateCartQuantity(cartItemId, parseInt(quantity));
             }
         }
-        
+
         // Proceed to checkout button
         if (e.target.classList.contains('proceed-checkout-btn')) {
             e.preventDefault();
@@ -587,49 +587,49 @@ document.addEventListener('DOMContentLoaded', async function() {
 function initializeCartHoverEffects() {
     const cartButton = document.querySelector('.chatgpt-cart-btn, .modern-cart-btn, .custom-cart-btn');
     const cartContainer = document.querySelector('.cart-logo-container');
-    
+
     if (!cartButton || !cartContainer) return;
-    
+
     // Mouse tracking for 3D tilt effect
     cartButton.addEventListener('mousemove', function(e) {
         const rect = cartButton.getBoundingClientRect();
         const centerX = rect.left + rect.width / 2;
         const centerY = rect.top + rect.height / 2;
-        
+
         const mouseX = e.clientX - centerX;
         const mouseY = e.clientY - centerY;
-        
+
         // Calculate rotation angles (limited range for subtle effect)
         const rotateX = (mouseY / rect.height) * -5; // Reduced for cleaner effect
         const rotateY = (mouseX / rect.width) * 5;   // Reduced for cleaner effect
-        
+
         // Apply transform with CSS custom properties
         cartContainer.style.setProperty('--tilt-x', `${rotateY}deg`);
         cartContainer.style.setProperty('--tilt-y', `${rotateX}deg`);
         cartContainer.classList.add('cart-tilt-both');
     });
-    
+
     // Reset on mouse leave
     cartButton.addEventListener('mouseleave', function() {
         cartContainer.style.removeProperty('--tilt-x');
         cartContainer.style.removeProperty('--tilt-y');
         cartContainer.classList.remove('cart-tilt-both');
     });
-    
+
     // Pulse effect when items are added to cart
     const originalAddToCart = window.addToCart;
     if (originalAddToCart) {
         window.addToCart = async function(...args) {
             const result = await originalAddToCart.apply(this, args);
-            
+
             // Add pulse animation class
             cartButton.classList.add('cart-added');
-            
+
             // Remove class after animation
             setTimeout(() => {
                 cartButton.classList.remove('cart-added');
             }, 500);
-            
+
             return result;
         };
     }

@@ -27,16 +27,15 @@ templ CategoryForm(c echo.Context, category *db.Category, allCategories []db.Cat
 					</div>
 				</div>
 			</div>
-
 			<!-- Form -->
 			<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				<div class="bg-card/50 backdrop-blur-sm rounded-xl border border-border p-6">
-					<form 
+					<form
 						if category != nil {
-							method="POST" 
+							method="POST"
 							action={ templ.SafeURL(fmt.Sprintf("/admin/category/%s", category.ID)) }
 						} else {
-							method="POST" 
+							method="POST"
 							action="/admin/category"
 						}
 						class="space-y-6"
@@ -44,7 +43,6 @@ templ CategoryForm(c echo.Context, category *db.Category, allCategories []db.Cat
 						<!-- Basic Information -->
 						<div class="space-y-4">
 							<h3 class="text-lg font-semibold text-foreground mb-4">Category Information</h3>
-							
 							<!-- Name -->
 							<div>
 								<label for="name" class="block text-sm font-medium text-muted-foreground mb-1">
@@ -62,7 +60,6 @@ templ CategoryForm(c echo.Context, category *db.Category, allCategories []db.Cat
 									placeholder="Enter category name"
 								/>
 							</div>
-
 							<!-- Description -->
 							<div>
 								<label for="description" class="block text-sm font-medium text-muted-foreground mb-1">
@@ -76,7 +73,6 @@ templ CategoryForm(c echo.Context, category *db.Category, allCategories []db.Cat
 									placeholder="Enter category description"
 								>{ categoryDescription(category) }</textarea>
 							</div>
-
 							<!-- Parent Category -->
 							<div>
 								<label for="parent_id" class="block text-sm font-medium text-muted-foreground mb-1">
@@ -90,7 +86,7 @@ templ CategoryForm(c echo.Context, category *db.Category, allCategories []db.Cat
 									<option value="">No Parent (Root Category)</option>
 									for _, parentCategory := range allCategories {
 										if category == nil || parentCategory.ID != category.ID {
-											<option 
+											<option
 												value={ parentCategory.ID }
 												if category != nil && category.ParentID.Valid && category.ParentID.String == parentCategory.ID {
 													selected
@@ -103,11 +99,9 @@ templ CategoryForm(c echo.Context, category *db.Category, allCategories []db.Cat
 								</select>
 							</div>
 						</div>
-
 						<!-- Display Order -->
 						<div class="space-y-4">
 							<h3 class="text-lg font-semibold text-foreground mb-4">Display Settings</h3>
-							
 							<div>
 								<label for="display_order" class="block text-sm font-medium text-muted-foreground mb-1">
 									Display Order
@@ -126,7 +120,6 @@ templ CategoryForm(c echo.Context, category *db.Category, allCategories []db.Cat
 								<p class="mt-1 text-xs text-muted-foreground">Lower numbers appear first in category lists</p>
 							</div>
 						</div>
-
 						<!-- Form Actions -->
 						<div class="flex justify-end space-x-4 pt-6 border-t border-border">
 							<a

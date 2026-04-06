@@ -21,10 +21,10 @@ func main() {
 
 	// Query products with their images
 	rows, err := db.Query(`
-		SELECT p.name, pi.image_url 
-		FROM products p 
-		LEFT JOIN product_images pi ON p.id = pi.product_id 
-		ORDER BY p.name 
+		SELECT p.name, pi.image_url
+		FROM products p
+		LEFT JOIN product_images pi ON p.id = pi.product_id
+		ORDER BY p.name
 		LIMIT 10
 	`)
 	if err != nil {

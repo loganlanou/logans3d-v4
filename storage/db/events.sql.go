@@ -92,7 +92,7 @@ func (q *Queries) GetEvent(ctx context.Context, id string) (Event, error) {
 }
 
 const getEventStats = `-- name: GetEventStats :one
-SELECT 
+SELECT
     COUNT(*) as total_events,
     COUNT(CASE WHEN is_active = TRUE THEN 1 END) as active_events,
     COUNT(CASE WHEN is_active = TRUE AND start_date >= DATE('now') THEN 1 END) as upcoming_events,
@@ -120,8 +120,8 @@ func (q *Queries) GetEventStats(ctx context.Context) (GetEventStatsRow, error) {
 }
 
 const listActiveEvents = `-- name: ListActiveEvents :many
-SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events 
-WHERE is_active = TRUE 
+SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events
+WHERE is_active = TRUE
 ORDER BY start_date ASC
 `
 
@@ -161,7 +161,7 @@ func (q *Queries) ListActiveEvents(ctx context.Context) ([]Event, error) {
 }
 
 const listEvents = `-- name: ListEvents :many
-SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events 
+SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events
 ORDER BY start_date DESC
 `
 
@@ -201,7 +201,7 @@ func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
 }
 
 const listPastEvents = `-- name: ListPastEvents :many
-SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events 
+SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events
 WHERE is_active = TRUE AND start_date < DATE('now')
 ORDER BY start_date DESC
 `
@@ -242,7 +242,7 @@ func (q *Queries) ListPastEvents(ctx context.Context) ([]Event, error) {
 }
 
 const listUpcomingEvents = `-- name: ListUpcomingEvents :many
-SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events 
+SELECT id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at FROM events
 WHERE is_active = TRUE AND start_date >= DATE('now')
 ORDER BY start_date ASC
 `
@@ -283,8 +283,8 @@ func (q *Queries) ListUpcomingEvents(ctx context.Context) ([]Event, error) {
 }
 
 const updateEvent = `-- name: UpdateEvent :one
-UPDATE events 
-SET title = ?, description = ?, location = ?, address = ?, 
+UPDATE events
+SET title = ?, description = ?, location = ?, address = ?,
     start_date = ?, end_date = ?, url = ?, is_active = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
@@ -333,7 +333,7 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 }
 
 const updateEventActiveStatus = `-- name: UpdateEventActiveStatus :one
-UPDATE events 
+UPDATE events
 SET is_active = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING id, title, description, location, address, start_date, end_date, url, is_active, created_at, updated_at

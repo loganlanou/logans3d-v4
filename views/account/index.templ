@@ -2,10 +2,10 @@ package account
 
 import (
 	"fmt"
-	"time"
 	"github.com/labstack/echo/v4"
 	"github.com/loganlanou/logans3d-v4/storage/db"
 	"github.com/loganlanou/logans3d-v4/views/layout"
+	"time"
 )
 
 templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db.GetBuyAgainItemsRow, meta layout.PageMeta) {
@@ -16,7 +16,6 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db
 				<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse"></div>
 				<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
 			</div>
-
 			<div class="relative max-w-7xl mx-auto">
 				<!-- Header -->
 				<div class="mb-8">
@@ -25,13 +24,11 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db
 					</h1>
 					<p class="mt-2 text-slate-400">Manage your profile and view order history</p>
 				</div>
-
 				<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 					<!-- Profile Section -->
 					<div class="lg:col-span-1">
 						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 p-8 shadow-xl">
 							<h2 class="text-2xl font-bold text-white mb-6">Profile</h2>
-
 							<!-- Avatar -->
 							<div class="flex justify-center mb-6">
 								if user.ProfileImageUrl.Valid && user.ProfileImageUrl.String != "" {
@@ -46,26 +43,22 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db
 									</div>
 								}
 							</div>
-
 							<!-- User Info -->
 							<div class="space-y-4">
 								<div>
 									<label class="text-sm text-slate-400 uppercase tracking-wider">Full Name</label>
 									<p class="text-white font-medium mt-1">{ getFullName(user) }</p>
 								</div>
-
 								if user.Username.Valid && user.Username.String != "" {
 									<div>
 										<label class="text-sm text-slate-400 uppercase tracking-wider">Username</label>
 										<p class="text-white font-medium mt-1">{ "@" + user.Username.String }</p>
 									</div>
 								}
-
 								<div>
 									<label class="text-sm text-slate-400 uppercase tracking-wider">Email</label>
 									<p class="text-white font-medium mt-1 break-all">{ user.Email }</p>
 								</div>
-
 								if user.CreatedAt.Valid {
 									<div>
 										<label class="text-sm text-slate-400 uppercase tracking-wider">Member Since</label>
@@ -73,7 +66,6 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db
 									</div>
 								}
 							</div>
-
 							<!-- Action Buttons -->
 							<div class="mt-8 pt-6 border-t border-slate-700/50 space-y-3">
 								<a
@@ -93,7 +85,6 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db
 							</div>
 						</div>
 					</div>
-
 					<!-- Tabbed Section: Buy It Again & Order History -->
 					<div class="lg:col-span-2" x-data="{ activeTab: 'buy-again' }">
 						<div class="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700/50 shadow-xl overflow-hidden">
@@ -126,7 +117,6 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db
 									}
 								</button>
 							</div>
-
 							<!-- Tab Content -->
 							<div class="p-6">
 								<!-- Buy It Again Tab -->
@@ -155,7 +145,6 @@ templ Index(c echo.Context, user *db.User, orders []db.Order, buyAgainItems []db
 										</div>
 									}
 								</div>
-
 								<!-- Order History Tab -->
 								<div x-show="activeTab === 'orders'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
 									if len(orders) == 0 {
@@ -211,7 +200,6 @@ templ OrderCard(order db.Order) {
 					</div>
 				</div>
 			</div>
-
 			<!-- Actions -->
 			<div class="flex items-center gap-3">
 				<a
@@ -252,7 +240,6 @@ templ BuyAgainCard(item db.GetBuyAgainItemsRow) {
 				</div>
 			}
 		</a>
-
 		<!-- Product Info -->
 		<div class="flex flex-col flex-1 p-3">
 			<a href={ templ.SafeURL("/shop/product/" + item.ProductSlug.String) } class="block">
@@ -266,7 +253,6 @@ templ BuyAgainCard(item db.GetBuyAgainItemsRow) {
 			<p class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-400 mt-auto pt-2">
 				${ formatCents(item.PriceCents.Int64) }
 			</p>
-
 			<!-- Add to Cart Button -->
 			<button
 				onclick={ buyAgainClickFromAccount(item.ProductID, item.ProductSkuID.String) }

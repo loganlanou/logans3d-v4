@@ -27,7 +27,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				</button>
 			</div>
 		</div>
-
 		<!-- Application Status Banner -->
 		<div class="admin-card mb-6">
 			<div class="flex items-center justify-between p-6">
@@ -50,7 +49,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				</div>
 			</div>
 		</div>
-
 		<!-- Metrics Grid -->
 		<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
 			<!-- Go Version -->
@@ -61,7 +59,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 					<p class="text-xs admin-text-muted-foreground">{ sysInfo.Architecture }</p>
 				</div>
 			</div>
-
 			<!-- Operating System -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
@@ -70,7 +67,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 					<p class="text-xs admin-text-muted-foreground">{ sysInfo.Architecture } architecture</p>
 				</div>
 			</div>
-
 			<!-- Memory Allocated -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
@@ -79,7 +75,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 					<p class="text-xs admin-text-muted-foreground">{ fmt.Sprintf("%.1f MB system", memStats.SysMB) }</p>
 				</div>
 			</div>
-
 			<!-- Goroutines -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
@@ -89,7 +84,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				</div>
 			</div>
 		</div>
-
 		<!-- Database Stats -->
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
 			<!-- Products -->
@@ -100,7 +94,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 					<p class="text-xs admin-text-muted-foreground">Total products in catalog</p>
 				</div>
 			</div>
-
 			<!-- Categories -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
@@ -109,7 +102,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 					<p class="text-xs admin-text-muted-foreground">Active categories</p>
 				</div>
 			</div>
-
 			<!-- Database Size -->
 			<div class="admin-card hover:shadow-lg transition-shadow duration-300">
 				<div class="p-6">
@@ -119,7 +111,6 @@ templ DevOverview(c echo.Context, sysInfo types.SystemInfo, dbStats types.Databa
 				</div>
 			</div>
 		</div>
-
 		<!-- JavaScript for Developer Overview -->
 		<script>
 			async function triggerGC() {

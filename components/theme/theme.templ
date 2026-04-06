@@ -33,14 +33,12 @@ templ Toggle(props ...Props) {
 				d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"
 			></path>
 		</svg>
-
 		<!-- Theme toggle switch -->
 		@switchcomp.Switch(switchcomp.Props{
 			ID:      "theme-toggle",
 			Name:    "theme",
 			Checked: false,
 		})
-
 		<!-- Sun icon for light mode -->
 		<svg
 			id="theme-icon-light"
@@ -57,7 +55,6 @@ templ Toggle(props ...Props) {
 			></path>
 		</svg>
 	</div>
-
 	<!-- Theme toggle script -->
 	<script defer nonce={ templ.GetNonce(ctx) }>
 		(function() {

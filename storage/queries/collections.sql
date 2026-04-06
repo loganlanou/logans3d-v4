@@ -1,5 +1,5 @@
 -- name: GetUserCollections :many
-SELECT 
+SELECT
     c.id,
     c.user_id,
     c.name,
@@ -25,7 +25,7 @@ VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 RETURNING *;
 
 -- name: UpdateCollection :one
-UPDATE user_collections 
+UPDATE user_collections
 SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ? AND user_id = ?
 RETURNING *;
@@ -35,7 +35,7 @@ DELETE FROM user_collections
 WHERE id = ? AND user_id = ?;
 
 -- name: GetCollectionItems :many
-SELECT 
+SELECT
     ci.id,
     ci.collection_id,
     ci.product_id,
@@ -56,7 +56,7 @@ ORDER BY ci.created_at DESC;
 -- name: AddToCollection :one
 INSERT INTO collection_items (id, collection_id, product_id, quantity, notes, created_at)
 VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-ON CONFLICT(collection_id, product_id) 
+ON CONFLICT(collection_id, product_id)
 DO UPDATE SET quantity = excluded.quantity, notes = excluded.notes
 RETURNING *;
 

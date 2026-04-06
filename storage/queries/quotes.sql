@@ -2,10 +2,10 @@
 SELECT * FROM quote_requests WHERE id = ?;
 
 -- name: GetQuoteRequestWithFiles :one
-SELECT 
+SELECT
     q.*,
     GROUP_CONCAT(
-        qf.id || ',' || qf.filename || ',' || qf.original_filename || ',' || 
+        qf.id || ',' || qf.filename || ',' || qf.original_filename || ',' ||
         qf.file_path || ',' || qf.file_size || ',' || qf.mime_type
     ) as quote_files
 FROM quote_requests q
@@ -14,12 +14,12 @@ WHERE q.id = ?
 GROUP BY q.id;
 
 -- name: ListQuoteRequests :many
-SELECT * FROM quote_requests 
+SELECT * FROM quote_requests
 ORDER BY created_at DESC;
 
 -- name: ListQuoteRequestsByStatus :many
-SELECT * FROM quote_requests 
-WHERE status = ? 
+SELECT * FROM quote_requests
+WHERE status = ?
 ORDER BY created_at DESC;
 
 -- name: CreateQuoteRequest :one
@@ -31,27 +31,27 @@ INSERT INTO quote_requests (
 RETURNING *;
 
 -- name: UpdateQuoteRequestStatus :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET status = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
 -- name: UpdateQuoteRequestPrice :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET quoted_price_cents = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
 -- name: UpdateQuoteRequestNotes :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET admin_notes = ?, updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING *;
 
 -- name: UpdateQuoteRequest :one
-UPDATE quote_requests 
+UPDATE quote_requests
 SET customer_name = ?, customer_email = ?, customer_phone = ?, project_description = ?,
-    quantity = ?, material_preference = ?, finish_preference = ?, deadline_date = ?, 
+    quantity = ?, material_preference = ?, finish_preference = ?, deadline_date = ?,
     budget_range = ?, status = ?, admin_notes = ?, quoted_price_cents = ?,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
@@ -84,7 +84,7 @@ RETURNING *;
 DELETE FROM quote_files WHERE id = ?;
 
 -- name: GetQuoteStats :one
-SELECT 
+SELECT
     COUNT(*) as total_quotes,
     COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_quotes,
     COUNT(CASE WHEN status = 'reviewing' THEN 1 END) as reviewing_quotes,

@@ -173,7 +173,7 @@ CREATE TABLE cart_items (
     quantity INTEGER NOT NULL DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
+
     -- Ensure either session_id or user_id is set, but not both
     CHECK ((session_id IS NULL) != (user_id IS NULL))
 );

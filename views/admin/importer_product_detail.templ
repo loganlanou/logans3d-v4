@@ -20,8 +20,8 @@ type ScrapedProductDetailData struct {
 	Categories    []db.Category
 	ImageURLs     []string // Parsed from product.ImageUrls JSON
 	SizeCharts    []db.GetSizeChartsRow
-	PrevProductID string   // ID of previous product (for navigation)
-	NextProductID string   // ID of next product (for navigation)
+	PrevProductID string // ID of previous product (for navigation)
+	NextProductID string // ID of next product (for navigation)
 }
 
 templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
@@ -95,8 +95,8 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					@button.Button(button.Props{
 						Variant: button.VariantSecondary,
 						Attributes: templ.Attributes{
-							"hx-post":    fmt.Sprintf("/admin/importer/products/%s/rescrape", data.Product.ID),
-							"hx-swap":    "none",
+							"hx-post": fmt.Sprintf("/admin/importer/products/%s/rescrape", data.Product.ID),
+							"hx-swap": "none",
 						},
 					}) {
 						Re-scrape
@@ -105,8 +105,8 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 						@button.Button(button.Props{
 							Variant: button.VariantSecondary,
 							Attributes: templ.Attributes{
-								"hx-post":    fmt.Sprintf("/admin/importer/products/%s/unskip", data.Product.ID),
-								"hx-swap":    "none",
+								"hx-post": fmt.Sprintf("/admin/importer/products/%s/unskip", data.Product.ID),
+								"hx-swap": "none",
 							},
 						}) {
 							Unskip
@@ -115,8 +115,8 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 						@button.Button(button.Props{
 							Variant: button.VariantSecondary,
 							Attributes: templ.Attributes{
-								"hx-post":    fmt.Sprintf("/admin/importer/products/%s/skip", data.Product.ID),
-								"hx-swap":    "none",
+								"hx-post": fmt.Sprintf("/admin/importer/products/%s/skip", data.Product.ID),
+								"hx-swap": "none",
 							},
 						}) {
 							Skip
@@ -124,7 +124,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					}
 				</div>
 			</div>
-
 			<!-- Status Banner -->
 			if data.Product.IsSkipped.Valid && data.Product.IsSkipped.Bool {
 				<div class="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
@@ -155,7 +154,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					</div>
 				</div>
 			}
-
 			<!-- Images Section -->
 			@card.Card() {
 				@card.Header() {
@@ -166,22 +164,22 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 						<div class="flex items-center gap-2">
 							if len(data.ImageURLs) > 0 && len(data.Images) == 0 {
 								@button.Button(button.Props{
-									Size: button.SizeSm,
+									Size:    button.SizeSm,
 									Variant: button.VariantSecondary,
 									Attributes: templ.Attributes{
-										"hx-post":    fmt.Sprintf("/admin/importer/products/%s/download", data.Product.ID),
-										"hx-swap":    "none",
+										"hx-post": fmt.Sprintf("/admin/importer/products/%s/download", data.Product.ID),
+										"hx-swap": "none",
 									},
 								}) {
 									Download Images
 								}
 							}
 							@button.Button(button.Props{
-								Size: button.SizeSm,
+								Size:    button.SizeSm,
 								Variant: button.VariantSecondary,
 								Attributes: templ.Attributes{
-									"hx-post":    fmt.Sprintf("/admin/importer/products/%s/generate-ai", data.Product.ID),
-									"hx-swap":    "none",
+									"hx-post": fmt.Sprintf("/admin/importer/products/%s/generate-ai", data.Product.ID),
+									"hx-swap": "none",
 								},
 							}) {
 								Generate AI Image
@@ -210,7 +208,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					}
 				}
 			}
-
 			<!-- Description Section -->
 			@card.Card() {
 				@card.Header() {
@@ -225,12 +222,12 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 								</span>
 							}
 							@button.Button(button.Props{
-								Size: button.SizeSm,
+								Size:    button.SizeSm,
 								Variant: button.VariantSecondary,
-								Class: "generate-btn",
+								Class:   "generate-btn",
 								Attributes: templ.Attributes{
-									"hx-post":    fmt.Sprintf("/admin/importer/products/%s/regenerate-description", data.Product.ID),
-									"hx-swap":    "none",
+									"hx-post":         fmt.Sprintf("/admin/importer/products/%s/regenerate-description", data.Product.ID),
+									"hx-swap":         "none",
 									"hx-disabled-elt": "this",
 								},
 							}) {
@@ -278,7 +275,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 								Edit and blur to save. Original: { data.Product.Name }
 							</p>
 						</div>
-
 						<!-- Generated Description (editable) -->
 						if data.Product.GeneratedDescription.Valid && data.Product.GeneratedDescription.String != "" {
 							<div>
@@ -310,7 +306,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 								</p>
 							</div>
 						}
-
 						<!-- Original Description (collapsible) -->
 						if data.Product.OriginalDescription.Valid && data.Product.OriginalDescription.String != "" {
 							<details class="mt-4 border border-border rounded-lg">
@@ -334,7 +329,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					</div>
 				}
 			}
-
 			<!-- Details Section -->
 			@card.Card() {
 				@card.Header() {
@@ -377,7 +371,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 					</div>
 				}
 			}
-
 			<!-- Import Section (only show if not already imported and not skipped) -->
 			if !data.Product.ImportedProductID.Valid && (!data.Product.IsSkipped.Valid || !data.Product.IsSkipped.Bool) {
 				@card.Card() {
@@ -405,7 +398,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 									<span class="text-sm text-muted-foreground">(enter price in cents, e.g. 999 = $9.99)</span>
 								</div>
 							</div>
-
 							<!-- Category -->
 							<div>
 								<label class="block text-sm font-medium text-muted-foreground mb-1">Category</label>
@@ -418,7 +410,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 									}
 								</select>
 							</div>
-
 							<!-- Size Selection -->
 							<div>
 								<label class="block text-sm font-medium text-muted-foreground mb-2">Sizes &amp; Price Adjustments</label>
@@ -454,7 +445,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 									}
 								</div>
 							</div>
-
 							<!-- Product Flags -->
 							<div>
 								<label class="block text-sm font-medium text-muted-foreground mb-2">Product Flags</label>
@@ -517,7 +507,6 @@ templ ScrapedProductDetail(c echo.Context, data ScrapedProductDetailData) {
 				}
 			}
 		</div>
-
 		<style>
 			/* Show spinner during HTMX request */
 			.generate-btn .htmx-indicator {

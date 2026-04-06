@@ -22,7 +22,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 					</span>
 				</div>
 			</div>
-
 			<!-- Search and Filters -->
 			<div class="mb-6 space-y-4">
 				<!-- Search Bar -->
@@ -66,7 +65,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 						</button>
 					}
 				</div>
-
 				<script>
 					// Existing functions
 					function toggleClearButton() {
@@ -238,7 +236,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 						}
 					});
 				</script>
-
 				<!-- Filters -->
 				<div class="flex gap-4 flex-wrap">
 					<select
@@ -256,7 +253,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 						<option value="resolved" selected?={ statusFilter == "resolved" }>Resolved</option>
 						<option value="spam" selected?={ statusFilter == "spam" }>Spam</option>
 					</select>
-
 					<select
 						name="priority"
 						class="px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -271,7 +267,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 						<option value="high" selected?={ priorityFilter == "high" }>High</option>
 						<option value="urgent" selected?={ priorityFilter == "urgent" }>Urgent</option>
 					</select>
-
 					<select
 						name="subject"
 						class="px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -288,7 +283,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 						<option value="workshop-booking" selected?={ subjectFilter == "workshop-booking" }>Workshop Booking</option>
 						<option value="other" selected?={ subjectFilter == "other" }>Other</option>
 					</select>
-
 					<button
 						type="button"
 						onclick="clearAllFilters()"
@@ -298,7 +292,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 					</button>
 				</div>
 			</div>
-
 			<!-- Bulk Actions Toolbar (hidden by default) -->
 			<div id="bulk-actions-toolbar" class="mb-4 p-4 bg-card border border-border rounded-lg hidden">
 				<div class="flex items-center justify-between">
@@ -338,7 +331,6 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 					</button>
 				</div>
 			</div>
-
 			<!-- Contacts Table -->
 			<div id="contacts-table-container">
 				@ContactsTable(contacts)
@@ -348,99 +340,99 @@ templ ContactsList(c echo.Context, contacts []db.ContactRequest, stats db.GetCon
 }
 
 templ ContactsTable(contacts []db.ContactRequest) {
-			<div class="admin-card">
-				<div class="admin-card-header">
-					<h2 class="admin-card-title">Contact Requests ({ fmt.Sprintf("%d", len(contacts)) })</h2>
-				</div>
-				<div class="overflow-x-auto">
-					<table class="admin-table">
-						<thead>
-							<tr>
-								<th class="text-center" style="width: 40px;">
+	<div class="admin-card">
+		<div class="admin-card-header">
+			<h2 class="admin-card-title">Contact Requests ({ fmt.Sprintf("%d", len(contacts)) })</h2>
+		</div>
+		<div class="overflow-x-auto">
+			<table class="admin-table">
+				<thead>
+					<tr>
+						<th class="text-center" style="width: 40px;">
+							<input
+								type="checkbox"
+								id="select-all-checkbox"
+								onclick="toggleSelectAll()"
+								class="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-500"
+							/>
+						</th>
+						<th class="text-left">Status</th>
+						<th class="text-left">Priority</th>
+						<th class="text-left">Name</th>
+						<th class="text-left">Contact</th>
+						<th class="text-left">Subject</th>
+						<th class="text-left">Received</th>
+					</tr>
+				</thead>
+				<tbody>
+					if len(contacts) == 0 {
+						<tr>
+							<td colspan="7" class="px-6 py-12 text-center admin-text-muted-foreground">
+								No contact requests found.
+							</td>
+						</tr>
+					}
+					for _, contact := range contacts {
+						<tbody data-contact-id={ contact.ID }>
+							<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;" class="hover:bg-card/50">
+								<td class="text-center" onclick="event.stopPropagation()">
 									<input
 										type="checkbox"
-										id="select-all-checkbox"
-										onclick="toggleSelectAll()"
-										class="w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-500"
+										class="contact-checkbox w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-500"
+										data-contact-id={ contact.ID }
+										onclick="toggleContact(this)"
 									/>
-								</th>
-								<th class="text-left">Status</th>
-								<th class="text-left">Priority</th>
-								<th class="text-left">Name</th>
-								<th class="text-left">Contact</th>
-								<th class="text-left">Subject</th>
-								<th class="text-left">Received</th>
+								</td>
+								<td>
+									@StatusIcon(contact.Status.String)
+								</td>
+								<td>
+									@PriorityIcon(contact.Priority.String)
+								</td>
+								<td>
+									<div class="admin-text-primary admin-font-medium">{ contact.FirstName } { contact.LastName }</div>
+									if contact.NewsletterSubscribe.Bool {
+										<div class="text-xs text-green-600 mt-1">📧 Newsletter</div>
+									}
+								</td>
+								<td>
+									if contact.Email.Valid {
+										<div class="text-xs">
+											<a href={ templ.URL("mailto:" + contact.Email.String) } class="text-blue-500 hover:text-blue-600 dark:text-blue-400" onclick="event.stopPropagation()">
+												{ contact.Email.String }
+											</a>
+										</div>
+									}
+									if contact.Phone.Valid {
+										<div class="text-xs text-muted-foreground mt-1">{ contact.Phone.String }</div>
+									}
+								</td>
+								<td>
+									<div class="text-sm text-foreground">{ formatSubject(contact.Subject) }</div>
+								</td>
+								<td>
+									<div class="text-sm text-muted-foreground">
+										if contact.CreatedAt.Valid {
+											{ formatTime(contact.CreatedAt.Time) }
+										} else {
+											<span class="text-muted-foreground">Unknown</span>
+										}
+									</div>
+								</td>
 							</tr>
-						</thead>
-						<tbody>
-							if len(contacts) == 0 {
-								<tr>
-									<td colspan="7" class="px-6 py-12 text-center admin-text-muted-foreground">
-										No contact requests found.
-									</td>
-								</tr>
-							}
-							for _, contact := range contacts {
-								<tbody data-contact-id={ contact.ID }>
-									<tr onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;" class="hover:bg-card/50">
-										<td class="text-center" onclick="event.stopPropagation()">
-											<input
-												type="checkbox"
-												class="contact-checkbox w-4 h-4 rounded border-border text-blue-600 focus:ring-blue-500"
-												data-contact-id={ contact.ID }
-												onclick="toggleContact(this)"
-											/>
-										</td>
-										<td>
-											@StatusIcon(contact.Status.String)
-										</td>
-										<td>
-											@PriorityIcon(contact.Priority.String)
-										</td>
-										<td>
-											<div class="admin-text-primary admin-font-medium">{ contact.FirstName } { contact.LastName }</div>
-											if contact.NewsletterSubscribe.Bool {
-												<div class="text-xs text-green-600 mt-1">📧 Newsletter</div>
-											}
-										</td>
-										<td>
-											if contact.Email.Valid {
-												<div class="text-xs">
-													<a href={ templ.URL("mailto:" + contact.Email.String) } class="text-blue-500 hover:text-blue-600 dark:text-blue-400" onclick="event.stopPropagation()">
-														{ contact.Email.String }
-													</a>
-												</div>
-											}
-											if contact.Phone.Valid {
-												<div class="text-xs text-muted-foreground mt-1">{ contact.Phone.String }</div>
-											}
-										</td>
-										<td>
-											<div class="text-sm text-foreground">{ formatSubject(contact.Subject) }</div>
-										</td>
-										<td>
-											<div class="text-sm text-muted-foreground">
-												if contact.CreatedAt.Valid {
-													{ formatTime(contact.CreatedAt.Time) }
-												} else {
-													<span class="text-muted-foreground">Unknown</span>
-												}
-											</div>
-										</td>
-									</tr>
-									<tr class="hover:bg-card/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;">
-										<td colspan="7" class="px-6 py-3 text-sm text-muted-foreground bg-background/20 border-t border-border/30">
-											<div class="pl-4 italic">
-												{ contact.Message }
-											</div>
-										</td>
-									</tr>
-								</tbody>
-							}
+							<tr class="hover:bg-card/50" onclick={ templ.ComponentScript{Call: fmt.Sprintf("handleRowClick(event, '/admin/contacts/%s')", contact.ID)} } style="cursor: pointer;">
+								<td colspan="7" class="px-6 py-3 text-sm text-muted-foreground bg-background/20 border-t border-border/30">
+									<div class="pl-4 italic">
+										{ contact.Message }
+									</div>
+								</td>
+							</tr>
 						</tbody>
-					</table>
-				</div>
-			</div>
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
 }
 
 templ StatusIcon(status string) {
@@ -555,7 +547,6 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 					← Back to Contact Requests
 				</a>
 			</div>
-
 			<!-- Header -->
 			<div class="flex justify-between items-start mb-6">
 				<div class="flex-1">
@@ -602,7 +593,6 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 					Request ID: { contact.ID }
 				</div>
 			</div>
-
 			<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 				<!-- Main Content - Left Column (2/3) -->
 				<div class="lg:col-span-2 space-y-6">
@@ -666,7 +656,6 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 							}
 						</div>
 					</div>
-
 					<!-- Message -->
 					<div class="admin-card">
 						<div class="admin-card-header">
@@ -676,7 +665,6 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 							<p class="whitespace-pre-wrap text-foreground">{ contact.Message }</p>
 						</div>
 					</div>
-
 					<!-- Response Notes -->
 					<div class="admin-card">
 						<div class="admin-card-header">
@@ -750,7 +738,6 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 							</form>
 						</div>
 					</div>
-
 					<script>
 						function handleStatusChange(select) {
 							const originalValue = select.dataset.originalValue;
@@ -819,7 +806,6 @@ templ ContactDetail(c echo.Context, contact db.ContactRequest) {
 						}
 					</script>
 				</div>
-
 				<!-- Sidebar - Right Column (1/3) -->
 				<div class="space-y-6">
 					<!-- Metadata -->

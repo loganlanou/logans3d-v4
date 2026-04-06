@@ -12,7 +12,6 @@ templ DevConfig(c echo.Context, sysInfo types.SystemInfo) {
 		<div class="flex justify-between items-center mb-8">
 			<h1 class="admin-text-primary admin-text-2xl admin-font-bold">Configuration</h1>
 		</div>
-
 		<!-- Environment Variables Card -->
 		<div class="admin-card mb-6">
 			<div class="admin-card-header">
@@ -22,15 +21,18 @@ templ DevConfig(c echo.Context, sysInfo types.SystemInfo) {
 				</h2>
 			</div>
 			<div class="p-4">
-				<pre class="bg-background p-4 rounded-lg overflow-x-auto"><code class="text-sm text-muted-foreground font-mono">DB_PATH={ sysInfo.DBPath }
-PORT={ sysInfo.Port }
-ENVIRONMENT={ sysInfo.Environment }
-GO_VERSION={ sysInfo.GoVersion }
-APP_NAME={ sysInfo.AppName }
-VERSION={ sysInfo.Version }</code></pre>
+				<pre class="bg-background p-4 rounded-lg overflow-x-auto">
+					<code class="text-sm text-muted-foreground font-mono">
+						DB_PATH={ sysInfo.DBPath }
+						PORT={ sysInfo.Port }
+						ENVIRONMENT={ sysInfo.Environment }
+						GO_VERSION={ sysInfo.GoVersion }
+						APP_NAME={ sysInfo.AppName }
+						VERSION={ sysInfo.Version }
+					</code>
+				</pre>
 			</div>
 		</div>
-
 		<!-- Configuration Details Card -->
 		<div class="admin-card">
 			<div class="admin-card-header">
@@ -76,7 +78,6 @@ VERSION={ sysInfo.Version }</code></pre>
 				</table>
 			</div>
 		</div>
-
 		<!-- Configuration Tips -->
 		<div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
 			<div class="admin-card">
@@ -91,7 +92,6 @@ VERSION={ sysInfo.Version }</code></pre>
 					After making changes to <code class="px-2 py-1 bg-card rounded">.envrc</code>, run <code class="px-2 py-1 bg-card rounded">direnv allow</code> to activate them.
 				</p>
 			</div>
-
 			<div class="admin-card">
 				<h3 class="admin-text-primary admin-font-semibold mb-3 flex items-center">
 					<span class="text-xl mr-2">📝</span>
